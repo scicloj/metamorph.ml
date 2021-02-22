@@ -1,22 +1,16 @@
 (ns scicloj.metamorph.ml-test
-  (:require  [clojure.test :refer [is deftest]]
-             [scicloj.metamorph.core :as morph]
-             [tech.v3.libs.smile.classification]
-             [tech.v3.dataset.metamorph :as ds-mm]
-             [tech.v3.dataset :as ds]
-             [tech.v3.dataset.modelling :as ds-mod]
-             [tech.v3.dataset.column-filters :as cf]
-             [tech.v3.ml.metamorph :as ml-mm]
-             [tech.v3.ml.gridsearch :as gs]
-             [scicloj.metamorph.ml :as ml-eval]
-             [tech.v3.ml.loss :as loss]
-             [tech.v3.datatype.functional :as dtf]
-             [tech.v3.ml.gridsearch :as ml-gs]
-             [tablecloth.api.split :as split]
-             [tablecloth.api :as tc]
-             ))
-
-
+  (:require [clojure.test :refer [deftest is]]
+            [scicloj.metamorph.core :as morph]
+            [scicloj.metamorph.ml :as ml-eval]
+            [tablecloth.api.split :as split]
+            [tech.v3.dataset :as ds]
+            [tech.v3.dataset.column-filters :as cf]
+            [tech.v3.dataset.metamorph :as ds-mm]
+            [tech.v3.dataset.modelling :as ds-mod]
+            [tech.v3.ml.gridsearch :as gs]
+            [tech.v3.ml.loss :as loss]
+            [tech.v3.libs.smile.classification]
+            [tech.v3.ml.metamorph :as ml-mm]))
 
 
 
