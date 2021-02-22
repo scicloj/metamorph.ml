@@ -12,18 +12,21 @@ It unifies the often seperated concerns of data preprocessing +
 hyper-parameter tuning.
 
 In a lot of areas of machine learning, certain aspect of the 
-pre-processing needed to be tuned (by trying), as not clear-cut decisions exists.
+pre-processing needed to be tuned (by trying), as no clear-cut decisions exists.
 
-One example could be the number of dimenssion in PCA or the vocabulary size in a NLP ML model.
-But it can be as well, the "boolean" alternative, if stemming should be used or not.
+One example could be the number of dimensions in PCA or the vocabulary size in a NLP ML model.
+But it can be as well a "boolean" alternative, such as if stemming should be used or not.
 
 This library allows exactly this, namely hyper-tune an arbitraty complex data transformtion pipeline.
+
 
 
 ## Quick start
 
 If you just want to see code, here it is:
-Quite some libraies are needed, see the deps.edn file in alias "test"
+
+Quite some libraies are needed for a complete test case, 
+see the deps.edn file in alias "test"
 
 ```clojure
 (require
@@ -53,10 +56,10 @@ Quite some libraies are needed, see the deps.edn file in alias "test"
             :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
    (ml-mm/model {:model-type :smile.classification/random-forest})))
 
-;;  the simplest split, produce a seq of one split into train/test
+;;  the simplest split, produces a seq of one, a single split into train/test
 (def  train-split-seq (split/split ds :holdout))
 
-;; only one pipe-fn in the seq
+;; we have only one pipe-fn 
 (def  pipe-fn-seq [pipe-fn])
 
 (def  evaluations
@@ -130,19 +133,21 @@ at key :train an dan other at :test. These will be used to train / predict and e
 
 `evaluates-pipelines` returns then a list of #pipeline-fn x  #cross-validation-splits evaluation result. This is as well the total number of models trained.
 
-Each evaluation result contains:
-- the transformed dataset
-- the fitted pipeline context(including the trained model and the dataset at end of pipeline)
-- the predicted pipline context (including the predition dataset)
-- the ground trueth
-- the pipeline-fn
-- the loss of this model evaluation
-- average loss of this pipeline (over all train/test splits)
+Each evaluation result contains a map with these keys:
+
+- :fitted-ctx        - the fitted pipeline context(including the trained model and the dataset at end of pipeline)
+- :predicted context - the predicted pipline context (including the predition dataset)
+- :scicloj.metamorph.ml/target-ds   the ground trueth
+- :pipe-fn - the pipeline-fn
+- :loss the loss of this model evaluation
+- :avg-loss average/min/max loss of this pipeline (over all train/test splits)
+- :min-loss  
+- :max-loss 
 
 This returned information is self-contained, as the pipeline-fn should manipulated exclusively the dataset and the available pipeline context.
-This means the function can be re-executed simply on new data.
+This means the :pipe-fn function can be re-executed simply on new data.
 
-This is due to the metamorph approach, which keeps all input/output of the pipeline inside of the context
+This is due to the metamorph approach, which keeps all input/output of the pipeline inside of the context / dataset.
 
 ## Metamorph
 
