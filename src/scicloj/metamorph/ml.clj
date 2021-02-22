@@ -9,8 +9,8 @@
         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data test-ds}) )
         predictions (:metamorph/data predicted-ctx)
         target-colname (first (ds/column-names (cf/target (:metamorph/data fitted-ctx) )))
-        true-target (get-in predicted-ctx [:target-ds target-colname])
-        _ (errors/when-not-error true-target "Pipeline context need to have the true prediction target as a dataset at key :target-ds")
+        true-target (get-in predicted-ctx [::target-ds target-colname])
+        _ (errors/when-not-error true-target (str  "Pipeline context need to have the true prediction target as a dataset at key " ::target-ds))
         loss (loss-fn (predictions target-colname)
                       true-target)]
     {:fitted-ctx fitted-ctx

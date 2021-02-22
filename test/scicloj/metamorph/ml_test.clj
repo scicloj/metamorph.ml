@@ -32,7 +32,7 @@
          (ds-mm/categorical->number cf/categorical)
          (fn [ctx]
            (assoc ctx
-                  :target-ds (cf/target (:metamorph/data ctx))))
+                  :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
          (ml-mm/model {:model-type :smile.classification/random-forest}))
 
         ;;  the simplest split
@@ -42,7 +42,7 @@
         pipe-fn-seq [pipe-fn]
 
         evaluations
-        (ml-eval/evaluate-model pipe-fn-seq train-split-seq loss/classification-loss)
+        (ml-eval/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss)
 
 
         ;; we have only one result
@@ -61,8 +61,7 @@
                  {:metamorph/data new-ds
                   :metamorph/mode :transform}))
          (:metamorph/data)
-         (ds-mod/column-values->categorical :species))
-        ]
+         (ds-mod/column-values->categorical :species))]
 
     (is (= ["versicolor" "versicolor" "virginica" "versicolor" "virginica" "setosa" "virginica" "virginica" "versicolor" "versicolor" ]
          predictions))))
@@ -83,10 +82,7 @@
                           (ds-mm/set-inference-target :species)
                           (ds-mm/categorical->number cf/categorical)
                           (fn [ctx]
-                            (assoc ctx
-                                   :target-ds (cf/target (:metamorph/data ctx))
-                                   ))
-     
+                            (assoc ctx :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
                           (ml-mm/model options)))
 
         all-options (gs/sobol-gridsearch grid-search-options)
@@ -102,7 +98,6 @@
          (sort-by :avg-loss)
          (first))
 
-
         new-ds (ds/sample ds 10 {:seed 1234} )
 
         predictions
@@ -112,8 +107,7 @@
                        :metamorph/mode :transform}))
               (:metamorph/data)
               (ds-mod/column-values->categorical :species)
-              seq
-              )]
+              seq)]
 
     (is (= ["versicolor"
             "versicolor"
