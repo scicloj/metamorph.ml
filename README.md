@@ -2,7 +2,26 @@
 
 Evaluation function of metamorph based ml pipelines
 
-# Quick start
+## Main idea
+
+This library is based on the idea, that in machine learing model evaluations,
+we often do not want to tune only the model and its hyperparameters,
+but the whole data transformation pipeline.
+
+It unifies the often seperated concerns of data preprocessing + 
+hyper-parameter tuning.
+
+In a lot f areas of machine learining, certain aspect of the 
+pre-processing needed to be tuned (by tryzing), as not clear-cut decisions exists.
+
+One example could be the number of dimenssion in PCA or the vocabulari size in a NLP ML model.
+
+This alibrary allows exactly this, namely hyper-tune an arbitraty complex data transformtion pipeline.
+
+
+## Quick start
+
+If you just want to see code, here it is:
 
 ```clojure
 (require
@@ -26,7 +45,7 @@ Evaluation function of metamorph based ml pipelines
   (morph/pipeline
    (ds-mm/set-inference-target :species)
    (ds-mm/categorical->number cf/categorical)
-   ;; sets the truth into the context at the required key
+   ;; sets the ground trueth for the prediction into the context at the required key
    (fn [ctx]
      (assoc ctx
             :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
@@ -64,3 +83,42 @@ Evaluation function of metamorph based ml pipelines
 
 
 ```
+
+
+## evaluate pipelines
+
+This library contains very little code itself, just one function
+`evaluate-pipelines` which takes a sequence of metamorph compliant pipeline-fn (= each function is a series of steps to transform the raw data and a model step)
+It executes each pipeline in fit/transform, which translates into a train/predict pattern including evaluation of the result.
+
+It does this for each pipeline-fn given and each pipeline gets evaluates using each of the give test/train splits.
+
+This can be used to implement varoius cross-validation strategies, just as hold, k-fold and others.
+
+Each pipeline is typically a variation of a certian standrt pipeline, 
+and encapluslates therefore individual trials with the goal to find teh best model.
+
+This is often called hyper-parameter tuning. But here we do it for all options of the pipeline, and not only for the hyper-parameters of the model itself.
+
+It is of cours possible to just have a single pipline function in the sequnence. Then a single model will be trained.
+
+The different pipeline-fn are completely indepedent from each other and can contain the same model, different models, or anything the developper codes.
+Very often they are "variations" of each other, but this is not required.
+
+
+## Metamorph
+
+The pipeline functions passed into `evaluate-pipelines` need to be metamorhp compliant as explained here: 
+https://github.com/scicloj/metamorph
+
+'compliant' means simply to adhere to interact with a context map with certain standard keys
+
+A pipeline is a composition of metamorph compliant data transform functions.
+The follwoing projects contain them, and custom ones can be created easely:
+
+- https://github.com/techascent/tech.ml.dataset
+- https://github.com/scicloj/tablecloth
+- https://github.com/techascent/tech.ml
+- https://github.com/scicloj/sklearn-clj
+
+(at present the support for metamorph is in the baseline of the code, but not releases yet)
