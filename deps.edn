@@ -1,0 +1,7 @@
+{:deps {org.clojure/clojure {:mvn/version "1.10.2"}
+        techascent/tech.ml {:mvn/version "5.00-beta-15-SNAPSHOT"}
+        scicloj/metamorph {:mvn/version "0.1.0-alpha1"}
+        scicloj/tablecloth {:mvn/version "5.00-beta-29-pipeline"}
+        techascent/tech.ml.dataset {:mvn/version "5.00-beta-30-SNAPSHOT"}
+
+        }}
