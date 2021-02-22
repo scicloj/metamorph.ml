@@ -8,6 +8,7 @@
             [tech.v3.dataset.metamorph :as ds-mm]
             [tech.v3.dataset.modelling :as ds-mod]
             [tech.v3.ml.gridsearch :as gs]
+
             [tech.v3.ml.loss :as loss]
             [tech.v3.libs.smile.classification]
             [tech.v3.ml.metamorph :as ml-mm]))
@@ -71,37 +72,44 @@
          :split-rule (gs/categorical [:gini :entropy])
          :model-type :smile.classification/random-forest}
 
-        create-pipe-fn (fn[options]
-                         (morph/pipeline
-                          (ds-mm/set-inference-target :species)
-                          (ds-mm/categorical->number cf/categorical)
-                          (fn [ctx]
-                            (assoc ctx :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
-                          (ml-mm/model options)))
+        create-pipe-fn
+        (fn[options]
+          (morph/pipeline
+           (ds-mm/set-inference-target :species)
+           (ds-mm/categorical->number cf/categorical)
+           (fn [ctx]
+             (assoc ctx :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
+           (ml-mm/model options)))
 
-        all-options (gs/sobol-gridsearch grid-search-options)
-        pipe-fn-seq (map create-pipe-fn all-options)
+        all-options-combinations (gs/sobol-gridsearch grid-search-options)
+
+        pipe-fn-seq (map create-pipe-fn all-options-combinations)
+
         train-test-seq (split/split ds :kfold {:k 10})
+
         evaluations (ml-eval/evaluate-pipelines pipe-fn-seq train-test-seq loss/classification-loss)
 
-        evalution-with-lowest-avg-loss
-        (->>
-         (group-by :pipe-fn evaluations)
-         vals
-         (map first)
-         (sort-by :avg-loss)
-         (first))
+
+        ;; evalution-with-lowest-avg-loss
+        ;; (->>
+        ;;  (group-by :pipe-fn evaluations)
+        ;;  vals
+        ;;  (map first)
+        ;;  (sort-by :avg-loss)
+        ;;  (first))
 
         new-ds (ds/sample ds 10 {:seed 1234} )
 
         predictions
-        (->   ((evalution-with-lowest-avg-loss :pipe-fn)
-               (merge (evalution-with-lowest-avg-loss :fitted-ctx)
-                      {:metamorph/data new-ds
-                       :metamorph/mode :transform}))
-              (:metamorph/data)
-              (ds-mod/column-values->categorical :species)
-              seq)]
+        (ml-eval/predict-on-best-model evaluations new-ds)
+        ;; (->   ((evalution-with-lowest-avg-loss :pipe-fn)
+        ;;        (merge (evalution-with-lowest-avg-loss :fitted-ctx)
+        ;;               {:metamorph/data new-ds
+        ;;                :metamorph/mode :transform}))
+        ;;       (:metamorph/data)
+        ;;       (ds-mod/column-values->categorical :species)
+        ;;       seq)
+        ]
 
     (is (= ["versicolor"
             "versicolor"
