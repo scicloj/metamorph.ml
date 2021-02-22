@@ -4,19 +4,20 @@ Evaluation function of metamorph based ml pipelines
 
 ## Main idea
 
-This library is based on the idea, that in machine learing model evaluations,
+This library is based on the idea, that in machine learning model evaluations,
 we often do not want to tune only the model and its hyperparameters,
 but the whole data transformation pipeline.
 
 It unifies the often seperated concerns of data preprocessing + 
 hyper-parameter tuning.
 
-In a lot of areas of machine learining, certain aspect of the 
+In a lot of areas of machine learning, certain aspect of the 
 pre-processing needed to be tuned (by trying), as not clear-cut decisions exists.
 
 One example could be the number of dimenssion in PCA or the vocabulary size in a NLP ML model.
+But it can be as well, the "boolean" alternative, if stemming should be used or not.
 
-This alibrary allows exactly this, namely hyper-tune an arbitraty complex data transformtion pipeline.
+This library allows exactly this, namely hyper-tune an arbitraty complex data transformtion pipeline.
 
 
 ## Quick start
@@ -100,7 +101,7 @@ https://github.com/techascent/tech.ml/blob/38f523a7cea6465f639df6fc4eecd6b3f4de6
 
 So for each pipeline-fn one model will be trained.
 
-It does this for each pipeline-fn given and each pipeline gets evaluates using each of the given test/train splits.
+It does this for each pipeline-fn given and each pipeline gets evaluated using each of the given test/train splits.
 
 This can be used to implement various cross-validation strategies, just as holdout, k-fold and others.
 
@@ -114,14 +115,38 @@ It is of course possible to just have a single pipline function in the sequnence
 The different pipeline-fn are completely indepedent from each other and can contain the same model, different models, or anything the developper codes.
 Very often they are "variations" of each other, but this is not required.
 
-`evaluates-pipelines` returns then a list of #pipeline-fn x  #cross-validation-splits . This is as well the total number of models trained.
+This librray does not contain any code to create metamorph pipelines including their variations.
+
+This can be done in various ways, from hand coding each pipelne  or having a pipelne cteation function  over using grid search libraries:
+https://github.com/techascent/tech.ml/blob/38f523a7cea6465f639df6fc4eecd6b3f4de69d0/src/tech/v3/ml/gridsearch.clj#L111
+
+Pipelines can be created as well declarative based on maps, see here: 
+https://scicloj.github.io/tablecloth/index.html#Declarative
+https://github.com/scicloj/tablecloth/blob/pipelines/src/tablecloth/pipeline.clj
+
+The train/test split sequence can s well be genrated in any way. It need to be a sequecne of maps contain a "tech.ml.dataset" 
+at key :train an dan other at :test. These will be used to train / predict and evaulate one pipeline.
+
+
+`evaluates-pipelines` returns then a list of #pipeline-fn x  #cross-validation-splits evaluation result. This is as well the total number of models trained.
+
 Each evaluation result contains:
 - the transformed dataset
-- the fiited pipeline (including the trained model)
+- the fitted pipeline context(including the trained model and the dataset at end of pipeline)
+- the predicted pipline context (including the predition dataset)
+- the ground trueth
+- the pipeline-fn
+- the loss of this model evaluation
+- average loss of this pipeline (over all train/test splits)
+
+This returned information is self-contained, as the pipeline-fn should manipulated exclusively the dataset and the available pipeline context.
+This means the function can be re-executed simply on new data.
+
+This is due to the metamorph approach, which keeps all input/output of the pipeline inside of the context
 
 ## Metamorph
 
-The pipeline functions passed into `evaluate-pipelines` need to be metamorhp compliant as explained here: 
+The pipeline functions passed into `evaluate-pipelines` need to be metamorph compliant as explained here: 
 https://github.com/scicloj/metamorph
 
 'compliant' means simply to adhere to interact with a context map with certain standard keys
