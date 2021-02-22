@@ -4,9 +4,7 @@
             [tech.v3.dataset.column-filters :as cf]
             [tech.v3.datatype.errors :as errors]
             [tech.v3.dataset.modelling :as ds-mod]
-
-            [pppmap.core :as ppp]
-            ))
+            [pppmap.core :as ppp]))
 
 (defn calc-ctx-with-loss [pipeline-fn loss-fn train-ds test-ds]
   (let [fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})

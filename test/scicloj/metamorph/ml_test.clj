@@ -59,7 +59,44 @@
          (ds-mod/column-values->categorical :species))]
 
     (is (= ["versicolor" "versicolor" "virginica" "versicolor" "virginica" "setosa" "virginica" "virginica" "versicolor" "versicolor" ]
-         predictions))))
+           predictions))))
+
+(deftest evaluate-pipelines-without-model
+  (let [;;  the data
+        ds (ds/->dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+        pipe-fn
+        (morph/pipeline
+         (ds-mm/set-inference-target :species)
+         (ds-mm/categorical->number cf/categorical)
+         (fn [ctx]
+           (assoc ctx
+                  :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx)))))
+        train-split-seq (split/split ds :holdout)
+        pipe-fn-seq [pipe-fn]
+
+        evaluations (ml-eval/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss)
+        best-fitted-context  (-> evaluations first :fitted-ctx)
+        best-pipe-fn         (-> evaluations first :pipe-fn)
+
+
+        new-ds (-> (ds/sample ds 3 {:seed 1234} )
+                            (ds/add-or-update-column (ds/new-column :species (repeat 3  "setosa" ) {:categorical? true}) )
+                            (ds-mod/set-inference-target :species)
+                            )
+        predictions
+        (->
+         (best-pipe-fn
+          (merge best-fitted-context
+                 {:metamorph/data new-ds
+                  :metamorph/mode :transform}))
+         (:metamorph/data)
+         (ds-mod/column-values->categorical :species)
+         )]
+
+    (is (= ["setosa" "setosa" "setosa" ]
+           predictions))
+    )
+  )
 
 
 
@@ -89,26 +126,12 @@
 
         evaluations (ml-eval/evaluate-pipelines pipe-fn-seq train-test-seq loss/classification-loss)
 
-
-        ;; evalution-with-lowest-avg-loss
-        ;; (->>
-        ;;  (group-by :pipe-fn evaluations)
-        ;;  vals
-        ;;  (map first)
-        ;;  (sort-by :avg-loss)
-        ;;  (first))
-
-        new-ds (ds/sample ds 10 {:seed 1234} )
+        new-ds (-> (ds/sample ds 10 {:seed 1234} )
+                   (ds/add-or-update-column (ds/new-column :species (repeat 10  "setosa" ) {:categorical? true}) )
+                   )
 
         predictions
         (ml-eval/predict-on-best-model evaluations new-ds)
-        ;; (->   ((evalution-with-lowest-avg-loss :pipe-fn)
-        ;;        (merge (evalution-with-lowest-avg-loss :fitted-ctx)
-        ;;               {:metamorph/data new-ds
-        ;;                :metamorph/mode :transform}))
-        ;;       (:metamorph/data)
-        ;;       (ds-mod/column-values->categorical :species)
-        ;;       seq)
         ]
 
     (is (= ["versicolor"
