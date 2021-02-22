@@ -1,4 +1,4 @@
-(ns sciloj.evaluation-test
+(ns scicloj.metamorph.ml-test
   (:require  [clojure.test :refer [is deftest]]
              [scicloj.metamorph.core :as morph]
              [tech.v3.libs.smile.classification]

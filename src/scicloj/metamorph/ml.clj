@@ -1,8 +1,10 @@
 (ns scicloj.metamorph.ml
   (:require [tech.v3.dataset :as ds]
-           [tech.v3.datatype.functional :as dfn]
+            [tech.v3.datatype.functional :as dfn]
             [tech.v3.dataset.column-filters :as cf]
-            [tech.v3.datatype.errors :as errors]))
+            [tech.v3.datatype.errors :as errors]
+            [pppmap.core :as ppp]
+            ))
 
 (defn calc-ctx-with-loss [pipeline-fn loss-fn train-ds test-ds]
   (let [fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
@@ -19,27 +21,25 @@
 
 
 
+
 (defn evaluate-pipelines [pipe-fn-seq
-                      train-test-split-seq
-                      loss-fn]
-  (->>
-   (for [pipe-fn pipe-fn-seq ]
-     (let [split-eval-result
-           (for [train-test-split train-test-split-seq]
-             (let [{:keys [train test]} train-test-split]
-               (assoc (calc-ctx-with-loss pipe-fn loss-fn train test)
-                      :pipe-fn pipe-fn)))
+                          train-test-split-seq
+                          loss-fn]
+  (->> pipe-fn-seq
+       (ppp/map-with-progress
+        "evaluate pipelines"
+        (fn [pipe-fn]
+          (let [split-eval-results
+                (for [train-test-split train-test-split-seq]
+                  (let [{:keys [train test]} train-test-split]
+                    (assoc (calc-ctx-with-loss pipe-fn loss-fn train test)
+                           :loss-fn loss-fn
+                           :pipe-fn pipe-fn)))
 
-           loss-vec (mapv :loss split-eval-result)
-           {min-loss :min
-            max-loss :max
-            avg-loss :mean} (dfn/descriptive-statistics [:min :max :mean] loss-vec)
+                loss-vec (mapv :loss split-eval-results)
+                loss-vec-stats (dfn/descriptive-statistics [:min :max :mean] loss-vec)]
+            (map
+             #(merge % loss-vec-stats)
+             split-eval-results))))
 
-           ]
-       (map
-        #(assoc %
-                :min-loss min-loss
-                :max-loss max-loss
-                :avg-loss avg-loss)
-        split-eval-result)))
-   flatten))
+       flatten))
