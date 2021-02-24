@@ -1,6 +1,6 @@
 # metamorph.ml
 
-Evaluation functions for [metamorph](https://github.com/scicloj/metamorph) based machine learining pipelines
+Evaluation functions for [metamorph](https://github.com/scicloj/metamorph) based machine learning pipelines
 
 ## Main idea
 
