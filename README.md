@@ -5,13 +5,13 @@ Evaluation function of metamorph based ml pipelines
 ## Main idea
 
 This library is based on the idea, that in machine learning model evaluations,
-we often do not want to tune only the model and its hyperparameters,
+we often do not want to tune only the model and its hyper-parameters,
 but the whole data transformation pipeline.
 
-It unifies the often seperated concerns of data preprocessing + 
+It unifies the often seperated concerns of data preprocessing and
 hyper-parameter tuning.
 
-In a lot of areas of machine learning, certain aspecst of the 
+In a lot of areas of machine learning, certain aspects of the data
 pre-processing needed to be tuned (by trying), as no clear-cut decisions exists.
 
 One example could be the number of dimensions in PCA or the vocabulary size in a NLP ML model.
@@ -25,8 +25,8 @@ This library allows exactly this, namely hyper-tune an arbitraty complex data tr
 
 If you just want to see code, here it is:
 
-Quite some libraies are needed for a complete test case, 
-see the deps.edn file in alias "test"
+Some libraries are needed for a complete test case, 
+see the deps.edn file in alias "test".
 
 ```clojure
 (require
@@ -93,18 +93,22 @@ see the deps.edn file in alias "test"
 ## Evaluate pipelines
 
 This library contains very little code itself, just one function
-`evaluate-pipelines` which takes a sequence of metamorph compliant pipeline-fn (= each function is a series of steps to transform the raw data and a model step)
-It executes each pipeline in mode :fit :transform, which a model step translates into a train/predict pattern including evaluation of the result.
+`evaluate-pipelines` which takes a sequence of metamorph compliant pipeline-fn (= each pipeline is a series of steps to transform the raw data and a model step)
+
+It executes each pipeline first in :mode :fit and then in mode:transform, as specified by [metamorph]
+which a pipeline step conaining a model should then translates into a train/predict pattern including evaluation of the result.
 
 The last step of the pipelne function should be a "model", so something which can be trained / predicted.
+
 This library does not care, what exactly is the last step.
-It calls the whole pipeline in mode :fit and mode :transform and the model stee, is supposed to do the right thing.
-Here is such a well behaving model function from `tech.ml`: 
+It calls the whole pipeline in mode :fit and mode :transform and the model step, is supposed to do the right thing.
+
+Here is a well behaving model function from `tech.ml`: 
 https://github.com/techascent/tech.ml/blob/38f523a7cea6465f639df6fc4eecd6b3f4de69d0/src/tech/v3/ml/metamorph.clj#L12
 
 So for each pipeline-fn one model will be trained and evaluated.
 
-It does this for each pipeline-fn given and each pipeline gets evaluated using each of the given test/train splits.
+It does this for each pipeline-fn given and each pipeline-fn gets evaluated using each of the given test/train splits.
 
 This can be used to implement various cross-validation strategies, just as holdout, k-fold and others.
 
@@ -118,10 +122,22 @@ It is of course possible to just have a single pipline function in the sequence.
 The different pipeline-fn are completely indepedent from each other and can contain the same model, different models, or anything the developper codes.
 Very often they are "variations" of each other, but this is not required.
 
-This librray does not contain any code to create metamorph pipelines including their variations.
+This libray does not contain code to create metamorph pipelines including their variations.
 
 This can be done in various ways, from hand coding each pipeline  or having a pipelne creation function  over to using grid search libraries:
 https://github.com/techascent/tech.ml/blob/38f523a7cea6465f639df6fc4eecd6b3f4de69d0/src/tech/v3/ml/gridsearch.clj#L111
+
+A simple pipeline looks like thgis:
+
+```clojure
+ (morph/pipeline
+         (ds-mm/set-inference-target :species)
+         (ds-mm/categorical->number cf/categorical)
+         (fn [ctx]
+           (assoc ctx
+                  :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
+         (ml-mm/model {:model-type :smile.classification/random-forest}))
+```
 
 Pipelines can be created as well declarative based on maps, see here: 
 https://scicloj.github.io/tablecloth/index.html#Declarative
@@ -131,21 +147,24 @@ The train/test split sequence can as well be genrated in any way. It need to be 
 at key :train and an other dataset  at :test. These will be used to train / predict and evaluate one pipeline.
 
 
-`evaluates-pipelines` returns then a list of #pipeline-fn x  #cross-validation-splits evaluation results. This is as well the total number of models trained.
+`evaluates-pipelines` returns then a seq  of model evaluations.
+It is equlas to #pipeline-fn x  #cross-validation-splits evaluation results. This is as well the total number of models trained in total.
 
 Each evaluation result contains a map with these keys:
 
-- :fitted-ctx        - the fitted pipeline context(including the trained model and the dataset at end of pipeline) after the pipleine was run in mode :fit
-- :prediction-context - the predicted pipline context (including the predition dataset) after pipeline was run in mode :transform
-- :scicloj.metamorph.ml/target-ds   the ground truth
-- :pipe-fn - the pipeline-fn doing the full transformation including trin/predict
-- :loss the loss of this model evaluation
-- :avg-loss average/min/max loss of this pipe-fn (over all train/test splits)
-- :min-loss  
-- :max-loss 
+key | explanation
+------ | --------
+ :fitted-ctx  | the fitted pipeline context(including the trained model and the dataset at end of pipeline) after the pipleine was run in mode :fit 
+ :prediction-context | the predicted pipline context (including the predition dataset) after pipeline was run in mode :transform
+ :scicloj.metamorph.ml/target-ds  | A dataset containing the ground truth
+ :pipe-fn | the pipeline-fn doing the full transformation including trin/predict
+ :loss | the loss of this model evaluation
+ :avg-loss | average loss of this pipe-fn (averaged over the loss of all train/test splits)
+ :min-loss | min loss of this pipe-fn
+ :max-loss | maxe loss of this pipe-fn
 
 This returned information is self-contained, as the pipeline-fn should manipulated exclusively the dataset and the available pipeline context.
-This means the :pipe-fn function can be re-executed simply on new data.
+This means, the :pipe-fn functions can be re-executed simply on new data.
 
 This is due to the metamorph approach, which keeps all input/output of the pipeline inside of the context / dataset.
 
@@ -160,8 +179,8 @@ A pipeline-fn is a composition of metamorph compliant data transform functions.
 
 The following projects contain them, for both:
 - dataset manipulations
-- train/predict of models
-- 
+- train/prediction of models
+ 
 and custom ones can be created easely:
 
 - https://github.com/techascent/tech.ml.dataset
