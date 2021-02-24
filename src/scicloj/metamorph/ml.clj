@@ -64,6 +64,9 @@
 (defn predict-on-best-model [evaluations new-ds]
   "Helper function for the very common case, to consider the pipeline with lowest average loss being the best.
    It allows to make a prediction on new data, given the list of all evaluation results.
+  
+   `evaluations` The list of pipeline -fn evaluations as returned from `evaluate-pipelines`.
+   `new-ds` Dataset with the data to run teh best model from evaluations againts
  "
   (let [evalution-with-lowest-avg-loss
         (->>
