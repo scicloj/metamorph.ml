@@ -26,19 +26,22 @@
   "Evaluates performance of a seq of metamorph pipelines, which are suposed to have a ml model as last step.
    It calculates the loss, given as `loss-fn` of each pipeline in `pipeline-fn-seq` using all the train-test splits given in
    `train-test-split-seq`.
-   `pipeline-fn-seq` need to be a sequence of maps containing the  train and dataset (being tech.ml.dataset) at keys :train and :test.
+
+   `train-test-split-seq` need to be a sequence of maps containing the  train and dataset (being tech.ml.dataset) at keys :train and :test.
    `pipe-fn-seq` need to be  sequence of functions which follow the metamorph approach. They should take as input the metamorph context map,
     which has the dataset under key :metamorph/data, manipulate it as needed for the transformation pipeline and read and write only to the
     context as needed.
-  This function runs the pipeline ones in mode  :fit and ones in mode :transform.
-  The pipeline-fn need to set as well the ground truth of the target variable into a key :scicloj.metamorph.ml/target-ds
-  See here for the simples way to set this up: https://github.com/behrica/metamorph.ml/blob/main/README.md
+
+  This function runs the pipeline  in mode  :fit and  in mode :transform for each pipeline-fn in `pipe-fn-seq` for each split in `train-test-split-seq`.
+  
+  The pipeline-fns need to set as well the ground truth of the target variable into a specific key :scicloj.metamorph.ml/target-ds
+  See here for the simplest way to set this up: https://github.com/behrica/metamorph.ml/blob/main/README.md
   "
   [pipe-fn-seq
    train-test-split-seq
    loss-fn]
   (->> pipe-fn-seq
-       (ppp/map-with-progress
+       (ppp/pmap-with-progress
         "evaluate pipelines"
         (fn [pipe-fn]
           (let [split-eval-results
