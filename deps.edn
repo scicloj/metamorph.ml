@@ -1,5 +1,5 @@
 {:deps {org.clojure/clojure {:mvn/version "1.10.2"}
-        techascent/tech.ml.dataset {:mvn/version "5.00-beta-30-SNAPSHOT"}
+        techascent/tech.ml.dataset {:mvn/version "5.01"}
         pppmap/pppmap              {:mvn/version "0.2.1"}
         }
  :aliases
@@ -8,7 +8,7 @@
    :extra-deps {
                 scicloj/metamorph {:mvn/version "0.1.0-alpha1"}
                 scicloj/tablecloth {:mvn/version "5.00-beta-29-pipeline"}
-                techascent/tech.ml {:mvn/version "5.00-beta-15-SNAPSHOT"}
+                techascent/tech.ml {:mvn/version "5.01"}
                 }
    }
   :runner {:extra-deps {com.cognitect/test-runner
