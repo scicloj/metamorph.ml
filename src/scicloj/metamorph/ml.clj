@@ -23,16 +23,17 @@
 
 
 (defn evaluate-pipelines
-  "Evaluates performance of a seq of metamorph pipelines, which are suposed to have a ml model as last step.
+  "Evaluates performance of a seq of metamorph pipelines, which are suposed to have a  model as last step, which behaves correctly  in mode :fit and 
+   :transform
    It calculates the loss, given as `loss-fn` of each pipeline in `pipeline-fn-seq` using all the train-test splits given in
    `train-test-split-seq`.
 
-   `train-test-split-seq` need to be a sequence of maps containing the  train and dataset (being tech.ml.dataset) at keys :train and :test.
+   `train-test-split-seq` need to be a sequence of maps containing the  train and test dataset (being tech.ml.dataset) at keys :train and :test.
    `pipe-fn-seq` need to be  sequence of functions which follow the metamorph approach. They should take as input the metamorph context map,
     which has the dataset under key :metamorph/data, manipulate it as needed for the transformation pipeline and read and write only to the
     context as needed.
 
-  This function runs the pipeline  in mode  :fit and  in mode :transform for each pipeline-fn in `pipe-fn-seq` for each split in `train-test-split-seq`.
+  This function runs the pipeline  in mode  :fit and in mode :transform for each pipeline-fn in `pipe-fn-seq` for each split in `train-test-split-seq`.
   
   The pipeline-fns need to set as well the ground truth of the target variable into a specific key :scicloj.metamorph.ml/target-ds
   See here for the simplest way to set this up: https://github.com/behrica/metamorph.ml/blob/main/README.md
@@ -63,6 +64,9 @@
 (defn predict-on-best-model [evaluations new-ds]
   "Helper function for the very common case, to consider the pipeline with lowest average loss being the best.
    It allows to make a prediction on new data, given the list of all evaluation results.
+  
+   `evaluations` The list of pipeline -fn evaluations as returned from `evaluate-pipelines`.
+   `new-ds` Dataset with the data to run teh best model from evaluations againts
  "
   (let [evalution-with-lowest-avg-loss
         (->>

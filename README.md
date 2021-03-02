@@ -19,7 +19,7 @@ But it can be as well a "boolean" alternative, such as if stemming should be use
 
 This library allows exactly this, namely hyper-tune an arbitraty complex data transformtion pipeline.
 
-
+Several code examples for metamorph are available in this reop: [metamorph-examples](https://github.com/scicloj/metamorph-examples)
 
 ## Quick start
 
