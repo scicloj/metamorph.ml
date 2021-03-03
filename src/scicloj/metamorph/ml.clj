@@ -6,18 +6,18 @@
             [tech.v3.dataset.modelling :as ds-mod]
             [pppmap.core :as ppp]))
 
-(defn calc-ctx-with-loss [pipeline-fn loss-fn train-ds test-ds]
+(defn calc-ctx-with-metric [pipeline-fn metric-fn train-ds test-ds]
   (let [fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data test-ds}) )
         predictions (:metamorph/data predicted-ctx)
         target-colname (first (ds/column-names (cf/target (:metamorph/data fitted-ctx) )))
         true-target (get-in predicted-ctx [::target-ds target-colname])
         _ (errors/when-not-error true-target (str  "Pipeline context need to have the true prediction target as a dataset at key " ::target-ds))
-        loss (loss-fn (predictions target-colname)
+        metric (metric-fn (predictions target-colname)
                       true-target)]
     {:fitted-ctx fitted-ctx
      :prediction-ctx predicted-ctx
-     :loss loss}))
+     :metric metric}))
 
 
 
@@ -40,7 +40,7 @@
   "
   [pipe-fn-seq
    train-test-split-seq
-   loss-fn]
+   metric-fn]
   (->> pipe-fn-seq
        (ppp/pmap-with-progress
         "evaluate pipelines"
@@ -48,39 +48,47 @@
           (let [split-eval-results
                 (for [train-test-split train-test-split-seq]
                   (let [{:keys [train test]} train-test-split]
-                    (assoc (calc-ctx-with-loss pipe-fn loss-fn train test)
-                           :loss-fn loss-fn
+                    (assoc (calc-ctx-with-metric pipe-fn metric-fn train test)
+                           :metric-fn metric-fn
                            :pipe-fn pipe-fn)))
 
-                loss-vec (mapv :loss split-eval-results)
-                loss-vec-stats (dfn/descriptive-statistics [:min :max :mean] loss-vec)]
+                metric-vec (mapv :metric split-eval-results)
+                metric-vec-stats (dfn/descriptive-statistics [:min :max :mean] metric-vec)]
             (map
-             #(merge % loss-vec-stats)
+             #(merge % metric-vec-stats)
              split-eval-results))))
 
-       flatten))
+       flatten
+       doall
+       ))
 
 
-(defn predict-on-best-model [evaluations new-ds]
+(defn predict-on-best-model [evaluations new-ds loss-or-accuracy]
   "Helper function for the very common case, to consider the pipeline with lowest average loss being the best.
    It allows to make a prediction on new data, given the list of all evaluation results.
   
-   `evaluations` The list of pipeline -fn evaluations as returned from `evaluate-pipelines`.
+   `evaluations` The list of pipeline-fn evaluations as returned from `evaluate-pipelines`.
    `new-ds` Dataset with the data to run teh best model from evaluations againts
+   `loss-or-accuracy` : either :loss or :accuracy, if the metrics is loos or accuracy
+
  "
-  (let [evalution-with-lowest-avg-loss
+  (let [sorted-evals
         (->>
          (group-by :pipe-fn evaluations)
          vals
          (map first)
-         (sort-by :avg-loss)
-         (first))
-        fitted-ctx (evalution-with-lowest-avg-loss :fitted-ctx)
-        target-column  (first (ds-mod/inference-target-column-names  (:metamorph/data fitted-ctx) ))
-        ]
+         (sort-by :mean))
+
+        evalution-with-best-avg-metric
+        (case loss-or-accuracy
+          :loss (first sorted-evals)
+          :accuracy (last sorted-evals)
+          )
+        fitted-ctx (evalution-with-best-avg-metric :fitted-ctx)
+        target-column  (first (ds-mod/inference-target-column-names  (:metamorph/data fitted-ctx) ))]
 
   
-    (->   ((evalution-with-lowest-avg-loss :pipe-fn)
+    (->   ((evalution-with-best-avg-metric :pipe-fn)
            (merge fitted-ctx
                   {:metamorph/data new-ds
                    :metamorph/mode :transform}))
