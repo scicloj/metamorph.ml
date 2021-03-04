@@ -28,7 +28,21 @@
     ))
 
 
-
+(defn- evaluate-pipeline [pipe-fn metric-fn train-test-split-seq]
+  (let [split-eval-results
+        (->>
+         (for [train-test-split train-test-split-seq]
+           (let [{:keys [train test]} train-test-split]
+             (assoc (calc-ctx-with-metric pipe-fn metric-fn train test)
+                    :metric-fn metric-fn
+                    :pipe-fn pipe-fn)))
+         (remove #(nil? (:metric %))))
+        metric-vec (mapv :metric split-eval-results)
+        metric-vec-stats (dfn/descriptive-statistics [:min :max :mean] metric-vec)]
+    (map
+     #(merge % metric-vec-stats)
+     split-eval-results))
+  )
 
 (defn evaluate-pipelines
   "Evaluates performance of a seq of metamorph pipelines, which are suposed to have a  model as last step, which behaves correctly  in mode :fit and 
@@ -46,32 +60,12 @@
   The pipeline-fns need to set as well the ground truth of the target variable into a specific key :scicloj.metamorph.ml/target-ds
   See here for the simplest way to set this up: https://github.com/behrica/metamorph.ml/blob/main/README.md
   "
-  [pipe-fn-seq
-   train-test-split-seq
-   metric-fn]
+  [pipe-fn-seq train-test-split-seq metric-fn]
   (->> pipe-fn-seq
-       (ppp/pmap-with-progress
-        "evaluate pipelines"
-        (fn [pipe-fn]
-          (let [split-eval-results
-                (->>
-                 (for [train-test-split train-test-split-seq]
-                   (let [{:keys [train test]} train-test-split]
-                     (assoc (calc-ctx-with-metric pipe-fn metric-fn train test)
-                            :metric-fn metric-fn
-                            :pipe-fn pipe-fn)))
-                 (remove #(nil? (:metric %)))
-                 )
-
-                metric-vec (mapv :metric split-eval-results)
-                metric-vec-stats (dfn/descriptive-statistics [:min :max :mean] metric-vec)]
-            (map
-             #(merge % metric-vec-stats)
-             split-eval-results))))
-
+       (ppp/pmap-with-progress "evaluate pipelines"
+        (fn [pipe-fn] (evaluate-pipeline pipe-fn metric-fn train-test-split-seq)))
        flatten
-       doall
-       ))
+       doall))
 
 
 (defn predict-on-best-model [evaluations new-ds loss-or-accuracy]

@@ -131,7 +131,7 @@
                    )
 
         predictions
-        (ml-eval/predict-on-best-model evaluations new-ds)
+        (ml-eval/predict-on-best-model evaluations new-ds :loss)
         ]
 
     (is (= ["versicolor"
