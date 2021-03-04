@@ -7,17 +7,25 @@
             [pppmap.core :as ppp]))
 
 (defn calc-ctx-with-metric [pipeline-fn metric-fn train-ds test-ds]
-  (let [fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
-        predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data test-ds}) )
-        predictions (:metamorph/data predicted-ctx)
-        target-colname (first (ds/column-names (cf/target (:metamorph/data fitted-ctx) )))
-        true-target (get-in predicted-ctx [::target-ds target-colname])
-        _ (errors/when-not-error true-target (str  "Pipeline context need to have the true prediction target as a dataset at key " ::target-ds))
-        metric (metric-fn (predictions target-colname)
-                      true-target)]
-    {:fitted-ctx fitted-ctx
-     :prediction-ctx predicted-ctx
-     :metric metric}))
+  (try
+    (let [fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
+          predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data test-ds}) )
+          predictions (:metamorph/data predicted-ctx)
+          target-colname (first (ds/column-names (cf/target (:metamorph/data fitted-ctx) )))
+          true-target (get-in predicted-ctx [::target-ds target-colname])
+          _ (errors/when-not-error true-target (str  "Pipeline context need to have the true prediction target as a dataset at key " ::target-ds))
+          metric (metric-fn (predictions target-colname)
+                            true-target)]
+      {:fitted-ctx fitted-ctx
+       :prediction-ctx predicted-ctx
+       :metric metric})
+    (catch Exception e
+      (do
+        (println e)
+        {:fitted-ctx nil
+         :prediction-ctx nil
+         :metric nil}))
+    ))
 
 
 
@@ -46,11 +54,14 @@
         "evaluate pipelines"
         (fn [pipe-fn]
           (let [split-eval-results
-                (for [train-test-split train-test-split-seq]
-                  (let [{:keys [train test]} train-test-split]
-                    (assoc (calc-ctx-with-metric pipe-fn metric-fn train test)
-                           :metric-fn metric-fn
-                           :pipe-fn pipe-fn)))
+                (->>
+                 (for [train-test-split train-test-split-seq]
+                   (let [{:keys [train test]} train-test-split]
+                     (assoc (calc-ctx-with-metric pipe-fn metric-fn train test)
+                            :metric-fn metric-fn
+                            :pipe-fn pipe-fn)))
+                 (remove #(nil? (:metric %)))
+                 )
 
                 metric-vec (mapv :metric split-eval-results)
                 metric-vec-stats (dfn/descriptive-statistics [:min :max :mean] metric-vec)]
