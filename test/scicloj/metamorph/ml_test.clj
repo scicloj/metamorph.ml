@@ -37,7 +37,7 @@
         pipe-fn-seq [pipe-fn]
 
         evaluations
-        (ml-eval/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss)
+        (ml-eval/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)
 
 
         ;; we have only one result
@@ -74,7 +74,7 @@
         train-split-seq (split/split->seq ds :holdout)
         pipe-fn-seq [pipe-fn]
 
-        evaluations (ml-eval/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss)
+        evaluations (ml-eval/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)
         best-fitted-context  (-> evaluations first :fitted-ctx)
         best-pipe-fn         (-> evaluations first :pipe-fn)
 
@@ -125,7 +125,7 @@
         train-test-seq (split/split->seq ds :kfold {:k 10})
 
         evaluations
-        (ml-eval/evaluate-pipelines pipe-fn-seq train-test-seq loss/classification-loss 1 :loss)
+        (ml-eval/evaluate-pipelines pipe-fn-seq train-test-seq loss/classification-loss :loss)
 
 
         new-ds (-> (ds/sample ds 10 {:seed 1234} )
