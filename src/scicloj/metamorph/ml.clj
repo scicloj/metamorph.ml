@@ -70,10 +70,17 @@
    It calculates the loss, given as `loss-fn` of each pipeline in `pipeline-fn-seq` using all the train-test splits given in
    `train-test-split-seq`.
 
-   `train-test-split-seq` need to be a sequence of maps containing the  train and test dataset (being tech.ml.dataset) at keys :train and :test.
    `pipe-fn-seq` need to be  sequence of functions which follow the metamorph approach. They should take as input the metamorph context map,
     which has the dataset under key :metamorph/data, manipulate it as needed for the transformation pipeline and read and write only to the
     context as needed.
+   `train-test-split-seq` need to be a sequence of maps containing the  train and test dataset (being tech.ml.dataset) at keys :train and :test.
+   `metric-fn` Metric function to use. Typically comming from `tech.v3.ml.loss`
+   `loss-or-accuracy` If the metric-fn is a loss or accuracy calculation. Can be :loss or :accuracy.
+   `n-slices`  Decides how many results are returned. By default one evaluation results for each pipeline-fn is returned.
+
+    In case of a larger number of pipelines, this can become a memory issue. Setting n-slices to lower value, returns max n-slices models,
+    where each model is the best (according to metyric-fn and loss-or-accuracy) of its slice.
+
 
   This function runs the pipeline  in mode  :fit and in mode :transform for each pipeline-fn in `pipe-fn-seq` for each split in `train-test-split-seq`.
   
@@ -103,7 +110,7 @@
            ))
         doall))
   ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy]
-   (evaluate-pipelines pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy 1))
+   (evaluate-pipelines pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy Integer/MAX_VALUE))
   )
 
 (defn predict-on-best-model [evaluations new-ds loss-or-accuracy]
