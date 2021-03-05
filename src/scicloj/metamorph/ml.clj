@@ -6,6 +6,16 @@
             [tech.v3.dataset.modelling :as ds-mod]
             [pppmap.core :as ppp]))
 
+
+(defn slice
+  "Divide coll into n approximately equal slices."
+  [n coll]
+  (loop [num n, slices [], items (vec coll)]
+    (if (empty? items)
+      slices
+      (let [size (Math/ceil (/ (count items) num))]
+        (recur (dec num) (conj slices (subvec items 0 size)) (subvec items size))))))
+
 (defn calc-ctx-with-metric [pipeline-fn metric-fn train-ds test-ds]
   (try
     (let [fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
@@ -28,7 +38,7 @@
     ))
 
 
-(defn- evaluate-pipeline [pipe-fn metric-fn train-test-split-seq]
+(defn evaluate-pipeline [pipe-fn train-test-split-seq metric-fn loss-or-accuracy]
   (let [split-eval-results
         (->>
          (for [train-test-split train-test-split-seq]
@@ -38,10 +48,20 @@
                     :pipe-fn pipe-fn)))
          (remove #(nil? (:metric %))))
         metric-vec (mapv :metric split-eval-results)
-        metric-vec-stats (dfn/descriptive-statistics [:min :max :mean] metric-vec)]
-    (map
-     #(merge % metric-vec-stats)
-     split-eval-results))
+        metric-vec-stats (dfn/descriptive-statistics [:min :max :mean] metric-vec)
+        sorted-evaluations
+        (->>
+         (map
+          #(merge % metric-vec-stats)
+          split-eval-results)
+         (sort-by :metric))
+
+        ]
+    (case loss-or-accuracy
+                       :loss (first sorted-evaluations)
+                       :accuracy (last sorted-evaluations)
+                       )
+    )
   )
 
 (defn evaluate-pipelines
@@ -60,13 +80,31 @@
   The pipeline-fns need to set as well the ground truth of the target variable into a specific key :scicloj.metamorph.ml/target-ds
   See here for the simplest way to set this up: https://github.com/behrica/metamorph.ml/blob/main/README.md
   "
-  [pipe-fn-seq train-test-split-seq metric-fn]
-  (->> pipe-fn-seq
-       (ppp/pmap-with-progress "evaluate pipelines"
-        (fn [pipe-fn] (evaluate-pipeline pipe-fn metric-fn train-test-split-seq)))
-       flatten
-       doall))
+  ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy n-slices]
+   (->> (slice n-slices pipe-fn-seq)
 
+        (ppp/pmap-with-progress
+         "evaluate pipelines"
+         (fn [pipe-fns]
+           (let [sorted-evals
+                 (->> (mapv #(evaluate-pipeline % train-test-split-seq metric-fn loss-or-accuracy) pipe-fns)
+                      ;; flatten
+                      (sort-by (juxt :mean :metric))
+
+                      )
+
+                 ]
+             (case loss-or-accuracy
+               :loss (first sorted-evals)
+               :accuracy (last sorted-evals)
+               )
+             )
+
+           ))
+        doall))
+  ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy]
+   (evaluate-pipelines pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy 1))
+  )
 
 (defn predict-on-best-model [evaluations new-ds loss-or-accuracy]
   "Helper function for the very common case, to consider the pipeline with lowest average loss being the best.

@@ -31,7 +31,7 @@
          (ml-mm/model {:model-type :smile.classification/random-forest}))
 
         ;;  the simplest split
-        train-split-seq (split/split ds :holdout)
+        train-split-seq (split/split->seq ds :holdout)
 
         ;; one pipe-fn in the seq
         pipe-fn-seq [pipe-fn]
@@ -71,7 +71,7 @@
          (fn [ctx]
            (assoc ctx
                   :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx)))))
-        train-split-seq (split/split ds :holdout)
+        train-split-seq (split/split->seq ds :holdout)
         pipe-fn-seq [pipe-fn]
 
         evaluations (ml-eval/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss)
@@ -102,7 +102,7 @@
 
 (deftest grid-search
   (let [
-        ds(ds/->dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+        ds (ds/->dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
 
         grid-search-options
         {:trees (gs/categorical [10 50 100 500])
@@ -120,19 +120,20 @@
 
         all-options-combinations (gs/sobol-gridsearch grid-search-options)
 
-        pipe-fn-seq (map create-pipe-fn all-options-combinations)
+        pipe-fn-seq (map create-pipe-fn (take 7 all-options-combinations))
 
-        train-test-seq (split/split ds :kfold {:k 10})
+        train-test-seq (split/split->seq ds :kfold {:k 10})
 
-        evaluations (ml-eval/evaluate-pipelines pipe-fn-seq train-test-seq loss/classification-loss)
+        evaluations
+        (ml-eval/evaluate-pipelines pipe-fn-seq train-test-seq loss/classification-loss 1 :loss)
+
 
         new-ds (-> (ds/sample ds 10 {:seed 1234} )
                    (ds/add-or-update-column (ds/new-column :species (repeat 10  "setosa" ) {:categorical? true}) )
                    )
 
         predictions
-        (ml-eval/predict-on-best-model evaluations new-ds :loss)
-        ]
+        (ml-eval/predict-on-best-model evaluations new-ds :loss)]
 
     (is (= ["versicolor"
             "versicolor"

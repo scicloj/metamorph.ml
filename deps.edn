@@ -7,7 +7,7 @@
   {:extra-paths ["test"]
    :extra-deps {
                 scicloj/metamorph {:mvn/version "0.1.0-alpha1"}
-                scicloj/tablecloth {:mvn/version "5.00-beta-29-pipeline"}
+                scicloj/tablecloth {:mvn/version "5.01"}
                 techascent/tech.ml {:mvn/version "5.01"}
                 }
    }
