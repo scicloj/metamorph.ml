@@ -95,19 +95,10 @@
          (fn [pipe-fns]
            (let [sorted-evals
                  (->> (mapv #(evaluate-pipeline % train-test-split-seq metric-fn loss-or-accuracy) pipe-fns)
-                      ;; flatten
-                      (sort-by (juxt :mean :metric))
-
-                      )
-
-                 ]
+                      (sort-by (juxt :mean :metric)))]
              (case loss-or-accuracy
                :loss (first sorted-evals)
-               :accuracy (last sorted-evals)
-               )
-             )
-
-           ))
+               :accuracy (last sorted-evals)))))
         doall))
   ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy]
    (evaluate-pipelines pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy Integer/MAX_VALUE))
