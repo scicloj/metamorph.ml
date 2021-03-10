@@ -1,3 +1,5 @@
+[![Clojars Project](https://img.shields.io/clojars/v/scicloj/metamorph.ml.svg)](https://clojars.org/scicloj/metamorph.ml)
+
 # metamorph.ml
 
 Evaluation functions for [metamorph](https://github.com/scicloj/metamorph) based machine learning pipelines
