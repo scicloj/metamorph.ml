@@ -10,8 +10,8 @@ This library is based on the idea, that in machine learning model evaluations,
 we often do not want to tune only the model and its hyper-parameters,
 but the whole data transformation pipeline.
 
-It unifies the often seperated concerns of tunig of data preprocessing and
-tuining of model hyper-parameters.
+It unifies the often seperated concerns of tuning of data pre-processing and
+tuning of model hyper-parameters.
 
 In a lot of areas of machine learning, certain aspects of the data
 pre-processing needed to be tuned (by trying), as no clear-cut decisions exists.
