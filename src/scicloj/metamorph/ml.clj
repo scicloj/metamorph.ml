@@ -5,10 +5,19 @@
             [tech.v3.dataset.column-filters :as cf]
             [tech.v3.dataset.modelling :as ds-mod]
             [tech.v3.datatype.errors :as errors]
-            [tech.v3.datatype.functional :as dfn])
+            [tech.v3.datatype.functional :as dfn]
+            [scicloj.metamorph.core]
+            [tech.v3.datatype.export-symbols :as exporter]
+            )
   (:import java.util.UUID))
 
-(defn slice
+(exporter/export-symbols scicloj.metamorph.core
+                         ->pipeline
+                         lift
+                         pipeline
+                         )
+
+(defn- slice
   "Divide coll into n approximately equal slices."
   [n coll]
   (loop [num n, slices [], items (vec coll)]
@@ -17,7 +26,7 @@
       (let [size (Math/ceil (/ (count items) num))]
         (recur (dec num) (conj slices (subvec items 0 size)) (subvec items size))))))
 
-(defn calc-ctx-with-metric [pipeline-fn metric-fn train-ds test-ds]
+(defn- calc-ctx-with-metric [pipeline-fn metric-fn train-ds test-ds]
   (try
     (let [fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
           predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data test-ds}) )
