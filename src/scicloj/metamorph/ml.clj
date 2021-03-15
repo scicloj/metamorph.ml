@@ -58,7 +58,6 @@
                     :pipe-fn pipe-fn)))
          (remove #(nil? (:metric %))))
         metric-vec (mapv :metric split-eval-results)
-        _ (println metric-vec)
         metric-vec-stats (dfn/descriptive-statistics [:min :max :mean] metric-vec)
         sorted-evaluations
         (->>

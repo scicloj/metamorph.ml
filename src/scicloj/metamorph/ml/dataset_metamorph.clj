@@ -1,6 +1,8 @@
 (ns scicloj.metamorph.ml.dataset-metamorph
+  (:refer-clojure :exclude [boolean])
   (:require [scicloj.metamorph.ml.dataset]
             [tech.v3.protocols.dataset :as prot])
+
   )
 
 (defn dataset?
