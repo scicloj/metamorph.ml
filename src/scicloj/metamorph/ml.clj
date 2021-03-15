@@ -181,16 +181,6 @@
   [model-kwd]
   (:hyperparameters (options->model-def {:model-type model-kwd})))
 
-(defn identity-preprocess [ds options]
-  {:dataset ds
-  :options options
-     }
-  )
-
-(defn preprocess [dataset options]
-  (let [fn-symbol  (or (options :preprocess-fn) 'scicloj.metamorph.ml/identity-preprocess)
-        fun (requiring-resolve fn-symbol)]
-    (fun dataset options)))
 
 (defn train
   "Given a dataset and an options map produce a model.  The model-type keyword in the
@@ -206,13 +196,10 @@
   [dataset options]
   (let [{:keys [train-fn]} (options->model-def options)
 
-        preprocess-result (preprocess dataset options)
-        preprocessed-dataset (:dataset preprocess-result)
-        feature-ds (cf/feature  preprocessed-dataset)
-        options (merge options (:options preprocess-result))
+        feature-ds (cf/feature  dataset)
         _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
                                  "No features provided")
-        target-ds (cf/target preprocessed-dataset)
+        target-ds (cf/target dataset)
         _ (errors/when-not-error (> (ds/row-count target-ds) 0)
                                  "No target columns provided
 see tech.v3.dataset.modelling/set-inference-target")
@@ -255,9 +242,6 @@ see tech.v3.dataset.modelling/set-inference-target")
     value and values that describe the probability distribution."
   [dataset model]
   (let [{:keys [predict-fn] :as model-def} (options->model-def (:options model))
-        preprocess-result (preprocess dataset (:options model))
-        dataset (:dataset preprocess-result)
-        model (assoc model :options (merge (:options model) (:options preprocess-result)))
         feature-ds (ds/select-columns dataset (:feature-columns model))
         label-columns (:target-columns model)
         thawed-model (thaw-model model model-def)
