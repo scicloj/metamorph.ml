@@ -7,11 +7,11 @@
             [tech.v3.dataset.column-filters :as cf]
             [tech.v3.dataset.metamorph :as ds-mm]
             [tech.v3.dataset.modelling :as ds-mod]
-            [tech.v3.ml.gridsearch :as gs]
+            [scicloj.metamorph.ml.gridsearch :as gs]
 
-            [tech.v3.ml.loss :as loss]
+            [scicloj.metamorph.ml.loss :as loss]
             [tech.v3.libs.smile.classification]
-            [tech.v3.ml.metamorph :as ml-mm]))
+            [scicloj.metamorph.ml.metamorph :as ml-mm]))
 
 
 

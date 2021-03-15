@@ -6,9 +6,10 @@
  {:test
   {:extra-paths ["test"]
    :extra-deps {
-                scicloj/metamorph {:mvn/version "0.1.0-alpha1"}
+                scicloj/metamorph {:mvn/version "0.1.0-alpha2"}
                 scicloj/tablecloth {:mvn/version "5.01"}
-                techascent/tech.ml {:mvn/version "5.01"}
+                techascent/tech.ml.smile {:mvn/version "5.02-SNAPSHOT"}
+                ;; techascent/tech.ml {:mvn/version "5.01"}
                 }
    }
   :runner {:extra-deps {com.cognitect/test-runner

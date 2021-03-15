@@ -1,4 +1,4 @@
-(defproject scicloj/metamorph.ml "0.1.0-alpha2"
+(defproject scicloj/metamorph.ml "0.2.0-alpha1"
   :description "Machine learning model evaluations using context based pipelines."
   :url "https://github.com/scicloj/metamorph"
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
