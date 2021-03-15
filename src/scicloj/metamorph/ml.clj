@@ -280,3 +280,10 @@ see tech.v3.dataset.modelling/set-inference-target")
     (if (:categorical? (meta (first (vals target-ds))))
       loss/classification-loss
       loss/mae)))
+
+
+(defn model [options]
+  (fn [{:metamorph/keys [id data mode] :as ctx}]
+    (case mode
+      :fit (assoc ctx id (train data  options))
+      :transform  (assoc ctx :metamorph/data (predict data (get ctx id))))))

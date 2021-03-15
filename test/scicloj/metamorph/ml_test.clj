@@ -1,7 +1,7 @@
 (ns scicloj.metamorph.ml-test
   (:require [clojure.test :refer [deftest is]]
             [scicloj.metamorph.core :as morph]
-            [scicloj.metamorph.ml :as ml-eval]
+            [scicloj.metamorph.ml :as ml]
             [tablecloth.api.split :as split]
             [tech.v3.dataset :as ds]
             [tech.v3.dataset.column-filters :as cf]
@@ -37,7 +37,7 @@
         pipe-fn-seq [pipe-fn]
 
         evaluations
-        (ml-eval/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)
 
 
         ;; we have only one result
@@ -74,7 +74,7 @@
         train-split-seq (split/split->seq ds :holdout)
         pipe-fn-seq [pipe-fn]
 
-        evaluations (ml-eval/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)
+        evaluations (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)
         best-fitted-context  (-> evaluations first :fitted-ctx)
         best-pipe-fn         (-> evaluations first :pipe-fn)
 
@@ -125,7 +125,7 @@
         train-test-seq (split/split->seq ds :kfold {:k 10})
 
         evaluations
-        (ml-eval/evaluate-pipelines pipe-fn-seq train-test-seq loss/classification-loss :loss)
+        (ml/evaluate-pipelines pipe-fn-seq train-test-seq loss/classification-loss :loss)
 
 
         new-ds (-> (ds/sample ds 10 {:seed 1234} )
@@ -133,7 +133,7 @@
                    )
 
         predictions
-        (ml-eval/predict-on-best-model evaluations new-ds :loss)]
+        (ml/predict-on-best-model evaluations new-ds :loss)]
 
     (is (= ["versicolor"
             "versicolor"
@@ -146,3 +146,42 @@
             "versicolor"
             "versicolor"]
            predictions))))
+
+
+(deftest test-model
+  (let [
+        src-ds (ds/->dataset "test/data/iris.csv")
+        ds (->  src-ds
+                (ds/categorical->number cf/categorical)
+                (ds-mod/set-inference-target "species")
+                (ds/shuffle {:seed 1234}))
+        feature-ds (cf/feature ds)
+        split-data (ds-mod/train-test-split ds {:randomize-dataset? false})
+        train-ds (:train-ds split-data)
+        test-ds  (:test-ds split-data)
+
+        pipeline (fn  [ctx]
+                   ((ml/model {:model-type :smile.classification/random-forest})
+                    ctx))
+
+
+        fitted
+        (pipeline
+         {:metamorph/id "1"
+          :metamorph/mode :fit
+          :metamorph/data train-ds})
+
+
+        prediction
+        (pipeline (merge fitted
+                         {:metamorph/mode :transform
+                          :metamorph/data test-ds}))
+
+        predicted-species (ds-mod/column-values->categorical (:metamorph/data prediction)
+                                                            "species"
+                                                            )]
+
+    (is (= ["setosa" "setosa" "virginica"]
+           (take 3 predicted-species)))
+
+    ))

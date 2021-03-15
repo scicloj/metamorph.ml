@@ -1,5 +1,5 @@
 {:deps {org.clojure/clojure {:mvn/version "1.10.2"}
-        techascent/tech.ml.dataset {:mvn/version "5.01"}
+        techascent/tech.ml.dataset {:mvn/version "5.04"}
         pppmap/pppmap              {:mvn/version "0.2.1"}
         }
  :aliases
