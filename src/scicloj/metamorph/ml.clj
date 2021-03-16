@@ -11,11 +11,6 @@
             )
   (:import java.util.UUID))
 
-(exporter/export-symbols scicloj.metamorph.core
-                         ->pipeline
-                         lift
-                         pipeline
-                         )
 
 (defn- slice
   "Divide coll into n approximately equal slices."
