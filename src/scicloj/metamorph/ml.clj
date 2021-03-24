@@ -22,28 +22,64 @@
         (recur (dec num) (conj slices (subvec items 0 size)) (subvec items size))))))
 
 (defn- calc-ctx-with-metric [pipeline-fn metric-fn train-ds test-ds]
+  (def pipeline-fn pipeline-fn)
+  (def metric-fn metric-fn)
+  (def train-ds train-ds)
+  (def test-ds test-ds)
   (try
     (let [fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
+          _ (def fitted-ctx fitted-ctx)
           predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data test-ds}) )
+          _ (def predicted-ctx predicted-ctx)
           predictions (:metamorph/data predicted-ctx)
-          target-colname (first (ds/column-names (cf/target (:metamorph/data fitted-ctx) )))
+          target (cf/target (:metamorph/data fitted-ctx) )
+          _ (errors/when-not-error target "No inference-target column marked in dataset")
+          target-colname (first (ds/column-names target))
+          _ (def target-colname target-colname)
           true-target (get-in predicted-ctx [::target-ds target-colname])
-          _ (errors/when-not-error true-target (str  "Pipeline context need to have the true prediction target as a dataset at key " ::target-ds))
-          metric (metric-fn (predictions target-colname)
-                            true-target)]
+          _ (def true-target true-target)
+          _ (def predictions predictions)
+          _ (errors/when-not-error true-target (str  "Pipeline context need to have the true prediction target as a dataset at key
+ " ::target-ds "Maybe a `model` is missing in the pipeline.") )
+
+          true-target-mapped-back
+          (mapv
+           (ds-mod/inference-target-label-inverse-map (::target-ds predicted-ctx) [target-colname])
+           (map int true-target))
+
+          predictions-mapped-back
+          (mapv
+           (ds-mod/inference-target-label-inverse-map predictions [target-colname])
+           (map int (predictions target-colname)))
+
+          _ (def true-target-mapped-back true-target-mapped-back)
+          _ (def predictions-mapped-back predictions-mapped-back)
+
+          metric (metric-fn predictions-mapped-back true-target-mapped-back)]
       {:fitted-ctx fitted-ctx
        :prediction-ctx predicted-ctx
        :metric metric})
     (catch Exception e
+      (throw e)
       (do
         (println e)
         {:fitted-ctx nil
          :prediction-ctx nil
-         :metric nil}))
-    ))
+         :metric nil}))))
+
+
+
+
+
+
 
 
 (defn evaluate-pipeline [pipe-fn train-test-split-seq metric-fn loss-or-accuracy]
+  (def train-test-split-seq train-test-split-seq)
+  (def pipe-fn-seq pipe-fn-seq)
+  (def metric-fn metric-fn)
+  (def loss-or-accuracy loss-or-accuracy)
+
   (let [split-eval-results
         (->>
          (for [train-test-split train-test-split-seq]
@@ -62,10 +98,11 @@
          (sort-by :metric))
 
         ]
-    (case loss-or-accuracy
-                       :loss (first sorted-evaluations)
-                       :accuracy (last sorted-evaluations)
-                       )
+    sorted-evaluations
+    ;; (case loss-or-accuracy
+    ;;   :loss (first sorted-evaluations)
+    ;;   :accuracy (last sorted-evaluations)
+    ;;   )
     )
   )
 
@@ -87,20 +124,29 @@
     where each model is the best (according to metyric-fn and loss-or-accuracy) of its slice.
 
 
-  This function runs the pipeline  in mode  :fit and in mode :transform for each pipeline-fn in `pipe-fn-seq` for each split in `train-test-split-seq`.
+  This function runs the pipelines  in mode  :fit and in mode :transform for each pipeline-fn in `pipe-fn-seq` for each split in `train-test-split-seq`.
   
-  The pipeline-fns need to set as well the ground truth of the target variable into a specific key :scicloj.metamorph.ml/target-ds
+  The pipeline-fns need to set as well the ground truth of the target variable into
+  a specific key in the context :scicloj.metamorph.ml/target-ds
   See here for the simplest way to set this up: https://github.com/behrica/metamorph.ml/blob/main/README.md
   "
   ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy n-slices]
+   (def n-slices n-slices)
+   (def train-test-split-seq train-test-split-seq)
+   (def pipe-fn-seq pipe-fn-seq)
+   (def metric-fn metric-fn)
+   (def loss-or-accuracy loss-or-accuracy)
    (->> (slice n-slices pipe-fn-seq)
 
         (ppp/pmap-with-progress
          "evaluate pipelines"
          (fn [pipe-fns]
+           (def pipe-fns pipe-fns)
            (let [sorted-evals
                  (->> (mapv #(evaluate-pipeline % train-test-split-seq metric-fn loss-or-accuracy) pipe-fns)
-                      (sort-by (juxt :mean :metric)))]
+                      (sort-by (juxt :mean :metric)))
+                 _ (def sorted-evals sorted-evals)
+                 ]
              (case loss-or-accuracy
                :loss (first sorted-evals)
                :accuracy (last sorted-evals)))))
@@ -109,15 +155,15 @@
    (evaluate-pipelines pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy Integer/MAX_VALUE))
   )
 
-(defn predict-on-best-model [evaluations new-ds loss-or-accuracy]
+(defn predict-on-best-model
   "Helper function for the very common case, to consider the pipeline with lowest average loss being the best.
    It allows to make a prediction on new data, given the list of all evaluation results.
   
    `evaluations` The list of pipeline-fn evaluations as returned from `evaluate-pipelines`.
    `new-ds` Dataset with the data to run teh best model from evaluations againts
    `loss-or-accuracy` : either :loss or :accuracy, if the metrics is loos or accuracy
-
  "
+  [evaluations new-ds loss-or-accuracy]
   (let [sorted-evals
         (->>
          (group-by :pipe-fn evaluations)
@@ -155,12 +201,16 @@
   [model-kwd train-fn predict-fn {:keys [hyperparameters
                                          thaw-fn
                                          explain-fn
-]}]
+                                         options
+                                         documentation
+                                         ]}]
   (swap! model-definitions* assoc model-kwd {:train-fn train-fn
                                              :predict-fn predict-fn
                                              :hyperparameters hyperparameters
                                              :thaw-fn thaw-fn
                                              :explain-fn explain-fn
+                                             :options options
+                                             :documentation documentation
 
                                              })
   :ok)
@@ -285,8 +335,50 @@ see tech.v3.dataset.modelling/set-inference-target")
       loss/mae)))
 
 
-(defn model [options]
+(defn model
+  "Executes a machine learning model in train or predict
+  from the `metamorph.ml` model registry.
+
+  Options:
+  - `:model-type` - Keyword for the model too use
+
+  Further options get passed to `train` functions and are model specific.
+
+  See here for an overview for the models build into Samskara:
+
+  https://behrica.github.io/samskara/userguide-models.html
+
+  Other libraries might contribute other models,
+  which are documented as part of the library.
+
+
+  metamorph                            | .
+  -------------------------------------|----------------------------------------------------------------------------
+  Behaviour in mode :fit               | Calls `train` on given model and stores trained model in ctx
+  Behaviour in mode :transform         | Reads trained model from ctx and calls `predict` on it
+  Reads keys from ctx                  | Reads trained model to use for prediction from $id in mode `:transform`
+  Writes keys to ctx                   | Stores trained model in key $id in mode `:fit` . Writes target-ds before prediction into `:scicloj.metamorph.ml/target-ds`
+
+
+
+
+  See as well:
+
+  * `scicloj.metamorph.ml/train`
+  * `scicloj.metamorph.ml/predict`
+
+  "
+
+  [options]
   (fn [{:metamorph/keys [id data mode] :as ctx}]
+    (def data data)
+    (def mode mode)
+    (def ctx ctx)
+    (def id id)
     (case mode
-      :fit (assoc ctx id (train data  options))
-      :transform  (assoc ctx :metamorph/data (predict data (get ctx id))))))
+      :fit (assoc ctx id (train data options))
+      :transform  (do
+                    (assoc ctx
+                           ::feature-ds (cf/feature data)
+                           ::target-ds (cf/target data)
+                           :metamorph/data (predict data (get ctx id)))))))

@@ -43,6 +43,8 @@ label-seq is a sequence of values.  The answer is considered correct
 if the key highest probability in the model output entry matches
 that label."
   ^double [lhs rhs]
+  (def lhs lhs)
+  (def rhs rhs)
   (errors/when-not-errorf
    (= (dtype/ecount lhs)
       (dtype/ecount rhs))
