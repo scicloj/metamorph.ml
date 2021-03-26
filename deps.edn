@@ -1,7 +1,7 @@
 {:deps {org.clojure/clojure {:mvn/version "1.10.2"}
         techascent/tech.ml.dataset {:mvn/version "5.05"  :exclusions [ch.qos.logback/logback-classic]}
-        scicloj/metamorph {:mvn/version "0.1.0-alpha2"}
-        pppmap/pppmap              {:mvn/version "0.2.1"}
+        scicloj/metamorph {:mvn/version "0.1.0-alpha3"}
+        pppmap/pppmap              {:mvn/version "0.2.2"}
         }
  :aliases
  {:test
@@ -9,6 +9,7 @@
    :extra-deps {
                 techascent/tech.ml.smile {:mvn/version "5.02-SNAPSHOT"}
                 scicloj/tablecloth {:mvn/version "5.05"}
+                ch.qos.logback/logback-classic {:mvn:version "1.2.3"}
                 }
    }
   :runner {:extra-deps {com.cognitect/test-runner

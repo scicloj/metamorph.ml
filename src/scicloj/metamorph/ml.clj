@@ -12,8 +12,22 @@
   (:import java.util.UUID))
 
 
+(defn- dissoc-in
+  "Dissociate a value in a nested assocative structure, identified by a sequence
+  of keys. Any collections left empty by the operation will be dissociated from
+  their containing structures."
+  [m ks]
+  (if-let [[k & ks] (seq ks)]
+    (if (seq ks)
+      (let [v (dissoc-in (get m k) ks)]
+        (if (empty? v)
+          (dissoc m k)
+          (assoc m k v)))
+      (dissoc m k))
+    m))
+
 (defn- slice
-  "Divide coll into n approximately equal slices."
+"Divide coll into n approximately equal slices."
   [n coll]
   (loop [num n, slices [], items (vec coll)]
     (if (empty? items)
@@ -22,23 +36,23 @@
         (recur (dec num) (conj slices (subvec items 0 size)) (subvec items size))))))
 
 (defn- calc-ctx-with-metric [pipeline-fn metric-fn train-ds test-ds]
-  (def pipeline-fn pipeline-fn)
-  (def metric-fn metric-fn)
-  (def train-ds train-ds)
-  (def test-ds test-ds)
+  ;; (def pipeline-fn pipeline-fn)
+  ;; (def metric-fn metric-fn)
+  ;; (def train-ds train-ds)
+  ;; (def test-ds test-ds)
   (try
     (let [fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
-          _ (def fitted-ctx fitted-ctx)
+          ;; _ (def fitted-ctx fitted-ctx)
           predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data test-ds}) )
-          _ (def predicted-ctx predicted-ctx)
+          ;; _ (def predicted-ctx predicted-ctx)
           predictions (:metamorph/data predicted-ctx)
           target (cf/target (:metamorph/data fitted-ctx) )
           _ (errors/when-not-error target "No inference-target column marked in dataset")
           target-colname (first (ds/column-names target))
-          _ (def target-colname target-colname)
+          ;; _ (def target-colname target-colname)
           true-target (get-in predicted-ctx [::target-ds target-colname])
-          _ (def true-target true-target)
-          _ (def predictions predictions)
+          ;; _ (def true-target true-target)
+          ;; _ (def predictions predictions)
           _ (errors/when-not-error true-target (str  "Pipeline context need to have the true prediction target as a dataset at key
  " ::target-ds "Maybe a `model` is missing in the pipeline.") )
 
@@ -52,33 +66,41 @@
            (ds-mod/inference-target-label-inverse-map predictions [target-colname])
            (map int (predictions target-colname)))
 
-          _ (def true-target-mapped-back true-target-mapped-back)
-          _ (def predictions-mapped-back predictions-mapped-back)
+          ;; _ (def true-target-mapped-back true-target-mapped-back)
+          ;; _ (def predictions-mapped-back predictions-mapped-back)
 
           metric (metric-fn predictions-mapped-back true-target-mapped-back)]
-      {:fitted-ctx fitted-ctx
-       :prediction-ctx predicted-ctx
+      { :fit-ctx (dissoc fitted-ctx :metamorph/data)
+        :transform-ctx (dissoc predicted-ctx
+                               :metamorph/data
+                               :scicloj.metamorph.ml/target-ds
+                               :scicloj.metamorph.ml/feature-ds
+                               )
        :metric metric})
     (catch Exception e
       (throw e)
       (do
         (println e)
-        {:fitted-ctx nil
-         :prediction-ctx nil
+        {:fit-ctx nil
+         :transfor-ctx nil
          :metric nil}))))
 
 
+;; [[:fit-ctx :metamorph/data]
+;;                          [:transform-ctx :metamorph/data]
+;;                          [:transform-ctx :scicloj.metamorph.ml/target-ds]
+;;                          [:transform-ctx :scicloj.metamorph.ml/feature-ds]
+;;                          ]
 
 
 
 
 
-
-(defn evaluate-pipeline [pipe-fn train-test-split-seq metric-fn loss-or-accuracy]
-  (def train-test-split-seq train-test-split-seq)
-  (def pipe-fn-seq pipe-fn-seq)
-  (def metric-fn metric-fn)
-  (def loss-or-accuracy loss-or-accuracy)
+(defn evaluate-pipeline [pipe-fn train-test-split-seq metric-fn loss-or-accuracy keep-best-only]
+  ;; (def train-test-split-seq train-test-split-seq)
+  ;; (def pipe-fn-seq pipe-fn-seq)
+  ;; (def metric-fn metric-fn)
+  ;; (def loss-or-accuracy loss-or-accuracy)
 
   (let [split-eval-results
         (->>
@@ -98,13 +120,17 @@
          (sort-by :metric))
 
         ]
-    sorted-evaluations
-    ;; (case loss-or-accuracy
-    ;;   :loss (first sorted-evaluations)
-    ;;   :accuracy (last sorted-evaluations)
-    ;;   )
-    )
-  )
+    ;; (def sorted-evaluations sorted-evaluations)
+    ;; (def keep-best-only true)
+    ;; (def loss-or-accuracy :accuracy)
+    (if keep-best-only
+      (case loss-or-accuracy
+        :loss (take 1 sorted-evaluations)
+        :accuracy (take-last 1 sorted-evaluations))
+      sorted-evaluations)
+
+
+    ))
 
 (defn evaluate-pipelines
   "Evaluates performance of a seq of metamorph pipelines, which are suposed to have a  model as last step, which behaves correctly  in mode :fit and 
@@ -118,10 +144,9 @@
    `train-test-split-seq` need to be a sequence of maps containing the  train and test dataset (being tech.ml.dataset) at keys :train and :test.
    `metric-fn` Metric function to use. Typically comming from `tech.v3.ml.loss`
    `loss-or-accuracy` If the metric-fn is a loss or accuracy calculation. Can be :loss or :accuracy.
-   `n-slices`  Decides how many results are returned. By default one evaluation results for each pipeline-fn is returned.
 
-    In case of a larger number of pipelines, this can become a memory issue. Setting n-slices to lower value, returns max n-slices models,
-    where each model is the best (according to metyric-fn and loss-or-accuracy) of its slice.
+    The next tune-options map controls varias performace related parameters, whic are:
+  * TODO
 
 
   This function runs the pipelines  in mode  :fit and in mode :transform for each pipeline-fn in `pipe-fn-seq` for each split in `train-test-split-seq`.
@@ -130,30 +155,62 @@
   a specific key in the context :scicloj.metamorph.ml/target-ds
   See here for the simplest way to set this up: https://github.com/behrica/metamorph.ml/blob/main/README.md
   "
-  ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy n-slices]
-   (def n-slices n-slices)
-   (def train-test-split-seq train-test-split-seq)
-   (def pipe-fn-seq pipe-fn-seq)
-   (def metric-fn metric-fn)
-   (def loss-or-accuracy loss-or-accuracy)
-   (->> (slice n-slices pipe-fn-seq)
+  ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy tune-options]
+   ;; (def tune-options tune-options)
+   ;; (def n-slices n-slices)
+   ;; (def train-test-split-seq train-test-split-seq)
+   ;; (def pipe-fn-seq pipe-fn-seq)
+   ;; (def metric-fn metric-fn)
+   ;; (def loss-or-accuracy loss-or-accuracy)
+   ;; (slice 10 [1 2 3])
+   ;; (def pipe-fns pipe-fns)
+   (let [map-fn
+         (case (tune-options :map-fn)
+               :pmap (partial ppp/pmap-with-progress "pmap: evaluate pipelines ")
+               :map (partial ppp/map-with-progress "map: evaluate pipelines"))
 
-        (ppp/pmap-with-progress
-         "evaluate pipelines"
-         (fn [pipe-fns]
-           (def pipe-fns pipe-fns)
-           (let [sorted-evals
-                 (->> (mapv #(evaluate-pipeline % train-test-split-seq metric-fn loss-or-accuracy) pipe-fns)
-                      (sort-by (juxt :mean :metric)))
-                 _ (def sorted-evals sorted-evals)
-                 ]
-             (case loss-or-accuracy
-               :loss (first sorted-evals)
-               :accuracy (last sorted-evals)))))
-        doall))
+         pipe-evals
+         (->> (map-fn #(evaluate-pipeline
+                        %
+                        train-test-split-seq
+                        metric-fn
+                        loss-or-accuracy
+                        (tune-options :keep-best-cross-validation-only))
+                      pipe-fn-seq)
+              (sort-by (juxt :mean :metric)))
+
+         pipe-evals
+         (if (tune-options :keep-best-pipeline-only)
+           (case loss-or-accuracy
+             :loss (take 1 pipe-evals)
+             :accuracy (take-last 1 pipe-evals))
+           pipe-evals
+           )
+
+         ]
+
+     ;; (def pipe-evals pipe-evals)
+     (for [pipe-eval pipe-evals]
+       (for [cv-eval pipe-eval]
+         do
+         (reduce
+          (fn [x y]
+            (dissoc-in x y))
+          cv-eval
+          (tune-options :result-dissoc-seq))))
+     ))
   ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy]
-   (evaluate-pipelines pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy Integer/MAX_VALUE))
-  )
+   (evaluate-pipelines pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy
+                       {:result-dissoc-seq
+                        [[:fit-ctx :metamorph/data]
+                         [:transform-ctx :metamorph/data]
+                         [:transform-ctx :scicloj.metamorph.ml/target-ds]
+                         [:transform-ctx :scicloj.metamorph.ml/feature-ds]
+                         ]
+                        :map-fn :map
+                        :keep-best-pipeline-only true
+                        :keep-best-cross-validation-only true
+                        })))
 
 (defn predict-on-best-model
   "Helper function for the very common case, to consider the pipeline with lowest average loss being the best.
@@ -382,3 +439,6 @@ see tech.v3.dataset.modelling/set-inference-target")
                            ::feature-ds (cf/feature data)
                            ::target-ds (cf/target data)
                            :metamorph/data (predict data (get ctx id)))))))
+(comment
+(sc.api/defsc 20)
+ )
