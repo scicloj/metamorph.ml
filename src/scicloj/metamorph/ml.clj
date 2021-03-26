@@ -192,7 +192,6 @@
      ;; (def pipe-evals pipe-evals)
      (for [pipe-eval pipe-evals]
        (for [cv-eval pipe-eval]
-         do
          (reduce
           (fn [x y]
             (dissoc-in x y))

@@ -9,7 +9,7 @@
    :extra-deps {
                 techascent/tech.ml.smile {:mvn/version "5.02-SNAPSHOT"}
                 scicloj/tablecloth {:mvn/version "5.05"}
-                ch.qos.logback/logback-classic {:mvn:version "1.2.3"}
+                ch.qos.logback/logback-classic {:mvn/version "1.2.3"}
                 }
    }
   :runner {:extra-deps {com.cognitect/test-runner
