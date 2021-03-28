@@ -224,11 +224,12 @@
 
 
   (def evaluations
-    (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss
-                           {:map-fn :map
-                            :result-dissoc-seq []
-                            :keep-best-cross-validation-only true
-                            :keep-best-pipeline-only true})
+    (ml/evaluate-pipelines
+     pipe-fn-seq train-split-seq loss/classification-loss :loss
+     :result-dissoc-seq []
+     :return-best-crossvalidation-only
+      true
+      :return-best-pipeline-only true)
     )
   (first (first evaluations))
   ;; we have only one result
