@@ -7,7 +7,7 @@
  {:test
   {:extra-paths ["test"]
    :extra-deps {
-                techascent/tech.ml.smile {:mvn/version "5.02-SNAPSHOT"}
+                scicloj/scicloj.ml.smile {:mvn/version "5.03"}
                 scicloj/tablecloth {:mvn/version "5.05"}
                 ch.qos.logback/logback-classic {:mvn/version "1.2.3"}
                 }

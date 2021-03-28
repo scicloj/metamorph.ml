@@ -35,7 +35,7 @@
       (let [size (Math/ceil (/ (count items) num))]
         (recur (dec num) (conj slices (subvec items 0 size)) (subvec items size))))))
 
-(defn- calc-ctx-with-metric [pipeline-fn metric-fn train-ds test-ds]
+(defn- calc-metric [pipeline-fn metric-fn train-ds test-ds]
   ;; (def pipeline-fn pipeline-fn)
   ;; (def metric-fn metric-fn)
   ;; (def train-ds train-ds)
@@ -101,35 +101,31 @@
   ;; (def pipe-fn-seq pipe-fn-seq)
   ;; (def metric-fn metric-fn)
   ;; (def loss-or-accuracy loss-or-accuracy)
+  ;; (def keep-best-only keep-best-only)
+
 
   (let [split-eval-results
         (->>
          (for [train-test-split train-test-split-seq]
            (let [{:keys [train test]} train-test-split]
-             (assoc (calc-ctx-with-metric pipe-fn metric-fn train test)
+             (assoc (calc-metric pipe-fn metric-fn train test)
                     :metric-fn metric-fn
                     :pipe-fn pipe-fn)))
          (remove #(nil? (:metric %))))
         metric-vec (mapv :metric split-eval-results)
-        metric-vec-stats (dfn/descriptive-statistics [:min :max :mean] metric-vec)
+        metric-vec-stats
+        (dfn/descriptive-statistics [:min :max :mean] metric-vec)
         sorted-evaluations
         (->>
          (map
           #(merge % metric-vec-stats)
           split-eval-results)
-         (sort-by :metric))
-
-        ]
-    ;; (def sorted-evaluations sorted-evaluations)
-    ;; (def keep-best-only true)
-    ;; (def loss-or-accuracy :accuracy)
+         (sort-by :metric))]
     (if keep-best-only
       (case loss-or-accuracy
         :loss (take 1 sorted-evaluations)
         :accuracy (take-last 1 sorted-evaluations))
       sorted-evaluations)
-
-
     ))
 
 (defn evaluate-pipelines
@@ -157,18 +153,14 @@
   "
   ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy tune-options]
    ;; (def tune-options tune-options)
-   ;; (def n-slices n-slices)
    ;; (def train-test-split-seq train-test-split-seq)
    ;; (def pipe-fn-seq pipe-fn-seq)
    ;; (def metric-fn metric-fn)
    ;; (def loss-or-accuracy loss-or-accuracy)
-   ;; (slice 10 [1 2 3])
-   ;; (def pipe-fns pipe-fns)
    (let [map-fn
          (case (tune-options :map-fn)
-               :pmap (partial ppp/pmap-with-progress "pmap: evaluate pipelines ")
-               :map (partial ppp/map-with-progress "map: evaluate pipelines"))
-
+           :pmap (partial ppp/pmap-with-progress "pmap: evaluate pipelines ")
+           :map (partial ppp/map-with-progress "map: evaluate pipelines"))
          pipe-evals
          (->> (map-fn #(evaluate-pipeline
                         %
@@ -177,17 +169,14 @@
                         loss-or-accuracy
                         (tune-options :keep-best-cross-validation-only))
                       pipe-fn-seq)
-              (sort-by (juxt :mean :metric)))
-
+              (sort-by :cv-mean))
          pipe-evals
          (if (tune-options :keep-best-pipeline-only)
            (case loss-or-accuracy
              :loss (take 1 pipe-evals)
              :accuracy (take-last 1 pipe-evals))
            pipe-evals
-           )
-
-         ]
+           )]
 
      ;; (def pipe-evals pipe-evals)
      (for [pipe-eval pipe-evals]
@@ -196,8 +185,7 @@
           (fn [x y]
             (dissoc-in x y))
           cv-eval
-          (tune-options :result-dissoc-seq))))
-     ))
+          (tune-options :result-dissoc-seq))))))
   ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy]
    (evaluate-pipelines pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy
                        {:result-dissoc-seq
@@ -232,18 +220,15 @@
           :loss (first sorted-evals)
           :accuracy (last sorted-evals)
           )
-        fitted-ctx (evalution-with-best-avg-metric :fitted-ctx)
-        target-column  (first (ds-mod/inference-target-column-names  (:metamorph/data fitted-ctx) ))]
-
-  
+        fitted-ctx (evalution-with-best-avg-metric :fit-ctx)
+        target-column  (first (ds-mod/inference-target-column-names new-ds ))]
     (->   ((evalution-with-best-avg-metric :pipe-fn)
            (merge fitted-ctx
                   {:metamorph/data new-ds
                    :metamorph/mode :transform}))
           (:metamorph/data)
           (ds-mod/column-values->categorical target-column)
-          seq)))
-
+           seq)))
 
 
 

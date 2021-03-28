@@ -1,66 +1,74 @@
 (ns scicloj.metamorph.ml-test
   (:require [clojure.test :refer [deftest is]]
             [scicloj.metamorph.core :as morph]
-            ;; [scicloj.metamorph.ml.dataset :as ds-ml]
-            ;; [scicloj.metamorph.ml.dataset-metamorph :as ds-ml-mm]
             [scicloj.metamorph.ml :as ml]
             [scicloj.metamorph.ml.gridsearch :as gs]
             [scicloj.metamorph.ml.loss :as loss]
-            [tech.v3.libs.smile.classification]
+            [scicloj.ml.smile.classification]
             [tech.v3.dataset.metamorph :as ds-mm]
             [tech.v3.dataset :as ds]
             [tech.v3.dataset.column-filters :as cf]
             [tech.v3.dataset.modelling :as ds-mod]
-
             [tablecloth.api :as tc]))
 
 (deftest evaluate-pipelines-simplest
   (let [
-                 ;;  the data
-                 ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
 
-                 ;;  the (single, fixed) pipe-fn
-                 pipe-fn
-                 (morph/pipeline
-                  (ds-mm/set-inference-target :species)
-                  (ds-mm/categorical->number cf/categorical)
-                  (fn [ctx]
-                    (assoc ctx
-                           :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
-                  (ml/model {:model-type :smile.classification/random-forest}))
+        ;;  the data
+        ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
 
-                 ;;  the simplest split
-                 train-split-seq (tc/split->seq ds :holdout)
+        ;;  the (single, fixed) pipe-fn
+        pipe-fn
+        (morph/pipeline
+         (ds-mm/set-inference-target :species)
+         (ds-mm/categorical->number cf/categorical)
+         (fn [ctx]
+           (assoc ctx
+                  :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
+         (ml/model {:model-type :smile.classification/random-forest}))
 
-                 ;; one pipe-fn in the seq
-                 pipe-fn-seq [pipe-fn]
+        ;;  the simplest split
+        train-split-seq (tc/split->seq ds :holdout)
 
-
-                 evaluations
-                 (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)
-
-                 ;; we have only one result
-                 best-fitted-context  (-> evaluations first first :fitted-ctx)
-                 best-pipe-fn         (-> evaluations first first :pipe-fn)
+        ;; one pipe-fn in the seq
+        pipe-fn-seq [pipe-fn]
 
 
-                 ;;  simulate new data
-                 new-ds (->
-                         (tc/shuffle ds  {:seed 1234} )
-                         (tc/head 10)
-                         )
-                 ;;  do prediction on new data
-                 predictions
-                 (->
-                  (best-pipe-fn
-                   (merge best-fitted-context
-                          {:metamorph/data new-ds
-                           :metamorph/mode :transform}))
-                  (:metamorph/data)
-                  (ds-mod/column-values->categorical :species))]
+        evaluations
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)
+
+        ;; we have only one result
+        best-fitted-context  (-> evaluations first first :fit-ctx)
+        best-pipe-fn         (-> evaluations first first :pipe-fn)
+
+
+        ;;  simulate new data
+        new-ds (->
+                (tc/shuffle ds  {:seed 1234} )
+                (tc/head 10)
+                )
+        ;;  do prediction on new data
+        predictions
+        (->
+         (best-pipe-fn
+          (merge best-fitted-context
+                 {:metamorph/data new-ds
+                  :metamorph/mode :transform}))
+         (:metamorph/data)
+         (ds-mod/column-values->categorical :species))]
 
     (is (= ["versicolor" "versicolor" "virginica" "versicolor" "virginica" "setosa" "virginica" "virginica" "versicolor" "versicolor" ]
-           predictions))))
+           predictions))
+    (is (=  1) (count evaluations))
+    (is (=  1) (count (first evaluations)))
+
+    (is (= [:fit-ctx :transform-ctx :metric :metric-fn :pipe-fn :min :mean :max] (keys (first (first evaluations)))))
+    (is (contains?   (:fit-ctx (first (first evaluations)))  :metamorph/mode))
+    (is (contains?   (:transform-ctx (first (first evaluations)))  :metamorph/mode))
+
+
+    
+    ))
 
 
 
@@ -103,7 +111,10 @@
 
 (deftest grid-search
   (let [
-        ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+        ds (->
+            (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+            (ds-mod/set-inference-target :species)
+            )
 
         grid-search-options
         {:trees (gs/categorical [10 50 100 500])
@@ -113,7 +124,7 @@
         create-pipe-fn
         (fn[options]
           (morph/pipeline
-           (ds-mm/set-inference-target :species)
+           ;; (ds-mm/set-inference-target :species)
            (ds-mm/categorical->number cf/categorical)
            (fn [ctx]
              (assoc ctx :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
@@ -185,3 +196,60 @@
 
     (is (= ["setosa" "versicolor" "versicolor"]
            (take 3 predicted-species)))))
+
+
+
+(comment
+
+
+
+  ;;  the data
+  (def  ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
+
+  ;;  the (single, fixed) pipe-fn
+  (def  pipe-fn
+    (morph/pipeline
+     (ds-mm/set-inference-target :species)
+     (ds-mm/categorical->number cf/categorical)
+     ;; (fn [ctx]
+     ;;   (assoc ctx
+     ;;          :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
+     (ml/model {:model-type :smile.classification/random-forest})))
+
+  ;;  the simplest split
+  (def  train-split-seq (tc/split->seq ds :kfold))
+
+  ;; one pipe-fn in the seq
+  (def pipe-fn-seq [pipe-fn pipe-fn])
+
+
+  (def evaluations
+    (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss
+                           {:map-fn :map
+                            :result-dissoc-seq []
+                            :keep-best-cross-validation-only true
+                            :keep-best-pipeline-only true})
+    )
+  (first (first evaluations))
+  ;; we have only one result
+  (def best-fitted-context (-> evaluations first first :fit-ctx))
+  (def best-pipe-fn (-> evaluations first first :pipe-fn))
+
+
+  ;;  simulate new data
+  (def new-ds (->
+               (tc/shuffle ds  {:seed 1234} )
+               (tc/head 10)
+               ))
+  ;;  do prediction on new data
+  predictions
+  (->
+   (best-pipe-fn
+    (merge best-fitted-context
+           {:metamorph/data new-ds
+            :metamorph/mode :transform}))
+   (:metamorph/data)
+   (ds-mod/column-values->categorical :species))
+
+  (is (= ["versicolor" "versicolor" "virginica" "versicolor" "virginica" "setosa" "virginica" "virginica" "versicolor" "versicolor" ]
+         predictions)))
