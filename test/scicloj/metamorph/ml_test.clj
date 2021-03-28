@@ -268,7 +268,6 @@
      :model-type :smile.classification/random-forest})
 
   (defn create-pipe-fn [options]
-
     (morph/pipeline
      (fn [ctx]
        (assoc ctx :pipe-options options))
@@ -283,8 +282,14 @@
 
   (def evaluations
     (ml/evaluate-pipelines pipe-fn-seq train-test-seq loss/classification-loss :loss
-                           :return-best-pipeline-only false
-                           :return-best-crossvalidation-only false
+                           {
+                            :result-dissoc-in-seq []
+                            :return-best-pipeline-only false
+                            :return-best-crossvalidation-only false
+                            ;; :evaluation-handler-fn (fn [result]
+                            ;;                          (println (keys result))
+                            ;;                          )
+                            }
 
                            )
 
