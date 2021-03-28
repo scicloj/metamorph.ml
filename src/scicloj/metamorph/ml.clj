@@ -105,7 +105,7 @@
 
 
 
-(defn evaluate-pipeline [pipe-fn train-test-split-seq metric-fn loss-or-accuracy keep-best-only result-dissoc-seq]
+(defn evaluate-one-pipeline [pipe-fn train-test-split-seq metric-fn loss-or-accuracy keep-best-only result-dissoc-seq]
   ;; (def train-test-split-seq train-test-split-seq)
   ;; (def pipe-fn-seq pipe-fn-seq)
   ;; (def metric-fn metric-fn)
@@ -201,17 +201,19 @@
            :pmap (partial ppp/pmap-with-progress "pmap: evaluate pipelines ")
            :map (partial ppp/map-with-progress "map: evaluate pipelines"))
          pipe-evals
-         (->> (map-fn #(evaluate-pipeline
-                        %
-                        train-test-split-seq
-                        metric-fn
-                        loss-or-accuracy
-                        return-best-crossvalidation-only
-                        result-dissoc-seq
-                        )
-                      pipe-fn-seq)
+         (->> (map-fn
+               (fn [pipe-fn]
+                 (evaluate-one-pipeline
+                  pipe-fn
+                  train-test-split-seq
+                  metric-fn
+                  loss-or-accuracy
+                  return-best-crossvalidation-only
+                  result-dissoc-seq
+                  ))
+               pipe-fn-seq)
               (sort-by :mean))
-         pipe-evals
+         result-pipe-evals
          (if return-best-pipeline-only
            (case loss-or-accuracy
              :loss (take 1 pipe-evals)
@@ -219,18 +221,16 @@
            pipe-evals)]
 
      ;; (def pipe-evals pipe-evals)
-     (for [pipe-eval pipe-evals]
+     (for [pipe-eval result-pipe-evals]
        (for [cv-eval pipe-eval]
          (reduce
-          (fn [x y]
-            (dissoc-in x y))
+          (fn [m ks]
+            (dissoc-in m ks))
           cv-eval
           result-dissoc-seq)))))
-  ;; ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy]
-  ;;  (evaluate-pipelines pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy
-
-  ;;                      ))
   )
+
+
 (defn predict-on-best-model
   "Helper function for the very common case, to consider the pipeline with lowest average loss being the best.
    It allows to make a prediction on new data, given the list of all evaluation results.
@@ -260,7 +260,7 @@
                    :metamorph/mode :transform}))
           (:metamorph/data)
           (ds-mod/column-values->categorical target-column)
-           seq)))
+          seq)))
 
 
 
