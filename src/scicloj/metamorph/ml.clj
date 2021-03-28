@@ -41,9 +41,13 @@
   ;; (def train-ds train-ds)
   ;; (def test-ds test-ds)
   (try
-    (let [fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
+    (let [start-fit (System/currentTimeMillis)
+          fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
+          end-fit (System/currentTimeMillis)
           ;; _ (def fitted-ctx fitted-ctx)
+          start-transform (System/currentTimeMillis)
           predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data test-ds}) )
+          end-transform (System/currentTimeMillis)
           ;; _ (def predicted-ctx predicted-ctx)
           predictions (:metamorph/data predicted-ctx)
           target (cf/target (:metamorph/data fitted-ctx) )
@@ -72,13 +76,12 @@
           metric (metric-fn predictions-mapped-back true-target-mapped-back)
 
           result
-          {:fit-ctx  fitted-ctx ;; (dissoc fitted-ctx :metamorph/data)
-           :transform-ctx  predicted-ctx ;; (dissoc predicted-ctx
-                          ;;         :metamorph/data
-                          ;;         :scicloj.metamorph.ml/target-ds
-                          ;;         :scicloj.metamorph.ml/feature-ds
-                          ;;         )
-           :metric metric}]
+          {:fit-ctx  fitted-ctx
+           :transform-ctx  predicted-ctx
+           :metric metric
+           :timing {:fit (- end-fit start-fit)
+                    :transform (- end-transform start-transform)}
+           }]
       (reduce
           (fn [x y]
             (dissoc-in x y))
@@ -158,6 +161,7 @@
   on every seq of this for the `fit-ctx` and `transform-ctx` before returning them. Default is
   ```
   [[:fit-ctx :metamorph/data]
+   [:fit-ctx :scicloj.metamorph.ml/target-ds]
    [:transform-ctx :metamorph/data]
    [:transform-ctx :scicloj.metamorph.ml/target-ds]
    [:transform-ctx :scicloj.metamorph.ml/feature-ds]
@@ -182,6 +186,7 @@
                                                                           return-best-crossvalidation-only]
                                                                    :or {result-dissoc-seq
                                                                         [[:fit-ctx :metamorph/data]
+                                                                         [:fit-ctx :scicloj.metamorph.ml/target-ds]
                                                                          [:transform-ctx :metamorph/data]
                                                                          [:transform-ctx :scicloj.metamorph.ml/target-ds]
                                                                          [:transform-ctx :scicloj.metamorph.ml/feature-ds]

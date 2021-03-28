@@ -62,7 +62,7 @@
     (is (=  1) (count evaluations))
     (is (=  1) (count (first evaluations)))
 
-    (is (= [:fit-ctx :transform-ctx :metric :metric-fn :pipe-fn :min :mean :max] (keys (first (first evaluations)))))
+    (is (= (set [:fit-ctx :transform-ctx :metric :metric-fn :pipe-fn :min :mean :max :timing]) (set (keys (first (first evaluations))))))
     (is (contains?   (:fit-ctx (first (first evaluations)))  :metamorph/mode))
     (is (contains?   (:transform-ctx (first (first evaluations)))  :metamorph/mode))
 
@@ -254,3 +254,41 @@
 
   (is (= ["versicolor" "versicolor" "virginica" "versicolor" "virginica" "setosa" "virginica" "virginica" "versicolor" "versicolor" ]
          predictions)))
+
+(comment
+
+  (def ds (->
+           (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+           (ds-mod/set-inference-target :species)
+           ))
+
+  (def  grid-search-options
+    {:trees (gs/categorical [10 20 50 100 300 500])
+     :split-rule (gs/categorical [:gini :entropy])
+     :model-type :smile.classification/random-forest})
+
+  (defn create-pipe-fn [options]
+
+    (morph/pipeline
+     (fn [ctx]
+       (assoc ctx :pipe-options options))
+     (ds-mm/categorical->number cf/categorical)
+     (ml/model options)))
+
+  (def all-options-combinations (take 10 (gs/sobol-gridsearch grid-search-options)))
+
+  (def pipe-fn-seq (map create-pipe-fn all-options-combinations))
+
+  (def train-test-seq (tc/split->seq ds :kfold {:k 10}))
+
+  (def evaluations
+    (ml/evaluate-pipelines pipe-fn-seq train-test-seq loss/classification-loss :loss
+                           :return-best-pipeline-only false
+                           :return-best-crossvalidation-only false
+
+                           )
+
+    )
+
+  (flatten evaluations)
+  )
