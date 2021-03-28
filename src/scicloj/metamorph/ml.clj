@@ -210,7 +210,7 @@
                         result-dissoc-seq
                         )
                       pipe-fn-seq)
-              (sort-by :cv-mean))
+              (sort-by :mean))
          pipe-evals
          (if return-best-pipeline-only
            (case loss-or-accuracy
@@ -231,7 +231,6 @@
 
   ;;                      ))
   )
-(evaluate-pipelines)
 (defn predict-on-best-model
   "Helper function for the very common case, to consider the pipeline with lowest average loss being the best.
    It allows to make a prediction on new data, given the list of all evaluation results.
