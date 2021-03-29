@@ -89,9 +89,7 @@
          (dissoc-in x y))
        result
        (tune-options :result-dissoc-in-seq )
-       )
-
-      )
+       ))
     (catch Exception e
       (throw e)
       (do
@@ -110,8 +108,7 @@
 
 
 
-
-(defn evaluate-one-pipeline [pipe-fn train-test-split-seq metric-fn loss-or-accuracy tune-options
+(defn- evaluate-one-pipeline [pipe-fn train-test-split-seq metric-fn loss-or-accuracy tune-options
                              ]
   ;; (def train-test-split-seq train-test-split-seq)
   ;; (def pipe-fn-seq pipe-fn-seq)
@@ -389,19 +386,36 @@ see tech.v3.dataset.modelling/set-inference-target")
   * For classification, a dataset is returned with a float64 column for each target
     value and values that describe the probability distribution."
   [dataset model]
+  ;; (def model model)
   (let [{:keys [predict-fn] :as model-def} (options->model-def (:options model))
         feature-ds (ds/select-columns dataset (:feature-columns model))
         label-columns (:target-columns model)
         thawed-model (thaw-model model model-def)
+        target-col (first label-columns)
         pred-ds (predict-fn feature-ds
                             thawed-model
                             model)]
 
+    ;; (def pred-ds pred-ds)
+    ;; (def label-columns label-columns)
+    ;;
+    ;; target-inverse-map
+    ;; (clojure.set/map-invert
+    ;;  (get-in model  [:target-categorical-maps target-col :lookup-table]))
+
+
     (if (= :classification (:model-type (meta pred-ds)))
       (-> (ds-mod/probability-distributions->label-column
-           pred-ds (first label-columns))
-          (ds/update-column (first label-columns)
-                            #(vary-meta % assoc :column-type :prediction)))
+           pred-ds target-col)
+          (ds/update-column target-col
+                            #(vary-meta % assoc :column-type :prediction))
+
+          ;; (ds/update-column target-col
+          ;;                   (fn [col]
+          ;;                     (map
+          ;;                      #(get target-inverse-map (int %))
+          ;;                      col)))
+          )
       pred-ds)))
 
 
