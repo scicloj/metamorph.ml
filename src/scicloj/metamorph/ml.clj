@@ -159,43 +159,39 @@
 
     The function returns a seq of seqs of evaluation results per pipe-fn per train-test split.
 
-   `pipe-fn-seq` need to be  sequence of functions which follow the metamorph approach. They should take as input the metamorph context map,
+   * `pipe-fn-seq` need to be  sequence of functions which follow the metamorph approach. They should take as input the metamorph context map,
     which has the dataset under key :metamorph/data, manipulate it as needed for the transformation pipeline and read and write only to the
     context as needed. These type of functions get produced typically by calling `scicloj.metamorph/pipeline`
 
-   `train-test-split-seq` need to be a sequence of maps containing the  train and test dataset (being tech.ml.dataset) at keys :train and :test.
+   * `train-test-split-seq` need to be a sequence of maps containing the  train and test dataset (being tech.ml.dataset) at keys :train and :test.
     `tableclot.api/split->seq` produces such splits.
 
-   `metric-fn` Metric function to use. Typically comming from `tech.v3.ml.loss`
+   * `metric-fn` Metric function to use. Typically comming from `tech.v3.ml.loss`
    `loss-or-accuracy` If the metric-fn is a loss or accuracy calculation. Can be :loss or :accuracy.
 
-    The next options map controls varias mainly performance related parameters, which are:
+   * `options` map controls some mainly performance related parameters, which are:
 
-  `result-dissoc-in-seq`  - Controls how much information is returned for each cross validation. We call `dissoc-in`
-  on every seq of this for the `fit-ctx` and `transform-ctx` before returning them. Default is
-  ```
-  [[:fit-ctx :metamorph/data]
-   [:fit-ctx :scicloj.metamorph.ml/target-ds]
-   [:transform-ctx :metamorph/data]
-   [:transform-ctx :scicloj.metamorph.ml/target-ds]
-   [:transform-ctx :scicloj.metamorph.ml/feature-ds]
-  ]
-  ```
+       * `:result-dissoc-in-seq`  - Controls how much information is returned for each cross validation. We call `dissoc-in` on every seq of this for the `fit-ctx` and `transform-ctx` before returning them. Default is
+       ```
+       [[:fit-ctx :metamorph/data]
+       [:fit-ctx :scicloj.metamorph.ml/target-ds]
+       [:transform-ctx :metamorph/data]
+       [:transform-ctx :scicloj.metamorph.ml/target-ds]
+       [:transform-ctx :scicloj.metamorph.ml/feature-ds]
+       ]
+       ```
+       which removes the data from the result contexts.
 
-  which removes the data from the result contexts.
-
-  `return-best-pipeline-only` - Only return information of the best performing pipeline. Default is true.
-  `return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is true.
-  `map-fn` - Controls parallelism, so if we use map (:map) or pmap (:pmap) to map over different pipelines. Default :pmap
-  `evaluation-handler-fn` - Gets called once with the complete result of an evluation step. Its return alue is ignre ande default i a noop.
-
-
+       * `:return-best-pipeline-only` - Only return information of the best performing pipeline. Default is true.
+       * `:return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is true.
+       * `:map-fn` - Controls parallelism, so if we use map (:map) or pmap (:pmap) to map over different pipelines. Default :pmap
+       * `:evaluation-handler-fn` - Gets called once with the complete result of an evluation step. Its return alue is ignre ande default i a noop.
 
   This function expects as well the ground truth of the target variable into
-  a specific key in the context :scicloj.metamorph.ml/target-ds
+  a specific key in the context `:scicloj.metamorph.ml/target-ds`
   See here for the simplest way to set this up: https://github.com/behrica/metamorph.ml/blob/main/README.md
 
-  The function `scicloj.metamorph.ml/model` does this correctly.
+  The function [[scicloj.ml.metamorph/model]] does this correctly.
   "
   ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy options]
    ;; (def tune-options tune-options)
@@ -336,8 +332,8 @@
   * `:model-data` - the result of that definitions's train-fn.
   * `:options` - the options passed in.
   * `:id` - new randomly generated UUID.
-  * `:feature-columns - vector of column names.
-  * `:target-columns - vector of column names."
+  * `:feature-columns` - vector of column names.
+  * `:target-columns` - vector of column names."
   [dataset options]
   (let [{:keys [train-fn]} (options->model-def options)
 
@@ -445,17 +441,23 @@ see tech.v3.dataset.modelling/set-inference-target")
 
 
 (defn model
-  "Executes a machine learning model in train or predict
+  "Executes a machine learning model in train/predict (depending on :mode)
   from the `metamorph.ml` model registry.
 
+  The model is passed between both invocation via the shared context ctx in a
+  key (a step indentifier) which is passed in key `:metamorph/id` and guarantied to be unique for each
+  pipeline step.
+
+  The function writes and reads into this common context key.
+
   Options:
-  - `:model-type` - Keyword for the model too use
+  - `:model-type` - Keyword for the model to use
 
   Further options get passed to `train` functions and are model specific.
 
-  See here for an overview for the models build into Samskara:
+  See here for an overview for the models build into scicloj.ml:
 
-  https://behrica.github.io/samskara/userguide-models.html
+  https://scicloj.github.io/scicloj.ml/userguide-models.html
 
   Other libraries might contribute other models,
   which are documented as part of the library.
@@ -463,10 +465,10 @@ see tech.v3.dataset.modelling/set-inference-target")
 
   metamorph                            | .
   -------------------------------------|----------------------------------------------------------------------------
-  Behaviour in mode :fit               | Calls `train` on given model and stores trained model in ctx
-  Behaviour in mode :transform         | Reads trained model from ctx and calls `predict` on it
-  Reads keys from ctx                  | Reads trained model to use for prediction from $id in mode `:transform`
-  Writes keys to ctx                   | Stores trained model in key $id in mode `:fit` . Writes target-ds before prediction into `:scicloj.metamorph.ml/target-ds`
+  Behaviour in mode :fit               | Calls `scicloj.metamorph.ml/train` using data in `:metamorph/data` and `options`and stores trained model in ctx under key in `:metamorph/id`
+  Behaviour in mode :transform         | Reads trained model from ctx and calls `scicloj.metamorph.ml/predict` with the model in $id and data in `:metamorph/data`
+  Reads keys from ctx                  | In mode `:transform` : Reads trained model to use for prediction from key in `:metamorph/id`.
+  Writes keys to ctx                   | In mode `:fit` : Stores trained model in key $id and writes feature-ds and target-ds before prediction into ctx at `:scicloj.metamorph.ml/target-ds` /`:scicloj.metamorph.ml/target-ds`
 
 
 
@@ -491,6 +493,3 @@ see tech.v3.dataset.modelling/set-inference-target")
                            ::feature-ds (cf/feature data)
                            ::target-ds (cf/target data)
                            :metamorph/data (predict data (get ctx id)))))))
-(comment
-(sc.api/defsc 20)
- )
