@@ -152,12 +152,11 @@
 (defn evaluate-pipelines
   "Evaluates performance of a seq of metamorph pipelines, which are suposed to have a  model as last step, which behaves correctly  in mode :fit and 
    :transform
-   It calculates the loss, given as `loss-fn` of each pipeline in `pipeline-fn-seq` using all the train-test splits given in
-   `train-test-split-seq`.
+   It calculates the loss, given as `loss-fn` of each pipeline in `pipeline-fn-seq` using all the train-test splits given in `train-test-split-seq`.
 
-    It runs the pipelines  in mode  :fit and in mode :transform for each pipeline-fn in `pipe-fn-seq` for each split in `train-test-split-seq`.
+   It runs the pipelines  in mode  :fit and in mode :transform for each pipeline-fn in `pipe-fn-seq` for each split in `train-test-split-seq`.
 
-    The function returns a seq of seqs of evaluation results per pipe-fn per train-test split.
+   The function returns a seq of seqs of evaluation results per pipe-fn per train-test split.
 
    * `pipe-fn-seq` need to be  sequence of functions which follow the metamorph approach. They should take as input the metamorph context map,
     which has the dataset under key :metamorph/data, manipulate it as needed for the transformation pipeline and read and write only to the
@@ -172,26 +171,25 @@
    * `options` map controls some mainly performance related parameters, which are:
 
        * `:result-dissoc-in-seq`  - Controls how much information is returned for each cross validation. We call `dissoc-in` on every seq of this for the `fit-ctx` and `transform-ctx` before returning them. Default is
+
        ```
        [[:fit-ctx :metamorph/data]
-       [:fit-ctx :scicloj.metamorph.ml/target-ds]
-       [:transform-ctx :metamorph/data]
-       [:transform-ctx :scicloj.metamorph.ml/target-ds]
-       [:transform-ctx :scicloj.metamorph.ml/feature-ds]
-       ]
+        [:fit-ctx :scicloj.metamorph.ml/target-ds]
+        [:transform-ctx :metamorph/data]
+        [:transform-ctx :scicloj.metamorph.ml/target-ds]
+        [:transform-ctx :scicloj.metamorph.ml/feature-ds]]
        ```
-       which removes the data from the result contexts.
 
        * `:return-best-pipeline-only` - Only return information of the best performing pipeline. Default is true.
        * `:return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is true.
        * `:map-fn` - Controls parallelism, so if we use map (:map) or pmap (:pmap) to map over different pipelines. Default :pmap
        * `:evaluation-handler-fn` - Gets called once with the complete result of an evluation step. Its return alue is ignre ande default i a noop.
 
-  This function expects as well the ground truth of the target variable into
-  a specific key in the context `:scicloj.metamorph.ml/target-ds`
-  See here for the simplest way to set this up: https://github.com/behrica/metamorph.ml/blob/main/README.md
+   This function expects as well the ground truth of the target variable into
+   a specific key in the context `:scicloj.metamorph.ml/target-ds`
+   See here for the simplest way to set this up: https://github.com/behrica/metamorph.ml/blob/main/README.md
 
-  The function [[scicloj.ml.metamorph/model]] does this correctly.
+   The function [[scicloj.ml.metamorph/model]] does this correctly.
   "
   ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy options]
    ;; (def tune-options tune-options)
