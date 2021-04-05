@@ -244,38 +244,6 @@
   )
 
 
-(defn predict-on-best-model
-  "Helper function for the very common case, to consider the pipeline with lowest average loss being the best.
-   It allows to make a prediction on new data, given the list of all evaluation results.
-  
-   `evaluations` The list of pipeline-fn evaluations as returned from `evaluate-pipelines`.
-   `new-ds` Dataset with the data to run teh best model from evaluations againts
-   `loss-or-accuracy` : either :loss or :accuracy, if the metrics is loos or accuracy
- "
-  [evaluations new-ds loss-or-accuracy]
-  (let [sorted-evals
-        (->>
-         (group-by :pipe-fn evaluations)
-         vals
-         (map first)
-         (sort-by :mean))
-
-        evalution-with-best-avg-metric
-        (case loss-or-accuracy
-          :loss (first sorted-evals)
-          :accuracy (last sorted-evals)
-          )
-        fitted-ctx (evalution-with-best-avg-metric :fit-ctx)
-        target-column  (first (ds-mod/inference-target-column-names new-ds ))]
-    (->   ((evalution-with-best-avg-metric :pipe-fn)
-           (merge fitted-ctx
-                  {:metamorph/data new-ds
-                   :metamorph/mode :transform}))
-          (:metamorph/data)
-          (ds-mod/column-values->categorical target-column)
-          seq)))
-
-
 
 (defonce ^{:doc "Map of model kwd to model definition"} model-definitions* (atom nil))
 
