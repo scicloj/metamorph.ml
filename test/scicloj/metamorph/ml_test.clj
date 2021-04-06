@@ -86,10 +86,9 @@
         pipe-fn-seq [pipe-fn]
 
         evaluations (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)
-        best-fitted-context  (-> evaluations first first :fitted-ctx)
+        best-fitted-context  (-> evaluations first first :fit-ctx)
         best-pipe-fn         (-> evaluations first first :pipe-fn)
 
-        _ (def ds ds)
         new-ds (->
                 (tc/shuffle ds  {:seed 1234} )
                 (tc/head 3)
@@ -143,9 +142,23 @@
                 (tc/shuffle ds  {:seed 1234} )
                 (tc/head 10)
                 )
+        _ (def evaluations evaluations)
+
+        best-pipe-fn         (-> evaluations first first :pipe-fn)
+
+        best-fitted-context  (-> evaluations first first :fit-ctx)
 
         predictions
-        (ml/predict-on-best-model (flatten evaluations) new-ds :loss)]
+        (->
+         (best-pipe-fn
+          (merge best-fitted-context
+                 {:metamorph/data new-ds
+                  :metamorph/mode :transform}))
+         (:metamorph/data)
+         (ds-mod/column-values->categorical :species)
+         )
+        ;; (ml/predict-on-best-model (flatten evaluations) new-ds :loss)
+        ]
 
     (is (= ["versicolor"
             "versicolor"
