@@ -1,6 +1,6 @@
 {:deps {org.clojure/clojure {:mvn/version "1.10.2"}
         techascent/tech.ml.dataset {:mvn/version "5.05"  :exclusions [ch.qos.logback/logback-classic]}
-        scicloj/metamorph {:mvn/version "0.1.0-alpha4-SNAPSHOT"}
+        scicloj/metamorph {:mvn/version "0.1.0"}
         pppmap/pppmap              {:mvn/version "0.2.2"}
         }
  :aliases
