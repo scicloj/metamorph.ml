@@ -134,7 +134,7 @@
           #(merge % metric-vec-stats)
           split-eval-results)
          (sort-by :metric))]
-    (if (tune-options :return-best-pipeline-only)
+    (if (tune-options :return-best-crossvalidation-only)
       (case loss-or-accuracy
         :loss (take 1 sorted-evaluations)
         :accuracy (take-last 1 sorted-evaluations))
