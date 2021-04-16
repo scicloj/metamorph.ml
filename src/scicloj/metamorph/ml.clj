@@ -26,52 +26,25 @@
       (dissoc m k))
     m))
 
-(defn- slice
-"Divide coll into n approximately equal slices."
-  [n coll]
-  (loop [num n, slices [], items (vec coll)]
-    (if (empty? items)
-      slices
-      (let [size (Math/ceil (/ (count items) num))]
-        (recur (dec num) (conj slices (subvec items 0 size)) (subvec items size))))))
+
 
 (defn- calc-metric [pipeline-fn metric-fn train-ds test-ds tune-options]
-  ;; (def pipeline-fn pipeline-fn)
-  ;; (def metric-fn metric-fn)
-  ;; (def train-ds train-ds)
-  ;; (def test-ds test-ds)
   (try
     (let [start-fit (System/currentTimeMillis)
           fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
           end-fit (System/currentTimeMillis)
-          ;; _ (def fitted-ctx fitted-ctx)
           start-transform (System/currentTimeMillis)
           predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data test-ds}) )
           end-transform (System/currentTimeMillis)
-          ;; _ (def predicted-ctx predicted-ctx)
           predictions (:metamorph/data predicted-ctx)
           target (cf/target (:metamorph/data fitted-ctx) )
           _ (errors/when-not-error target "No inference-target column in dataset")
           target-colname (first (ds/column-names target))
-          ;; _ (def target-colname target-colname)
           true-target (get-in predicted-ctx [::target-ds target-colname])
-          ;; _ (def true-target true-target)
-          ;; _ (def predictions predictions)
-          _ (errors/when-not-error true-target (str  "Pipeline context need to have the true prediction target as a dataset at key
- " ::target-ds "Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline.") )
+          _ (errors/when-not-error true-target (str  "Pipeline context need to have the true prediction target as a dataset at key" ::target-ds "Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline.") )
 
-          true-target-mapped-back
-          (mapv
-           (ds-mod/inference-target-label-inverse-map (::target-ds predicted-ctx) [target-colname])
-           (map int true-target))
-
-          predictions-mapped-back
-          (mapv
-           (ds-mod/inference-target-label-inverse-map predictions [target-colname])
-           (map int (predictions target-colname)))
-
-          ;; _ (def true-target-mapped-back true-target-mapped-back)
-          ;; _ (def predictions-mapped-back predictions-mapped-back)
+          true-target-mapped-back (ds-mod/column-values->categorical (::target-ds predicted-ctx) target-colname)
+          predictions-mapped-back (ds-mod/column-values->categorical predictions target-colname)
 
           metric (metric-fn predictions-mapped-back true-target-mapped-back)
 
@@ -99,23 +72,8 @@
          :metric nil}))))
 
 
-;; [[:fit-ctx :metamorph/data]
-;;                          [:transform-ctx :metamorph/data]
-;;                          [:transform-ctx :scicloj.metamorph.ml/target-ds]
-;;                          [:transform-ctx :scicloj.metamorph.ml/feature-ds]
-;;                          ]
-
-
-
-
 (defn- evaluate-one-pipeline [pipe-fn train-test-split-seq metric-fn loss-or-accuracy tune-options
                              ]
-  ;; (def train-test-split-seq train-test-split-seq)
-  ;; (def pipe-fn-seq pipe-fn-seq)
-  ;; (def metric-fn metric-fn)
-  ;; (def loss-or-accuracy loss-or-accuracy)
-  ;; (def keep-best-only keep-best-only)
-
 
   (let [split-eval-results
         (->>
@@ -192,13 +150,6 @@
    The function [[scicloj.ml.metamorph/model]] does this correctly.
   "
   ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy options]
-   ;; (def tune-options tune-options)
-   ;; (def train-test-split-seq train-test-split-seq)
-   ;; (def pipe-fn-seq pipe-fn-seq)
-   ;; (def metric-fn metric-fn)
-   ;; (def loss-or-accuracy loss-or-accuracy)
-   ;; (def options options)
-   ;;
    (let [options (merge {:result-dissoc-in-seq default-result-dissoc-in-seq
                          :map-fn :map
                          :return-best-pipeline-only true
@@ -230,7 +181,6 @@
              :accuracy (take-last 1 pipe-evals))
            pipe-evals)]
 
-     ;; (def pipe-evals pipe-evals)
      (for [pipe-eval result-pipe-evals]
        (for [cv-eval pipe-eval]
          (reduce
@@ -278,6 +228,7 @@
 (defn options->model-def
   "Return the model definition that corresponse to the :model-type option"
   [options]
+  {:pre [(contains? options :model-type)]}
   (if-let [model-def (get @model-definitions* (:model-type options))]
     model-def
     (errors/throwf "Failed to find model %s.  Is a require missing?" (:model-type options))))
@@ -348,7 +299,6 @@ see tech.v3.dataset.modelling/set-inference-target")
   * For classification, a dataset is returned with a float64 column for each target
     value and values that describe the probability distribution."
   [dataset model]
-  ;; (def model model)
   (let [{:keys [predict-fn] :as model-def} (options->model-def (:options model))
         feature-ds (ds/select-columns dataset (:feature-columns model))
         label-columns (:target-columns model)
@@ -358,26 +308,11 @@ see tech.v3.dataset.modelling/set-inference-target")
                             thawed-model
                             model)]
 
-    ;; (def pred-ds pred-ds)
-    ;; (def label-columns label-columns)
-    ;;
-    ;; target-inverse-map
-    ;; (clojure.set/map-invert
-    ;;  (get-in model  [:target-categorical-maps target-col :lookup-table]))
-
-
     (if (= :classification (:model-type (meta pred-ds)))
       (-> (ds-mod/probability-distributions->label-column
            pred-ds target-col)
           (ds/update-column target-col
-                            #(vary-meta % assoc :column-type :prediction))
-
-          ;; (ds/update-column target-col
-          ;;                   (fn [col]
-          ;;                     (map
-          ;;                      #(get target-inverse-map (int %))
-          ;;                      col)))
-          )
+                            #(vary-meta % assoc :column-type :prediction)))
       pred-ds)))
 
 
@@ -434,7 +369,7 @@ see tech.v3.dataset.modelling/set-inference-target")
   Behaviour in mode :fit               | Calls `scicloj.metamorph.ml/train` using data in `:metamorph/data` and `options`and stores trained model in ctx under key in `:metamorph/id`
   Behaviour in mode :transform         | Reads trained model from ctx and calls `scicloj.metamorph.ml/predict` with the model in $id and data in `:metamorph/data`
   Reads keys from ctx                  | In mode `:transform` : Reads trained model to use for prediction from key in `:metamorph/id`.
-  Writes keys to ctx                   | In mode `:fit` : Stores trained model in key $id and writes feature-ds and target-ds before prediction into ctx at `:scicloj.metamorph.ml/target-ds` /`:scicloj.metamorph.ml/target-ds`
+  Writes keys to ctx                   | In mode `:fit` : Stores trained model in key $id and writes feature-ds and target-ds before prediction into ctx at `:scicloj.metamorph.ml/feature-ds` /`:scicloj.metamorph.ml/target-ds`
 
 
 
@@ -448,10 +383,6 @@ see tech.v3.dataset.modelling/set-inference-target")
 
   [options]
   (fn [{:metamorph/keys [id data mode] :as ctx}]
-    ;;  (def data data)
-    ;; (def mode mode)
-    ;; (def ctx ctx)
-    ;; (def id id)
     (case mode
       :fit (assoc ctx id (train data options))
       :transform  (do

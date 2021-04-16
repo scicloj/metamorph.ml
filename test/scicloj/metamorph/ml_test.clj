@@ -67,8 +67,54 @@
     (is (contains?   (:transform-ctx (first (first evaluations)))  :metamorph/mode))
 
 
-    
+
     ))
+
+(deftest evaluate-pipelines-several-cross
+  (let [
+        ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+        pipe-fn
+        (morph/pipeline
+         (ds-mm/set-inference-target :species)
+         (ds-mm/categorical->number cf/categorical)
+         (fn [ctx]
+           (assoc ctx
+                  :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
+         (ml/model {:model-type :smile.classification/random-forest}))
+
+        train-split-seq (tc/split->seq ds :kfold)
+        pipe-fn-seq [pipe-fn pipe-fn]
+
+        evaluations-1
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss
+                               {:return-best-crossvalidation-only false})
+        evaluations-2
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss
+                               {:return-best-crossvalidation-only false
+                                :return-best-pipeline-only false
+                                })
+        evaluations-3
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss
+                               {:return-best-pipeline-only false})
+
+        ]
+
+    (def evaluations-2 evaluations-2)
+
+    (is (= 5 (count (first evaluations-1))))
+    (is (= 1 (count evaluations-1)))
+
+    (is (= 5 (count (first evaluations-2))))
+    (is (= 2 (count evaluations-2)))
+
+;    (distin ) (map :max (first evaluations-2))
+
+
+    (is (= 1 (count (first evaluations-3))))
+    (is (= 2 (count evaluations-3)))
+    )
+
+  )
 
 
 
