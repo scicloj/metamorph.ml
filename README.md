@@ -30,6 +30,10 @@ If you just want to see code, here it is:
 Some libraries are needed for a complete test case, 
 see the deps.edn file in alias "test".
 
+As alternative to use `methmorph.ml` directly, we made a more user friendly re-organisation of the various libraries and namespaces,
+which might be a better quick start experience, still full featured as same code:  [scicloj.ml](https://github.com/scicloj/scicloj.ml)
+
+
 ```clojure
 (require
  '[tech.v3.dataset :as ds]
