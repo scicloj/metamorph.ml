@@ -30,6 +30,8 @@
 
 (defn- calc-metric [pipeline-fn metric-fn train-ds test-ds tune-options]
   (try
+    ;; (println (:PassengerId train-ds))
+    ;; (println pipeline-fn)
     (let [start-fit (System/currentTimeMillis)
           fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
           end-fit (System/currentTimeMillis)
@@ -46,7 +48,10 @@
           true-target-mapped-back (ds-mod/column-values->categorical (::target-ds predicted-ctx) target-colname)
           predictions-mapped-back (ds-mod/column-values->categorical predictions target-colname)
 
+          ;; _ (println "predictions:  " (frequencies predictions-mapped-back))
+          ;; _ (println "trueth:       " (frequencies true-target-mapped-back))
           metric (metric-fn predictions-mapped-back true-target-mapped-back)
+          ;; _ (println "metric: " metric)
 
           result
           {:fit-ctx  fitted-ctx
@@ -86,17 +91,18 @@
         metric-vec (mapv :metric split-eval-results)
         metric-vec-stats
         (dfn/descriptive-statistics [:min :max :mean] metric-vec)
-        sorted-evaluations
+        evaluations
         (->>
          (map
           #(merge % metric-vec-stats)
           split-eval-results)
-         (sort-by :metric))]
+         ;; (sort-by :metric)
+         )]
     (if (tune-options :return-best-crossvalidation-only)
       (case loss-or-accuracy
-        :loss (take 1 sorted-evaluations)
-        :accuracy (take-last 1 sorted-evaluations))
-      sorted-evaluations)
+        :loss (->> evaluations (sort-by :metric) (take 1))
+        :accuracy (->> evaluations (sort-by :metric) (take-last 1)))
+      evaluations)
     ))
 
 (def default-result-dissoc-in-seq
@@ -156,8 +162,7 @@
                          :return-best-crossvalidation-only true
                          :evaluation-handler-fn (fn [evaluation-result] nil)
                          }
-                        options
-                        )
+                        options)
          map-fn
          (case (options :map-fn)
            :pmap (partial ppp/pmap-with-progress "pmap: evaluate pipelines ")
@@ -173,12 +178,13 @@
                   options
                   ))
                pipe-fn-seq)
-              (sort-by :mean))
+              ;; (sort-by :mean)
+              )
          result-pipe-evals
          (if (options :return-best-pipeline-only)
            (case loss-or-accuracy
-             :loss (take 1 pipe-evals)
-             :accuracy (take-last 1 pipe-evals))
+             :loss  (->> pipe-evals (sort-by :mean) (take 1))
+             :accuracy (->> pipe-evals (sort-by :mean) (take-last 1)) )
            pipe-evals)]
 
      (for [pipe-eval result-pipe-evals]
@@ -190,8 +196,7 @@
           (options :result-dissoc-in-seq))))))
 
   ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy]
-   (evaluate-pipelines pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy {}))
-  )
+   (evaluate-pipelines pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy {})))
 
 
 
