@@ -10,7 +10,7 @@ This library is based on the idea, that in machine learning model evaluations,
 we often do not want to tune only the model and its hyper-parameters,
 but the whole data transformation pipeline.
 
-It unifies the often seperated concerns of tuning of data pre-processing and
+It unifies the often separated concerns of tuning of data pre-processing and
 tuning of model hyper-parameters.
 
 In a lot of areas of machine learning, certain aspects of the data
@@ -19,9 +19,9 @@ pre-processing needed to be tuned (by trying), as no clear-cut decisions exists.
 One example could be the number of dimensions in PCA or the vocabulary size in a NLP ML model.
 But it can be as well a "boolean" alternative, such as if stemming should be used or not.
 
-This library allows exactly this, namely hyper-tune an arbitraty complex data transformation pipeline.
+This library allows exactly this, namely hyper-tune an arbitrary complex data transformation pipeline.
 
-Several code examples for metamorph are available in this repo: [metamorph-examples](https://github.com/scicloj/metamorph-examples)
+Several code examples for metamorph are available in this repository: [metamorph-examples](https://github.com/scicloj/metamorph-examples)
 
 ## Quick start
 
@@ -30,8 +30,9 @@ If you just want to see code, here it is:
 Some libraries are needed for a complete test case, 
 see the deps.edn file in alias "test".
 
-As alternative to use `methamorph.ml` directly, we made a more user friendly re-organisation of the various libraries and namespaces,
-which might be a better quick start experience, still full featured as same code:  [scicloj.ml](https://github.com/scicloj/scicloj.ml)
+As alternative to use `methamorph.ml` directly, we made a more user friendly
+re-organisation of the various libraries and namespaces,
+which might be a better quick start experience, still full featured as same code: [scicloj.ml](https://github.com/scicloj/scicloj.ml)
 
 
 ```clojure
@@ -102,35 +103,47 @@ This library contains very little code itself, just one function
 `evaluate-pipelines` which takes a sequence of metamorph compliant pipeline-fn (= each pipeline is a series of steps to transform the raw data and a model step)
 
 It executes each pipeline first in `mode` :fit and then in `mode` transform, as specified by [metamorph](https://github.com/scicloj/metamorph)
-which a pipeline step containing a model should then translates into a train/predict pattern including evaluation of the result.
+which a pipeline step containing a model should then translates into a
+train/predict pattern including evaluation of the result.
 
-The last step of the pipelne function should be a "model", so something which can be trained / predicted.
+The last step of the pipeline function should be a "model", so something which
+can be trained / predicted.
 
 This library does not care, what exactly is the last step.
-It calls the whole pipeline in mode :fit and mode :transform and the model step is supposed to do the right thing.
+It calls the whole pipeline in mode :fit and mode :transform and the model step is
+supposed to do the right thing.
 
 Here is a well behaving model function from `tech.ml`: 
 https://github.com/techascent/tech.ml/blob/38f523a7cea6465f639df6fc4eecd6b3f4de69d0/src/tech/v3/ml/metamorph.clj#L12
-which calls `train` and `preditc` accordingly. 
+which calls `train` and `predict` accordingly. 
 
-So for each pipeline-fn in the sequence given to `evaluate-models` one model will be trained and evaluated.
+So for each pipeline-fn in the sequence given to `evaluate-models` one model
+will be trained and evaluated.
 
-It does this for each pipeline-fn given and each pipeline-fn gets evaluated using each of the given test/train splits.
+It does this for each pipeline-fn given and each pipeline-fn gets evaluated
+using each of the given test/train splits.
 
-This can be used to implement various cross-validation strategies, just as holdout, k-fold and others.
+This can be used to implement various cross-validation strategies, just as
+holdout, k-fold and others.
 
-Each pipeline is typically a variation of a certain standard pipeline, 
-and encapluslates therefore individual machine learning trials with the goal to find the best performing model automatically.
+Each pipeline is typically a variation of a certain standard pipeline,
+and encapsulates therefore individual machine learning trials with the goal to
+find the best performing model automatically.
 
-This is often called hyper-parameter tuning. But here we can do it for all options of the pipeline, and not only for the hyper-parameters of the model itself.
+This is often called hyper-parameter tuning. But here we can do it for all 
+options of the pipeline, and not only for the hyper-parameters of the model itself.
 
-It is of course possible to just have a single pipeline function in the sequence. Then a single model will be trained.
+It is of course possible to just have a single pipeline function in the sequence.
+Then a single model will be trained.
 
-The different pipeline-fns are completely indepedent from each other and can contain the same model, different models, or anything the developper wants.
+The different pipeline-fns are completely independent from each other and can
+contain the same model, different models, or anything the developer wants.
 
-This libray does not contain itself functions to create metamorph pipelines including their variations.
+This library does not contain itself functions to create metamorph
+pipelines including their variations.
 
-This can be done in various ways, from hand coding each pipeline  or having a pipeline creation function  over to using grid search libraries:
+This can be done in various ways, from hand coding each pipeline  or having 
+a pipeline creation function  over to using grid search libraries:
 https://github.com/techascent/tech.ml/blob/38f523a7cea6465f639df6fc4eecd6b3f4de69d0/src/tech/v3/ml/gridsearch.clj#L111
 
 A simple pipeline looks like thgis:
@@ -149,26 +162,28 @@ Pipelines can be created as well declarative based on maps, see here:
 https://scicloj.github.io/tablecloth/index.html#Declarative
 https://github.com/scicloj/tablecloth/blob/pipelines/src/tablecloth/pipeline.clj
 
-The train/test split sequence can as well be generated in any way. It need to be a sequecne of maps contain a "tech.ml.dataset" 
-at key :train and an other dataset  at key :test. These will be used to train / predict and evaluate one pipeline.
+The train/test split sequence can as well be generated in any way. It need to
+be a sequence of maps contain a "tech.ml.dataset"
+at key :train and an other dataset  at key :test. These will be used to
+train / predict and evaluate one pipeline.
 
 
-`evaluates-pipelines` returns then a sequenxe  of model evaluations.
+`evaluates-pipelines` returns then a sequence  of model evaluations.
 It returns #pipeline-fn x  #cross-validation-splits evaluation results. This is as well the total number of models trained in total.
 
 Each evaluation result contains a map with these keys:
 
 key | explanation
 ------ | --------
- :fit-ctx  | the fitted pipeline context (including the trained model and the dataset at end of pipeline) after the pipleine was run in mode :fit 
- :transform-ctx | the  pipline context (including the predition dataset) after pipeline was run in mode :transform
+ :fit-ctx  | the fitted pipeline context (including the trained model and the dataset at end of pipeline) after the pipeline was run in mode :fit 
+ :transform-ctx | the  pipeline context (including the prediction dataset) after pipeline was run in mode :transform
  :scicloj.metamorph.ml/target-ds  | A dataset containing the ground truth
- :pipe-fn | the pipeline-fn doing the full transformation including trin/predict
+ :pipe-fn | the pipeline-fn doing the full transformation including train/predict
  :metric | the score for this model evaluation
  :mean | average score of this pipe-fn over the score of all train/test splits
  :min | min score of this pipe-fn over all train/test splits)
  :max | max score of this pipe-fn over all train/test splits
- :timing | Exceution tim in ms of fit and transform
+ :timing | Execution time in ms of fit and transform
 
 This returned information is as well self-contained, as the pipeline-fn should manipulated exclusively the dataset and the available pipeline context.
 This means, the :pipe-fn functions can be re-executed simply on new data.
@@ -177,18 +192,21 @@ This is due to the metamorph approach, which keeps all input/output of the pipel
 
 ## Metamorph
 
-The pipeline functions passed into `evaluate-pipelines` need to be metamorph compliant as explained here: 
+The pipeline functions passed into `evaluate-pipelines` need to be metamorph
+compliant as explained here:
 https://github.com/scicloj/metamorph
 
-'compliant' means simply to adhere to interact with a context map with certain standard keys
+'compliant' means simply to adhere to interact with a context map with certain 
+standard keys.
 
 A pipeline-fn is a composition of metamorph compliant data transform functions.
 
 The following projects contain them, for both:
+
 - dataset manipulations
 - train/prediction of models
  
-and custom ones can be created easely:
+and custom ones can be created easily:
 
 - https://github.com/techascent/tech.ml.dataset
 - https://github.com/scicloj/tablecloth
@@ -196,3 +214,6 @@ and custom ones can be created easely:
 - https://github.com/scicloj/sklearn-clj
 
 
+
+<!--  LocalWords:  metamorph
+ -->
