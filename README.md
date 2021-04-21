@@ -160,14 +160,15 @@ Each evaluation result contains a map with these keys:
 
 key | explanation
 ------ | --------
- :fitted-ctx  | the fitted pipeline context(including the trained model and the dataset at end of pipeline) after the pipleine was run in mode :fit 
- :prediction-context | the predicted pipline context (including the predition dataset) after pipeline was run in mode :transform
+ :fit-ctx  | the fitted pipeline context (including the trained model and the dataset at end of pipeline) after the pipleine was run in mode :fit 
+ :transform-ctx | the  pipline context (including the predition dataset) after pipeline was run in mode :transform
  :scicloj.metamorph.ml/target-ds  | A dataset containing the ground truth
  :pipe-fn | the pipeline-fn doing the full transformation including trin/predict
  :metric | the score for this model evaluation
- :avg | average score of this pipe-fn (averaged over the score of all train/test splits)
- :min | min score of this pipe-fn
- :max | max score of this pipe-fn
+ :mean | average score of this pipe-fn over the score of all train/test splits
+ :min | min score of this pipe-fn over all train/test splits)
+ :max | max score of this pipe-fn over all train/test splits
+ :timing | Exceution tim in ms of fit and transform
 
 This returned information is as well self-contained, as the pipeline-fn should manipulated exclusively the dataset and the available pipeline context.
 This means, the :pipe-fn functions can be re-executed simply on new data.
