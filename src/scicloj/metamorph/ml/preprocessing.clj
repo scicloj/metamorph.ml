@@ -4,6 +4,24 @@
    [tech.v3.dataset :as ds]
    ))
 
+
+(defn preprocessor [col-seq fit-fn transform-fn context-key options]
+
+  (fn [{:metamorph/keys [data id mode] :as ctx}]
+    (case mode
+      :fit
+      (let [ds (ds/select-columns data col-seq)
+            fit-xform (fit-fn ds options)]
+        (assoc ctx
+               id {context-key fit-xform}
+               :metamorph/data (merge data (transform-fn ds fit-xform))))
+      :transform
+      (assoc ctx :metamorph/data
+             (merge data
+                    (-> (ds/select-columns data col-seq)
+                        (transform-fn
+                         (get-in ctx [id context-key]))))))))
+
 (defn std-scale
   "Metamorph transfomer, which centers and scales the dataset per column.
 
@@ -18,20 +36,8 @@
   [col-seq {:keys [mean? stddev?]
             :or {mean? true stddev? true}
             :as options}]
-  (fn [{:metamorph/keys [data id mode] :as ctx}]
-    (case mode
-      :fit
-      (let [ds (ds/select-columns data col-seq)
-            fit-std-xform (std-math/fit-std-scale ds options)]
-        (assoc ctx
-               id {:fit-std-xform fit-std-xform}
-               :metamorph/data (merge data (std-math/transform-std-scale ds fit-std-xform))))
-      :transform
-      (assoc ctx :metamorph/data
-             (merge data
-                    (-> (ds/select-columns data col-seq)
-                        (std-math/transform-std-scale
-                         (get-in ctx [id :fit-std-xform]))))))))
+  (preprocessor col-seq std-math/fit-std-scale std-math/transform-std-scale :fit-std-xform options))
+
 (defn min-max-scale
   "Metamorph transfomer, which scales the column data into a given range.
 
@@ -47,17 +53,4 @@
             :or {min -0.5
                  max 0.5}
             :as options} ]
-  (fn [{:metamorph/keys [data id mode] :as ctx}]
-    (case mode
-      :fit
-      (let [ds (ds/select-columns data col-seq)
-            fit-minmax-xform (std-math/fit-minmax ds options)]
-        (assoc ctx
-               id {:fit-minmax-xform fit-minmax-xform}
-               :metamorph/data (merge data (std-math/transform-minmax ds fit-minmax-xform))))
-      :transform
-      (assoc ctx :metamorph/data
-             (merge data
-                    (-> (ds/select-columns data col-seq)
-                        (std-math/transform-minmax
-                         (get-in ctx [id :fit-minmax-xform]))))))))
+  (preprocessor col-seq std-math/fit-minmax std-math/transform-minmax :fit-minmax-xform options))
