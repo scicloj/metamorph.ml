@@ -6,23 +6,54 @@
              [tech.v3.dataset.math :as std-math]
              ))
 
+(def data
+  (dataset
+   [
+    [100 0.001]
+    [8   0.05]
+    [50  0.005]
+    [88  0.07]
+    [4   0.1]]
+   {:layout :as-row}))
+
+(def data-2
+  (dataset  {0 [60 80]
+             1 [1 2]}))
+
+
+
+
+(deftest test-min-max []
+  (let [pipe
+        (mm/pipeline
+         (min-max-scale [0] {})
+         )
+
+        fitted
+        (pipe
+         {:metamorph/data data
+          :metamorph/mode :fit}
+
+         )]
+    (is (= [0.5
+            -0.4583333333333333
+            -0.020833333333333315
+            0.375
+            -0.5]
+           (seq (get-in fitted [:metamorph/data 0]))))
+    )
+
+  )
+
+
+
+
+
 (deftest test-std-scale
 
-  (let [data
-        (dataset
-         [
-          [100, 0.001] ,
-          [8, 0.05] ,
-          [50, 0.005] ,
-          [88, 0.07] ,
-          [4, 0.1]]
-         {:layout :as-row})
-
-        data-2
-        (dataset  {0 [60 80]
-                   1 [1 2]})
-        pipe
-        (std-scale [0 1] {})
+  (let [pipe
+        (mm/pipeline
+         (std-scale [0 1] {}))
 
 
         fitted-ctx
@@ -47,6 +78,4 @@
 
     (is (=  [0.22610781582306727 0.6783234474692018]
             (get-in transformed-ctx [:metamorph/data 0]))))
-   )
-
-
+  )
