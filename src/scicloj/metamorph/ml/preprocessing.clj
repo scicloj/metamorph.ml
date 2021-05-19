@@ -2,12 +2,18 @@
   (:require
    [tech.v3.dataset.math :as std-math]
    [tech.v3.dataset :as ds]
-
    ))
 
-(defn std-scale [col-seq {:keys [mean? stddev?]
-             :or {mean? true stddev? true}
-             :as options}]
+(defn std-scale
+  "Metamorph transfomer, which centers and scales the dataset per column.
+
+  `col-seq` ia a seuqnce of columns names to workon
+  `mean?` If true (default), the data gets shifted by the column means, so 0 centered
+  `stddev?` If true (default), the data gets scaled by the standard deviation of the column
+  "
+  [col-seq {:keys [mean? stddev?]
+            :or {mean? true stddev? true}
+            :as options}]
   (fn [{:metamorph/keys [data id mode] :as ctx}]
     (case mode
       :fit
