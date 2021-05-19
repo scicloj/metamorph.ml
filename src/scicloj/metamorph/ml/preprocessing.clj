@@ -5,12 +5,14 @@
 
    ))
 
-(defn std-scale [col-seq]
+(defn std-scale [col-seq {:keys [mean? stddev?]
+             :or {mean? true stddev? true}
+             :as options}]
   (fn [{:metamorph/keys [data id mode] :as ctx}]
     (case mode
       :fit
       (let [ds (ds/select-columns data col-seq)
-            fit-std-xform (std-math/fit-std-scale ds)]
+            fit-std-xform (std-math/fit-std-scale ds options)]
         (assoc ctx
                id {:fit-std-xform fit-std-xform}
                :metamorph/data (merge data (std-math/transform-std-scale ds fit-std-xform))))
