@@ -48,7 +48,6 @@
 
 
 
-
 (deftest test-std-scale
 
   (let [pipe
