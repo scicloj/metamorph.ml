@@ -32,6 +32,14 @@
   `mean?` If true (default), the data gets shifted by the column means, so 0 centered
 
   `stddev?` If true (default), the data gets scaled by the standard deviation of the column
+
+  metamorph                            | .
+  -------------------------------------|----------------------------------------------------------------------------
+  Behaviour in mode :fit               | Centers and scales the dataset at key `:metamorph/data` and stores the trained model in ctx under key at `:metamorph/id`
+  Behaviour in mode :transform         | Reads trained std-scale model from ctx and applies it to data in `:metamorph/data`
+  Reads keys from ctx                  | In mode `:transform` : Reads trained model to use for from key in `:metamorph/id`.
+  Writes keys to ctx                   | In mode `:fit` : Stores trained model in key $id
+
   "
   [col-seq {:keys [mean? stddev?]
             :or {mean? true stddev? true}
@@ -48,6 +56,14 @@
   `min` Minimal value to scale to (default -0.5)
 
   `max` Maximum value to scale to (default 0.5)
+
+    metamorph                          | .
+  -------------------------------------|----------------------------------------------------------------------------
+  Behaviour in mode :fit               | Scales the dataset at key `:metamorph/data` and stores the trained model in ctx under key at `:metamorph/id`
+  Behaviour in mode :transform         | Reads trained min-max-scale model from ctx and applies it to data in `:metamorph/data`
+  Reads keys from ctx                  | In mode `:transform` : Reads trained model to use for from key in `:metamorph/id`.
+  Writes keys to ctx                   | In mode `:fit` : Stores trained model in key $id
+
   "
   [col-seq {:keys [min max]
             :or {min -0.5
