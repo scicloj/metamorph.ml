@@ -18,7 +18,7 @@
     <url>https://github.com/scicloj/metamorph.ml</url>
     <connection>scm:git:git://github.com/scicloj/metamorph.ml.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/scicloj/metamorph.ml.git</developerConnection>
-    <tag>404ae116f562dba500297516a7e2c9615a3da4d9</tag>
+    <tag>8d10373b64170f601d12061bfb047ec30d04b672</tag>
   </scm>
   <build>
     <sourceDirectory>src</sourceDirectory>
@@ -104,6 +104,11 @@
       <version>5.0.3</version>
     </dependency>
     <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>1.13</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.poi</groupId>
       <artifactId>poi</artifactId>
       <version>4.1.2</version>
@@ -136,7 +141,7 @@
     <dependency>
       <groupId>insn</groupId>
       <artifactId>insn</artifactId>
-      <version>0.5.1</version>
+      <version>0.5.2</version>
     </dependency>
     <dependency>
       <groupId>org.apache.poi</groupId>
@@ -161,7 +166,12 @@
     <dependency>
       <groupId>com.taoensso</groupId>
       <artifactId>encore</artifactId>
-      <version>3.9.1</version>
+      <version>3.9.2</version>
+    </dependency>
+    <dependency>
+      <groupId>scicloj</groupId>
+      <artifactId>tablecloth</artifactId>
+      <version>5.17</version>
     </dependency>
     <dependency>
       <groupId>com.github.haifengl</groupId>
@@ -181,13 +191,18 @@
     <dependency>
       <groupId>techascent</groupId>
       <artifactId>tech.ml.dataset</artifactId>
-      <version>5.05</version>
+      <version>5.21</version>
       <exclusions>
         <exclusion>
           <artifactId>logback-classic</artifactId>
           <groupId>ch.qos.logback</groupId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.techascent</groupId>
+      <artifactId>t-digest</artifactId>
+      <version>4.0-pre-release-1</version>
     </dependency>
     <dependency>
       <groupId>org.iq80.snappy</groupId>
@@ -198,6 +213,11 @@
       <groupId>it.unimi.dsi</groupId>
       <artifactId>fastutil</artifactId>
       <version>8.2.1</version>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-core</artifactId>
+      <version>1.2.3</version>
     </dependency>
     <dependency>
       <groupId>pppmap</groupId>
@@ -212,7 +232,7 @@
     <dependency>
       <groupId>cnuernber</groupId>
       <artifactId>dtype-next</artifactId>
-      <version>6.12</version>
+      <version>7.08</version>
     </dependency>
     <dependency>
       <groupId>org.ow2.asm</groupId>
@@ -253,12 +273,12 @@
     <dependency>
       <groupId>scicloj</groupId>
       <artifactId>metamorph</artifactId>
-      <version>0.2.0-SNAPSHOT</version>
+      <version>0.2.0</version>
     </dependency>
     <dependency>
       <groupId>techascent</groupId>
       <artifactId>tech.io</artifactId>
-      <version>4.03</version>
+      <version>4.04</version>
       <exclusions>
         <exclusion>
           <artifactId>commons-compress</artifactId>
@@ -354,6 +374,16 @@
       </exclusions>
     </dependency>
     <dependency>
+      <groupId>org.apache.datasketches</groupId>
+      <artifactId>datasketches-java</artifactId>
+      <version>2.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.datasketches</groupId>
+      <artifactId>datasketches-memory</artifactId>
+      <version>1.3.0</version>
+    </dependency>
+    <dependency>
       <groupId>org.checkerframework</groupId>
       <artifactId>checker-qual</artifactId>
       <version>2.8.1</version>
@@ -376,12 +406,12 @@
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>tools.reader</artifactId>
-      <version>1.3.3</version>
+      <version>1.3.4</version>
     </dependency>
     <dependency>
       <groupId>com.taoensso</groupId>
       <artifactId>nippy</artifactId>
-      <version>3.1.0-RC1</version>
+      <version>3.1.1</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -397,6 +427,17 @@
       <groupId>com.github.virtuald</groupId>
       <artifactId>curvesapi</artifactId>
       <version>1.06</version>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.2.3</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>slf4j-api</artifactId>
+          <groupId>org.slf4j</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.github.haifengl</groupId>
