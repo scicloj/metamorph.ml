@@ -57,7 +57,7 @@
 
   `max` Maximum value to scale to (default 0.5)
 
-    metamorph                          | .
+  metamorph                            | .
   -------------------------------------|----------------------------------------------------------------------------
   Behaviour in mode :fit               | Scales the dataset at key `:metamorph/data` and stores the trained model in ctx under key at `:metamorph/id`
   Behaviour in mode :transform         | Reads trained min-max-scale model from ctx and applies it to data in `:metamorph/data`
