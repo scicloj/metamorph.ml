@@ -1,3 +1,6 @@
+0.3.0-beta4
+- added sonar data
+
 0.3.0-beta3
 - added std-scaler
 - added min-max scaler
