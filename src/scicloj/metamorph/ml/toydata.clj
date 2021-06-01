@@ -42,17 +42,17 @@
      (ds/concat data targets)
      (ds-mod/set-inference-target :disease-progression))))
 
-
-(-> (clojure.java.io/resource "data/iris.csv")
-    (clojure.java.io/input-stream )
-    (ds/->dataset
-     {:file-type :csv :gzipped? true :header-row? false  :n-initial-skip-rows 1} )
-    (ds/rename-columns
-     (zipmap
-      ( map #(str "column-" %) (range 5))
-      [:sepal_length :sepal_width
-       :petal_length :petal_width
-       :species
-       ]))
-    (ds-mod/set-inference-target :species)
-    (ds/categorical->number [:species] {} :int16))
+(defn iris-ds []
+  (-> (clojure.java.io/resource "data/iris.csv")
+      (clojure.java.io/input-stream )
+      (ds/->dataset
+       {:file-type :csv :gzipped? true :header-row? false  :n-initial-skip-rows 1} )
+      (ds/rename-columns
+       (zipmap
+        ( map #(str "column-" %) (range 5))
+        [:sepal_length :sepal_width
+         :petal_length :petal_width
+         :species
+         ]))
+      (ds-mod/set-inference-target :species)
+      (ds/categorical->number [:species] {} :int16)))
