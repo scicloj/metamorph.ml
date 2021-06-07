@@ -18,7 +18,7 @@
     <url>https://github.com/scicloj/metamorph.ml</url>
     <connection>scm:git:git://github.com/scicloj/metamorph.ml.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/scicloj/metamorph.ml.git</developerConnection>
-    <tag>4b627dbec945207a022e80b8805ba9c17c45aea0</tag>
+    <tag>4ecde5592770c0bd73ed91a54adf1ac1ee99eac7</tag>
   </scm>
   <build>
     <sourceDirectory>src</sourceDirectory>
@@ -99,11 +99,6 @@
       <version>1.10.2</version>
     </dependency>
     <dependency>
-      <groupId>com.fasterxml.woodstox</groupId>
-      <artifactId>woodstox-core</artifactId>
-      <version>5.0.3</version>
-    </dependency>
-    <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
       <version>1.13</version>
@@ -116,7 +111,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-compress</artifactId>
-      <version>1.19</version>
+      <version>1.20</version>
     </dependency>
     <dependency>
       <groupId>com.google.errorprone</groupId>
@@ -151,7 +146,7 @@
     <dependency>
       <groupId>techascent</groupId>
       <artifactId>tech.config</artifactId>
-      <version>0.3.7</version>
+      <version>0.3.13</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
@@ -171,7 +166,7 @@
     <dependency>
       <groupId>scicloj</groupId>
       <artifactId>tablecloth</artifactId>
-      <version>5.17</version>
+      <version>6.00-beta-16</version>
     </dependency>
     <dependency>
       <groupId>com.github.haifengl</groupId>
@@ -181,7 +176,7 @@
     <dependency>
       <groupId>techascent</groupId>
       <artifactId>tech.resource</artifactId>
-      <version>5.02</version>
+      <version>5.04</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -191,13 +186,7 @@
     <dependency>
       <groupId>techascent</groupId>
       <artifactId>tech.ml.dataset</artifactId>
-      <version>5.21</version>
-      <exclusions>
-        <exclusion>
-          <artifactId>logback-classic</artifactId>
-          <groupId>ch.qos.logback</groupId>
-        </exclusion>
-      </exclusions>
+      <version>6.00-beta-16</version>
     </dependency>
     <dependency>
       <groupId>com.techascent</groupId>
@@ -232,7 +221,7 @@
     <dependency>
       <groupId>cnuernber</groupId>
       <artifactId>dtype-next</artifactId>
-      <version>7.08</version>
+      <version>8.08</version>
     </dependency>
     <dependency>
       <groupId>org.ow2.asm</groupId>
@@ -266,19 +255,19 @@
       <version>0.4.1</version>
     </dependency>
     <dependency>
-      <groupId>clj-commons</groupId>
-      <artifactId>fs</artifactId>
-      <version>1.5.2</version>
-    </dependency>
-    <dependency>
       <groupId>scicloj</groupId>
       <artifactId>metamorph</artifactId>
-      <version>0.2.0</version>
+      <version>0.2.1-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>pl.edu.icm</groupId>
+      <artifactId>JLargeArrays</artifactId>
+      <version>1.5</version>
     </dependency>
     <dependency>
       <groupId>techascent</groupId>
       <artifactId>tech.io</artifactId>
-      <version>4.04</version>
+      <version>4.07</version>
       <exclusions>
         <exclusion>
           <artifactId>commons-compress</artifactId>
@@ -304,7 +293,7 @@
     <dependency>
       <groupId>org.dhatim</groupId>
       <artifactId>fastexcel-reader</artifactId>
-      <version>0.10.12</version>
+      <version>0.12.8</version>
       <exclusions>
         <exclusion>
           <artifactId>poi-ooxml</artifactId>
@@ -334,14 +323,14 @@
       <version>0.3.0</version>
     </dependency>
     <dependency>
+      <groupId>com.github.wendykierp</groupId>
+      <artifactId>JTransforms</artifactId>
+      <version>3.1</version>
+    </dependency>
+    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>failureaccess</artifactId>
       <version>1.0.1</version>
-    </dependency>
-    <dependency>
-      <groupId>environ</groupId>
-      <artifactId>environ</artifactId>
-      <version>1.1.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -391,7 +380,7 @@
     <dependency>
       <groupId>org.codehaus.woodstox</groupId>
       <artifactId>stax2-api</artifactId>
-      <version>3.1.4</version>
+      <version>4.2</version>
     </dependency>
     <dependency>
       <groupId>com.univocity</groupId>
@@ -407,6 +396,11 @@
       <groupId>org.clojure</groupId>
       <artifactId>tools.reader</artifactId>
       <version>1.3.4</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml</groupId>
+      <artifactId>aalto-xml</artifactId>
+      <version>1.2.2</version>
     </dependency>
     <dependency>
       <groupId>com.taoensso</groupId>
@@ -427,6 +421,11 @@
       <groupId>com.github.virtuald</groupId>
       <artifactId>curvesapi</artifactId>
       <version>1.06</version>
+    </dependency>
+    <dependency>
+      <groupId>babashka</groupId>
+      <artifactId>fs</artifactId>
+      <version>0.0.3</version>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
