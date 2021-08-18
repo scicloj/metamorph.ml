@@ -4,11 +4,12 @@
             [tech.v3.dataset.modelling :as ds-mod]
             [tech.v3.datatype.functional :as dtfn]
             [camel-snake-kebab.core :as csk]
+            [clojure.java.io :as io]
             ))
 
 (defn sonar-ds []
   (->  (ds/->dataset
-        (clojure.java.io/input-stream (clojure.java.io/resource "data/sonar.csv"))
+        (io/input-stream (io/resource "data/sonar.csv"))
         {:header-row? false :file-type :csv})
        (tc/rename-columns
         (zipmap
@@ -21,8 +22,8 @@
 
 (defn diabetes-ds []
   (let [data
-        (-> (clojure.java.io/resource "data/diabetes_data.csv")
-            (clojure.java.io/input-stream )
+        (-> (io/resource "data/diabetes_data.csv")
+            (io/input-stream )
             (ds/->dataset
              {:file-type :csv :gzipped? true :separator " " :header-row? false} )
             (ds/rename-columns
@@ -32,8 +33,8 @@
                :s1 :s2 :s3 :s4 :s5 :s6])))
 
         targets
-        (-> (clojure.java.io/resource "data/diabetes_target.csv")
-            (clojure.java.io/input-stream )
+        (-> (io/resource "data/diabetes_target.csv")
+            (io/input-stream )
             (ds/->dataset
              {:file-type :csv :gzipped? true :separator " " :header-row? false} )
             (ds/rename-columns {"column-0" :disease-progression})
@@ -44,8 +45,8 @@
      (ds-mod/set-inference-target :disease-progression))))
 
 (defn iris-ds []
-  (-> (clojure.java.io/resource "data/iris.csv")
-      (clojure.java.io/input-stream )
+  (-> (io/resource "data/iris.csv")
+      (io/input-stream )
       (ds/->dataset
        {:file-type :csv :gzipped? true :header-row? false  :n-initial-skip-rows 1} )
       (ds/rename-columns
@@ -60,8 +61,8 @@
 
 
 (defn breast-cancer-ds []
-  (-> (clojure.java.io/resource "data/breast_cancer.csv")
-      (clojure.java.io/input-stream )
+  (-> (io/resource "data/breast_cancer.csv")
+      (io/input-stream )
       (ds/->dataset
        {:file-type :csv :gzipped? true :header-row? false  :n-initial-skip-rows 1} )
       (ds/rename-columns
@@ -93,3 +94,23 @@
                         )
       (ds/categorical->number [:class] {} :int16)
       (ds-mod/set-inference-target :class)))
+
+
+(comment
+  (->>
+   ( file-seq (io/file "/tmp/20news-bydate-train") )
+   (filter #(.isFile %))
+   (map #(let [path (.toPath %)]
+           (hash-map :category
+                     (keyword (str (.getName path 2)))
+                     :text
+                     (slurp %)
+                     )
+
+           ))
+    tc/dataset
+   )
+
+  )
+
+(keyword "hh")
