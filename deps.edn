@@ -1,5 +1,5 @@
 {:deps {org.clojure/clojure {:mvn/version "1.10.2"}
-        scicloj/metamorph {:mvn/version "0.2.1-SNAPSHOT"}
+        scicloj/metamorph {:mvn/version "0.2.1"}
         pppmap/pppmap              {:mvn/version "0.2.2"}
         scicloj/tablecloth {:mvn/version "6.00-beta-16"}
         }
