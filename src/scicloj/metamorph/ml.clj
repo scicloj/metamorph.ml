@@ -88,30 +88,37 @@
                     :metric-fn metric-fn
                     :pipe-fn pipe-fn)))
          (remove #(nil? (:metric %))))
+
         metric-vec (mapv :metric split-eval-results)
+
         metric-vec-stats
         (dfn/descriptive-statistics [:min :max :mean] metric-vec)
+
         evaluations
         (->>
-         (map
+         (mapv
           #(merge % metric-vec-stats)
           split-eval-results)
-         ;; (sort-by :metric)
-         )]
+         (sort-by :metric))]
+
+         
     (if (tune-options :return-best-crossvalidation-only)
       (case loss-or-accuracy
-        :loss (->> evaluations (sort-by :metric) (take 1))
-        :accuracy (->> evaluations (sort-by :metric) (take-last 1)))
-      evaluations)
-    ))
+        :loss (->> evaluations  (take 1))
+        :accuracy (->> evaluations  (take-last 1)))
+      (case loss-or-accuracy
+        :loss evaluations
+        :accuracy (-> evaluations  reverse)))))
+      
+    
 
 (def default-result-dissoc-in-seq
   [[:fit-ctx :metamorph/data]
    [:fit-ctx :scicloj.metamorph.ml/target-ds]
    [:transform-ctx :metamorph/data]
    [:transform-ctx :scicloj.metamorph.ml/target-ds]
-   [:transform-ctx :scicloj.metamorph.ml/feature-ds]
-   ])
+   [:transform-ctx :scicloj.metamorph.ml/feature-ds]])
+   
 
 (defn evaluate-pipelines
   "Evaluates performance of a seq of metamorph pipelines, which are suposed to have a  model as last step, which behaves correctly  in mode :fit and 
@@ -160,13 +167,15 @@
                          :map-fn :map
                          :return-best-pipeline-only true
                          :return-best-crossvalidation-only true
-                         :evaluation-handler-fn (fn [evaluation-result] nil)
-                         }
+                         :evaluation-handler-fn (fn [evaluation-result] nil)}
+                         
                         options)
          map-fn
          (case (options :map-fn)
            :pmap (partial ppp/pmap-with-progress "pmap: evaluate pipelines ")
            :map (partial ppp/map-with-progress "map: evaluate pipelines"))
+
+
          pipe-evals
          (->> (map-fn
                (fn [pipe-fn]
@@ -175,17 +184,29 @@
                   train-test-split-seq
                   metric-fn
                   loss-or-accuracy
-                  options
-                  ))
-               pipe-fn-seq)
-              ;; (sort-by :mean)
-              )
+                  options))
+               pipe-fn-seq))
+
+         pipe-eval-means
+         (->>
+          (mapv
+           (fn [pipe-eval]
+             {:pipe-mean
+              (dfn/mean
+               (mapv :metric pipe-eval))
+              :pipe-eval pipe-eval})
+           pipe-evals)
+          (sort-by :pipe-mean))
+
+
          result-pipe-evals
          (if (options :return-best-pipeline-only)
            (case loss-or-accuracy
-             :loss  (->> pipe-evals (sort-by :mean) (take 1))
-             :accuracy (->> pipe-evals (sort-by :mean) (take-last 1)) )
-           pipe-evals)]
+             :loss     (->> pipe-eval-means  first :pipe-eval vector)
+             :accuracy (->> pipe-eval-means  last :pipe-eval vector))
+           (case loss-or-accuracy
+             :loss     (->> pipe-eval-means  (map :pipe-eval))
+             :accuracy (->> pipe-eval-means  reverse (mapv :pipe-eval))))]
 
      (for [pipe-eval result-pipe-evals]
        (for [cv-eval pipe-eval]
