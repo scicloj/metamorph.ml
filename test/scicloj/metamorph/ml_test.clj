@@ -14,6 +14,7 @@
 (deftest evaluate-pipelines-simplest
   (let [
 
+
         ;;  the data
         ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
 
@@ -44,9 +45,9 @@
 
         ;;  simulate new data
         new-ds (->
-                (tc/shuffle ds  {:seed 1234} )
-                (tc/head 10)
-                )
+                (tc/shuffle ds  {:seed 1234})
+                (tc/head 10))
+                
         ;;  do prediction on new data
         predictions
         (->
@@ -57,18 +58,18 @@
          (:metamorph/data)
          (ds-mod/column-values->categorical :species))]
 
-    (is (= ["versicolor" "versicolor" "virginica" "versicolor" "virginica" "setosa" "virginica" "virginica" "versicolor" "versicolor" ]
+    (is (= ["versicolor" "versicolor" "virginica" "versicolor" "virginica" "setosa" "virginica" "virginica" "versicolor" "versicolor"]
            predictions))
-    (is (=  1) (count evaluations))
-    (is (=  1) (count (first evaluations)))
+    (is (=  1 (count evaluations)))
+    (is (=  1 (count (first evaluations))))
 
     (is (= (set [:fit-ctx :transform-ctx :metric :metric-fn :pipe-fn :min :mean :max :timing]) (set (keys (first (first evaluations))))))
     (is (contains?   (:fit-ctx (first (first evaluations)))  :metamorph/mode))
-    (is (contains?   (:transform-ctx (first (first evaluations)))  :metamorph/mode))
+    (is (contains?   (:transform-ctx (first (first evaluations)))  :metamorph/mode))))
 
 
 
-    ))
+    
 
 (deftest evaluate-pipelines-several-cross
   (let [
@@ -91,13 +92,13 @@
         evaluations-2
         (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss
                                {:return-best-crossvalidation-only false
-                                :return-best-pipeline-only false
-                                })
+                                :return-best-pipeline-only false})
+                                
         evaluations-3
         (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss
-                               {:return-best-pipeline-only false})
+                               {:return-best-pipeline-only false})]
 
-        ]
+        
 
     (def evaluations-2 evaluations-2)
 
@@ -111,10 +112,10 @@
 
 
     (is (= 1 (count (first evaluations-3))))
-    (is (= 2 (count evaluations-3)))
-    )
+    (is (= 2 (count evaluations-3)))))
+    
 
-  )
+  
 
 
 
@@ -136,9 +137,9 @@
         best-pipe-fn         (-> evaluations first first :pipe-fn)
 
         new-ds (->
-                (tc/shuffle ds  {:seed 1234} )
-                (tc/head 3)
-                )
+                (tc/shuffle ds  {:seed 1234})
+                (tc/head 3))
+                
         predictions
         (->
          (best-pipe-fn
@@ -146,10 +147,10 @@
                  {:metamorph/data new-ds
                   :metamorph/mode :transform}))
          (:metamorph/data)
-         (ds-mod/column-values->categorical :species)
-         )]
+         (ds-mod/column-values->categorical :species))]
+         
 
-    (is (= ["versicolor" "versicolor" "virginica" ]
+    (is (= ["versicolor" "versicolor" "virginica"]
            predictions))))
 
 
@@ -158,8 +159,8 @@
   (let [
         ds (->
             (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
-            (ds-mod/set-inference-target :species)
-            )
+            (ds-mod/set-inference-target :species))
+            
 
         grid-search-options
         {:trees (gs/categorical [10 50 100 500])
@@ -185,9 +186,9 @@
         (ml/evaluate-pipelines pipe-fn-seq train-test-seq loss/classification-loss :loss)
 
         new-ds (->
-                (tc/shuffle ds  {:seed 1234} )
-                (tc/head 10)
-                )
+                (tc/shuffle ds  {:seed 1234})
+                (tc/head 10))
+                
         _ (def evaluations evaluations)
 
         best-pipe-fn         (-> evaluations first first :pipe-fn)
@@ -201,10 +202,10 @@
                  {:metamorph/data new-ds
                   :metamorph/mode :transform}))
          (:metamorph/data)
-         (ds-mod/column-values->categorical :species)
-         )
+         (ds-mod/column-values->categorical :species))]
+         
         ;; (ml/predict-on-best-model (flatten evaluations) new-ds :loss)
-        ]
+        
 
     (is (= ["versicolor"
             "versicolor"
@@ -250,8 +251,8 @@
                           :metamorph/data test-ds}))
 
         predicted-species (ds-mod/column-values->categorical (:metamorph/data prediction)
-                                                            "species"
-                                                            )]
+                                                            "species")]
+                                                            
 
     (is (= ["setosa" "versicolor" "versicolor"]
            (take 3 predicted-species)))))
@@ -281,15 +282,19 @@
   ;; one pipe-fn in the seq
   (def pipe-fn-seq [pipe-fn pipe-fn])
 
+  (cf/categorical ds)
+  (pipe-fn {:metamorph/data ds :metamorph/mode :fit})
 
+  (-> train-split-seq first)
   (def evaluations
     (ml/evaluate-pipelines
      pipe-fn-seq train-split-seq loss/classification-loss :loss
-     :result-dissoc-seq []
-     :return-best-crossvalidation-only
-      true
-      :return-best-pipeline-only true)
-    )
+     {:map-fn :map
+      :result-dissoc-seq []
+      :return-best-crossvalidation-only
+      false
+      :return-best-pipeline-only false}))
+    
   (first (first evaluations))
   ;; we have only one result
   (def best-fitted-context (-> evaluations first first :fit-ctx))
@@ -298,9 +303,9 @@
 
   ;;  simulate new data
   (def new-ds (->
-               (tc/shuffle ds  {:seed 1234} )
-               (tc/head 10)
-               ))
+               (tc/shuffle ds  {:seed 1234})
+               (tc/head 10)))
+               
   ;;  do prediction on new data
   predictions
   (->
@@ -311,15 +316,15 @@
    (:metamorph/data)
    (ds-mod/column-values->categorical :species))
 
-  (is (= ["versicolor" "versicolor" "virginica" "versicolor" "virginica" "setosa" "virginica" "virginica" "versicolor" "versicolor" ]
+  (is (= ["versicolor" "versicolor" "virginica" "versicolor" "virginica" "setosa" "virginica" "virginica" "versicolor" "versicolor"]
          predictions)))
 
 (comment
 
   (def ds (->
            (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
-           (ds-mod/set-inference-target :species)
-           ))
+           (ds-mod/set-inference-target :species)))
+           
 
   (def  grid-search-options
     {:trees (gs/categorical [10 20 50 100 300 500])
@@ -330,7 +335,7 @@
     (morph/pipeline
      (fn [ctx]
        (assoc ctx :pipe-options options))
-     (ds-mm/categorical->number cf/categorical)
+     ;; (ds-mm/categorical->number cf/categorical)
      (ml/model options)))
 
   (def all-options-combinations (take 10 (gs/sobol-gridsearch grid-search-options)))
@@ -342,17 +347,18 @@
   (def evaluations
     (ml/evaluate-pipelines pipe-fn-seq train-test-seq loss/classification-loss :loss
                            {
+                            :map-fn :map
                             :result-dissoc-in-seq []
-                            :return-best-pipeline-only false
-                            :return-best-crossvalidation-only false
+                            :return-best-pipeline-only true
+                            :return-best-crossvalidation-only true}))
                             ;; :evaluation-handler-fn (fn [result]
                             ;;                          (println (keys result))
                             ;;                          )
-                            }
+                            
 
-                           )
+                           
 
-    )
+    
 
-  (flatten evaluations)
-  )
+  (flatten evaluations))
+  

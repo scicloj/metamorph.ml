@@ -7,8 +7,8 @@
             [tech.v3.datatype.errors :as errors]
             [tech.v3.datatype.functional :as dfn]
             [scicloj.metamorph.core]
-            [tech.v3.datatype.export-symbols :as exporter]
-            )
+            [tech.v3.datatype.export-symbols :as exporter])
+            
   (:import java.util.UUID))
 
 
@@ -30,20 +30,18 @@
 
 (defn- calc-metric [pipeline-fn metric-fn train-ds test-ds tune-options]
   (try
-    ;; (println (:PassengerId train-ds))
-    ;; (println pipeline-fn)
     (let [start-fit (System/currentTimeMillis)
           fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
           end-fit (System/currentTimeMillis)
           start-transform (System/currentTimeMillis)
-          predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data test-ds}) )
+          predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data test-ds}))
           end-transform (System/currentTimeMillis)
           predictions (:metamorph/data predicted-ctx)
-          target (cf/target (:metamorph/data fitted-ctx) )
+          target (cf/target (:metamorph/data fitted-ctx))
           _ (errors/when-not-error target "No inference-target column in dataset")
           target-colname (first (ds/column-names target))
           true-target (get-in predicted-ctx [::target-ds target-colname])
-          _ (errors/when-not-error true-target (str  "Pipeline context need to have the true prediction target as a dataset at key" ::target-ds "Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline.") )
+          _ (errors/when-not-error true-target (str  "Pipeline context need to have the true prediction target as a dataset at key" ::target-ds "Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
 
           true-target-mapped-back (ds-mod/column-values->categorical (::target-ds predicted-ctx) target-colname)
           predictions-mapped-back (ds-mod/column-values->categorical predictions target-colname)
@@ -58,16 +56,16 @@
            :transform-ctx  predicted-ctx
            :metric metric
            :timing {:fit (- end-fit start-fit)
-                    :transform (- end-transform start-transform)}
-           }]
+                    :transform (- end-transform start-transform)}}]
+
       ((tune-options :evaluation-handler-fn)
        result)
       (reduce
        (fn [x y]
          (dissoc-in x y))
        result
-       (tune-options :result-dissoc-in-seq )
-       ))
+       (tune-options :result-dissoc-in-seq)))
+
     (catch Exception e
       (throw e)
       (do
@@ -77,8 +75,8 @@
          :metric nil}))))
 
 
-(defn- evaluate-one-pipeline [pipe-fn train-test-split-seq metric-fn loss-or-accuracy tune-options
-                             ]
+(defn- evaluate-one-pipeline [pipe-fn train-test-split-seq metric-fn loss-or-accuracy tune-options]
+                             
 
   (let [split-eval-results
         (->>
@@ -232,17 +230,17 @@
                                          thaw-fn
                                          explain-fn
                                          options
-                                         documentation
-                                         ]}]
+                                         documentation]}]
+                                         
   (swap! model-definitions* assoc model-kwd {:train-fn train-fn
                                              :predict-fn predict-fn
                                              :hyperparameters hyperparameters
                                              :thaw-fn thaw-fn
                                              :explain-fn explain-fn
                                              :options options
-                                             :documentation documentation
+                                             :documentation documentation})
 
-                                             })
+                                             
   :ok)
 
 (defn model-definition-names
@@ -279,7 +277,6 @@
   * `:target-columns` - vector of column names."
   [dataset options]
   (let [{:keys [train-fn]} (options->model-def options)
-
         feature-ds (cf/feature  dataset)
         _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
                                  "No features provided")
