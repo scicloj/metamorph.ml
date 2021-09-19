@@ -4,8 +4,8 @@
             [tech.v3.dataset.modelling :as ds-mod]
             [tech.v3.datatype.functional :as dtfn]
             [camel-snake-kebab.core :as csk]
-            [clojure.java.io :as io]
-            ))
+            [clojure.java.io :as io]))
+            
 
 (defn sonar-ds []
   (->  (ds/->dataset
@@ -16,16 +16,16 @@
          (map #(str "column-" %) (range 61))
          (concat
           (map #(keyword (str "x" %)) (range 60))
-          [:material]
-          )))))
+          [:material])))))
+          
 
 
 (defn diabetes-ds []
   (let [data
         (-> (io/resource "data/diabetes_data.csv")
-            (io/input-stream )
+            (io/input-stream)
             (ds/->dataset
-             {:file-type :csv :gzipped? true :separator " " :header-row? false} )
+             {:file-type :csv :gzipped? true :separator " " :header-row? false})
             (ds/rename-columns
              (zipmap
               ( map #(str "column-" %) (range 10))
@@ -34,37 +34,37 @@
 
         targets
         (-> (io/resource "data/diabetes_target.csv")
-            (io/input-stream )
+            (io/input-stream)
             (ds/->dataset
-             {:file-type :csv :gzipped? true :separator " " :header-row? false} )
+             {:file-type :csv :separator " " :header-row? false})
             (ds/rename-columns {"column-0" :disease-progression})
-            (ds/update-column :disease-progression (fn [col] (map #(Integer/valueOf (Math/round %)) col)))
-            )]
+            (ds/update-column :disease-progression (fn [col] (map #(Integer/valueOf (Math/round %)) col))))]
+            
     (->
      (ds/concat data targets)
      (ds-mod/set-inference-target :disease-progression))))
 
 (defn iris-ds []
   (-> (io/resource "data/iris.csv")
-      (io/input-stream )
+      (io/input-stream)
       (ds/->dataset
-       {:file-type :csv :gzipped? true :header-row? false  :n-initial-skip-rows 1} )
+       {:file-type :csv :gzipped? true :header-row? false  :n-initial-skip-rows 1})
       (ds/rename-columns
        (zipmap
         ( map #(str "column-" %) (range 5))
         [:sepal_length :sepal_width
          :petal_length :petal_width
-         :species
-         ]))
+         :species]))
+         
       (ds-mod/set-inference-target :species)
       (ds/categorical->number [:species] {} :int16)))
 
 
 (defn breast-cancer-ds []
   (-> (io/resource "data/breast_cancer.csv")
-      (io/input-stream )
+      (io/input-stream)
       (ds/->dataset
-       {:file-type :csv :gzipped? true :header-row? false  :n-initial-skip-rows 1} )
+       {:file-type :csv :gzipped? true :header-row? false  :n-initial-skip-rows 1})
       (ds/rename-columns
        (zipmap
         ( map #(str "column-" %) (range 31))
@@ -88,29 +88,24 @@
          :class)))
 
       (ds/update-column :class (fn [col] (map
-                                         #(case % 0 :malignant 1 :benign )
-                                         col
-                                         ))
-                        )
+                                          #(case % 0 :malignant 1 :benign)
+                                          col)))
+                                         
+                        
       (ds/categorical->number [:class] {} :int16)
       (ds-mod/set-inference-target :class)))
 
 
 (comment
   (->>
-   ( file-seq (io/file "/tmp/20news-bydate-train") )
+   ( file-seq (io/file "/tmp/20news-bydate-train"))
    (filter #(.isFile %))
    (map #(let [path (.toPath %)]
            (hash-map :category
                      (keyword (str (.getName path 2)))
                      :text
-                     (slurp %)
-                     )
+                     (slurp %))))
+                     
 
-           ))
-    tc/dataset
-   )
-
-  )
-
-(keyword "hh")
+           
+   tc/dataset))

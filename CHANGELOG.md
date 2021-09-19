@@ -1,3 +1,6 @@
+0.3.0-beta6
+- fixed toy data
+
 0.3.0-beta4
 - added sonar data
 
