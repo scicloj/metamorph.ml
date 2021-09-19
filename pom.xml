@@ -4,7 +4,7 @@
   <groupId>scicloj</groupId>
   <artifactId>metamorph.ml</artifactId>
   <packaging>jar</packaging>
-  <version>0.3.0-beta5</version>
+  <version>0.3.0-beta6-SNAPSHOT</version>
   <name>metamorph.ml</name>
   <description>Machine learning model evaluations using context based pipelines.</description>
   <url>https://github.com/scicloj/metamorph</url>
@@ -18,7 +18,7 @@
     <url>https://github.com/scicloj/metamorph.ml</url>
     <connection>scm:git:git://github.com/scicloj/metamorph.ml.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/scicloj/metamorph.ml.git</developerConnection>
-    <tag>0a9c55ff6b3c93b17f8f11e815d3721f446f37a7</tag>
+    <tag>abc69016297e3065216e34d106ebeb0a19b4d0b4</tag>
   </scm>
   <build>
     <sourceDirectory>src</sourceDirectory>
