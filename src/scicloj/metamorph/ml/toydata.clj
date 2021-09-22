@@ -25,7 +25,7 @@
         (-> (io/resource "data/diabetes_data.csv")
             (io/input-stream)
             (ds/->dataset
-             {:file-type :csv :gzipped? true :separator " " :header-row? false})
+             {:file-type :csv :separator " " :header-row? false})
             (ds/rename-columns
              (zipmap
               ( map #(str "column-" %) (range 10))
@@ -39,16 +39,15 @@
              {:file-type :csv :separator " " :header-row? false})
             (ds/rename-columns {"column-0" :disease-progression})
             (ds/update-column :disease-progression (fn [col] (map #(Integer/valueOf (Math/round %)) col))))]
-            
     (->
-     (ds/concat data targets)
+     (ds/add-column data (:disease-progression targets))
      (ds-mod/set-inference-target :disease-progression))))
 
 (defn iris-ds []
   (-> (io/resource "data/iris.csv")
       (io/input-stream)
       (ds/->dataset
-       {:file-type :csv :gzipped? true :header-row? false  :n-initial-skip-rows 1})
+       {:file-type :csv :header-row? false  :n-initial-skip-rows 1})
       (ds/rename-columns
        (zipmap
         ( map #(str "column-" %) (range 5))
@@ -64,7 +63,7 @@
   (-> (io/resource "data/breast_cancer.csv")
       (io/input-stream)
       (ds/->dataset
-       {:file-type :csv :gzipped? true :header-row? false  :n-initial-skip-rows 1})
+       {:file-type :csv :header-row? false  :n-initial-skip-rows 1})
       (ds/rename-columns
        (zipmap
         ( map #(str "column-" %) (range 31))
