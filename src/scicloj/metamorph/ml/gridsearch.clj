@@ -86,57 +86,26 @@
 
 
 (defn- map->axis
-  ([data path axis index]
-   (println "data:" data)
-   (println "path:" path)
-   (println "axis:" axis)
-   (def data data)
-   (def path path)
-   (def axis axis)
-
-   (reduce (fn [something-1 something-2]
-             (println "something-1:" something-1)
-             (println "something-2:" something-2)
-             (let [k nil v nil]
-               ;; (def k k)
-               ;; (def v v)
-               (def axis axis)
-               (def index index)
-               (println "axis: " axis)
-               (println :k k :v v)
-               (cond
-                 (::type v)
-                 (let [{:keys [start end n-steps]} v
-                       start (double start)
-                       end (double end)
-                       n-steps (dec (double n-steps))]
-                   (conj axis {:axis (conj path k)
-                               :element v
-                               :lspace-proj (fn ^long [^double sobol-val]
-                                              (Math/round (* sobol-val n-steps)))}))
-                 (map? v)
-                 (map->axis v (conj path k) axis index)
-
-                 (sequential? v)
-                 (map
-                  #(let [{:keys [start end n-steps]} %
-                         start (double start)
-                         end (double end)
-                         n-steps (dec (double n-steps))]
-                     (conj axis {:axis (conj  (conj path k) index)
-                                 :element %
-                                 :lspace-proj (fn ^long [^double sobol-val]
-                                                (Math/round (* sobol-val n-steps)))}))
-
-                  v)
-                 ;; (map->axis v k axis (inc index))
-
-                 :else
-                 axis)))
+  ([data-map path axis]
+   (reduce (fn [axis [k v]]
+             (cond
+               (::type v)
+               (let [{:keys [start end n-steps]} v
+                     start (double start)
+                     end (double end)
+                     n-steps (dec (double n-steps))]
+                 (conj axis {:axis (conj path k)
+                             :element v
+                             :lspace-proj (fn ^long [^double sobol-val]
+                                            (Math/round (* sobol-val n-steps)))}))
+               (map? v)
+               (map->axis v (conj path k) axis)
+               :else
+               axis))
            axis
            data-map))
   ([data-map]
-   (map->axis data-map [] [] 0)))
+   (map->axis data-map [] [])))
 
 
 (defn sobol-gridsearch
@@ -167,85 +136,23 @@ user> (ml-gs/sobol-gridsearch opt-map)
 ```
   "
   ([opt-map start-idx]
-   (def opt-map opt-map)
-   (def index index)
-   (let [axiss (map->axis opt-map)]
-     (def axiss axiss)
-     (if (seq axiss)
-       (mapv
-        (fn [axis]
-          (let [lspace-projections (mapv :lspace-proj axis)
-                total-steps (long (apply * 1.0 (map #(get-in % [:element :n-steps])
-                                                    axis)))]
-            (->> (sobol-seq lspace-projections total-steps start-idx)
-                 (map (fn [seq-data]
-                        (reduce (fn [opt-map [seq-elem {:keys [axis element]}]]
-                                  (assoc-in opt-map axis (project element seq-elem)))
-                                opt-map
-                                (map vector seq-data axis)))))))
-        axiss)
+   (let [axis (map->axis opt-map)]
+     (if (seq axis)
+       (let [lspace-projections (mapv :lspace-proj axis)
+             total-steps (long (apply * 1.0 (map #(get-in % [:element :n-steps])
+                                                 axis)))]
+         (->> (sobol-seq lspace-projections total-steps start-idx)
+              (map (fn [seq-data]
+                     (reduce (fn [opt-map [seq-elem {:keys [axis element]}]]
+                               (assoc-in opt-map axis (project element seq-elem)))
+                             opt-map
+                             (map vector seq-data axis))))))
        [opt-map])))
   ([opt-map]
    (sobol-gridsearch opt-map 0)))
 
 
 (comment
-  (def opt-map)
-
-  (map->axis {:a [(categorical [:a :b])]}))
-
-(map->axis {:a (categorical [:a :b])})
-(sobol-gridsearch {:a (categorical [:a :b])})
-
-
-
-(sobol-gridsearch {:a [(categorical [:a :b])]})
-
-(map->axis {});; => []
-
-
-(map->axis {:a 1});; => []
-
-
-(map->axis {:a {:a 1}})
-
-(map->axis {:a (categorical [:a])})
-;; => [{:axis [:a],
-;;      :element
-;;      {:scicloj.metamorph.ml.gridsearch/type :linear,
-;;       :start 0.0,
-;;       :end 0.0,
-;;       :n-steps 1,
-;;       :result-space [:a]},
-;;      :lspace-proj
-;;      #function[scicloj.metamorph.ml.gridsearch/map->axis/fn--12908/fn--12913]}]
-;;
-;;
-(map->axis {:a (categorical [:a :b])})
-;; => [{:axis [:a],
-;;      :element
-;;      {:scicloj.metamorph.ml.gridsearch/type :linear,
-;;       :start 0.0,
-;;       :end 1.0,
-;;       :n-steps 2,
-;;       :result-space [:a :b]},
-;;      :lspace-proj
-;;      #function[scicloj.metamorph.ml.gridsearch/map->axis/fn--12908/fn--12913]}]
-
-
-
-(map->axis {:a [(categorical [:a :b])]})
-;; => ([{:axis [:a 0],
-;;       :element
-;;       {:scicloj.metamorph.ml.gridsearch/type :linear,
-;;        :start 0.0,
-;;        :end 1.0,
-;;        :n-steps 2,
-;;        :result-space [:a :b]},
-;;       :lspace-proj
-;;       #function[scicloj.metamorph.ml.gridsearch/map->axis/fn--13231/fn--13238/fn--13240]}])
-;;
-(map->axis {:a [(categorical [:a :b])]})
-
-(sobol-gridsearch {:a [(categorical [:a :b :c])]})
-(map->axis [:a :b :c])
+  (def opt-map  {:a (categorical [:a :b :c])
+                 :b (linear 0.01 1 10)}))
+  
