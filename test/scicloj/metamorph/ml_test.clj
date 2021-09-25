@@ -9,7 +9,8 @@
             [tech.v3.dataset :as ds]
             [tech.v3.dataset.column-filters :as cf]
             [tech.v3.dataset.modelling :as ds-mod]
-            [tablecloth.api :as tc]))
+            [tablecloth.api :as tc]
+            [scicloj.ml.smile.classification]))
 
 (deftest evaluate-pipelines-simplest
   (let [

@@ -41,8 +41,10 @@
          (merge fitted-ctx
                 {:metamorph/data (tc/dataset {:a [:xx :yy :zz]})
                  :metamorph/mode :transform}))]
+
     (is (= #{:x :y :z} (-> fitted-ctx :metamorph/data :a-x meta :one-hot-map :one-hot-table keys set)))
     (is (= #{:x :y :z} (-> transformed-ctx :metamorph/data :a-x meta :one-hot-map :one-hot-table keys set)))))
+
 
 
 (deftest global-ds
