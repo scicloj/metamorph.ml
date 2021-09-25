@@ -29,28 +29,28 @@
 (deftest train-to-test
   (let [pipe-fn
         (mm/pipeline
-         (cat/transform-one-hot :a :train-to-test))
+         (cat/transform-one-hot :a :fit))
 
         fitted-ctx
         (pipe-fn
-         {:metamorph/data (tc/dataset {:a [:x :y :z]})
+         {:metamorph/data (tc/dataset {:a [:x :y :z :xx]})
           :metamorph/mode :fit})
 
         transformed-ctx
         (pipe-fn
          (merge fitted-ctx
-                {:metamorph/data (tc/dataset {:a [:xx :yy :zz]})
+                {:metamorph/data (tc/dataset {:a [:xx]})
                  :metamorph/mode :transform}))]
 
-    (is (= #{:x :y :z} (-> fitted-ctx :metamorph/data :a-x meta :one-hot-map :one-hot-table keys set)))
-    (is (= #{:x :y :z} (-> transformed-ctx :metamorph/data :a-x meta :one-hot-map :one-hot-table keys set)))))
+    (is (= #{:xx :x :y :z} (-> fitted-ctx :metamorph/data :a-x meta :one-hot-map :one-hot-table keys set)))
+    (is (= #{:xx :x :y :z} (-> transformed-ctx :metamorph/data :a-x meta :one-hot-map :one-hot-table keys set)))))
 
 
 
 (deftest global-ds
   (let [pipe-fn
         (mm/pipeline
-         (cat/transform-one-hot :a :complete-ds))
+         (cat/transform-one-hot :a :full {:result-datatype :int}))
 
         fitted-ctx
         (pipe-fn
@@ -63,6 +63,7 @@
          (merge fitted-ctx
                 {:metamorph/data (tc/dataset {:a [:xx :yy :zz]})
                  :metamorph/mode :transform}))]
+
     (is (= #{:x :y :z :xx :yy :zz} (-> fitted-ctx :metamorph/data :a-x meta :one-hot-map :one-hot-table keys set)))
     (is (= #{:x :y :z :xx :yy :zz} (-> transformed-ctx :metamorph/data :a-x meta :one-hot-map :one-hot-table keys set)))))
 
