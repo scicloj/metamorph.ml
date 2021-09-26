@@ -27,36 +27,47 @@
     m))
 
 
+(defn- cal-metric [pipeline-fn fitted-ctx metric-fn test-ds]
+  (let [
+        start-transform (System/currentTimeMillis)
+        predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data test-ds}))
+        end-transform (System/currentTimeMillis)
+        predictions (:metamorph/data predicted-ctx)
+        target (cf/target (:metamorph/data fitted-ctx))
+        _ (errors/when-not-error target "No inference-target column in dataset")
+        target-colname (first (ds/column-names target))
+        true-target (get-in predicted-ctx [::target-ds target-colname])
+        _ (errors/when-not-error true-target (str  "Pipeline context need to have the true prediction target as a dataset at key" ::target-ds "Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
+
+        true-target-mapped-back (ds-mod/column-values->categorical (::target-ds predicted-ctx) target-colname)
+        predictions-mapped-back (ds-mod/column-values->categorical predictions target-colname)
+
+        ;; _ (println "predictions:  " (frequencies predictions-mapped-back))
+        ;; _ (println "trueth:       " (frequencies true-target-mapped-back))
+        metric (metric-fn predictions-mapped-back true-target-mapped-back)]
+
+    {:timing-transform (- end-transform start-transform)
+     :predicted-ctx predicted-ctx
+     :metric metric}))
+
+          ;; _ (println "metric: " metric)
+
+  
+
 
 (defn- calc-metric [pipeline-fn metric-fn train-ds test-ds tune-options]
   (try
     (let [start-fit (System/currentTimeMillis)
           fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
           end-fit (System/currentTimeMillis)
-          start-transform (System/currentTimeMillis)
-          predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data test-ds}))
-          end-transform (System/currentTimeMillis)
-          predictions (:metamorph/data predicted-ctx)
-          target (cf/target (:metamorph/data fitted-ctx))
-          _ (errors/when-not-error target "No inference-target column in dataset")
-          target-colname (first (ds/column-names target))
-          true-target (get-in predicted-ctx [::target-ds target-colname])
-          _ (errors/when-not-error true-target (str  "Pipeline context need to have the true prediction target as a dataset at key" ::target-ds "Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
 
-          true-target-mapped-back (ds-mod/column-values->categorical (::target-ds predicted-ctx) target-colname)
-          predictions-mapped-back (ds-mod/column-values->categorical predictions target-colname)
-
-          ;; _ (println "predictions:  " (frequencies predictions-mapped-back))
-          ;; _ (println "trueth:       " (frequencies true-target-mapped-back))
-          metric (metric-fn predictions-mapped-back true-target-mapped-back)
-          ;; _ (println "metric: " metric)
-
+          calc-metric-result (cal-metric pipeline-fn fitted-ctx metric-fn test-ds)
           result
           {:fit-ctx  fitted-ctx
-           :transform-ctx  predicted-ctx
-           :metric metric
+           :transform-ctx  (calc-metric-result :predicted-ctx)
+           :metric (calc-metric-result :metric)
            :timing {:fit (- end-fit start-fit)
-                    :transform (- end-transform start-transform)}}]
+                    :transform (calc-metric-result :timing-transform)}}]
 
       ((tune-options :evaluation-handler-fn)
        result)
