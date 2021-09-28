@@ -10,16 +10,12 @@
             [tech.v3.dataset.column-filters :as cf]
             [tech.v3.dataset.modelling :as ds-mod]
             [tablecloth.api :as tc]
-            [scicloj.ml.smile.classification]))
+            [scicloj.ml.smile.classification]
+            [fastmath.stats :as stats]))
 
 (deftest evaluate-pipelines-simplest
   (let [
-
-
-        ;;  the data
         ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
-
-        ;;  the (single, fixed) pipe-fn
         pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
@@ -29,27 +25,20 @@
                   :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
          (ml/model {:model-type :smile.classification/random-forest}))
 
-        ;;  the simplest split
         train-split-seq (tc/split->seq ds :holdout)
-
-        ;; one pipe-fn in the seq
         pipe-fn-seq [pipe-fn]
-
 
         evaluations
         (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)
 
-        ;; we have only one result
         best-fitted-context  (-> evaluations first first :fit-ctx)
         best-pipe-fn         (-> evaluations first first :pipe-fn)
 
 
-        ;;  simulate new data
         new-ds (->
                 (tc/shuffle ds  {:seed 1234})
                 (tc/head 10))
                 
-        ;;  do prediction on new data
         predictions
         (->
          (best-pipe-fn
@@ -64,9 +53,13 @@
     (is (=  1 (count evaluations)))
     (is (=  1 (count (first evaluations))))
 
-    (is (= (set [:fit-ctx :transform-ctx :metric :metric-fn :pipe-fn :min :mean :max :timing]) (set (keys (first (first evaluations))))))
+    (is (= #{:min :mean :max :timing :ctx :metric}
+           (set (-> evaluations first first :train-transform keys))))
+    ;; =>
+    (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :metric-fn]) (set (keys (first (first evaluations))))))
     (is (contains?   (:fit-ctx (first (first evaluations)))  :metamorph/mode))
-    (is (contains?   (:transform-ctx (first (first evaluations)))  :metamorph/mode))))
+    (is (contains?   (:ctx (:train-transform (first (first evaluations))))  :metamorph/mode))
+    (is (contains?   (:ctx (:test-transform (first (first evaluations))))  :metamorph/mode))))
 
 
 
@@ -257,3 +250,76 @@
 
     (is (= ["setosa" "versicolor" "versicolor"]
            (take 3 predicted-species)))))
+
+
+(comment
+  (def  ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
+  (def  pipe-fn
+    (morph/pipeline
+     (ds-mm/set-inference-target :species)
+     (ds-mm/categorical->number cf/categorical)
+
+     (ml/model {:model-type :smile.classification/random-forest})))
+
+  (def train-split-seq (tc/split->seq ds :holdout {:repeats 1000}))
+  (def pipe-fn-seq [pipe-fn])
+
+  (def  evaluations
+    (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-accuracy :accuracy
+                           {:result-dissoc-in-seq []
+                            :return-best-pipeline-only false
+                            :return-best-crossvalidation-only false}))
+
+ (require '[clj-memory-meter.core :as mm])
+
+ (fastmath.stats/stats-map
+  (map
+   #(-> % :train-transform :metric) 
+   (-> evaluations flatten)))
+ :ok)
+
+
+(def single-ds (tech.v3.dataset/->dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
+(mm/measure single-ds);; => "9.0 KiB"
+
+
+(defn create-lots-of-ds [n]
+  (let [ds (tech.v3.dataset/->dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+        copies (mapv #(tech.v3.dataset/categorical->number % tech.v3.dataset.column-filters/categorical)
+                     (repeat n ds))]
+    (mm/measure copies)))
+
+(count lots-of-ds);; => 1
+(create-lots-of-ds 1);; => "10.2 KiB"
+(create-lots-of-ds 10);; => "14.4 KiB"
+(create-lots-of-ds 100);; => "56.4 KiB"
+(create-lots-of-ds 1000);; => "475.8 KiB"
+(create-lots-of-ds 10000);; => "4.6 MiB"
+(create-lots-of-ds 100000);; => "45.5 MiB"
+(create-lots-of-ds 1000000);; => "455.3 MiB"
+;;
+;;
+;;
+
+
+
+(measure 1 false);; => "247.1 KiB"
+(measure 10 false);; => "2.4 MiB"
+(measure 100 false);; => "24.2 MiB"
+(measure 1000 false);; => "240.9 MiB"
+
+(measure 1 true);; => "262.0 KiB"
+(measure 10 true);; => "308.8 KiB"
+(measure 100 true);; => "777.9 KiB"
+(measure 1000 true);; => "5.4 MiB"
+(measure 10000 true)
+
+
+(for [i (range 10)]
+  (do
+    (System/gc)
+    (print
+     (mm/measure (keys (first  evaluations)))
+     " : ")
+    (println (count evaluations))
+    (Thread/sleep 10000)))

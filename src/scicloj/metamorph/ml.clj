@@ -27,10 +27,10 @@
     m))
 
 
-(defn- cal-metric [pipeline-fn fitted-ctx metric-fn test-ds]
+(defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds]
   (let [
         start-transform (System/currentTimeMillis)
-        predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data test-ds}))
+        predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
         end-transform (System/currentTimeMillis)
         predictions (:metamorph/data predicted-ctx)
         target (cf/target (:metamorph/data fitted-ctx))
@@ -41,18 +41,13 @@
 
         true-target-mapped-back (ds-mod/column-values->categorical (::target-ds predicted-ctx) target-colname)
         predictions-mapped-back (ds-mod/column-values->categorical predictions target-colname)
-
-        ;; _ (println "predictions:  " (frequencies predictions-mapped-back))
-        ;; _ (println "trueth:       " (frequencies true-target-mapped-back))
         metric (metric-fn predictions-mapped-back true-target-mapped-back)]
 
-    {:timing-transform (- end-transform start-transform)
-     :predicted-ctx predicted-ctx
+    {:timing (- end-transform start-transform)
+     :ctx predicted-ctx
      :metric metric}))
 
-          ;; _ (println "metric: " metric)
 
-  
 
 
 (defn- calc-metric [pipeline-fn metric-fn train-ds test-ds tune-options]
@@ -61,13 +56,16 @@
           fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
           end-fit (System/currentTimeMillis)
 
-          calc-metric-result (cal-metric pipeline-fn fitted-ctx metric-fn test-ds)
+          eval-pipe-result-test (eval-pipe pipeline-fn fitted-ctx metric-fn test-ds)
+          eval-pipe-result-train (eval-pipe pipeline-fn fitted-ctx metric-fn train-ds)
+
           result
           {:fit-ctx  fitted-ctx
-           :transform-ctx  (calc-metric-result :predicted-ctx)
-           :metric (calc-metric-result :metric)
-           :timing {:fit (- end-fit start-fit)
-                    :transform (calc-metric-result :timing-transform)}}]
+           :timing-fit (- end-fit start-fit)
+           :train-transform eval-pipe-result-train
+           :test-transform eval-pipe-result-test}]
+
+           
 
       ((tune-options :evaluation-handler-fn)
        result)
@@ -82,7 +80,7 @@
       (do
         (println e)
         {:fit-ctx nil
-         :transfor-ctx nil
+         :transform-ctx nil
          :metric nil}))))
 
 
@@ -95,39 +93,59 @@
            (let [{:keys [train test]} train-test-split]
              (assoc (calc-metric pipe-fn metric-fn train test tune-options)
                     :metric-fn metric-fn
-                    :pipe-fn pipe-fn)))
-         (remove #(nil? (:metric %))))
+                    :pipe-fn pipe-fn))))
 
-        metric-vec (mapv :metric split-eval-results)
 
-        metric-vec-stats
-        (dfn/descriptive-statistics [:min :max :mean] metric-vec)
+        metric-vec-test (mapv #(get-in % [:test-transform :metric]) split-eval-results)
+        metric-vec-train (mapv #(get-in % [:train-transform :metric]) split-eval-results)
+
+        metric-vec-stats-test (dfn/descriptive-statistics [:min :max :mean] metric-vec-test)
+        metric-vec-stats-train (dfn/descriptive-statistics [:min :max :mean] metric-vec-train)
+
 
         evaluations
         (->>
-         (mapv
-          #(merge % metric-vec-stats)
-          split-eval-results)
-         (sort-by :metric))]
+         (map
+          #(-> %
+               (update  :train-transform (fn [m] (merge m metric-vec-stats-train)))
+               (update  :test-transform (fn [m] (merge m metric-vec-stats-test))))
 
-         
-    (if (tune-options :return-best-crossvalidation-only)
-      (case loss-or-accuracy
-        :loss (->> evaluations  (take 1))
-        :accuracy (->> evaluations  (take-last 1)))
-      (case loss-or-accuracy
-        :loss evaluations
-        :accuracy (-> evaluations  reverse)))))
+
+          split-eval-results)
+         (sort-by (comp :metric :test-transform) <))
+
+        result
+        (if (tune-options :return-best-crossvalidation-only)
+          (case loss-or-accuracy
+            :loss (->> evaluations  (take 1))
+            :accuracy (->> evaluations  (take-last 1)))
+          (case loss-or-accuracy
+            :loss evaluations
+            :accuracy (-> evaluations  reverse)))]
+    result))
+
+
       
     
 
 (def default-result-dissoc-in-seq
   [[:fit-ctx :metamorph/data]
-   [:fit-ctx :scicloj.metamorph.ml/target-ds]
-   [:transform-ctx :metamorph/data]
-   [:transform-ctx :scicloj.metamorph.ml/target-ds]
-   [:transform-ctx :scicloj.metamorph.ml/feature-ds]])
-   
+
+   [:train-transform :ctx :metamorph/data]
+   [:train-transform :ctx :scicloj.metamorph.ml/target-ds]
+   [:train-transform :ctx :scicloj.metamorph.ml/feature-ds]
+
+   [:test-transform :ctx :metamorph/data]
+   [:test-transform :ctx :scicloj.metamorph.ml/target-ds]
+   [:test-transform :ctx :scicloj.metamorph.ml/feature-ds]])
+
+(def default-result-dissoc-in-seq-remove-ctxs
+  [[:fit-ctx]
+   [:train-transform :ctx]
+   [:test-transform :ctx]])
+
+
+
 
 (defn evaluate-pipelines
   "Evaluates performance of a seq of metamorph pipelines, which are suposed to have a  model as last step, which behaves correctly  in mode :fit and 
@@ -162,7 +180,7 @@
 
        * `:return-best-pipeline-only` - Only return information of the best performing pipeline. Default is true.
        * `:return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is true.
-       * `:map-fn` - Controls parallelism, so if we use map (:map) or pmap (:pmap) to map over different pipelines. Default :pmap
+       * `:map-fn` - Controls parallelism, so if we use map (:map) , pmap (:pmap) or :mapv to map over different pipelines. Default :pmap
        * `:evaluation-handler-fn` - Gets called once with the complete result of an evluation step. Its return alue is ignre ande default i a noop.
 
    This function expects as well the ground truth of the target variable into
@@ -172,29 +190,30 @@
    The function [[scicloj.ml.metamorph/model]] does this correctly.
   "
   ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy options]
-   (let [options (merge {:result-dissoc-in-seq default-result-dissoc-in-seq
-                         :map-fn :map
-                         :return-best-pipeline-only true
-                         :return-best-crossvalidation-only true
-                         :evaluation-handler-fn (fn [evaluation-result] nil)}
+   (let [used-options (merge {:result-dissoc-in-seq default-result-dissoc-in-seq
+                              :map-fn :map
+                              :return-best-pipeline-only true
+                              :return-best-crossvalidation-only true
+                              :evaluation-handler-fn (fn [evaluation-result] nil)}
                          
-                        options)
+                             options)
          map-fn
-         (case (options :map-fn)
+         (case (used-options :map-fn)
            :pmap (partial ppp/pmap-with-progress "pmap: evaluate pipelines ")
-           :map (partial ppp/map-with-progress "map: evaluate pipelines"))
+           :map (partial ppp/map-with-progress "map: evaluate pipelines")
+           :mapv mapv)
 
 
          pipe-evals
-         (->> (map-fn
-               (fn [pipe-fn]
-                 (evaluate-one-pipeline
-                  pipe-fn
-                  train-test-split-seq
-                  metric-fn
-                  loss-or-accuracy
-                  options))
-               pipe-fn-seq))
+         (map-fn
+          (fn [pipe-fn]
+            (evaluate-one-pipeline
+             pipe-fn
+             train-test-split-seq
+             metric-fn
+             loss-or-accuracy
+             used-options))
+          pipe-fn-seq)
 
          pipe-eval-means
          (->>
@@ -202,28 +221,34 @@
            (fn [pipe-eval]
              {:pipe-mean
               (dfn/mean
-               (mapv :metric pipe-eval))
+               (mapv (comp :metric :train-transform) pipe-eval))
               :pipe-eval pipe-eval})
            pipe-evals)
           (sort-by :pipe-mean))
 
 
          result-pipe-evals
-         (if (options :return-best-pipeline-only)
+         (if (used-options :return-best-pipeline-only)
            (case loss-or-accuracy
              :loss     (->> pipe-eval-means  first :pipe-eval vector)
              :accuracy (->> pipe-eval-means  last :pipe-eval vector))
            (case loss-or-accuracy
              :loss     (->> pipe-eval-means  (map :pipe-eval))
-             :accuracy (->> pipe-eval-means  reverse (mapv :pipe-eval))))]
+             :accuracy (->> pipe-eval-means  reverse (mapv :pipe-eval))))
 
-     (for [pipe-eval result-pipe-evals]
-       (for [cv-eval pipe-eval]
-         (reduce
-          (fn [m ks]
-            (dissoc-in m ks))
-          cv-eval
-          (options :result-dissoc-in-seq))))))
+
+         reduced-result
+         (for [pipe-eval result-pipe-evals]
+           (for [cv-eval pipe-eval]
+             (do
+               (reduce
+                (fn [m ks]
+                  (dissoc-in m ks))
+                cv-eval
+                (used-options :result-dissoc-in-seq)))))]
+
+
+     reduced-result))
 
   ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy]
    (evaluate-pipelines pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy {})))
