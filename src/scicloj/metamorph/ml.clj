@@ -13,7 +13,7 @@
   (:import java.util.UUID))
 
 
-(defn- dissoc-in
+(defn dissoc-in
   "Dissociate a value in a nested assocative structure, identified by a sequence
   of keys. Any collections left empty by the operation will be dissociated from
   their containing structures."
@@ -26,6 +26,13 @@
           (assoc m k v)))
       (dissoc m k))
     m))
+
+
+(defn multi-dissoc-in [m kss]
+  (reduce (fn [x y]
+            (dissoc-in x y))
+          m
+          kss))
 
 
 (defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds]
@@ -65,23 +72,14 @@
           end-fit (System/currentTimeMillis)
 
           eval-pipe-result-test (eval-pipe pipeline-fn fitted-ctx metric-fn test-ds)
-          eval-pipe-result-train (eval-pipe pipeline-fn fitted-ctx metric-fn train-ds)
+          eval-pipe-result-train (eval-pipe pipeline-fn fitted-ctx metric-fn train-ds)]
 
-          result
-          {:fit-ctx  fitted-ctx
+          
+         {:fit-ctx  fitted-ctx
            :timing-fit (- end-fit start-fit)
            :train-transform eval-pipe-result-train
-           :test-transform eval-pipe-result-test}]
+           :test-transform eval-pipe-result-test})
 
-           
-
-
-
-      (reduce
-       (fn [x y]
-         (dissoc-in x y))
-       result
-       (tune-options :result-dissoc-in-seq)))
 
     (catch Exception e
       (throw e)
@@ -91,6 +89,11 @@
          :transform-ctx nil
          :metric nil}))))
 
+(defn- reduce-result [r tune-options]
+  (reduce (fn [x y]
+            (dissoc-in x y))
+          r
+          (tune-options :result-dissoc-in-seq)))
 
 (defn- evaluate-one-pipeline [pipeline-decl-or-fn train-test-split-seq metric-fn loss-or-accuracy tune-options]
                              
@@ -98,8 +101,8 @@
   (let [
 
         pipe-fn (if (fn? pipeline-decl-or-fn)
-                    pipeline-decl-or-fn
-                    (mm/->pipeline pipeline-decl-or-fn))
+                  pipeline-decl-or-fn
+                  (mm/->pipeline pipeline-decl-or-fn))
         pipeline-decl (when (sequential? pipeline-decl-or-fn)
                         pipeline-decl-or-fn)
         split-eval-results
@@ -111,10 +114,12 @@
                         :loss-or-accuracy loss-or-accuracy
                         :metric-fn metric-fn
                         :pipe-decl pipeline-decl
-                        :pipe-fn pipe-fn)]
-             ((tune-options :evaluation-handler-fn)
-              complete-result)
-             complete-result)))
+                        :pipe-fn pipe-fn)
+
+                 reduced-result (reduce-result complete-result tune-options)
+                 _ ((tune-options :evaluation-handler-fn) complete-result)]
+             reduced-result)))
+             
 
 
 
@@ -161,7 +166,7 @@
    [:test-transform :ctx :scicloj.metamorph.ml/target-ds]
    [:test-transform :ctx :scicloj.metamorph.ml/feature-ds]])
 
-(def default-result-dissoc-in-seq-remove-ctxs
+(def result-dissoc-in-seq--remove-ctxs
   [[:fit-ctx]
    [:train-transform :ctx]
    [:test-transform :ctx]])
