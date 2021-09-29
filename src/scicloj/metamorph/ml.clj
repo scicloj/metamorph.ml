@@ -1,5 +1,6 @@
 (ns scicloj.metamorph.ml
   (:require [pppmap.core :as ppp]
+            [scicloj.metamorph.core :as mm]
             [scicloj.metamorph.ml.loss :as loss]
             [tech.v3.dataset :as ds]
             [tech.v3.dataset.column-filters :as cf]
@@ -28,8 +29,8 @@
 
 
 (defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds]
-  (let [
-        start-transform (System/currentTimeMillis)
+
+  (let [start-transform (System/currentTimeMillis)
         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
         end-transform (System/currentTimeMillis)
         predictions (:metamorph/data predicted-ctx)
@@ -41,18 +42,25 @@
 
         true-target-mapped-back (ds-mod/column-values->categorical (::target-ds predicted-ctx) target-colname)
         predictions-mapped-back (ds-mod/column-values->categorical predictions target-colname)
-        metric (metric-fn predictions-mapped-back true-target-mapped-back)]
+        metric (metric-fn predictions-mapped-back true-target-mapped-back)
+        result
 
-    {:timing (- end-transform start-transform)
-     :ctx predicted-ctx
-     :metric metric}))
+        {:timing (- end-transform start-transform)
+         :ctx predicted-ctx
+         :metric metric}]
+         
+         
+
+    result))
 
 
 
 
 (defn- calc-metric [pipeline-fn metric-fn train-ds test-ds tune-options]
+
   (try
-    (let [start-fit (System/currentTimeMillis)
+    (let [
+          start-fit (System/currentTimeMillis)
           fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
           end-fit (System/currentTimeMillis)
 
@@ -67,8 +75,8 @@
 
            
 
-      ((tune-options :evaluation-handler-fn)
-       result)
+
+
       (reduce
        (fn [x y]
          (dissoc-in x y))
@@ -84,16 +92,30 @@
          :metric nil}))))
 
 
-(defn- evaluate-one-pipeline [pipe-fn train-test-split-seq metric-fn loss-or-accuracy tune-options]
+(defn- evaluate-one-pipeline [pipeline-decl-or-fn train-test-split-seq metric-fn loss-or-accuracy tune-options]
                              
 
-  (let [split-eval-results
+  (let [
+
+        pipe-fn (if (fn? pipeline-decl-or-fn)
+                    pipeline-decl-or-fn
+                    (mm/->pipeline pipeline-decl-or-fn))
+        pipeline-decl (when (sequential? pipeline-decl-or-fn)
+                        pipeline-decl-or-fn)
+        split-eval-results
         (->>
          (for [train-test-split train-test-split-seq]
-           (let [{:keys [train test]} train-test-split]
-             (assoc (calc-metric pipe-fn metric-fn train test tune-options)
-                    :metric-fn metric-fn
-                    :pipe-fn pipe-fn))))
+           (let [{:keys [train test]} train-test-split
+                 complete-result
+                 (assoc (calc-metric pipe-fn metric-fn train test tune-options)
+                        :loss-or-accuracy loss-or-accuracy
+                        :metric-fn metric-fn
+                        :pipe-decl pipeline-decl
+                        :pipe-fn pipe-fn)]
+             ((tune-options :evaluation-handler-fn)
+              complete-result)
+             complete-result)))
+
 
 
         metric-vec-test (mapv #(get-in % [:test-transform :metric]) split-eval-results)
@@ -156,7 +178,7 @@
 
    The function returns a seq of seqs of evaluation results per pipe-fn per train-test split.
 
-   * `pipe-fn-seq` need to be  sequence of functions which follow the metamorph approach. They should take as input the metamorph context map,
+   * `pipe-fn-or-decl-seq` need to be  sequence of functions or pipline declarations which follow the metamorph approach. They should take as input the metamorph context map,
     which has the dataset under key :metamorph/data, manipulate it as needed for the transformation pipeline and read and write only to the
     context as needed. These type of functions get produced typically by calling `scicloj.metamorph/pipeline`
 
@@ -171,17 +193,21 @@
        * `:result-dissoc-in-seq`  - Controls how much information is returned for each cross validation. We call `dissoc-in` on every seq of this for the `fit-ctx` and `transform-ctx` before returning them. Default is
 
        ```
-       [[:fit-ctx :metamorph/data]
-        [:fit-ctx :scicloj.metamorph.ml/target-ds]
-        [:transform-ctx :metamorph/data]
-        [:transform-ctx :scicloj.metamorph.ml/target-ds]
-        [:transform-ctx :scicloj.metamorph.ml/feature-ds]]
+  [[:fit-ctx :metamorph/data]
+
+   [:train-transform :ctx :metamorph/data]
+   [:train-transform :ctx :scicloj.metamorph.ml/target-ds]
+   [:train-transform :ctx :scicloj.metamorph.ml/feature-ds]
+
+   [:test-transform :ctx :metamorph/data]
+   [:test-transform :ctx :scicloj.metamorph.ml/target-ds]
+   [:test-transform :ctx :scicloj.metamorph.ml/feature-ds]]
        ```
 
        * `:return-best-pipeline-only` - Only return information of the best performing pipeline. Default is true.
        * `:return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is true.
        * `:map-fn` - Controls parallelism, so if we use map (:map) , pmap (:pmap) or :mapv to map over different pipelines. Default :pmap
-       * `:evaluation-handler-fn` - Gets called once with the complete result of an evluation step. Its return alue is ignre ande default i a noop.
+       * `:evaluation-handler-fn` - Gets called once with the complete result of an individual evaluation step. Its result is ignre and it's default is a noop.
 
    This function expects as well the ground truth of the target variable into
    a specific key in the context `:scicloj.metamorph.ml/target-ds`
@@ -189,7 +215,7 @@
 
    The function [[scicloj.ml.metamorph/model]] does this correctly.
   "
-  ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy options]
+  ([pipe-fn-or-decl-seq train-test-split-seq metric-fn loss-or-accuracy options]
    (let [used-options (merge {:result-dissoc-in-seq default-result-dissoc-in-seq
                               :map-fn :map
                               :return-best-pipeline-only true
@@ -206,14 +232,14 @@
 
          pipe-evals
          (map-fn
-          (fn [pipe-fn]
+          (fn [pipe-fn-or-decl]
             (evaluate-one-pipeline
-             pipe-fn
+             pipe-fn-or-decl
              train-test-split-seq
              metric-fn
              loss-or-accuracy
              used-options))
-          pipe-fn-seq)
+          pipe-fn-or-decl-seq)
 
          pipe-eval-means
          (->>

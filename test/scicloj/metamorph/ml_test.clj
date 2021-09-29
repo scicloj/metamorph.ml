@@ -56,7 +56,8 @@
     (is (= #{:min :mean :max :timing :ctx :metric}
            (set (-> evaluations first first :train-transform keys))))
     ;; =>
-    (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :metric-fn]) (set (keys (first (first evaluations))))))
+    (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-fn :timing-fit :loss-or-accuracy])
+           (set (keys (first (first evaluations))))))
     (is (contains?   (:fit-ctx (first (first evaluations)))  :metamorph/mode))
     (is (contains?   (:ctx (:train-transform (first (first evaluations))))  :metamorph/mode))
     (is (contains?   (:ctx (:test-transform (first (first evaluations))))  :metamorph/mode))))
