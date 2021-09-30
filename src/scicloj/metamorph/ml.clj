@@ -65,7 +65,6 @@
 
 
 (defn- calc-metric [pipeline-fn metric-fn train-ds test-ds tune-options]
-
   (try
     (let [
           start-fit (System/currentTimeMillis)
@@ -97,7 +96,6 @@
           (tune-options :result-dissoc-in-seq)))
 
 (defn- evaluate-one-pipeline [pipeline-decl-or-fn train-test-split-seq metric-fn loss-or-accuracy tune-options]
-                             
 
   (let [
 
@@ -299,7 +297,8 @@
                                          explain-fn
                                          options
                                          documentation]}]
-                                         
+
+  (println "Register model: " model-kwd)
   (swap! model-definitions* assoc model-kwd {:train-fn train-fn
                                              :predict-fn predict-fn
                                              :hyperparameters hyperparameters

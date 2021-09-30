@@ -1,5 +1,5 @@
 (ns scicloj.metamorph.ml-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [clojure.test :refer [deftest is] :as t]
             [scicloj.metamorph.core :as morph]
             [scicloj.metamorph.ml :as ml]
             [scicloj.metamorph.ml.gridsearch :as gs]
@@ -11,8 +11,12 @@
             [tech.v3.dataset.modelling :as ds-mod]
             [tablecloth.api :as tc]
             [scicloj.ml.smile.classification]
-            [fastmath.stats :as stats])
-  (:import java.util.UUID))
+            [fastmath.stats :as stats]
+            [taoensso.nippy :as nippy]
+            [scicloj.metamorph.persistence-tools :refer [enrich-pipelines get-source-information qualify-keywords]])
+  (:import (java.util UUID) (java.io File)))
+
+
 
 (deftest evaluate-pipelines-simplest
   (let [
@@ -91,7 +95,6 @@
 
         
 
-    (def evaluations-2 evaluations-2)
 
     (is (= 5 (count (first evaluations-1))))
     (is (= 1 (count evaluations-1)))
@@ -99,48 +102,30 @@
     (is (= 5 (count (first evaluations-2))))
     (is (= 2 (count evaluations-2)))
 
-;    (distin ) (map :max (first evaluations-2))
+                                        ;    (distin ) (map :max (first evaluations-2))
 
 
     (is (= 1 (count (first evaluations-3))))
     (is (= 2 (count evaluations-3)))))
     
 
-  
+
 
 
 
 (deftest evaluate-pipelines-without-model
-  (let [;;  the data
-        ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
-        pipe-fn
-        (morph/pipeline
-         (ds-mm/set-inference-target :species)
-         (ds-mm/categorical->number cf/categorical))
+  (is (thrown? Exception
+               (let [ ;;  the data
+                     ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+                     pipe-fn
+                     (morph/pipeline
+                      (ds-mm/set-inference-target :species)
+                      (ds-mm/categorical->number cf/categorical))
          
-        train-split-seq (tc/split->seq ds :holdout)
-        pipe-fn-seq [pipe-fn]
+                     train-split-seq (tc/split->seq ds :holdout)
+                     pipe-fn-seq [pipe-fn]]
 
-        evaluations (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)
-        best-fitted-context  (-> evaluations first first :fit-ctx)
-        best-pipe-fn         (-> evaluations first first :pipe-fn)
-
-        new-ds (->
-                (tc/shuffle ds  {:seed 1234})
-                (tc/head 3))
-                
-        predictions
-        (->
-         (best-pipe-fn
-          (merge best-fitted-context
-                 {:metamorph/data new-ds
-                  :metamorph/mode :transform}))
-         (:metamorph/data)
-         (ds-mod/column-values->categorical :species))]
-         
-
-    (is (= ["versicolor" "versicolor" "virginica"]
-           predictions))))
+                 (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)))))
 
 
 
@@ -159,9 +144,8 @@
         create-pipe-fn
         (fn[options]
           (morph/pipeline
-           ;; (ds-mm/set-inference-target :species)
-           (ds-mm/categorical->number cf/categorical
-              (ml/model options))))
+           (ds-mm/categorical->number cf/categorical)
+           (ml/model options)))
 
         all-options-combinations (gs/sobol-gridsearch grid-search-options)
 
@@ -176,7 +160,6 @@
                 (tc/shuffle ds  {:seed 1234})
                 (tc/head 10))
                 
-        _ (def evaluations evaluations)
 
         best-pipe-fn         (-> evaluations first first :pipe-fn)
 
@@ -243,3 +226,203 @@
 
     (is (= ["setosa" "versicolor" "versicolor"]
            (take 3 predicted-species)))))
+
+(defn do-xxx [col] col)
+
+(deftest enrich
+
+  (println "the ns: " (find-ns 'scicloj.metamorph.ml-test))
+  (println (ns-interns (find-ns 'scicloj.metamorph.ml-test)))
+  (is (= (repeat 3 {:code-source "(defn do-xxx [col] col)", :code-local-source "(defn do-xxx [col] col)"})
+         (map
+          meta
+          (enrich-pipelines [ ;; 'do-xxx
+                             ::do-xxx
+                             'scicloj.metamorph.ml-test/do-xxx
+                             :scicloj.metamorph.ml-test/do-xxx]
+                            (find-ns 'scicloj.metamorph.ml-test))))))
+
+
+(defn fit-pipe-in-new-ns [file ds]
+  (let [new-ns (create-ns (symbol (str (UUID/randomUUID))))
+        _ (intern new-ns 'file file)
+        _ (intern new-ns 'ds ds)
+        _ (.addAlias new-ns 'morph (the-ns 'scicloj.metamorph.core))
+        _ (.addAlias new-ns 'nippy (the-ns 'taoensso.nippy))
+        species-freqs (binding [*ns* new-ns]  (do
+                                                (eval '(def thawed-result (nippy/thaw-from-file file)))
+
+
+                                                (eval '(def thawed-pipe-fn (clojure.core/->
+                                                                            thawed-result
+                                                                            :pipe-decl
+                                                                            (morph/->pipeline))))
+                                                (eval '(clojure.core/->
+                                                        (morph/fit-pipe ds thawed-pipe-fn)
+                                                        :metamorph/data
+                                                        :species
+                                                        (clojure.core/frequencies)))))]
+    species-freqs))
+
+
+(deftest round-trip-full-names
+  (is (= {1.0 50, 0.0 50, 2.0 50}
+
+         (let [ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+               base-pipe-declr
+
+               [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
+                [:tech.v3.dataset.metamorph/categorical->number [:species]]
+                [:tech.v3.dataset.metamorph/update-column :species :clojure.core/identity]
+                [:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]]
+               files (atom [])
+
+               nippy-handler (fn [result]
+
+                               (let [freezable-result
+                                     (-> result
+                                         (ml/multi-dissoc-in  [
+                                                               [:pipe-fn]
+                                                               [:metric-fn]])
+                                         (assoc :source-information
+                                                (-> result :pipe-decl get-source-information)))
+
+                                     temp-file (.getPath (File/createTempFile "test" ".nippy"))
+                                     _ (println temp-file)
+                                     _ (swap! files #(conj % temp-file))]
+                                 (nippy/freeze-to-file temp-file freezable-result)))
+
+
+               eval-result (ml/evaluate-pipelines
+                            [base-pipe-declr]
+                            (tc/split->seq ds)
+                            loss/classification-accuracy
+                            :accuracy
+                            {:evaluation-handler-fn nippy-handler})]
+           (fit-pipe-in-new-ns (first @files) ds)))))
+
+
+
+(deftest dummy
+  (println "qualify: "
+           (qualify-keywords [[:ds-mm/set-inference-target [:species]]] (find-ns 'scicloj.metamorph.ml-test))))
+
+
+
+(deftest round-trip-aliased-names
+  (is (= {1.0 50, 0.0 50, 2.0 50}
+
+         (let [ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+
+               base-pipe-declr
+               (enrich-pipelines
+                [
+                 [[:ds-mm/set-inference-target [:species]]
+                  [:ds-mm/categorical->number [:species]]
+                  [:ds-mm/update-column :species :clojure.core/identity]
+                  [:ml/model {:model-type :smile.classification/random-forest}]]]
+                (find-ns 'scicloj.metamorph.ml-test))
+
+               files (atom [])
+
+               nippy-handler (fn [result]
+
+                               (let [freezable-result
+                                     (-> result
+                                         (ml/multi-dissoc-in  [
+                                                               [:pipe-fn]
+                                                               [:metric-fn]])
+                                         (assoc :source-information
+                                                (-> result :pipe-decl get-source-information)))
+
+                                     temp-file (.getPath (File/createTempFile "test" ".nippy"))
+                                     _ (println temp-file)
+                                     _ (swap! files #(conj % temp-file))]
+                                 (nippy/freeze-to-file temp-file freezable-result)))
+
+               _ (println "base-pipe-declr: " base-pipe-declr)
+               eval-result (ml/evaluate-pipelines
+                            base-pipe-declr
+                            (tc/split->seq ds)
+                            loss/classification-accuracy
+                            :accuracy
+                            {:evaluation-handler-fn nippy-handler})]
+
+
+           
+           (fit-pipe-in-new-ns (first @files) ds)))))
+
+
+
+(comment
+
+  (def ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
+
+
+
+  (def base-pipe-declrss
+
+    [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
+     [:tech.v3.dataset.metamorph/categorical->number [:species]]
+     [:tech.v3.dataset.metamorph/update-column :species :clojure.core/identity]
+     [:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]])
+
+
+
+
+
+
+  (morph/fit-pipe ds
+                  (-> base-pipe-declr
+                      morph/->pipeline))
+
+
+
+
+  (def pipe-decls
+    (enrich-pipelines
+     base-pipe-declr
+     *ns*))
+
+
+  (def-let [ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+            base-pipe-declr
+
+
+            files (atom [])
+
+            nippy-handler (fn [result]
+
+                            (let [freezable-result
+                                  (-> result
+                                      (ml/multi-dissoc-in  [
+                                                            [:pipe-fn]
+                                                            [:metric-fn]])
+                                      (assoc :source-information
+                                             (-> result :pipe-decl get-source-information)))
+
+                                  temp-file (.getPath (File/createTempFile "test" ".nippy"))
+                                  _ (swap! files #(conj % temp-file))]
+                              (nippy/freeze-to-file temp-file freezable-result)))
+
+
+            eval-result (ml/evaluate-pipelines
+                         [base-pipe-declr]
+                         (tc/split->seq ds)
+                         loss/classification-accuracy
+                         :accuracy
+                         {:evaluation-handler-fn nippy-handler})
+
+            thawed-result (nippy/thaw-from-file (first @files))
+
+            thawed-pipe-fn (->
+                            thawed-result
+                            :pipe-decl
+                            (morph/->pipeline))]
+    (->
+     (morph/fit-pipe ds thawed-pipe-fn)
+     :metamorph/data
+     :species
+     (frequencies)))
+
+  :ok)
