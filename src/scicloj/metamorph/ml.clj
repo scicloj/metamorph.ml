@@ -45,7 +45,8 @@
         _ (errors/when-not-error target "No inference-target column in dataset")
         target-colname (first (ds/column-names target))
         true-target (get-in predicted-ctx [::target-ds target-colname])
-        _ (errors/when-not-error true-target (str  "Pipeline context need to have the true prediction target as a dataset at key" ::target-ds "Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
+        _ (errors/when-not-error true-target (str  "Pipeline context need to have the true prediction target as a dataset at key"
+                                                   ::target-ds " Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
 
         true-target-mapped-back (ds-mod/column-values->categorical (::target-ds predicted-ctx) target-colname)
         predictions-mapped-back (ds-mod/column-values->categorical predictions target-colname)
