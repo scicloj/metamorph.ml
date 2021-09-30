@@ -21,9 +21,6 @@
         (morph/pipeline
          (ds-mm/set-inference-target :species)
          (ds-mm/categorical->number cf/categorical)
-         (fn [ctx]
-           (assoc ctx
-                  :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
          (ml/model {:model-type :smile.classification/random-forest}))
 
         train-split-seq (tc/split->seq ds :holdout)
@@ -74,9 +71,7 @@
         (morph/pipeline
          (ds-mm/set-inference-target :species)
          (ds-mm/categorical->number cf/categorical)
-         (fn [ctx]
-           (assoc ctx
-                  :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
+
          (ml/model {:model-type :smile.classification/random-forest}))
 
         train-split-seq (tc/split->seq ds :kfold)
@@ -121,10 +116,8 @@
         pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
-         (ds-mm/categorical->number cf/categorical)
-         (fn [ctx]
-           (assoc ctx
-                  :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx)))))
+         (ds-mm/categorical->number cf/categorical))
+         
         train-split-seq (tc/split->seq ds :holdout)
         pipe-fn-seq [pipe-fn]
 
@@ -167,10 +160,8 @@
         (fn[options]
           (morph/pipeline
            ;; (ds-mm/set-inference-target :species)
-           (ds-mm/categorical->number cf/categorical)
-           (fn [ctx]
-             (assoc ctx :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
-           (ml/model options)))
+           (ds-mm/categorical->number cf/categorical
+              (ml/model options))))
 
         all-options-combinations (gs/sobol-gridsearch grid-search-options)
 
