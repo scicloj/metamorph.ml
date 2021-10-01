@@ -298,9 +298,20 @@
 
 
 (deftest dummy
-  (println "qualify: "
-           (qualify-keywords [[:ds-mm/set-inference-target [:species]]] (find-ns 'scicloj.metamorph.ml-test))))
+  (println "qualify: "))
 
+
+(get-source-information (qualify-keywords [[:ds-mm/set-inference-target [:species]]] (find-ns 'scicloj.metamorph.ml-test)))
+
+(->
+ (ns-publics 'tech.v3.dataset)
+ vals
+ (first)
+ symbol
+ (clojure.repl/source-fn))
+
+(meta
+ #'tech.v3.dataset.metamorph/add-column)
 
 
 (deftest round-trip-aliased-names
@@ -357,8 +368,8 @@
 
   (def base-pipe-declrss
 
-    [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
-     [:tech.v3.dataset.metamorph/categorical->number [:species]]
+    [[:tech.v3.dataset.metamorph/set-inference-target [:species]
+      [:tech.v3.dataset.metamorph/categorical->number [:species]]]
      [:tech.v3.dataset.metamorph/update-column :species :clojure.core/identity]
      [:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]])
 
@@ -376,48 +387,40 @@
 
   (def pipe-decls
     (qualify-pipelines
-     base-pipe-declr
+     base-pipe-declrss
      *ns*))
 
-
-  (def-let [ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
-            base-pipe-declr
-
-
-            files (atom [])
-
-            nippy-handler (fn [result]
-
-                            (let [freezable-result
-                                  (-> result
-                                      (ml/multi-dissoc-in  [
-                                                            [:pipe-fn]
-                                                            [:metric-fn]])
-                                      (assoc :source-information
-                                             (-> result :pipe-decl get-source-information)))
-
-                                  temp-file (.getPath (File/createTempFile "test" ".nippy"))
-                                  _ (swap! files #(conj % temp-file))]
-                              (nippy/freeze-to-file temp-file freezable-result)))
+  (require '[malli.core :as m])
+  (require '[malli.error :as me])
 
 
-            eval-result (ml/evaluate-pipelines
-                         [base-pipe-declr]
-                         (tc/split->seq ds)
-                         loss/classification-accuracy
-                         :accuracy
-                         {:evaluation-handler-fn nippy-handler})
 
-            thawed-result (nippy/thaw-from-file (first @files))
 
-            thawed-pipe-fn (->
-                            thawed-result
-                            :pipe-decl
-                            (morph/->pipeline))]
-    (->
-     (morph/fit-pipe ds thawed-pipe-fn)
-     :metamorph/data
-     :species
-     (frequencies)))
+
+  (->
+   (-> #'ml/evaluate-pipelines meta :malli/schema (nth 2))
+   (m/explain
+    (ml/evaluate-pipelines
+     [base-pipe-declrss]
+     (tc/split->seq ds)
+     loss/classification-accuracy
+     :accuracy))
+   (me/humanize))
+
+
+
+  (require '[malli.dot :as md])
+
+  (->>
+   (-> #'ml/evaluate-pipelines meta :malli/schema (nth 2))
+
+   (md/transform)
+   (spit "/tmp/ev.dot"))
+
+   ;; me/humanize
+
+
+
+  
 
   :ok)

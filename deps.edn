@@ -1,7 +1,8 @@
 {:deps {org.clojure/clojure {:mvn/version "1.10.2"}
         scicloj/metamorph {:mvn/version "0.2.1"}
         pppmap/pppmap              {:mvn/version "0.2.2"}
-        scicloj/tablecloth {:mvn/version "6.012"}}
+        scicloj/tablecloth {:mvn/version "6.012"}
+        metosin/malli {:mvn/version "0.6.2"}}
 
  :paths ["src" "resources"]
 

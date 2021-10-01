@@ -219,69 +219,102 @@
 
    The function [[scicloj.ml.metamorph/model]] does this correctly.
   "
-  ([pipe-fn-or-decl-seq train-test-split-seq metric-fn loss-or-accuracy options]
-   (let [used-options (merge {:result-dissoc-in-seq default-result-dissoc-in-seq
-                              :map-fn :map
-                              :return-best-pipeline-only true
-                              :return-best-crossvalidation-only true
-                              :evaluation-handler-fn (fn [evaluation-result] nil)}
+
+  {;; :malli/scope #{:output}
+   :malli/schema [:=>
+                  [:cat
+                   [:sequential [:or vector? fn?]]
+                   [:sequential [:map {:closed true} [:train :any] [:test :any]]]
+                   fn?
+                   [:enum :accuracy :loss]
+                   [:*  map?]]
+                  [:sequential [:sequential [:map {:closed true}
+                                             [:fit-ctx [:map [:metamorph/mode [:enum :fit :transform]]]]
+                                             [:timing-fit int?]
+                                             [:train-transform [:map {:closed true}
+                                                                [:timing int?]
+                                                                [:metric float?]
+                                                                [:min float?]
+                                                                [:mean float?]
+                                                                [:max float?]
+                                                                [:ctx map?]]]
+                                             [:test-transform [:map {:closed true}
+                                                               [:timing int?]
+                                                               [:metric float?]
+                                                               [:min float?]
+                                                               [:mean float?]
+                                                               [:max float?]
+                                                               [:ctx map?]]]
+                                             [:loss-or-accuracy [:enum :accuracy :loss]]
+                                             [:metric-fn fn?]
+                                             [:pipe-decl [:maybe sequential?]]
+                                             [:pipe-fn fn?]]]]]}
+
+
+  
+ ([pipe-fn-or-decl-seq train-test-split-seq metric-fn loss-or-accuracy options]
+  (let [used-options (merge {:result-dissoc-in-seq default-result-dissoc-in-seq
+                             :map-fn :map
+                             :return-best-pipeline-only true
+                             :return-best-crossvalidation-only true
+                             :evaluation-handler-fn (fn [evaluation-result] nil)}
                          
-                             options)
-         map-fn
-         (case (used-options :map-fn)
-           :pmap (partial ppp/pmap-with-progress "pmap: evaluate pipelines ")
-           :map (partial ppp/map-with-progress "map: evaluate pipelines")
-           :mapv mapv)
+                            options)
+        map-fn
+        (case (used-options :map-fn)
+          :pmap (partial ppp/pmap-with-progress "pmap: evaluate pipelines ")
+          :map (partial ppp/map-with-progress "map: evaluate pipelines")
+          :mapv mapv)
 
 
-         pipe-evals
-         (map-fn
-          (fn [pipe-fn-or-decl]
-            (evaluate-one-pipeline
-             pipe-fn-or-decl
-             train-test-split-seq
-             metric-fn
-             loss-or-accuracy
-             used-options))
-          pipe-fn-or-decl-seq)
+        pipe-evals
+        (map-fn
+         (fn [pipe-fn-or-decl]
+           (evaluate-one-pipeline
+            pipe-fn-or-decl
+            train-test-split-seq
+            metric-fn
+            loss-or-accuracy
+            used-options))
+         pipe-fn-or-decl-seq)
 
-         pipe-eval-means
-         (->>
-          (mapv
-           (fn [pipe-eval]
-             {:pipe-mean
-              (dfn/mean
-               (mapv (comp :metric :train-transform) pipe-eval))
-              :pipe-eval pipe-eval})
-           pipe-evals)
-          (sort-by :pipe-mean))
-
-
-         result-pipe-evals
-         (if (used-options :return-best-pipeline-only)
-           (case loss-or-accuracy
-             :loss     (->> pipe-eval-means  first :pipe-eval vector)
-             :accuracy (->> pipe-eval-means  last :pipe-eval vector))
-           (case loss-or-accuracy
-             :loss     (->> pipe-eval-means  (map :pipe-eval))
-             :accuracy (->> pipe-eval-means  reverse (mapv :pipe-eval))))
+        pipe-eval-means
+        (->>
+         (mapv
+          (fn [pipe-eval]
+            {:pipe-mean
+             (dfn/mean
+              (mapv (comp :metric :train-transform) pipe-eval))
+             :pipe-eval pipe-eval})
+          pipe-evals)
+         (sort-by :pipe-mean))
 
 
-         reduced-result
-         (for [pipe-eval result-pipe-evals]
-           (for [cv-eval pipe-eval]
-             (do
-               (reduce
-                (fn [m ks]
-                  (dissoc-in m ks))
-                cv-eval
-                (used-options :result-dissoc-in-seq)))))]
+        result-pipe-evals
+        (if (used-options :return-best-pipeline-only)
+          (case loss-or-accuracy
+            :loss     (->> pipe-eval-means  first :pipe-eval vector)
+            :accuracy (->> pipe-eval-means  last :pipe-eval vector))
+          (case loss-or-accuracy
+            :loss     (->> pipe-eval-means  (map :pipe-eval))
+            :accuracy (->> pipe-eval-means  reverse (mapv :pipe-eval))))
 
 
-     reduced-result))
+        reduced-result
+        (for [pipe-eval result-pipe-evals]
+          (for [cv-eval pipe-eval]
+            (do
+              (reduce
+               (fn [m ks]
+                 (dissoc-in m ks))
+               cv-eval
+               (used-options :result-dissoc-in-seq)))))]
 
-  ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy]
-   (evaluate-pipelines pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy {})))
+
+    reduced-result))
+
+ ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy]
+  (evaluate-pipelines pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy {})))
 
 
 
@@ -480,3 +513,10 @@ see tech.v3.dataset.modelling/set-inference-target")
                            ::feature-ds (cf/feature data)
                            ::target-ds (cf/target data)
                            :metamorph/data (predict data (get ctx id)))))))
+
+
+
+(comment
+  (require '[malli.instrument :as mi])
+  (mi/collect! {:ns 'scicloj.metamorph.ml})
+  (mi/instrument!))
