@@ -15,46 +15,17 @@
             [fastmath.stats :as stats]
             [taoensso.nippy :as nippy]
             [clojure.java.io :as io]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [scicloj.metamorph.persistence-tools :refer [find-model-data]])
   (:import java.util.UUID))
   
 
 
-(defn keys-in
-    "Returns a sequence of all key paths in a given map using DFS walk."
-    [m]
-    (letfn [(children [node]
-              (let [v (get-in m node)]
-                (if (map? v)
-                  (map (fn [x] (conj node x)) (keys v))
-                  [])))
-            (branch? [node] (-> (children node) seq boolean))]
-      (->> (keys m)
-           (map vector)
-           (mapcat #(tree-seq branch? children %)))))
 
-(defn find-model-data [m]
-  (->>
-   (keys-in m)
-   (filter #(= :model-data (last %)))))
 
-(defn nippy-handler [result]
-  (def result result)
-  (let [freezable-result
-        (ml/multi-dissoc-in result
-                            [
-                             [:pipe-fn]
-                             [:metric-fn]])
 
-        small-result
-        (ml/multi-dissoc-in result
-                            (concat ml/default-result-dissoc-in-seq
-                                    (find-model-data result)
-                                    [
-                                     [:pipe-fn]
-                                     [:metric-fn]]))
-        uuid (UUID/randomUUID)]
-    (nippy/freeze-to-file (str "/tmp/" uuid "-small.nippy") small-result)))
+
+
 
 (def  ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
 (defn make-pipe-fn [options]

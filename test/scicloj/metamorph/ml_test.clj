@@ -13,7 +13,7 @@
             [scicloj.ml.smile.classification]
             [fastmath.stats :as stats]
             [taoensso.nippy :as nippy]
-            [scicloj.metamorph.persistence-tools :refer [enrich-pipelines get-source-information qualify-keywords]])
+            [scicloj.metamorph.persistence-tools :refer [qualify-pipelines get-source-information qualify-keywords]])
   (:import (java.util UUID) (java.io File)))
 
 
@@ -229,18 +229,13 @@
 
 (defn do-xxx [col] col)
 
-(deftest enrich
-
-  (println "the ns: " (find-ns 'scicloj.metamorph.ml-test))
-  (println (ns-interns (find-ns 'scicloj.metamorph.ml-test)))
-  (is (= (repeat 3 {:code-source "(defn do-xxx [col] col)", :code-local-source "(defn do-xxx [col] col)"})
-         (map
-          meta
-          (enrich-pipelines [ ;; 'do-xxx
+(deftest qualify-pipelines-test
+  (is (= (repeat 3 :scicloj.metamorph.ml-test/do-xxx)
+         (qualify-pipelines [ ;; 'do-xxx
                              ::do-xxx
                              'scicloj.metamorph.ml-test/do-xxx
                              :scicloj.metamorph.ml-test/do-xxx]
-                            (find-ns 'scicloj.metamorph.ml-test))))))
+                           (find-ns 'scicloj.metamorph.ml-test)))))
 
 
 (defn fit-pipe-in-new-ns [file ds]
@@ -288,7 +283,6 @@
                                                 (-> result :pipe-decl get-source-information)))
 
                                      temp-file (.getPath (File/createTempFile "test" ".nippy"))
-                                     _ (println temp-file)
                                      _ (swap! files #(conj % temp-file))]
                                  (nippy/freeze-to-file temp-file freezable-result)))
 
@@ -315,10 +309,11 @@
          (let [ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
 
                base-pipe-declr
-               (enrich-pipelines
+               (qualify-pipelines
                 [
                  [[:ds-mm/set-inference-target [:species]]
                   [:ds-mm/categorical->number [:species]]
+                  [:ds-mm/update-column :species ::do-xxx]
                   [:ds-mm/update-column :species :clojure.core/identity]
                   [:ml/model {:model-type :smile.classification/random-forest}]]]
                 (find-ns 'scicloj.metamorph.ml-test))
@@ -336,11 +331,9 @@
                                                 (-> result :pipe-decl get-source-information)))
 
                                      temp-file (.getPath (File/createTempFile "test" ".nippy"))
-                                     _ (println temp-file)
                                      _ (swap! files #(conj % temp-file))]
                                  (nippy/freeze-to-file temp-file freezable-result)))
 
-               _ (println "base-pipe-declr: " base-pipe-declr)
                eval-result (ml/evaluate-pipelines
                             base-pipe-declr
                             (tc/split->seq ds)
@@ -348,9 +341,11 @@
                             :accuracy
                             {:evaluation-handler-fn nippy-handler})]
 
-
-           
            (fit-pipe-in-new-ns (first @files) ds)))))
+
+
+
+
 
 
 
@@ -380,7 +375,7 @@
 
 
   (def pipe-decls
-    (enrich-pipelines
+    (qualify-pipelines
      base-pipe-declr
      *ns*))
 
