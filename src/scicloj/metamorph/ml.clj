@@ -165,10 +165,25 @@
    [:test-transform :ctx :scicloj.metamorph.ml/target-ds]
    [:test-transform :ctx :scicloj.metamorph.ml/feature-ds]])
 
-(def result-dissoc-in-seq--remove-ctxs
+(def result-dissoc-in-seq--ctxs
   [[:fit-ctx]
    [:train-transform :ctx]
    [:test-transform :ctx]])
+
+(def result-dissoc-in-seq--all
+  [[:fit-ctx]
+   [:train-transform]
+   [:test-transform]
+   [:timing-fit]
+   [:loss-or-accuracy]
+   [:metric-fn]
+   [:max]
+   [:min]
+   [:pipe-decl]
+   [:pipe-fn]])
+
+
+
 
 
 
@@ -220,8 +235,7 @@
    The function [[scicloj.ml.metamorph/model]] does this correctly.
   "
 
-  {;; :malli/scope #{:output}
-   :malli/schema [:=>
+  {:malli/schema [:=>
                   [:cat
                    [:sequential [:or vector? fn?]]
                    [:sequential [:map {:closed true} [:train :any] [:test :any]]]
@@ -519,4 +533,5 @@ see tech.v3.dataset.modelling/set-inference-target")
 (comment
   (require '[malli.instrument :as mi])
   (mi/collect! {:ns 'scicloj.metamorph.ml})
-  (mi/instrument!))
+  (mi/instrument!)
+  (mi/unstrument!))

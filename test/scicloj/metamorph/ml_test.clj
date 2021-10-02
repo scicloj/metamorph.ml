@@ -355,6 +355,25 @@
            (fit-pipe-in-new-ns (first @files) ds)))))
 
 
+(deftest remove-all
+  (let [ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+        base-pipe-declrss
+        [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
+         [:tech.v3.dataset.metamorph/categorical->number [:species]]
+         [:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]]
+
+        evaluation-result
+        (ml/evaluate-pipelines
+         [base-pipe-declrss]
+         (tc/split->seq ds)
+         loss/classification-accuracy
+         :accuracy
+         {:result-dissoc-in-seq ml/result-dissoc-in-seq--all})]
+
+    (is (pos? (-> evaluation-result first first :train-transform :timing)))))
+
+
+  
 
 
 
@@ -366,12 +385,7 @@
 
 
 
-  (def base-pipe-declrss
 
-    [[:tech.v3.dataset.metamorph/set-inference-target [:species]
-      [:tech.v3.dataset.metamorph/categorical->number [:species]]]
-     [:tech.v3.dataset.metamorph/update-column :species :clojure.core/identity]
-     [:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]])
 
 
 
@@ -398,13 +412,11 @@
 
 
   (->
-   (-> #'ml/evaluate-pipelines meta :malli/schema (nth 2))
-   (m/explain
-    (ml/evaluate-pipelines
-     [base-pipe-declrss]
-     (tc/split->seq ds)
-     loss/classification-accuracy
-     :accuracy))
+
+
+   (m/validate (-> #'ml/evaluate-pipelines meta :malli/schema (nth 2)))
+
+
    (me/humanize))
 
 
