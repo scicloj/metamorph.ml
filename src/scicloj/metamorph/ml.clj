@@ -238,7 +238,7 @@
                    [:sequential [:map {:closed true} [:train :any] [:test :any]]]
                    fn?
                    [:enum :accuracy :loss]
-                   [:*  map?]]
+                   [:* map?]]
                   [:sequential [:sequential [:map {:closed true}
                                              [:fit-ctx [:map [:metamorph/mode [:enum :fit :transform]]]]
                                              [:timing-fit int?]
