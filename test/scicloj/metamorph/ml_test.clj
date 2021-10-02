@@ -13,7 +13,10 @@
             [scicloj.ml.smile.classification]
             [fastmath.stats :as stats]
             [taoensso.nippy :as nippy]
-            [scicloj.metamorph.persistence-tools :refer [qualify-pipelines get-source-information qualify-keywords]])
+            [scicloj.metamorph.ml.evaluation-handler :as eval]
+            [scicloj.metamorph.ml.evaluation-handler :refer [get-source-information qualify-pipelines qualify-keywords]])
+
+
   (:import (java.util UUID) (java.io File)))
 
 
@@ -272,21 +275,10 @@
                 [:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]]
                files (atom [])
 
-               nippy-handler (fn [result]
-
-                               (let [freezable-result
-                                     (-> result
-                                         (ml/multi-dissoc-in  [
-                                                               [:pipe-fn]
-                                                               [:metric-fn]])
-                                         (assoc :source-information
-                                                (-> result :pipe-decl get-source-information)))
-
-                                     temp-file (.getPath (File/createTempFile "test" ".nippy"))
-                                     _ (swap! files #(conj % temp-file))]
-                                 (nippy/freeze-to-file temp-file freezable-result)))
-
-
+               nippy-handler (eval/nippy-handler files
+                                                 "/tmp"
+                                                 "/home/carsten/Dropbox/sources/metamorph.ml/test/scicloj/metamorph/ml_test.clj"
+                                                 *ns*)
                eval-result (ml/evaluate-pipelines
                             [base-pipe-declr]
                             (tc/split->seq ds)
@@ -301,7 +293,7 @@
   (println "qualify: "))
 
 
-(get-source-information (qualify-keywords [[:ds-mm/set-inference-target [:species]]] (find-ns 'scicloj.metamorph.ml-test)))
+
 
 (->
  (ns-publics 'tech.v3.dataset)
@@ -329,21 +321,13 @@
                   [:ml/model {:model-type :smile.classification/random-forest}]]]
                 (find-ns 'scicloj.metamorph.ml-test))
 
+
                files (atom [])
-
-               nippy-handler (fn [result]
-
-                               (let [freezable-result
-                                     (-> result
-                                         (ml/multi-dissoc-in  [
-                                                               [:pipe-fn]
-                                                               [:metric-fn]])
-                                         (assoc :source-information
-                                                (-> result :pipe-decl get-source-information)))
-
-                                     temp-file (.getPath (File/createTempFile "test" ".nippy"))
-                                     _ (swap! files #(conj % temp-file))]
-                                 (nippy/freeze-to-file temp-file freezable-result)))
+               nippy-handler (eval/nippy-handler files
+                                                 "/tmp"
+                                                 "/home/carsten/Dropbox/sources/metamorph.ml/test/scicloj/metamorph/ml_test.clj"
+                                                 *ns*)
+                              
 
                eval-result (ml/evaluate-pipelines
                             base-pipe-declr
@@ -353,7 +337,6 @@
                             {:evaluation-handler-fn nippy-handler})]
 
            (fit-pipe-in-new-ns (first @files) ds)))))
-
 
 (deftest remove-all
   (let [ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
@@ -373,12 +356,6 @@
     (is (pos? (-> evaluation-result first first :train-transform :timing)))))
 
 
-  
-
-
-
-
-
 (comment
 
   (def ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
@@ -395,8 +372,6 @@
   (morph/fit-pipe ds
                   (-> base-pipe-declr
                       morph/->pipeline))
-
-
 
 
   (def pipe-decls
