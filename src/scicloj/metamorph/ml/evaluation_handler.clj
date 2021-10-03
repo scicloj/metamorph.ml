@@ -37,9 +37,11 @@
   (->>
    (file->topforms-with-metadata pipeline-source-file)
    (map (fn [form]
-          (hash-map :top-level (first form)
-                    :form form
-                    :form-str (pp-str form))))
+          (when-not (symbol? form)
+            (hash-map :top-level (first form)
+                      :form form
+                      :form-str (pp-str form)))))
+   (filter some?)
    (filter #(= 'defn (:top-level %)))
    (map #(assoc % :fn-name (second (:form  %))))))
 
@@ -88,6 +90,7 @@
                              keyword)
                            qualified-pipe-decl)
     @codes))
+
 (defn get-source-information [qualified-pipe-decl pipe-ns pipeline-source-file]
   {:fn-sources (get-fn-sources qualified-pipe-decl pipe-ns pipeline-source-file)
    :classpath (get-classpath)})

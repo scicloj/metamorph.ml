@@ -1,8 +1,8 @@
 (ns scicloj.metamorph.ml.preprocessing
   (:require
    [tech.v3.dataset.math :as std-math]
-   [tech.v3.dataset :as ds]
-   ))
+   [tech.v3.dataset :as ds]))
+   
 
 
 (defn preprocessor [col-seq fit-fn transform-fn context-key options]
@@ -68,5 +68,5 @@
   [col-seq {:keys [min max]
             :or {min -0.5
                  max 0.5}
-            :as options} ]
+            :as options}]
   (preprocessor col-seq std-math/fit-minmax std-math/transform-minmax :fit-minmax-xform options))
