@@ -288,24 +288,6 @@
            (fit-pipe-in-new-ns (first @files) ds)))))
 
 
-
-(deftest dummy
-  (println "qualify: "))
-
-
-
-
-(->
- (ns-publics 'tech.v3.dataset)
- vals
- (first)
- symbol
- (clojure.repl/source-fn))
-
-(meta
- #'tech.v3.dataset.metamorph/add-column)
-
-
 (deftest round-trip-aliased-names
   (is (= {1.0 50, 0.0 50, 2.0 50}
 
@@ -404,10 +386,24 @@
    (md/transform)
    (spit "/tmp/ev.dot"))
 
-   ;; me/humanize
+  ;; me/humanize
+
+  (defn pp-str [x]
+    (with-out-str (clojure.pprint/pprint x)))
+
+
+  (def res (nippy/thaw-from-file "/tmp/be5145de-4afa-4b7d-a12c-441c7f7dbef6.nippy"))
 
 
 
-  
+
+  (spit "/tmp/res.txt"
+        (pp-str
+         (ml/dissoc-in res [:fit-ctx #uuid "e2663a08-24d8-42b2-9c01-13f673c90456" :model-data])))
+
+
+
+
+          
 
   :ok)

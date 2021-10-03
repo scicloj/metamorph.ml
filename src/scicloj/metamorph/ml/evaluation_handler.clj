@@ -62,10 +62,10 @@
   ;; (def symbol symbol)
   (let [source (repl/source-fn symbol)
         orig-source (some-> symbol
-                        resolve
-                        meta
-                        :orig
-                        clojure.repl/source-fn)]
+                         resolve
+                         meta
+                         :orig
+                         clojure.repl/source-fn)]
 
     ;; resolve
     ;; #(.toSymbol %)
