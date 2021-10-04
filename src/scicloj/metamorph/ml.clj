@@ -9,32 +9,11 @@
             [tech.v3.datatype.functional :as dfn]
             [tech.v3.dataset.column :as ds-col]
             [scicloj.metamorph.core]
-
+            [scicloj.metamorph.ml.evaluation-handler]
+            [scicloj.metamorph.ml.tools :refer [dissoc-in]]
             [tech.v3.datatype.export-symbols :as exporter])
             
   (:import java.util.UUID))
-
-
-(defn dissoc-in
-  "Dissociate a value in a nested assocative structure, identified by a sequence
-  of keys. Any collections left empty by the operation will be dissociated from
-  their containing structures."
-  [m ks]
-  (if-let [[k & ks] (seq ks)]
-    (if (seq ks)
-      (let [v (dissoc-in (get m k) ks)]
-        (if (empty? v)
-          (dissoc m k)
-          (assoc m k v)))
-      (dissoc m k))
-    m))
-
-
-(defn multi-dissoc-in [m kss]
-  (reduce (fn [x y]
-            (dissoc-in x y))
-          m
-          kss))
 
 
 (defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
@@ -132,6 +111,41 @@
           r
           (tune-options :result-dissoc-in-seq)))
 
+
+
+
+
+
+(defn format-fn-sources [fn-sources]
+  (->> fn-sources
+
+       (filter #(let [v (val %)
+                      code-source (:code-source v)
+                      code-source-local (:code-local-source v)]
+                  (or code-source code-source-local)))
+
+       (map (fn [[k v]]
+              {k
+               (let [str-code
+                     (str (:code-source v) (:code-local-source v))]
+                 (if-not (clojure.string/blank? str-code)
+                   {:source-str str-code
+                    :source-form (read-string str-code)}
+                   ""))}))
+       (apply merge)))
+
+
+
+(defn get-nice-source-info [pipeline-decl pipe-fns-ns pipe-fns-source-file]
+  (when (and  (some? pipe-fns-ns) (some? pipeline-decl))
+    (let [source-information (scicloj.metamorph.ml.evaluation-handler/get-source-information
+                              pipeline-decl
+                              pipe-fns-ns
+                              pipe-fns-source-file)]
+      (update source-information :fn-sources format-fn-sources))))
+
+
+
 (defn- evaluate-one-pipeline [pipeline-decl-or-fn train-test-split-seq metric-fn loss-or-accuracy tune-options]
 
   (let [
@@ -141,6 +155,8 @@
                   (mm/->pipeline pipeline-decl-or-fn))
         pipeline-decl (when (sequential? pipeline-decl-or-fn)
                         pipeline-decl-or-fn)
+
+        _ (def pipeline-decl pipeline-decl)
         split-eval-results
         (->>
          (for [train-test-split train-test-split-seq]
@@ -150,7 +166,11 @@
                         :loss-or-accuracy loss-or-accuracy
                         :metric-fn metric-fn
                         :pipe-decl pipeline-decl
-                        :pipe-fn pipe-fn)
+                        :pipe-fn pipe-fn
+                        :source-information
+                        (get-nice-source-info pipeline-decl
+                                              (get-in tune-options [:attach-fn-sources :ns])
+                                              (get-in tune-options [:attach-fn-sources :pipe-fns-clj-file])))
 
                  reduced-result (reduce-result complete-result tune-options)
                  _ ((tune-options :evaluation-handler-fn) complete-result)]
@@ -261,6 +281,7 @@
        * `:return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is true.
        * `:map-fn` - Controls parallelism, so if we use map (:map) , pmap (:pmap) or :mapv to map over different pipelines. Default :pmap
        * `:evaluation-handler-fn` - Gets called once with the complete result of an individual evaluation step. Its result is ignre and it's default is a noop.
+       * `:other-metrices` Specifies other metrices to be calculated during evaluation
 
    This function expects as well the ground truth of the target variable into
    a specific key in the context `:scicloj.metamorph.ml/target-ds`
@@ -275,7 +296,21 @@
                    [:sequential [:map {:closed true} [:train :any] [:test :any]]]
                    fn?
                    [:enum :accuracy :loss]
-                   [:* map?]]
+                   [:map
+                    [:return-best-pipeline-only boolean?]
+                    [:return-best-crossvalidation-only boolean?]
+                    [:map-fn [:enum :map :pmap :mapv]]
+                    [:evaluation-handler-fn fn?]
+                    [:other-metrices [:sequential [:map
+                                                   [:name keyword?]
+                                                   [:metric-fn fn?]]]]
+                    [:attach-fn-sources [:map [:ns any?
+                                               :pipe-fns-clj-file string?]]]]]
+                                                               ;; 
+
+
+
+
                   [:sequential [:sequential [:map {:closed true}
                                              [:fit-ctx [:map [:metamorph/mode [:enum :fit :transform]]]]
                                              [:timing-fit int?]
@@ -305,7 +340,10 @@
                                              [:loss-or-accuracy [:enum :accuracy :loss]]
                                              [:metric-fn fn?]
                                              [:pipe-decl [:maybe sequential?]]
-                                             [:pipe-fn fn?]]]]]}
+                                             [:pipe-fn fn?]
+                                             [:source-information [:map [:classpath [:sequential string?]
+                                                                         :fn-sources [:map-of :qualified-symbol [:map [:source-form any?
+                                                                                                                       :source-str string?]]]]]]]]]]}
 
 
   

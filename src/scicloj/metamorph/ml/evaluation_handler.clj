@@ -1,6 +1,6 @@
 (ns scicloj.metamorph.ml.evaluation-handler
   (:require
-   [scicloj.metamorph.ml :as ml]
+   [scicloj.metamorph.ml.tools :refer [dissoc-in pp-str multi-dissoc-in]]
    [clojure.test :as t]
    [clojure.tools.reader :as tr]
    [clojure.tools.reader.reader-types :as rts]
@@ -30,8 +30,7 @@
         (resolve))))
 
 
-(defn pp-str [x]
-  (with-out-str (clojure.pprint/pprint x)))
+
 
 (defn fns->code-list [pipeline-source-file]
   (->>
@@ -99,9 +98,9 @@
   (fn [result]
     (let [freezable-result
           (-> result
-              (ml/multi-dissoc-in  [
-                                     [:pipe-fn]
-                                     [:metric-fn]])
+              (multi-dissoc-in  [
+                                  [:pipe-fn]
+                                  [:metric-fn]])
               (assoc :source-information
                      (-> result :pipe-decl (get-source-information pipe-ns pipeline-source-file))))
 

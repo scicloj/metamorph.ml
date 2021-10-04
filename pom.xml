@@ -18,7 +18,7 @@
     <url>https://github.com/scicloj/metamorph.ml</url>
     <connection>scm:git:git://github.com/scicloj/metamorph.ml.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/scicloj/metamorph.ml.git</developerConnection>
-    <tag>e05ca22040bd5b03c9ea581fee9310e4ad51fd7a</tag>
+    <tag>06285db5569cb2bcee75952f416d76a3f491d3b2</tag>
   </scm>
   <build>
     <sourceDirectory>src</sourceDirectory>
@@ -404,7 +404,7 @@
     <dependency>
       <groupId>scicloj</groupId>
       <artifactId>metamorph</artifactId>
-      <version>0.2.1</version>
+      <version>0.2.2-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.apache.poi</groupId>
