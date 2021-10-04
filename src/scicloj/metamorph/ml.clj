@@ -35,29 +35,61 @@
           kss))
 
 
-(defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds]
+(defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
 
   (let [start-transform (System/currentTimeMillis)
         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
         end-transform (System/currentTimeMillis)
-        predictions (:metamorph/data predicted-ctx)
-        target (cf/target (:metamorph/data fitted-ctx))
-        _ (errors/when-not-error target "No inference-target column in dataset")
-        target-colname (first (ds/column-names target))
-        true-target (get-in predicted-ctx [::target-ds target-colname])
-        _ (errors/when-not-error true-target (str  "Pipeline context need to have the true prediction target as a dataset at key"
-                                                   ::target-ds " Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
 
-        true-target-mapped-back (ds-mod/column-values->categorical (::target-ds predicted-ctx) target-colname)
-        predictions-mapped-back (ds-mod/column-values->categorical predictions target-colname)
-        metric (metric-fn predictions-mapped-back true-target-mapped-back)
+        predictions-ds (cf/prediction (:metamorph/data predicted-ctx))
+        trueth-ds (predicted-ctx ::target-ds)
+
+        _ (errors/when-not-error trueth-ds (str  "Pipeline context need to have the true prediction target as a dataset at key"
+                                                 ::target-ds " Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
+
+
+        target-column-names
+        (ds/column-names trueth-ds)
+
+        _ (errors/when-not-error (= 1 (count target-column-names)) "Only 1 target column required")
+
+
+        predictions-col (get predictions-ds (first target-column-names))
+        trueth-col (get trueth-ds (first target-column-names))
+
+
+        ;; true-target-mapped-back (ds-mod/column-values->categorical (::target-ds predicted-ctx) target-colname)
+        ;; predictions-mapped-back (ds-mod/column-values->categorical predictions target-colname)
+
+        metric (metric-fn predictions-col trueth-col)
+        ;; (metric-fn predictions-mapped-back true-target-mapped-back)
+
+
+
+        _ (def metric metric)
+        _ (comment
+            (frequencies predictions-col)
+            (frequencies trueth-col))
+
+
+
+
+
+        _ (def other-metrices other-metrices)
+        other-metrices-result
+        (map
+         (fn [{:keys [name metric-fn] :as m}]
+           (assoc m
+                  :metric (metric-fn predictions-col trueth-col)))
+         other-metrices)
+
         result
-
-        {:timing (- end-transform start-transform)
+        {:other-metrices other-metrices-result
+         :timing (- end-transform start-transform)
          :ctx predicted-ctx
          :metric metric}]
-         
-         
+
+
 
     result))
 
@@ -71,8 +103,8 @@
           fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
           end-fit (System/currentTimeMillis)
 
-          eval-pipe-result-test (eval-pipe pipeline-fn fitted-ctx metric-fn test-ds)
-          eval-pipe-result-train (eval-pipe pipeline-fn fitted-ctx metric-fn train-ds)]
+          eval-pipe-result-test (eval-pipe pipeline-fn fitted-ctx metric-fn test-ds (:other-metrices tune-options))
+          eval-pipe-result-train (eval-pipe pipeline-fn fitted-ctx metric-fn train-ds (:other-metrices tune-options))]
 
           
          {:fit-ctx  fitted-ctx
@@ -242,7 +274,12 @@
                   [:sequential [:sequential [:map {:closed true}
                                              [:fit-ctx [:map [:metamorph/mode [:enum :fit :transform]]]]
                                              [:timing-fit int?]
+
                                              [:train-transform [:map {:closed true}
+                                                                [:other-metrices [:sequential [:map {:closed true}
+                                                                                               [:name keyword?]
+                                                                                               [:metric-fn fn?]
+                                                                                               [:metric float?]]]]
                                                                 [:timing int?]
                                                                 [:metric float?]
                                                                 [:min float?]
@@ -250,6 +287,10 @@
                                                                 [:max float?]
                                                                 [:ctx map?]]]
                                              [:test-transform [:map {:closed true}
+                                                               [:other-metrices [:sequential [:map {:closed true}
+                                                                                              [:name keyword?]
+                                                                                              [:metric-fn fn?]
+                                                                                              [:metric float?]]]]
                                                                [:timing int?]
                                                                [:metric float?]
                                                                [:min float?]
