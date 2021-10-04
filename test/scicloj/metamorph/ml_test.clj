@@ -15,10 +15,11 @@
             [taoensso.nippy :as nippy]
             [confuse.multi-class-metrics :as mcm]
             [scicloj.metamorph.ml.metrics]
+            [malli.core :as m]
+            [malli.instrument :as mi]
+            [malli.generator :as mg]
             [scicloj.metamorph.ml.evaluation-handler :as eval]
             [scicloj.metamorph.ml.evaluation-handler :refer [get-source-information qualify-pipelines qualify-keywords]])
-
-
   (:import (java.util UUID) (java.io File)))
 
 
@@ -368,93 +369,34 @@
     ;; (is (pos? (-> evaluation-result first first :train-transform :timing)))
 
 
+(deftest validate-schema
 
-(comment
+  (let [ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
 
-  (def ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
+        create-base-pipe-decl
+        (fn  [node-size]
+          [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
+           [:tech.v3.dataset.metamorph/categorical->number [:species]]
+           [:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest
+                                         :node-size node-size}]])
 
+        pipes (map create-base-pipe-decl [1 5 10 20 50 100])
 
-  (def pipe-fn
-    (morph/pipeline
-     (ds-mm/set-inference-target :species)
-     (ds-mm/categorical->number cf/categorical)
-     (ml/model {:model-type :smile.classification/random-forest})))
+        split (tc/split->seq ds :holdout)
 
+        result-schema (-> #'ml/evaluate-pipelines meta :malli/schema (nth 2))
 
-  (def train-split-seq (tc/split->seq ds :holdout))
-  (def pipe-fn-seq [pipe-fn])
-
-
-
-
-
-  (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-accuracy :accuracy
-                         {:other-metrices [{:name :acc-2
-                                            :metric-fn loss/classification-accuracy}
-
-                                           {:name :fpr
-                                            :metric-fn scicloj.metamorph.ml.metrics/fnr}]})
-
-  (vec
-   (float-array [1 2]))
-  (require '[scicloj.metamorph.ml.metrics])
-
-  (scicloj.metamorph.ml.metrics/fnr [:1 :2] [:1 :3])
-
-
-  (morph/fit-pipe ds
-                  (-> base-pipe-declr
-                      morph/->pipeline))
-
-
-  (def pipe-decls
-    (qualify-pipelines
-     base-pipe-declrss
-     *ns*))
-
-  (require '[malli.core :as m])
-  (require '[malli.error :as me])
-
-
-
-
-
-  (->
-
-
-   (m/validate (-> #'ml/evaluate-pipelines meta :malli/schema (nth 2)))
-
-
-   (me/humanize))
-
-
-
-  (require '[malli.dot :as md])
-
-  (->>
-   (-> #'ml/evaluate-pipelines meta :malli/schema (nth 2))
-
-   (md/transform)
-   (spit "/tmp/ev.dot"))
-
-  ;; me/humanize
-
-  (defn pp-str [x]
-    (with-out-str (clojure.pprint/pprint x)))
-
-
-  (def res (nippy/thaw-from-file "/tmp/be5145de-4afa-4b7d-a12c-441c7f7dbef6.nippy"))
-
-
-
-
-  (spit "/tmp/res.txt"
-        (pp-str
-         (ml/dissoc-in res [:fit-ctx #uuid "e2663a08-24d8-42b2-9c01-13f673c90456" :model-data])))
-
-
-
-
-          
-
-  :ok)
+        evaluation-result
+        (ml/evaluate-pipelines
+         pipes split
+         loss/classification-accuracy
+         :accuracy
+         {:result-dissoc-in-seq []
+          :return-best-crossvalidation-only false
+          :return-best-pipeline-only false
+          :attach-fn-sources {:ns (find-ns 'clojure.core)
+                              :pipe-fns-clj-file "test/scicloj/metamorph/ml_test.clj"}})]
+    (is true?
+        (m/validate
+         result-schema
+         evaluation-result))))

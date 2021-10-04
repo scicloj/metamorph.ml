@@ -94,16 +94,16 @@
   {:fn-sources (get-fn-sources qualified-pipe-decl pipe-ns pipeline-source-file)
    :classpath (get-classpath)})
 
-(defn nippy-handler [files output-dir pipeline-source-file pipe-ns]
+(defn example-nippy-handler [files output-dir result-dissocs]
   (fn [result]
-    (let [freezable-result
+    (let [_ (def result result)
+          freezable-result
           (-> result
-              (multi-dissoc-in  [
-                                  [:pipe-fn]
-                                  [:metric-fn]])
-              (assoc :source-information
-                     (-> result :pipe-decl (get-source-information pipe-ns pipeline-source-file))))
-
+              (multi-dissoc-in  (concat result-dissocs
+                                        [
+                                         [:pipe-fn]
+                                         [:metric-fn]])))
+          _ (def freezable-result freezable-result)
           temp-file (str output-dir "/" ( java.util.UUID/randomUUID) ".nippy")
           _ (swap! files #(conj % temp-file))]
       (nippy/freeze-to-file temp-file freezable-result))))
