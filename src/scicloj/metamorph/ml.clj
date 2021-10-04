@@ -576,7 +576,8 @@ see tech.v3.dataset.modelling/set-inference-target")
 
   See here for an overview for the models build into scicloj.ml:
 
-  https://scicloj.github.io/scicloj.ml/userguide-models.html
+
+  https://scicloj.github.io/scicloj.ml-tutorials/userguide-models.html
 
   Other libraries might contribute other models,
   which are documented as part of the library.
