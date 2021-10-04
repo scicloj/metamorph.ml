@@ -7,7 +7,9 @@
             [tech.v3.dataset.modelling :as ds-mod]
             [tech.v3.datatype.errors :as errors]
             [tech.v3.datatype.functional :as dfn]
+            [tech.v3.dataset.column :as ds-col]
             [scicloj.metamorph.core]
+
             [tech.v3.datatype.export-symbols :as exporter])
             
   (:import java.util.UUID))
@@ -61,7 +63,8 @@
         ;; true-target-mapped-back (ds-mod/column-values->categorical (::target-ds predicted-ctx) target-colname)
         ;; predictions-mapped-back (ds-mod/column-values->categorical predictions target-colname)
 
-        metric (metric-fn predictions-col trueth-col)
+        metric (metric-fn (ds-col/to-double-array trueth-col)
+                          (ds-col/to-double-array predictions-col))
         ;; (metric-fn predictions-mapped-back true-target-mapped-back)
 
 
@@ -80,7 +83,9 @@
         (map
          (fn [{:keys [name metric-fn] :as m}]
            (assoc m
-                  :metric (metric-fn predictions-col trueth-col)))
+                  :metric (metric-fn
+                           (ds-col/to-double-array trueth-col)
+                           (ds-col/to-double-array predictions-col))))
          other-metrices)
 
         result

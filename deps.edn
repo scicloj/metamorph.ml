@@ -12,7 +12,7 @@
  {:test
   {:jvm-opts ["-Djdk.attach.allowAttachSelf"]
    :extra-paths ["test"]
-   :extra-deps {
+   :extra-deps {datacraft-sciences/confuse {:mvn/version "0.1.1"}
                 scicloj/scicloj.ml.smile {:mvn/version "5.07"}
                 ch.qos.logback/logback-classic {:mvn/version "1.2.3"}
                 com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.1.3"}}}
