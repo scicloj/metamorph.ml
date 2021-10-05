@@ -35,8 +35,9 @@
 (defn fns->code-list [pipeline-source-file]
   (->>
    (file->topforms-with-metadata pipeline-source-file)
+
    (map (fn [form]
-          (when-not (symbol? form)
+          (when (sequential? form)
             (hash-map :top-level (first form)
                       :form form
                       :form-str (pp-str form)))))

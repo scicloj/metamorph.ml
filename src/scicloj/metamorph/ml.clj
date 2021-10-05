@@ -11,7 +11,9 @@
             [scicloj.metamorph.core]
             [scicloj.metamorph.ml.evaluation-handler]
             [scicloj.metamorph.ml.tools :refer [dissoc-in]]
-            [tech.v3.datatype.export-symbols :as exporter])
+            [tech.v3.datatype.export-symbols :as exporter]
+            [tech.v3.dataset.impl.dataset :refer [dataset?]]
+            [malli.core :as m])
             
   (:import java.util.UUID))
 
@@ -290,60 +292,80 @@
    The function [[scicloj.ml.metamorph/model]] does this correctly.
   "
 
-  {:malli/schema [:=>
-                  [:cat
-                   [:sequential [:or vector? fn?]]
-                   [:sequential [:map {:closed true} [:train :any] [:test :any]]]
-                   fn?
-                   [:enum :accuracy :loss]
-                   [:map
-                    [:return-best-pipeline-only boolean?]
-                    [:return-best-crossvalidation-only boolean?]
-                    [:map-fn [:enum :map :pmap :mapv]]
-                    [:evaluation-handler-fn fn?]
-                    [:other-metrices [:sequential [:map
-                                                   [:name keyword?]
-                                                   [:metric-fn fn?]]]]
-                    [:attach-fn-sources [:map [:ns any?
-                                               :pipe-fns-clj-file string?]]]]]
-                                                               ;; 
+  {:malli/schema
+   [:function
+    {:registry
+     {::options [:or empty? [:map
+                             [:result-dissoc-in-seq {:optional true} sequential?]
+                             [:return-best-pipeline-only {:optional true} boolean?]
+                             [:return-best-crossvalidation-only {:optional true} boolean?]
+                             [:map-fn {:optional true} [:enum :map :pmap :mapv]]
+                             [:evaluation-handler-fn {:optional true} fn?]
+                             [:other-metrices {:optional true} [:sequential [:map
+                                                                             [:name keyword?]
+                                                                             [:metric-fn fn?]]]]
+                             [:attach-fn-sources {:optional true} [:map [:ns any?
+                                                                         :pipe-fns-clj-file string?]]]]]
+      ::evaluation-result
+      [:sequential
+       [:sequential
+        [:map {:closed true}
+         [:fit-ctx [:map [:metamorph/mode [:enum :fit :transform]]]]
+         [:timing-fit int?]
+
+         [:train-transform [:map {:closed true}
+                            [:other-metrices [:sequential [:map {:closed true}
+                                                           [:name keyword?]
+                                                           [:metric-fn fn?]
+                                                           [:metric float?]]]]
+                            [:timing int?]
+                            [:metric float?]
+                            [:min float?]
+                            [:mean float?]
+                            [:max float?]
+                            [:ctx map?]]]
+         [:test-transform [:map {:closed true}
+                           [:other-metrices [:sequential [:map {:closed true}
+                                                          [:name keyword?]
+                                                          [:metric-fn fn?]
+                                                          [:metric float?]]]]
+                           [:timing int?]
+                           [:metric float?]
+                           [:min float?]
+                           [:mean float?]
+                           [:max float?]
+                           [:ctx map?]]]
+         [:loss-or-accuracy [:enum :accuracy :loss]]
+         [:metric-fn fn?]
+         [:pipe-decl [:maybe sequential?]]
+         [:pipe-fn fn?]
+         [:source-information [:maybe [:map [:classpath [:sequential string?]
+                                             :fn-sources [:map-of :qualified-symbol [:map [:source-form any?
+                                                                                           :source-str string?]]]]]]]]]]}}
+
+    [:=>
+     [:cat
+      [:sequential [:or vector? fn?]]
+      [:sequential [:map {:closed true} [:train :any] [:test :any]]]
+      fn?
+      [:enum :accuracy :loss]]
+
+     ::evaluation-result]
+    [:=>
+     [:cat
+      [:sequential [:or vector? fn?]]
+      [:sequential [:map {:closed true} [:train :any] [:test :any]]]
+      fn?
+      [:enum :accuracy :loss]
+      ::options]
+
+     ::evaluation-result]]}
+    ;;
 
 
 
 
-                  [:sequential [:sequential [:map {:closed true}
-                                             [:fit-ctx [:map [:metamorph/mode [:enum :fit :transform]]]]
-                                             [:timing-fit int?]
-
-                                             [:train-transform [:map {:closed true}
-                                                                [:other-metrices [:sequential [:map {:closed true}
-                                                                                               [:name keyword?]
-                                                                                               [:metric-fn fn?]
-                                                                                               [:metric float?]]]]
-                                                                [:timing int?]
-                                                                [:metric float?]
-                                                                [:min float?]
-                                                                [:mean float?]
-                                                                [:max float?]
-                                                                [:ctx map?]]]
-                                             [:test-transform [:map {:closed true}
-                                                               [:other-metrices [:sequential [:map {:closed true}
-                                                                                              [:name keyword?]
-                                                                                              [:metric-fn fn?]
-                                                                                              [:metric float?]]]]
-                                                               [:timing int?]
-                                                               [:metric float?]
-                                                               [:min float?]
-                                                               [:mean float?]
-                                                               [:max float?]
-                                                               [:ctx map?]]]
-                                             [:loss-or-accuracy [:enum :accuracy :loss]]
-                                             [:metric-fn fn?]
-                                             [:pipe-decl [:maybe sequential?]]
-                                             [:pipe-fn fn?]
-                                             [:source-information [:map [:classpath [:sequential string?]
-                                                                         :fn-sources [:map-of :qualified-symbol [:map [:source-form any?
-                                                                                                                       :source-str string?]]]]]]]]]]}
+    
 
 
   
@@ -470,8 +492,14 @@
   * `:id` - new randomly generated UUID.
   * `:feature-columns` - vector of column names.
   * `:target-columns` - vector of column names."
+  {:malli/schema [:=> [:cat [:fn (fn [x] (dataset? x))] map?]
+                  [map?]]}
+
+
   [dataset options]
+  ;; (m/validate  tech.v3.dataset.impl.dataset/dataset? dataset)
   (let [{:keys [train-fn]} (options->model-def options)
+        _ (def dataset dataset)
         feature-ds (cf/feature  dataset)
         _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
                                  "No features provided")

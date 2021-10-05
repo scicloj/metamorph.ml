@@ -15,38 +15,55 @@
             [taoensso.nippy :as nippy]
             [confuse.multi-class-metrics :as mcm]
             [scicloj.metamorph.ml.metrics]
+            [tablecloth.pipeline :as tcp]
             [malli.core :as m]
             [malli.instrument :as mi]
             [malli.generator :as mg]
             [scicloj.metamorph.ml.evaluation-handler :as eval]
             [scicloj.metamorph.ml.evaluation-handler :refer [get-source-information qualify-pipelines qualify-keywords]])
-  (:import (java.util UUID) (java.io File)))
+  (:import (java.util UUID) (java.io File) (clojure.lang ExceptionInfo)))
+
+
+(def iris (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
+
+
+
 
 
 
 (deftest evaluate-pipelines-simplest
   (let [
-        ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+
         pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
-         (ds-mm/categorical->number cf/categorical)
+         (morph/def-ctx ctx-0)
+         (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/target ds))) {} :int)
+         (morph/def-ctx ctx-1)
+         (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/feature ds))) {} :float)
+         (morph/def-ctx ctx-2)
+
+
+
          (ml/model {:model-type :smile.classification/random-forest}))
 
-        train-split-seq (tc/split->seq ds :holdout)
+        train-split-seq (tc/split->seq iris :holdout)
         pipe-fn-seq [pipe-fn]
 
         evaluations
-        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss {:result-dissoc-in-seq []})
 
         best-fitted-context  (-> evaluations first first :fit-ctx)
         best-pipe-fn         (-> evaluations first first :pipe-fn)
 
 
         new-ds (->
-                (tc/shuffle ds  {:seed 1234})
+                (tc/shuffle iris  {:seed 1234})
                 (tc/head 10))
-                
+
+        _ (def new-ds new-ds)
+        _ (def best-pipe-fn best-pipe-fn)
+        _ (def best-fitted-context best-fitted-context)
         predictions
         (->
          (best-pipe-fn
@@ -55,6 +72,7 @@
                   :metamorph/mode :transform}))
          (:metamorph/data)
          (ds-mod/column-values->categorical :species))]
+
 
     (is (= ["versicolor" "versicolor" "virginica" "versicolor" "virginica" "setosa" "virginica" "virginica" "versicolor" "versicolor"]
            predictions))
@@ -72,11 +90,12 @@
 
 
 
+
     
 
 (deftest evaluate-pipelines-several-cross
   (let [
-        ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+
         pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
@@ -84,7 +103,7 @@
 
          (ml/model {:model-type :smile.classification/random-forest}))
 
-        train-split-seq (tc/split->seq ds :kfold)
+        train-split-seq (tc/split->seq iris :kfold)
         pipe-fn-seq [pipe-fn pipe-fn]
 
         evaluations-1
@@ -122,13 +141,13 @@
 (deftest evaluate-pipelines-without-model
   (is (thrown? Exception
                (let [ ;;  the data
-                     ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+
                      pipe-fn
                      (morph/pipeline
                       (ds-mm/set-inference-target :species)
                       (ds-mm/categorical->number cf/categorical))
          
-                     train-split-seq (tc/split->seq ds :holdout)
+                     train-split-seq (tc/split->seq iris :holdout)
                      pipe-fn-seq [pipe-fn]]
 
                  (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)))))
@@ -138,7 +157,7 @@
 (deftest grid-search
   (let [
         ds (->
-            (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+            iris
             (ds-mod/set-inference-target :species))
             
 
@@ -270,7 +289,7 @@
   (is (= {1.0 50, 0.0 50, 2.0 50}
 
          (let [files (atom [])
-               ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+
                base-pipe-declr
 
                [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
@@ -285,17 +304,17 @@
                               
                eval-result (ml/evaluate-pipelines
                             [base-pipe-declr]
-                            (tc/split->seq ds)
+                            (tc/split->seq iris)
                             loss/classification-accuracy
                             :accuracy
                             {:evaluation-handler-fn nippy-handler})]
-           (fit-pipe-in-new-ns (first @files) ds)))))
+           (fit-pipe-in-new-ns (first @files) iris)))))
 
 
 (deftest round-trip-aliased-names
   (is (= {1.0 50, 0.0 50, 2.0 50}
 
-         (let [ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+         (let [
 
                base-pipe-declr
                (qualify-pipelines
@@ -317,15 +336,16 @@
 
                eval-result (ml/evaluate-pipelines
                             base-pipe-declr
-                            (tc/split->seq ds)
+                            (tc/split->seq iris)
                             loss/classification-accuracy
                             :accuracy
-                            {:evaluation-handler-fn nippy-handler})]
+                            {:map-fn :mapv
+                             :evaluation-handler-fn nippy-handler})]
 
-           (fit-pipe-in-new-ns (first @files) ds)))))
+           (fit-pipe-in-new-ns (first @files) iris)))))
 
 (deftest remove-all
-  (let [ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+  (let [
         base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
          [:tech.v3.dataset.metamorph/categorical->number [:species]]
@@ -334,7 +354,7 @@
         evaluation-result
         (ml/evaluate-pipelines
          [base-pipe-declrss]
-         (tc/split->seq ds)
+         (tc/split->seq iris)
          loss/classification-accuracy
          :accuracy
          {:result-dissoc-in-seq ml/result-dissoc-in-seq--all})]
@@ -343,8 +363,7 @@
 
 
 (deftest other-metrices
-  (let [ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
-        base-pipe-declrss
+  (let [base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
          [:tech.v3.dataset.metamorph/categorical->number [:species]]
          [:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]]
@@ -352,7 +371,7 @@
         evaluation-result
         (ml/evaluate-pipelines
          [base-pipe-declrss]
-         (tc/split->seq ds)
+         (tc/split->seq iris)
          loss/classification-accuracy
          :accuracy
          { ;; :result-dissoc-in-seq ml/result-dissoc-in-seq--all
@@ -372,7 +391,7 @@
 
 (deftest validate-schema
 
-  (let [ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+  (let [
 
         create-base-pipe-decl
         (fn  [node-size]
@@ -383,9 +402,9 @@
 
         pipes (map create-base-pipe-decl [1 5 10 20 50 100])
 
-        split (tc/split->seq ds :holdout)
+        split (tc/split->seq iris :holdout)
 
-        result-schema (-> #'ml/evaluate-pipelines meta :malli/schema (nth 2))
+        result-schema (-> #'ml/evaluate-pipelines meta :malli/schema second :registry :scicloj.metamorph.ml/evaluation-result)
 
         evaluation-result
         (ml/evaluate-pipelines
@@ -397,7 +416,41 @@
           :return-best-pipeline-only false
           :attach-fn-sources {:ns (find-ns 'clojure.core)
                               :pipe-fns-clj-file "test/scicloj/metamorph/ml_test.clj"}})]
+
+
     (is true?
         (m/validate
          result-schema
          evaluation-result))))
+
+
+
+
+
+;; (deftest call-without-ds
+;;   (is  (thrown? ExceptionInfo
+;;                 (ml/train ""
+;;                           {:model-type :smile.classification/decision-tree}))))
+
+
+
+(comment
+  (def schema
+    (->
+     #'scicloj.metamorph.ml/evaluate-pipelines
+     meta
+     :malli/schema
+     (nth 2)))
+
+  (-> schema
+      (m/explain evaluations))
+
+
+  (require '[malli.dev :as dev])
+  (require '[malli.dev.pretty :as pretty])
+  (dev/start! {:report (pretty/reporter)}))
+
+(m/validate [:or empty? [:map [:a string?]]]
+            {:b "a"})
+
+:ok
