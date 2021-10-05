@@ -269,7 +269,8 @@
 (deftest round-trip-full-names
   (is (= {1.0 50, 0.0 50, 2.0 50}
 
-         (let [ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+         (let [files (atom [])
+               ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
                base-pipe-declr
 
                [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
@@ -278,10 +279,10 @@
                 [:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]]
                files (atom [])
 
-               nippy-handler (eval/nippy-handler files
-                                                 "/tmp"
-                                                 "/home/carsten/Dropbox/sources/metamorph.ml/test/scicloj/metamorph/ml_test.clj"
-                                                 *ns*)
+               nippy-handler (eval/example-nippy-handler files "/tmp" [])
+
+
+                              
                eval-result (ml/evaluate-pipelines
                             [base-pipe-declr]
                             (tc/split->seq ds)
@@ -308,10 +309,10 @@
 
 
                files (atom [])
-               nippy-handler (eval/nippy-handler files
+               nippy-handler (eval/example-nippy-handler files
                                                  "/tmp"
-                                                 "/home/carsten/Dropbox/sources/metamorph.ml/test/scicloj/metamorph/ml_test.clj"
-                                                 *ns*)
+                                                 [])
+                                                 
                               
 
                eval-result (ml/evaluate-pipelines
