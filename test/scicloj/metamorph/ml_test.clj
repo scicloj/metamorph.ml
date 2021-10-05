@@ -421,16 +421,16 @@
     (is true?
         (m/validate
          result-schema
-         evaluation-result))))
+         evaluation-result)))
 
 
 
 
 
-;; (deftest call-without-ds
-;;   (is  (thrown? ExceptionInfo
-;;                 (ml/train ""
-;;                           {:model-type :smile.classification/decision-tree}))))
+ (deftest call-without-ds
+   (is  (thrown? ExceptionInfo
+                 (ml/train ""
+                           {:model-type :smile.classification/decision-tree})))))
 
 
 
