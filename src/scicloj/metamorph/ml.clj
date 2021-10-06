@@ -544,22 +544,29 @@ see tech.v3.dataset.modelling/set-inference-target")
     target
   * For classification, a dataset is returned with a float64 column for each target
     value and values that describe the probability distribution."
-  [dataset model]
-  (let [{:keys [predict-fn] :as model-def} (options->model-def (:options model))
-        feature-ds (ds/select-columns dataset (:feature-columns model))
-        label-columns (:target-columns model)
-        thawed-model (thaw-model model model-def)
-        target-col (first label-columns)
-        pred-ds (predict-fn feature-ds
-                            thawed-model
-                            model)]
+  {:malli/schema [:=> [:cat [:fn (fn [x] (dataset? x))]
+                       [:map [:options map?]
+                         [:feature-columns sequential?]
+                         [:target-columns sequential?]]]
+                       
 
-    (if (= :classification (:model-type (meta pred-ds)))
-      (-> (ds-mod/probability-distributions->label-column
-           pred-ds target-col)
-          (ds/update-column target-col
-                            #(vary-meta % assoc :column-type :prediction)))
-      pred-ds)))
+                    [map?]]}
+ [dataset model]
+ (let [{:keys [predict-fn] :as model-def} (options->model-def (:options model))
+       feature-ds (ds/select-columns dataset (:feature-columns model))
+       label-columns (:target-columns model)
+       thawed-model (thaw-model model model-def)
+       target-col (first label-columns)
+       pred-ds (predict-fn feature-ds
+                           thawed-model
+                           model)]
+
+   (if (= :classification (:model-type (meta pred-ds)))
+     (-> (ds-mod/probability-distributions->label-column
+          pred-ds target-col)
+         (ds/update-column target-col
+                           #(vary-meta % assoc :column-type :prediction)))
+     pred-ds)))
 
 
 (defn explain
@@ -638,10 +645,23 @@ see tech.v3.dataset.modelling/set-inference-target")
                            ::target-ds (cf/target data)
                            :metamorph/data (predict data (get ctx id)))))))
 
+(require '[malli.instrument :as mi])
+(require '[malli.dev.pretty :as pretty])
+(mi/collect! {:ns 'scicloj.metamorph.ml})
+(mi/instrument! {:report (pretty/thrower) :scope #{:input}})
 
 
 (comment
-  (require '[malli.instrument :as mi])
-  (mi/collect! {:ns 'scicloj.metamorph.ml})
-  (mi/instrument!)
-  (mi/unstrument!))
+ (require '[malli.dev.pretty :as pretty])
+ (m/explain
+  [:cat {:registry {::blub string?}} ::blub ::blub]
+  ["a" "b"])
+
+ (mi/unstrument!)
+
+
+ (require '[malli.dev :as dev])
+
+ (dev/start! {:report (pretty/reporter)})
+
+ :ok)
