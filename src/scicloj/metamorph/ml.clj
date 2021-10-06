@@ -17,9 +17,9 @@
             
   (:import java.util.UUID))
 
+
 (require '[malli.instrument :as mi])
 (require '[malli.dev.pretty :as pretty])
-
 
 (defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
 
@@ -618,8 +618,7 @@ see tech.v3.dataset.modelling/set-inference-target")
   * `scicloj.metamorph.ml/predict`
 
   "
-  {:malli/schema [:=> [:cat map?]
-                   [map?]]}
+  {:malli/schema [:=> [:cat map?] [map?]]}
   [options]
   (m/-instrument
    {:report (pretty/thrower) :scope #{:input}
