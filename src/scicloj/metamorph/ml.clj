@@ -17,6 +17,9 @@
             
   (:import java.util.UUID))
 
+(require '[malli.instrument :as mi])
+(require '[malli.dev.pretty :as pretty])
+
 
 (defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
 
@@ -41,25 +44,9 @@
         trueth-col (get trueth-ds (first target-column-names))
 
 
-        ;; true-target-mapped-back (ds-mod/column-values->categorical (::target-ds predicted-ctx) target-colname)
-        ;; predictions-mapped-back (ds-mod/column-values->categorical predictions target-colname)
-
         metric (metric-fn (ds-col/to-double-array trueth-col)
                           (ds-col/to-double-array predictions-col))
-        ;; (metric-fn predictions-mapped-back true-target-mapped-back)
 
-
-
-        _ (def metric metric)
-        _ (comment
-            (frequencies predictions-col)
-            (frequencies trueth-col))
-
-
-
-
-
-        _ (def other-metrices other-metrices)
         other-metrices-result
         (map
          (fn [{:keys [name metric-fn] :as m}]
@@ -362,13 +349,6 @@
      ::evaluation-result]]}
     ;;
 
-
-
-
-    
-
-
-  
   ([pipe-fn-or-decl-seq train-test-split-seq metric-fn loss-or-accuracy options]
    (let [used-options (merge {:result-dissoc-in-seq default-result-dissoc-in-seq
                               :map-fn :map
@@ -492,14 +472,10 @@
   * `:id` - new randomly generated UUID.
   * `:feature-columns` - vector of column names.
   * `:target-columns` - vector of column names."
-  {:malli/schema [:=> [:cat [:fn (fn [x] (dataset? x))] map?]
+  {:malli/schema [:=> [:cat [:fn dataset?] map?]
                   [map?]]}
-
-
   [dataset options]
-  ;; (m/validate  tech.v3.dataset.impl.dataset/dataset? dataset)
   (let [{:keys [train-fn]} (options->model-def options)
-        _ (def dataset dataset)
         feature-ds (cf/feature  dataset)
         _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
                                  "No features provided")
@@ -524,6 +500,8 @@ see tech.v3.dataset.modelling/set-inference-target")
   operation is needed in order to use the model.  This happens for you during preduct
   but you may also cached the 'thawed' model on the model map under the
   ':thawed-model'  keyword in order to do fast predictions on small datasets."
+  {:malli/schema [:=> [:cat [:map [:model-data any?]] map?]
+                   [map?]]}
   ([model {:keys [thaw-fn]}]
    (if-let [cached-model (get model :thawed-model)]
      cached-model
@@ -544,7 +522,7 @@ see tech.v3.dataset.modelling/set-inference-target")
     target
   * For classification, a dataset is returned with a float64 column for each target
     value and values that describe the probability distribution."
-  {:malli/schema [:=> [:cat [:fn (fn [x] (dataset? x))]
+  {:malli/schema [:=> [:cat [:fn dataset?]
                        [:map [:options map?]
                          [:feature-columns sequential?]
                          [:target-columns sequential?]]]
@@ -572,17 +550,23 @@ see tech.v3.dataset.modelling/set-inference-target")
 (defn explain
   "Explain (if possible) an ml model.  A model explanation is a model-specific map
   of data that usually indicates some level of mapping between features and importance"
+   {:malli/schema [:=> [:cat map? [:* any?]]
+                   [map?]]}
   [model & [options]]
+  (def options options)
   (let [{:keys [explain-fn] :as model-def}
         (options->model-def (:options model))]
     (when explain-fn
       (explain-fn (thaw-model model model-def) model options))))
 
 
+
 (defn default-loss-fn
   "Given a datset which must have exactly 1 inference target column return a default
   loss fn. If column is categorical, loss is tech.v3.ml.loss/classification-loss, else
   the loss is tech.v3.ml.loss/mae (mean average error)."
+  {:malli/schema [:=> [:cat [:fn dataset?]]
+                    [fn?]]}
   [dataset]
   (let [target-ds (cf/target dataset)]
     (errors/when-not-errorf
@@ -634,34 +618,42 @@ see tech.v3.dataset.modelling/set-inference-target")
   * `scicloj.metamorph.ml/predict`
 
   "
-
+  {:malli/schema [:=> [:cat map?]
+                   [map?]]}
   [options]
-  (fn [{:metamorph/keys [id data mode] :as ctx}]
-    (case mode
-      :fit (assoc ctx id (train data options))
-      :transform  (do
-                    (assoc ctx
-                           ::feature-ds (cf/feature data)
-                           ::target-ds (cf/target data)
-                           :metamorph/data (predict data (get ctx id)))))))
+  (m/-instrument
+   {:report (pretty/thrower) :scope #{:input}
+    :schema [:=> [:cat [:map
+                        [:metamorph/id any?]
+                        [:metamorph/data [:fn dataset?]]
+                        [:metamorph/mode [:enum :fit :transform]]]]
 
-(require '[malli.instrument :as mi])
-(require '[malli.dev.pretty :as pretty])
+             map?]}
+   (fn [{:metamorph/keys [id data mode] :as ctx}]
+     (case mode
+       :fit (assoc ctx id (train data options))
+       :transform  (do
+                     (assoc ctx
+                            ::feature-ds (cf/feature data)
+                            ::target-ds (cf/target data)
+                            :metamorph/data (predict data (get ctx id))))))))
+
 (mi/collect! {:ns 'scicloj.metamorph.ml})
 (mi/instrument! {:report (pretty/thrower) :scope #{:input}})
 
 
+
 (comment
- (require '[malli.dev.pretty :as pretty])
- (m/explain
-  [:cat {:registry {::blub string?}} ::blub ::blub]
-  ["a" "b"])
+  (require '[malli.dev.pretty :as pretty])
+  (m/explain
+   [:cat {:registry {::blub string?}} ::blub ::blub]
+   ["a" "b"])
 
- (mi/unstrument!)
+  (mi/unstrument!)
 
 
- (require '[malli.dev :as dev])
+  (require '[malli.dev :as dev])
 
- (dev/start! {:report (pretty/reporter)})
+  (dev/start! {:report (pretty/reporter)})
 
- :ok)
+  :ok)

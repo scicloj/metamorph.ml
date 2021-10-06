@@ -11,6 +11,7 @@
             [tech.v3.dataset.modelling :as ds-mod]
             [tablecloth.api :as tc]
             [scicloj.ml.smile.classification]
+            [scicloj.ml.smile.regression]
             [fastmath.stats :as stats]
             [taoensso.nippy :as nippy]
             [confuse.multi-class-metrics :as mcm]
@@ -27,24 +28,16 @@
 (def iris (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
 
 
-
-
-
-
 (deftest evaluate-pipelines-simplest
   (let [
 
         pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
-         (morph/def-ctx ctx-0)
          (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/target ds))) {} :int)
-         (morph/def-ctx ctx-1)
          (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/feature ds))) {} :float)
-         (morph/def-ctx ctx-2)
 
-
-
+         {:metamorph/id :model}
          (ml/model {:model-type :smile.classification/random-forest}))
 
         train-split-seq (tc/split->seq iris :holdout)
@@ -55,15 +48,14 @@
 
         best-fitted-context  (-> evaluations first first :fit-ctx)
         best-pipe-fn         (-> evaluations first first :pipe-fn)
+        _ (def best-fitted-context best-fitted-context)
 
+        _ (-> best-fitted-context :model)
 
         new-ds (->
                 (tc/shuffle iris  {:seed 1234})
                 (tc/head 10))
 
-        _ (def new-ds new-ds)
-        _ (def best-pipe-fn best-pipe-fn)
-        _ (def best-fitted-context best-fitted-context)
         predictions
         (->
          (best-pipe-fn
@@ -89,7 +81,32 @@
     (is (contains?   (:ctx (:test-transform (first (first evaluations))))  :metamorph/mode))))
 
 
+(deftest test-explain
+  (let [
 
+        pipe-fn
+        (morph/pipeline
+         (ds-mm/set-inference-target :species)
+         (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/target ds))) {} :int)
+         (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/feature ds))) {} :float)
+
+         {:metamorph/id :model}
+         (ml/model {:model-type :smile.regression/ordinary-least-square}))
+
+        train-split-seq (tc/split->seq iris :holdout)
+        pipe-fn-seq [pipe-fn]
+
+        evaluations
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss {:result-dissoc-in-seq []})
+
+        best-fitted-context  (-> evaluations first first :fit-ctx)
+        best-pipe-fn         (-> evaluations first first :pipe-fn)]
+
+    (is (= :petal_width (-> best-fitted-context :model (ml/explain "" "" :a 1 2) :coefficients first first)))))
+
+
+
+  
 
     
 
