@@ -102,7 +102,7 @@
         best-fitted-context  (-> evaluations first first :fit-ctx)
         best-pipe-fn         (-> evaluations first first :pipe-fn)]
 
-    (is (= :petal_width (-> best-fitted-context :model (ml/explain "" "" :a 1 2) :coefficients first first)))))
+    (is (= :petal_width (-> best-fitted-context :model (ml/explain) :coefficients first first)))))
 
 
 
