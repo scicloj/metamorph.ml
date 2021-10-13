@@ -13,13 +13,11 @@
             [scicloj.metamorph.ml.tools :refer [dissoc-in]]
             [tech.v3.datatype.export-symbols :as exporter]
             [tech.v3.dataset.impl.dataset :refer [dataset?]]
+            [scicloj.metamorph.ml.malli :as malli]
             [malli.core :as m])
-            
   (:import java.util.UUID))
 
 
-(require '[malli.instrument :as mi])
-(require '[malli.dev.pretty :as pretty])
 
 (defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
 
@@ -624,14 +622,8 @@ see tech.v3.dataset.modelling/set-inference-target")
   "
   {:malli/schema [:=> [:cat map?] [map?]]}
   [options]
-  (m/-instrument
-   {:report (pretty/thrower) :scope #{:input}
-    :schema [:=> [:cat [:map
-                        [:metamorph/id any?]
-                        [:metamorph/data [:fn dataset?]]
-                        [:metamorph/mode [:enum :fit :transform]]]]
 
-             map?]}
+  (malli/instrument-mm
    (fn [{:metamorph/keys [id data mode] :as ctx}]
      (case mode
        :fit (assoc ctx id (train data options))
@@ -641,8 +633,7 @@ see tech.v3.dataset.modelling/set-inference-target")
                             ::target-ds (cf/target data)
                             :metamorph/data (predict data (get ctx id))))))))
 
-(mi/collect! {:ns 'scicloj.metamorph.ml})
-(mi/instrument! {:report (pretty/thrower) :scope #{:input}})
+(malli/instrument-ns 'scicloj.metamorph.ml)
 
 
 

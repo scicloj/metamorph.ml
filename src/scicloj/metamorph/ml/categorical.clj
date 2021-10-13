@@ -3,6 +3,7 @@
             [tech.v3.dataset :as ds]
             [clojure.set :as set]
             [tablecloth.api :as tc]
+            [scicloj.metamorph.ml.malli :as malli]
             [scicloj.metamorph.core :as mm]))
 
 (defn- apply-mappings [ds one-hot-encodings]
@@ -32,6 +33,17 @@
     (assoc ctx :metamorph/data (apply-mappings data (get ctx id)))()))
 
 
+(defn validate-mappings [data mappings]
+  (run!
+   (fn [mapping]
+     (let [
+           levels-in-mapping (-> mapping :one-hot-table keys set)
+           levels-in-data (->  (get data (:src-column mapping)) distinct set)
+           levels-not-mapped (set/difference levels-in-data levels-in-mapping)]
+       (if (pos-int? (count levels-not-mapped))
+         (throw (IllegalArgumentException. (str  "Some levels of data in :transform were not in :fit for colum xxx: " levels-not-mapped))))))
+   mappings))
+
 (defn transform-one-hot-train->test [ctx data mode id col-names options]
   (case mode
     :fit
@@ -48,33 +60,36 @@
 
     :transform
     (let [mappings (get ctx id)
-          _ (run!
-             (fn [mapping]
-               (let [
-                     levels-in-mapping (-> mapping :one-hot-table keys set)
-                     levels-in-data (->  (get data (:src-column mapping)) distinct set)
-                     levels-not-mapped (set/difference levels-in-data levels-in-mapping)]
-                 (if (pos-int? (count levels-not-mapped))
-                   (throw (IllegalArgumentException. (str  "Some levels of data in :transform were not in :fit for colum xxx: " levels-not-mapped))))))
-             mappings)]
+          _ (validate-mappings data mappings)]
       (assoc ctx :metamorph/data (apply-mappings data mappings)))))
 
 
 
 (defn transform-one-hot
-  "Transormer which mapps categorical variables to numbers."
+
+  "Transformer which mapps categorical variables to numbers. Each value of the
+  column gets its won column in one-hot-encoding.
+
+  To handle different levls of a variable between train an dtets data, three
+  strategies are available:
+
+  * `:full`  The levels are retrieved from a dataset at key :metamorph.ml/full-ds in the context
+  * `:independent`  One-hot columns are fitted and transformed independently for train and test  data
+  * `:fit` The mapping fitted in mode :fit is used in :transform, and it is assumed that all levels are present in the data during :fit
+  "
   ([column-selector strategy] (transform-one-hot column-selector strategy nil))
   ([column-selector strategy options]
-   (fn [{:metamorph/keys [id data mode] :as ctx}]
-     (let [col-names (if (fn? column-selector)
-                       (tc/column-names data column-selector :all)
-                       (tc/column-names data column-selector))]
-       (case strategy
-         :full (transform-one-hot-full ctx data mode id col-names options)
-         :independent (assoc ctx :metamorph/data
-                             (ds/categorical->one-hot
-                              data
-                              (tc/select-columns data column-selector)
-                              (:table-args options)
-                              (:result-datatype options)))
-         :fit (transform-one-hot-train->test ctx data mode id col-names options))))))
+   (malli/instrument-mm
+    (fn [{:metamorph/keys [id data mode] :as ctx}]
+      (let [col-names (if (fn? column-selector)
+                        (tc/column-names data column-selector :all)
+                        (tc/column-names data column-selector))]
+        (case strategy
+          :full (transform-one-hot-full ctx data mode id col-names options)
+          :independent (assoc ctx :metamorph/data
+                              (ds/categorical->one-hot
+                               data
+                               (tc/select-columns data column-selector)
+                               (:table-args options)
+                               (:result-datatype options)))
+          :fit (transform-one-hot-train->test ctx data mode id col-names options)))))))
