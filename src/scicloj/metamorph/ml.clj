@@ -333,7 +333,7 @@
     [:=>
      [:cat
       [:sequential [:or vector? fn?]]
-      [:sequential [:map {:closed true} [:train :any] [:test :any]]]
+      [:sequential [:map {:closed true} [:train [:fn dataset?]] [:test [:fn dataset?]]]]
       fn?
       [:enum :accuracy :loss]]
 
@@ -341,7 +341,7 @@
     [:=>
      [:cat
       [:sequential [:or vector? fn?]]
-      [:sequential [:map {:closed true} [:train :any] [:test :any]]]
+      [:sequential [:map {:closed true} [:train [:fn dataset?]] [:test [:fn dataset?]]]]
       fn?
       [:enum :accuracy :loss]
       ::options]
@@ -500,8 +500,12 @@ see tech.v3.dataset.modelling/set-inference-target")
   operation is needed in order to use the model.  This happens for you during preduct
   but you may also cached the 'thawed' model on the model map under the
   ':thawed-model'  keyword in order to do fast predictions on small datasets."
-  {:malli/schema [:=> [:cat [:map [:model-data any?]] map?]
-                   [map?]]}
+  {:malli/schema [:function
+                  [:=> [:cat [:map [:model-data any?]] map?] map?]
+                  [:=> [:cat [:map [:model-data any?]]] map?]]}
+
+
+
   ([model {:keys [thaw-fn]}]
    (if-let [cached-model (get model :thawed-model)]
      cached-model
