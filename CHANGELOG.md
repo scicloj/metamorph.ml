@@ -1,3 +1,10 @@
+
+0.4.0
+- changed result of `evaluate-pipelines`` to be more consistent
+- added Malli schema to several functios
+- added support for experiment tracking on disk
+- added experimenta / example code of using nippy to persist evaluation results
+
 0.3.0-beta6
 - fixed toy data
 
