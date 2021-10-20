@@ -424,7 +424,8 @@
                                          thaw-fn
                                          explain-fn
                                          options
-                                         documentation]}]
+                                         documentation
+                                         unsupervised?]}]
 
   (println "Register model: " model-kwd)
   (swap! model-definitions* assoc model-kwd {:train-fn train-fn
@@ -433,6 +434,7 @@
                                              :thaw-fn thaw-fn
                                              :explain-fn explain-fn
                                              :options options
+                                             :unsupervised? unsupervised?
                                              :documentation documentation})
 
                                              
@@ -473,14 +475,20 @@
   {:malli/schema [:=> [:cat [:fn dataset?] map?]
                   [map?]]}
   [dataset options]
-  (let [{:keys [train-fn]} (options->model-def options)
+  (def options options)
+
+
+  (let [{:keys [train-fn unsupervised?]} (options->model-def options)
         feature-ds (cf/feature  dataset)
         _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
                                  "No features provided")
-        target-ds (cf/target dataset)
-        _ (errors/when-not-error (> (ds/row-count target-ds) 0)
-                                 "No target columns provided
-see tech.v3.dataset.modelling/set-inference-target")
+        target-ds (if unsupervised?
+                    nil
+                    (do
+                      (errors/when-not-error (> (ds/row-count (cf/target dataset)) 0) "No target columns provided, see tech.v3.dataset.modelling/set-inference-target")
+                      (cf/target dataset)))
+
+                     
         model-data (train-fn feature-ds target-ds options)
         cat-maps (ds-mod/dataset->categorical-xforms target-ds)]
     (merge
