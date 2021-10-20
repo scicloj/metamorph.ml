@@ -21,16 +21,21 @@
 
 (defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
 
-  (let [start-transform (System/currentTimeMillis)
+
+
+  (let [_ (errors/when-not-error (:model fitted-ctx) "Pipeline contexts under evaluation need to have the model operation with id :model")
+
+        start-transform (System/currentTimeMillis)
         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
         end-transform (System/currentTimeMillis)
 
         predictions-ds (cf/prediction (:metamorph/data predicted-ctx))
-        trueth-ds (predicted-ctx ::target-ds)
+        _ (def predicted-ctx predicted-ctx)
 
-        _ (errors/when-not-error trueth-ds (str  "Pipeline context need to have the true prediction target as a dataset at key"
-                                                 ::target-ds " Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
+        trueth-ds (get-in predicted-ctx [:model ::target-ds])
 
+        _ (errors/when-not-error trueth-ds (str  "Pipeline context need to have the true prediction target as a dataset at key path: "
+                                                 :model ::target-ds " Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
 
         target-column-names
         (ds/column-names trueth-ds)
@@ -202,12 +207,14 @@
   [[:fit-ctx :metamorph/data]
 
    [:train-transform :ctx :metamorph/data]
-   [:train-transform :ctx :scicloj.metamorph.ml/target-ds]
-   [:train-transform :ctx :scicloj.metamorph.ml/feature-ds]
+   [:train-transform :ctx :model :model-data]
+   [:train-transform :ctx :model :scicloj.metamorph.ml/target-ds]
+   [:train-transform :ctx :model :scicloj.metamorph.ml/feature-ds]
 
    [:test-transform :ctx :metamorph/data]
-   [:test-transform :ctx :scicloj.metamorph.ml/target-ds]
-   [:test-transform :ctx :scicloj.metamorph.ml/feature-ds]])
+   [:test-transform :ctx :model :model-data]
+   [:test-transform :ctx :model :scicloj.metamorph.ml/target-ds]
+   [:test-transform :ctx :model :scicloj.metamorph.ml/feature-ds]])
 
 (def result-dissoc-in-seq--ctxs
   [[:fit-ctx]
@@ -633,13 +640,23 @@
 
   (malli/instrument-mm
    (fn [{:metamorph/keys [id data mode] :as ctx}]
+
      (case mode
-       :fit (assoc ctx id (train data options))
+       :fit (assoc ctx
+                   id (assoc (train data options)
+                             ::unsupervised? (get (options->model-def options) :unsupervised? false)))
+
        :transform  (do
-                     (assoc ctx
-                            ::feature-ds (cf/feature data)
-                            ::target-ds (cf/target data)
-                            :metamorph/data (predict data (get ctx id))))))))
+                     (if (get-in ctx [id ::unsupervised?])
+                       ctx
+                       (-> ctx
+                           (update
+                                   id
+                                   assoc
+                                   ::feature-ds (cf/feature data)
+                                   ::target-ds (cf/target data))
+                           (assoc
+                            :metamorph/data (predict data (get ctx id))))))))))
 
 (malli/instrument-ns 'scicloj.metamorph.ml)
 

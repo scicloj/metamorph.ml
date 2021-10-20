@@ -48,9 +48,6 @@
 
         best-fitted-context  (-> evaluations first first :fit-ctx)
         best-pipe-fn         (-> evaluations first first :pipe-fn)
-        _ (def best-fitted-context best-fitted-context)
-
-        _ (-> best-fitted-context :model)
 
         new-ds (->
                 (tc/shuffle iris  {:seed 1234})
@@ -106,7 +103,33 @@
 
 
 
-  
+(deftest test-data-removed
+  (let [
+
+        pipe-fn
+        (morph/pipeline
+         (ds-mm/set-inference-target :species)
+         (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/target ds))) {} :int)
+         (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/feature ds))) {} :float)
+
+         {:metamorph/id :model}
+         (ml/model {:model-type :smile.regression/ordinary-least-square}))
+
+        train-split-seq (tc/split->seq iris :holdout)
+        pipe-fn-seq [pipe-fn]
+
+        evaluations
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)
+
+        _ (def evaluations evaluations)]
+
+    (is (nil? (-> evaluations first first :train-transform :ctx :model :model-data)))
+    (is (nil? (-> evaluations first first :test-transform :ctx :model :model-data)))
+    (is (nil? (-> evaluations first first :train-transform :ctx :model :scicloj.metamorph.ml/target-ds)))
+    (is (nil? (-> evaluations first first :train-transform :ctx :model :scicloj.metamorph.ml/feature-ds)))))
+
+
+
 
     
 
@@ -118,7 +141,7 @@
          (ds-mm/set-inference-target :species)
          (ds-mm/categorical->number cf/categorical)
 
-         (ml/model {:model-type :smile.classification/random-forest}))
+         {:metamorph/id :model}(ml/model {:model-type :smile.classification/random-forest}))
 
         train-split-seq (tc/split->seq iris :kfold)
         pipe-fn-seq [pipe-fn pipe-fn]
@@ -187,7 +210,7 @@
         (fn[options]
           (morph/pipeline
            (ds-mm/categorical->number cf/categorical)
-           (ml/model options)))
+           {:metamorph/id :model}(ml/model options)))
 
         all-options-combinations (gs/sobol-gridsearch grid-search-options)
 
@@ -312,7 +335,7 @@
                [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
                 [:tech.v3.dataset.metamorph/categorical->number [:species]]
                 [:tech.v3.dataset.metamorph/update-column :species :clojure.core/identity]
-                [:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]]
+                {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]]
                files (atom [])
 
                nippy-handler (eval/example-nippy-handler files "/tmp" [])
@@ -340,7 +363,7 @@
                   [:ds-mm/categorical->number [:species]]
                   [:ds-mm/update-column :species ::do-xxx]
                   [:ds-mm/update-column :species :clojure.core/identity]
-                  [:ml/model {:model-type :smile.classification/random-forest}]]]
+                  {:metamorph/id :model}[:ml/model {:model-type :smile.classification/random-forest}]]]
                 (find-ns 'scicloj.metamorph.ml-test))
 
 
@@ -366,7 +389,7 @@
         base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
          [:tech.v3.dataset.metamorph/categorical->number [:species]]
-         [:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]]
+         {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]]
 
         evaluation-result
         (ml/evaluate-pipelines
@@ -383,7 +406,7 @@
   (let [base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
          [:tech.v3.dataset.metamorph/categorical->number [:species]]
-         [:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]]
+         {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]]
 
         evaluation-result
         (ml/evaluate-pipelines
@@ -414,8 +437,8 @@
         (fn  [node-size]
           [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
            [:tech.v3.dataset.metamorph/categorical->number [:species]]
-           [:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest
-                                         :node-size node-size}]])
+           {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest
+                                                               :node-size node-size}]])
 
         pipes (map create-base-pipe-decl [1 5 10 20 50 100])
 

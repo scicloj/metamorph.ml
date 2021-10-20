@@ -93,7 +93,7 @@
   (is-pos-metric [[:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
                   [::duplicate-columns :type/numerical]
                   [:tech.v3.dataset.metamorph/set-inference-target :species]
-                  [:scicloj.metamorph.ml/model (merge {:model-type :smile.classification/decision-tree})]]))
+                  {:metamorph/id :model} [:scicloj.metamorph.ml/model (merge {:model-type :smile.classification/decision-tree})]]))
 
 (deftest test-decl-3
   (is-pos-metric [[::update-species (fn [col] (map  clojure.string/upper-case col))]
@@ -108,13 +108,13 @@
 (deftest test-decl-4
   (is-pos-metric [[:tech.v3.dataset.metamorph/categorical->number [:species] {} :int64]
                   [:tech.v3.dataset.metamorph/set-inference-target :species]
-                  [:scicloj.metamorph.ml/model (merge {:model-type :smile.classification/decision-tree})]]))
+                  {:metamorph/id :model}[:scicloj.metamorph.ml/model (merge {:model-type :smile.classification/decision-tree})]]))
 
 (deftest test-decl-5
   (is-pos-metric [[:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
                   [:tech.v3.dataset.metamorph/update-column :species :clojure.core/identity]
                   [:tech.v3.dataset.metamorph/set-inference-target :species]
-                  [:scicloj.metamorph.ml/model (merge {:model-type :smile.classification/decision-tree})]]))
+                  {:metamorph/id :model}[:scicloj.metamorph.ml/model (merge {:model-type :smile.classification/decision-tree})]]))
 
 
 
@@ -135,7 +135,7 @@
                     [:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
                     [:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
                     [:tech.v3.dataset.metamorph/set-inference-target :species]
-                    [:scicloj.metamorph.ml/model (merge {:model-type :smile.classification/decision-tree})]])))
+                    {:metamorph/id :model}[:scicloj.metamorph.ml/model (merge {:model-type :smile.classification/decision-tree})]])))
 
 
 (comment
@@ -146,7 +146,6 @@
    {:metamorph/data data})
   ((update-species :clojure.core/identity)
    {:metamorph/data data})
-
 
 
   ((update-species :identity)
