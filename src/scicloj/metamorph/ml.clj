@@ -207,14 +207,23 @@
   [[:fit-ctx :metamorph/data]
 
    [:train-transform :ctx :metamorph/data]
-   [:train-transform :ctx :model :model-data]
+
    [:train-transform :ctx :model :scicloj.metamorph.ml/target-ds]
    [:train-transform :ctx :model :scicloj.metamorph.ml/feature-ds]
 
    [:test-transform :ctx :metamorph/data]
-   [:test-transform :ctx :model :model-data]
+
    [:test-transform :ctx :model :scicloj.metamorph.ml/target-ds]
-   [:test-transform :ctx :model :scicloj.metamorph.ml/feature-ds]])
+   [:test-transform :ctx :model :scicloj.metamorph.ml/feature-ds]
+   ;;  scicloj.ml.smile specific
+   [:train-transform :ctx :model :model-data :model-as-bytes]
+   [:train-transform :ctx :model :model-data :smile-df-used]
+   [:test-transform :ctx :model :model-data :model-as-bytes]
+   [:test-transform :ctx :model :model-data :smile-df-used]])
+
+
+
+
 
 (def result-dissoc-in-seq--ctxs
   [[:fit-ctx]
@@ -257,18 +266,24 @@
 
    * `options` map controls some mainly performance related parameters, which are:
 
-       * `:result-dissoc-in-seq`  - Controls how much information is returned for each cross validation. We call `dissoc-in` on every seq of this for the `fit-ctx` and `transform-ctx` before returning them. Default is
+   * `:result-dissoc-in-seq`  - Controls how much information is returned for each cross validation. We call `dissoc-in` on every seq of this for the `fit-ctx` and `transform-ctx` before returning them. Default is
 
        ```
   [[:fit-ctx :metamorph/data]
 
    [:train-transform :ctx :metamorph/data]
-   [:train-transform :ctx :scicloj.metamorph.ml/target-ds]
-   [:train-transform :ctx :scicloj.metamorph.ml/feature-ds]
+
+   [:train-transform :ctx :model :scicloj.metamorph.ml/target-ds]
+   [:train-transform :ctx :model :scicloj.metamorph.ml/feature-ds]
 
    [:test-transform :ctx :metamorph/data]
-   [:test-transform :ctx :scicloj.metamorph.ml/target-ds]
-   [:test-transform :ctx :scicloj.metamorph.ml/feature-ds]]
+
+   [:test-transform :ctx :model :scicloj.metamorph.ml/target-ds]
+   [:test-transform :ctx :model :scicloj.metamorph.ml/feature-ds]
+   ;;  scicloj.ml.smile specific
+   [:train-transform :ctx :model :model-data :model-as-bytes]
+   [:test-transform :ctx :model :model-data :model-as-bytes]]
+
        ```
 
        * `:return-best-pipeline-only` - Only return information of the best performing pipeline. Default is true.
