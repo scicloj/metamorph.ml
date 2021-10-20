@@ -12,6 +12,7 @@
   {:jvm-opts ["-Djdk.attach.allowAttachSelf"]
    :extra-paths ["test"]
    :extra-deps {lambdaisland/kaocha {:mvn/version "1.0.902"}
+
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
                 scicloj/scicloj.ml.smile {:mvn/version "6.0.1-SNAPSHOT"}
                 ch.qos.logback/logback-classic {:mvn/version "1.2.3"}
