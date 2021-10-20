@@ -18,56 +18,59 @@
   (:import java.util.UUID))
 
 
+(defn- supervised-eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
+  (let [
+          start-transform (System/currentTimeMillis)
+          predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
+          end-transform (System/currentTimeMillis)
+
+          predictions-ds (cf/prediction (:metamorph/data predicted-ctx))
+          _ (def predicted-ctx predicted-ctx)
+
+
+          trueth-ds (get-in predicted-ctx [:model ::target-ds])
+
+          _ (errors/when-not-error trueth-ds (str  "Pipeline context need to have the true prediction target as a dataset at key path: "
+                                                   :model ::target-ds " Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
+
+          target-column-names
+          (ds/column-names trueth-ds)
+
+          _ (errors/when-not-error (= 1 (count target-column-names)) "Only 1 target column required")
+
+
+          predictions-col (get predictions-ds (first target-column-names))
+          trueth-col (get trueth-ds (first target-column-names))
+
+
+          metric (metric-fn (ds-col/to-double-array trueth-col)
+                            (ds-col/to-double-array predictions-col))
+
+          other-metrices-result
+          (map
+           (fn [{:keys [name metric-fn] :as m}]
+             (assoc m
+                    :metric (metric-fn
+                             (ds-col/to-double-array trueth-col)
+                             (ds-col/to-double-array predictions-col))))
+           other-metrices)
+
+          result
+          {:other-metrices other-metrices-result
+           :timing (- end-transform start-transform)
+           :ctx predicted-ctx
+           :metric metric}]
+
+      result))
+
 
 (defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
+  (errors/when-not-error (:model fitted-ctx) "Pipeline contexts under evaluation need to have the model operation with id :model")
+  (def fitted-ctx fitted-ctx)
 
-
-
-  (let [_ (errors/when-not-error (:model fitted-ctx) "Pipeline contexts under evaluation need to have the model operation with id :model")
-
-        start-transform (System/currentTimeMillis)
-        predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
-        end-transform (System/currentTimeMillis)
-
-        predictions-ds (cf/prediction (:metamorph/data predicted-ctx))
-        _ (def predicted-ctx predicted-ctx)
-
-        trueth-ds (get-in predicted-ctx [:model ::target-ds])
-
-        _ (errors/when-not-error trueth-ds (str  "Pipeline context need to have the true prediction target as a dataset at key path: "
-                                                 :model ::target-ds " Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
-
-        target-column-names
-        (ds/column-names trueth-ds)
-
-        _ (errors/when-not-error (= 1 (count target-column-names)) "Only 1 target column required")
-
-
-        predictions-col (get predictions-ds (first target-column-names))
-        trueth-col (get trueth-ds (first target-column-names))
-
-
-        metric (metric-fn (ds-col/to-double-array trueth-col)
-                          (ds-col/to-double-array predictions-col))
-
-        other-metrices-result
-        (map
-         (fn [{:keys [name metric-fn] :as m}]
-           (assoc m
-                  :metric (metric-fn
-                           (ds-col/to-double-array trueth-col)
-                           (ds-col/to-double-array predictions-col))))
-         other-metrices)
-
-        result
-        {:other-metrices other-metrices-result
-         :timing (- end-transform start-transform)
-         :ctx predicted-ctx
-         :metric metric}]
-
-
-
-    result))
+  (if  (-> fitted-ctx :model ::unsupervised?)
+    {}
+    (supervised-eval-pipe pipeline-fn fitted-ctx metric-fn ds other-metrices)))
 
 
 
