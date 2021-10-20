@@ -495,7 +495,7 @@ see tech.v3.dataset.modelling/set-inference-target")
 
 (defn thaw-model
   "Thaw a model.  Model's returned from train may be 'frozen' meaning a 'thaw'
-  operation is needed in order to use the model.  This happens for you during preduct
+  operation is needed in order to use the model.  This happens for you during predict
   but you may also cached the 'thawed' model on the model map under the
   ':thawed-model'  keyword in order to do fast predictions on small datasets."
   {:malli/schema [:function

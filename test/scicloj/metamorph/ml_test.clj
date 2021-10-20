@@ -292,7 +292,7 @@
 
                                                 (eval '(def thawed-pipe-fn (clojure.core/->
                                                                             thawed-result
-                                                                            :pipe-decl
+                                                                             :pipe-decl
                                                                             (morph/->pipeline))))
                                                 (eval '(clojure.core/->
                                                         (morph/fit-pipe ds thawed-pipe-fn)
