@@ -95,6 +95,7 @@
 
         evaluations
         (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss {:result-dissoc-in-seq []})
+        _ (def evaluations evaluations)
 
         best-fitted-context  (-> evaluations first first :fit-ctx)
         best-pipe-fn         (-> evaluations first first :pipe-fn)]
@@ -119,12 +120,13 @@
         pipe-fn-seq [pipe-fn]
 
         evaluations
-        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)]
 
-        _ (def evaluations evaluations)]
 
-    (is (nil? (-> evaluations first first :train-transform :ctx :model :model-data)))
-    (is (nil? (-> evaluations first first :test-transform :ctx :model :model-data)))
+    (is (nil? (-> evaluations first first :train-transform :ctx :model :model-data :model-as-bytes)))
+    (is (nil? (-> evaluations first first :train-transform :ctx :model :model-data :smile-df-used)))
+    (is (nil? (-> evaluations first first :test-transform :ctx :model :model-data :model-as-bytes)))
+    (is (nil? (-> evaluations first first :test-transform :ctx :model :model-data :smile-df-used)))
     (is (nil? (-> evaluations first first :train-transform :ctx :model :scicloj.metamorph.ml/target-ds)))
     (is (nil? (-> evaluations first first :train-transform :ctx :model :scicloj.metamorph.ml/feature-ds)))))
 
