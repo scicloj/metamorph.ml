@@ -366,7 +366,7 @@
     [:=>
      [:cat
       [:sequential [:or vector? fn?]]
-      [:sequential [:map {:closed true} [:train [:fn dataset?]] [:test [:fn dataset?]]]]
+      [:sequential [:map {:closed true} [:train [:fn dataset?]] [:test {:optional true} [:fn dataset?]]]]
       fn?
       [:enum :accuracy :loss]]
 
