@@ -259,28 +259,40 @@
 
 
 (defn evaluate-pipelines
-  "Evaluates performance of a seq of metamorph pipelines, which are suposed to have a  model as last step, which behaves correctly  in mode :fit and 
-   :transform
-   It calculates the loss, given as `metric-fn` of each pipeline in `pipeline-fn-seq` using all the train-test splits given in `train-test-split-seq`.
+  "Evaluates the performance of a seq of metamorph pipelines, which are suposed to have a model as last step under key :model,
+  which behaves correctly  in mode :fit and  :transform. The function `scicloj.metamorph.ml/model` is such function behaving correctly.
+  
+   This function calculates the accuracy or loss, given as `metric-fn` of each pipeline in `pipeline-fn-seq` using all the train-test splits
+  given in  `train-test-split-seq`.
 
    It runs the pipelines  in mode  :fit and in mode :transform for each pipeline-fn in `pipe-fn-seq` for each split in `train-test-split-seq`.
 
    The function returns a seq of seqs of evaluation results per pipe-fn per train-test split.
+   Each of teh evaluation results is a context map, which is specified in the malli schema attached to this function. 
 
-   * `pipe-fn-or-decl-seq` need to be  sequence of functions or pipline declarations which follow the metamorph approach. They should take as input the metamorph context map,
-    which has the dataset under key :metamorph/data, manipulate it as needed for the transformation pipeline and read and write only to the
-    context as needed. These type of functions get produced typically by calling `scicloj.metamorph/pipeline`
+   * `pipe-fn-or-decl-seq` need to be  sequence of pipeline functions or pipline declarations which follow the metamorph approach.
+      These type of functions get produced typically by calling `scicloj.metamorph/pipeline`. Documentation is here:
 
    * `train-test-split-seq` need to be a sequence of maps containing the  train and test dataset (being tech.ml.dataset) at keys :train and :test.
-    `tableclot.api/split->seq` produces such splits.
+    `tableclot.api/split->seq` produces such splits. Supervised models require both keys (:train and :test), while unsupervised models only use :train
 
-   * `metric-fn` Metric function to use. Typically comming from `tech.v3.ml.loss`
-   `loss-or-accuracy` If the metric-fn is a loss or accuracy calculation. Can be :loss or :accuracy.
+   * `metric-fn` Metric function to use. Typically comming from `tech.v3.ml.loss`. For supervised models the metric-fn receives the trueth
+      and predicted vales as double arrays and should return a single double number.  For unsupervised models he function receives the fitted ctx
+      and should return a singel double number as well. This metric will be used to sort and eventualy filter the result, depending on the options
+      (:return-best-pipeline-only   and :return-best-crossvalidation-only). The notion of `best` comes from metric-fn combined with loss-and-accuracy
+  
 
-   * `options` map controls some mainly performance related parameters, which are:
+   * `loss-or-accuracy` If the metric-fn is a loss or accuracy calculation. Can be :loss or :accuracy. Decided the notion of `best` model.
+      In case of :loss pipelines with lower metric are better, in case of :accuracy pipelines with higher value are better.
 
-   * `:result-dissoc-in-seq`  - Controls how much information is returned for each cross validation. We call `dissoc-in` on every seq of this for the `fit-ctx` and `transform-ctx` before returning them. Default is
+  * `options` map controls some mainly performance related parameters. These function can potentialy result in a large ammount of data,
+    able to bring the JVM into out-of-memory. We can control how many details the function returns by the following parameter: 
+     The default are quite aggresive in removing details, and this can be tweaked further into more or less details via:
+     
 
+        * `:result-dissoc-in-seq`  - Controls how much information is returned for each cross validation. We call `dissoc-in` on every seq of this
+      for the `fit-ctx` and `transform-ctx` before returning them. Default is  `scicloj.metamorph.ml/default-result-dissoc-in-seq`
+      So `every path` in result-dissoc-in-seq is removed from the evaluation result, the default being:  
        ```
   [[:fit-ctx :metamorph/data]
 
@@ -298,17 +310,21 @@
    [:test-transform :ctx :model :model-data :model-as-bytes]]
 
        ```
+       This ns contains 2 other result-disssoc-in sequences:
+       * result-dissoc-in-seq--ctxs : Removes all contexts from result. This should remove all 'big data'
+       * result-dissoc-in-seq--all : Only keeps the metric value per pipeline(s)
 
        * `:return-best-pipeline-only` - Only return information of the best performing pipeline. Default is true.
        * `:return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is true.
        * `:map-fn` - Controls parallelism, so if we use map (:map) , pmap (:pmap) or :mapv to map over different pipelines. Default :pmap
-       * `:evaluation-handler-fn` - Gets called once with the complete result of an individual evaluation step. Its result is ignre and it's default is a noop.
+       * `:evaluation-handler-fn` - Gets called once with the complete result of an individual evaluation step.
+           Its result is ignored and it's default is a noop. It can be used for side effects, like experiment tracking on disk.
+           The passed in evaluation result is a map with all information on the current evaluation, including the datasets used.
        * `:other-metrices` Specifies other metrices to be calculated during evaluation
 
    This function expects as well the ground truth of the target variable into
-   a specific key in the context `:scicloj.metamorph.ml/target-ds`
+   a specific key in the context at key `:model :scicloj.metamorph.ml/target-ds`
    See here for the simplest way to set this up: https://github.com/behrica/metamorph.ml/blob/main/README.md
-
    The function [[scicloj.ml.metamorph/model]] does this correctly.
   "
 
