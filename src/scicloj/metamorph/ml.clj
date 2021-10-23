@@ -64,8 +64,6 @@
 
 (defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
 
-  (def fitted-ctx fitted-ctx)
-
   (if  (-> fitted-ctx :model ::unsupervised?)
     {:other-metrices []
      :timing 0
@@ -161,7 +159,6 @@
         pipeline-decl (when (sequential? pipeline-decl-or-fn)
                         pipeline-decl-or-fn)
 
-        _ (def pipeline-decl pipeline-decl)
         split-eval-results
         (->>
          (for [train-test-split train-test-split-seq]
@@ -526,9 +523,6 @@
   {:malli/schema [:=> [:cat [:fn dataset?] map?]
                   [map?]]}
   [dataset options]
-  (def options options)
-
-
   (let [{:keys [train-fn unsupervised?]} (options->model-def options)
         feature-ds (cf/feature  dataset)
         _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
@@ -614,7 +608,6 @@
    {:malli/schema [:=> [:cat map? [:* any?]]
                    [map?]]}
   [model & [options]]
-  (def options options)
   (let [{:keys [explain-fn] :as model-def}
         (options->model-def (:options model))]
     (when explain-fn
