@@ -288,11 +288,14 @@
                           :metamorph/data test-ds}))
 
         predicted-species (ds-mod/column-values->categorical (:metamorph/data prediction)
-                                                            "species")]
+                                                             "species")]
                                                             
+   (is (= [1.0 0.0 0.0 1.0 2.0]
+          (take 5 (-> prediction (get "1") :scicloj.metamorph.ml/target-ds (get "species") seq))))
+   (is (= ["setosa" "versicolor" "versicolor"]
+          (take 3 predicted-species))
+       (def prediction prediction))))
 
-    (is (= ["setosa" "versicolor" "versicolor"]
-           (take 3 predicted-species)))))
 
 (defn do-xxx [col] col)
 
