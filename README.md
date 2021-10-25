@@ -3,7 +3,7 @@
 # metamorph.ml
 
 Evaluation functions for [metamorph](https://github.com/scicloj/metamorph) based machine learning pipelines
-Partg of [scicloj.ml](https://github.com/scicloj/scicloj.ml)
+Part of [scicloj.ml](https://github.com/scicloj/scicloj.ml)
 
 ## Main idea
 
