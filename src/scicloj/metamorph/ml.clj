@@ -67,7 +67,7 @@
   (if  (-> fitted-ctx :model ::unsupervised?)
     {:other-metrices []
      :timing 0
-     :ctx fitted-ctx
+     :ctx {}
      :metric (metric-fn fitted-ctx)}
 
     (supervised-eval-pipe pipeline-fn fitted-ctx metric-fn ds other-metrices)))
