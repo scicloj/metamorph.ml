@@ -30,7 +30,7 @@
              :metamorph/data (apply-mappings data mappings)))
 
     :transform
-    (assoc ctx :metamorph/data (apply-mappings data (get ctx id)))()))
+    (assoc ctx :metamorph/data (apply-mappings data (get ctx id)))))
 
 
 (defn validate-mappings [data mappings]
