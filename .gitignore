@@ -2,3 +2,4 @@
 .nrepl-port
 docs/
 target/
+/pom.xml.asc
