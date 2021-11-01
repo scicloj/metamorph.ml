@@ -1,31 +1,36 @@
 (ns scicloj.metamorph.ml.preprocessing
   (:require
    [tech.v3.dataset.math :as std-math]
-   [tech.v3.dataset :as ds]))
+   [tech.v3.dataset :as ds]
+   [tablecloth.api :as tc]))
    
 
 
-(defn preprocessor [col-seq fit-fn transform-fn context-key options]
+(defn preprocessor
+  ([columns-selector fit-fn transform-fn context-key options]
+   (preprocessor columns-selector :name fit-fn transform-fn context-key options))
+  ([columns-selector meta-field fit-fn transform-fn context-key options]
 
-  (fn [{:metamorph/keys [data id mode] :as ctx}]
-    (case mode
-      :fit
-      (let [ds (ds/select-columns data col-seq)
-            fit-xform (fit-fn ds options)]
-        (assoc ctx
-               id {context-key fit-xform}
-               :metamorph/data (merge data (transform-fn ds fit-xform))))
-      :transform
-      (assoc ctx :metamorph/data
-             (merge data
-                    (-> (ds/select-columns data col-seq)
-                        (transform-fn
-                         (get-in ctx [id context-key]))))))))
-
+   (fn [{:metamorph/keys [data id mode] :as ctx}]
+     (case mode
+       :fit
+       (let [ds (tc/select-columns data columns-selector meta-field)
+             fit-xform (fit-fn ds options)]
+         (assoc ctx
+                id {context-key fit-xform}
+                :metamorph/data (merge data (transform-fn ds fit-xform))))
+       :transform
+       (assoc ctx :metamorph/data
+              (merge data
+                     (-> (tc/select-columns data columns-selector meta-field)
+                         (transform-fn
+                          (get-in ctx [id context-key])))))))))
 (defn std-scale
   "Metamorph transfomer, which centers and scales the dataset per column.
 
-  `col-seq` is a sequence of column names to work on
+  `columns-selector` tablecloth columns-selector to choose columns to work on
+  `meta-field` tablecloth meta-field working with `columns-selector`
+
 
   `options` are the options for the scaler and can take:
 
@@ -41,15 +46,17 @@
   Writes keys to ctx                   | In mode `:fit` : Stores trained model in key $id
 
   "
-  [col-seq {:keys [mean? stddev?]
-            :or {mean? true stddev? true}
-            :as options}]
-  (preprocessor col-seq std-math/fit-std-scale std-math/transform-std-scale :fit-std-xform options))
+  ([columns-selector meta-field {:keys [mean? stddev?]
+                                 :or {mean? true stddev? true}
+                                 :as options}]
+   (preprocessor columns-selector  meta-field std-math/fit-std-scale std-math/transform-std-scale :fit-std-xform options))
+  ([columns-selector options] (std-scale columns-selector :name options)))
 
 (defn min-max-scale
   "Metamorph transfomer, which scales the column data into a given range.
 
-  `col-seq` is a sequence of columns names to work on
+  `columns-selector` tablecloth columns-selector to choose columns to work on
+  `meta-field` tablecloth meta-field working with `columns-selector`
 
   `options` Options for scaler, can take:
 
@@ -65,8 +72,8 @@
   Writes keys to ctx                   | In mode `:fit` : Stores trained model in key $id
 
   "
-  [col-seq {:keys [min max]
-            :or {min -0.5
-                 max 0.5}
-            :as options}]
-  (preprocessor col-seq std-math/fit-minmax std-math/transform-minmax :fit-minmax-xform options))
+  [columns-selector {:keys [min max]
+                     :or {min -0.5
+                          max 0.5}
+                     :as options}]
+  (preprocessor columns-selector std-math/fit-minmax std-math/transform-minmax :fit-minmax-xform options))
