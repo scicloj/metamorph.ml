@@ -1,3 +1,6 @@
+0.4.1
+- adding support for unsupervised learning
+
 
 0.4.0
 - changed result of `evaluate-pipelines`` to be more consistent
