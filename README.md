@@ -2,7 +2,7 @@
 
 # metamorph.ml
 
-Evaluation functions for [metamorph](https://github.com/scicloj/metamorph) based machine learning pipelines
+Machine learining functions for [metamorph](https://github.com/scicloj/metamorph) based machine learning pipelines
 Part of [scicloj.ml](https://github.com/scicloj/scicloj.ml)
 
 ## Main idea
@@ -98,9 +98,20 @@ which might be a better quick start experience, still full featured as same code
 ```
 
 
+
+This library contains the basis functions for machine learning.
+
+It is documented in `scicloj.ml`, which re-exports the functions of this library:
+https://github.com/scicloj/scicloj.ml
+
+## Train a model
+
+## Predict on a trained model
+
+## Register a trained model
+
 ## Evaluate pipelines
 
-This library contains very little code itself, just one function
 `evaluate-pipelines` which takes a sequence of metamorph compliant pipeline-fn (= each pipeline is a series of steps to transform the raw data and a model step)
 
 It executes each pipeline first in `mode` :fit and then in `mode` transform, as specified by [metamorph](https://github.com/scicloj/metamorph)
@@ -147,7 +158,7 @@ This can be done in various ways, from hand coding each pipeline  or having
 a pipeline creation function  over to using grid search libraries:
 https://github.com/techascent/tech.ml/blob/38f523a7cea6465f639df6fc4eecd6b3f4de69d0/src/tech/v3/ml/gridsearch.clj#L111
 
-A simple pipeline looks like thgis:
+A simple pipeline looks like this:
 
 ```clojure
  (morph/pipeline
