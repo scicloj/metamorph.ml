@@ -108,11 +108,12 @@
          :transform-ctx nil
          :metric nil}))))
 
-(defn- reduce-result [r tune-options]
+(defn reduce-result [r result-dissoc-in-seq]
   (reduce (fn [x y]
             (dissoc-in x y))
           r
-          (tune-options :result-dissoc-in-seq)))
+          result-dissoc-in-seq))
+          
 
 
 
@@ -174,8 +175,7 @@
                                               (get-in tune-options [:attach-fn-sources :ns])
                                               (get-in tune-options [:attach-fn-sources :pipe-fns-clj-file])))
 
-                 reduced-result (reduce-result complete-result tune-options)
-                 _ ((tune-options :evaluation-handler-fn) complete-result)]
+                 reduced-result ((tune-options :evaluation-handler-fn) complete-result)]
              reduced-result)))
              
 
@@ -232,7 +232,8 @@
    [:test-transform :ctx :model :model-data :smile-df-used]])
 
 
-
+(defn default-result-dissoc-in-fn [result]
+  (reduce-result result default-result-dissoc-in-seq))
 
 
 (def result-dissoc-in-seq--ctxs
@@ -240,14 +241,27 @@
    [:train-transform :ctx]
    [:test-transform :ctx]])
 
+(defn result-dissoc-in-seq-ctx-fn [result]
+  (reduce-result result result-dissoc-in-seq--ctxs))
+
+
 (def result-dissoc-in-seq--all
-  [[:fit-ctx]
+  [[:metric-fn]
+   [:fit-ctx]
    [:train-transform :ctx]
+   [:train-transform :other-metrices]
+   [:train-transform :timing]
    [:test-transform :ctx]
-   [:max]
-   [:min]
+   [:test-transform :other-metrices]
+   [:test-transform :timing]
    [:pipe-decl]
-   [:pipe-fn]])
+   [:pipe-fn]
+   [:timing-fit]
+   [:loss-or-accuracy]
+   [:source-information]])
+
+(defn result-dissoc-in-seq--all-fn [result]
+  (reduce-result result result-dissoc-in-seq--all))
 
 
 
@@ -287,36 +301,28 @@
      The default are quite aggresive in removing details, and this can be tweaked further into more or less details via:
      
 
-        * `:result-dissoc-in-seq`  - Controls how much information is returned for each cross validation. We call `dissoc-in` on every seq of this
-      for the `fit-ctx` and `transform-ctx` before returning them. Default is  `scicloj.metamorph.ml/default-result-dissoc-in-seq`
-      So `every path` in result-dissoc-in-seq is removed from the evaluation result, the default being:  
-       ```
-  [[:fit-ctx :metamorph/data]
-
-   [:train-transform :ctx :metamorph/data]
-
-   [:train-transform :ctx :model :scicloj.metamorph.ml/target-ds]
-   [:train-transform :ctx :model :scicloj.metamorph.ml/feature-ds]
-
-   [:test-transform :ctx :metamorph/data]
-
-   [:test-transform :ctx :model :scicloj.metamorph.ml/target-ds]
-   [:test-transform :ctx :model :scicloj.metamorph.ml/feature-ds]
-   ;;  scicloj.ml.smile specific
-   [:train-transform :ctx :model :model-data :model-as-bytes]
-   [:test-transform :ctx :model :model-data :model-as-bytes]]
-
-       ```
-       This ns contains 2 other result-disssoc-in sequences:
-       * result-dissoc-in-seq--ctxs : Removes all contexts from result. This should remove all 'big data'
-       * result-dissoc-in-seq--all : Only keeps the metric value per pipeline(s)
 
        * `:return-best-pipeline-only` - Only return information of the best performing pipeline. Default is true.
        * `:return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is true.
        * `:map-fn` - Controls parallelism, so if we use map (:map) , pmap (:pmap) or :mapv to map over different pipelines. Default :pmap
-       * `:evaluation-handler-fn` - Gets called once with the complete result of an individual evaluation step.
-           Its result is ignored and it's default is a noop. It can be used for side effects, like experiment tracking on disk.
+       * `:evaluation-handler-fn` - Gets called once with the complete result of an individual pipeline evaluation.
+           It can be used to adapt the data returned for each evaluation and / or to make side effects using
+           the evaluatio data.
+           The result of this function is taken as evaluation result. It need to  contain as a minumum this 2 key paths:
+           [:train-transform :metric]
+           [:test-transform :metric]
+           All other evalution data can be removed, if desired.
+
+           It can be used for side effects as well, like experiment tracking on disk.
            The passed in evaluation result is a map with all information on the current evaluation, including the datasets used.
+
+           The default handler function is:  `scicloj.metamorph.ml/default-result-dissoc--in-fn` which removes the often large
+           model object and the training data.
+           `identity` can be use to get all evaluation data.
+           `scicloj.metamorph.ml/result-dissoc-in-seq--all` reduces even more agressively.
+
+
+  
        * `:other-metrices` Specifies other metrices to be calculated during evaluation
 
    This function expects as well the ground truth of the target variable into
@@ -329,7 +335,6 @@
    [:function
     {:registry
      {::options [:or empty? [:map
-                             [:result-dissoc-in-seq {:optional true} sequential?]
                              [:return-best-pipeline-only {:optional true} boolean?]
                              [:return-best-crossvalidation-only {:optional true} boolean?]
                              [:map-fn {:optional true} [:enum :map :pmap :mapv]]
@@ -396,11 +401,10 @@
   ;;
 
   ([pipe-fn-or-decl-seq train-test-split-seq metric-fn loss-or-accuracy options]
-   (let [used-options (merge {:result-dissoc-in-seq default-result-dissoc-in-seq
-                              :map-fn :map
+   (let [used-options (merge {:map-fn :map
                               :return-best-pipeline-only true
                               :return-best-crossvalidation-only true
-                              :evaluation-handler-fn (fn [evaluation-result] nil)}
+                              :evaluation-handler-fn default-result-dissoc-in-fn}
                          
                              options)
          map-fn
@@ -436,25 +440,14 @@
          result-pipe-evals
          (if (used-options :return-best-pipeline-only)
            (case loss-or-accuracy
-             :loss     (->> pipe-eval-means  first :pipe-eval vector)
-             :accuracy (->> pipe-eval-means  last :pipe-eval vector))
+             :loss     (->> pipe-eval-means  (take 1) (map :pipe-eval))
+             :accuracy (->> pipe-eval-means  (take-last 1) (map :pipe-eval)))
            (case loss-or-accuracy
              :loss     (->> pipe-eval-means  (map :pipe-eval))
-             :accuracy (->> pipe-eval-means  reverse (mapv :pipe-eval))))
+             :accuracy (->> pipe-eval-means  reverse (mapv :pipe-eval))))]
 
 
-         reduced-result
-         (for [pipe-eval result-pipe-evals]
-           (for [cv-eval pipe-eval]
-             (do
-               (reduce
-                (fn [m ks]
-                  (dissoc-in m ks))
-                cv-eval
-                (used-options :result-dissoc-in-seq)))))]
-
-
-     reduced-result))
+     result-pipe-evals))
 
   ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy]
    (evaluate-pipelines pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy {})))

@@ -28,6 +28,19 @@
 (def iris (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
 
 
+(defn keys-in
+  "Returns a sequence of all key paths in a given map using DFS walk."
+  [m]
+  (letfn [(children [node]
+            (let [v (get-in m node)]
+              (if (map? v)
+                (map (fn [x] (conj node x)) (keys v))
+                [])))
+          (branch? [node] (-> (children node) seq boolean))]
+    (->> (keys m)
+         (map vector)
+         (mapcat #(tree-seq branch? children %)))))
+
 (deftest evaluate-pipelines-simplest
   (let [
 
@@ -44,7 +57,8 @@
         pipe-fn-seq [pipe-fn]
 
         evaluations
-        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss {:result-dissoc-in-seq []})
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss {:evaluation-handler-fn identity})
+
 
         best-fitted-context  (-> evaluations first first :fit-ctx)
         best-pipe-fn         (-> evaluations first first :pipe-fn)
@@ -78,6 +92,8 @@
     (is (contains?   (:ctx (:test-transform (first (first evaluations))))  :metamorph/mode))))
 
 
+
+
 (deftest test-explain
   (let [
 
@@ -94,7 +110,7 @@
         pipe-fn-seq [pipe-fn]
 
         evaluations
-        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss {:result-dissoc-in-seq []})
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss {:evaluation-handler-fn identity})
         _ (def evaluations evaluations)
 
         best-fitted-context  (-> evaluations first first :fit-ctx)
@@ -343,7 +359,7 @@
                 {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]]
                files (atom [])
 
-               nippy-handler (eval/example-nippy-handler files "/tmp" [])
+               nippy-handler (eval/example-nippy-handler files "/tmp" identity)
 
 
                               
@@ -375,7 +391,7 @@
                files (atom [])
                nippy-handler (eval/example-nippy-handler files
                                                  "/tmp"
-                                                 [])
+                                                 identity)
                                                  
                               
 
@@ -389,7 +405,7 @@
 
            (fit-pipe-in-new-ns (first @files) iris)))))
 
-(deftest remove-all
+(deftest dissoc--all-fn
   (let [
         base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
@@ -402,9 +418,46 @@
          (tc/split->seq iris)
          loss/classification-accuracy
          :accuracy
-         {:result-dissoc-in-seq ml/result-dissoc-in-seq--all})]
+         {:evaluation-handler-fn ml/result-dissoc-in-seq--all-fn})]
 
-    (is (pos? (-> evaluation-result first first :train-transform :timing)))))
+    (def evaluation-result evaluation-result)
+    (is (= (->>
+            (flatten evaluation-result)
+            (apply merge)
+            keys-in)
+           [
+            [:train-transform]
+            [:train-transform :metric]
+            [:train-transform :min]
+            [:train-transform :mean]
+            [:train-transform :max]
+            [:test-transform]
+            [:test-transform :metric]
+            [:test-transform :min]
+            [:test-transform :mean]
+            [:test-transform :max]]))
+    (is (pos? (-> evaluation-result first first :train-transform :metric)))))
+
+
+(deftest remove-all
+  (let [
+        base-pipe-declrss
+        [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
+         [:tech.v3.dataset.metamorph/categorical->number [:species]]
+         {:metamorph/id :model} [:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]]
+
+        evaluation-result
+        (ml/evaluate-pipelines
+         [base-pipe-declrss]
+         (tc/split->seq iris)
+         loss/classification-accuracy
+         :accuracy
+         {:evaluation-handler-fn (fn [result] {:train-transform {:metric 1}
+                                               :test-transform {:metric 1}})})]
+                                   
+
+    (is (pos? (-> evaluation-result first first :train-transform :metric)))))
+
 
 
 (deftest other-metrices
@@ -419,7 +472,7 @@
          (tc/split->seq iris)
          loss/classification-accuracy
          :accuracy
-         { ;; :result-dissoc-in-seq ml/result-dissoc-in-seq--all
+         {
           :other-metrices [{:name :acc-2  :metric-fn loss/classification-accuracy}
                            {:name :fscore :metric-fn (fn [truth prediction] (mcm/macro-avg-fmeasure (vec truth) (vec prediction)))}
                            {:name :fpr    :metric-fn scicloj.metamorph.ml.metrics/fnr}]})]

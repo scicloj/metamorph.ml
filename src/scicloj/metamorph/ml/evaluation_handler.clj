@@ -95,19 +95,20 @@
   {:fn-sources (get-fn-sources qualified-pipe-decl pipe-ns pipeline-source-file)
    :classpath (get-classpath)})
 
-(defn example-nippy-handler [files output-dir result-dissocs]
+(defn example-nippy-handler [files output-dir result-reduce-fn]
   (fn [result]
     (let [_ (def result result)
           freezable-result
           (-> result
-              (multi-dissoc-in  (concat result-dissocs
-                                        [
-                                         [:pipe-fn]
-                                         [:metric-fn]])))
+              (multi-dissoc-in
+               [
+                [:pipe-fn]
+                [:metric-fn]]))
           _ (def freezable-result freezable-result)
           temp-file (str output-dir "/" ( java.util.UUID/randomUUID) ".nippy")
           _ (swap! files #(conj % temp-file))]
-      (nippy/freeze-to-file temp-file freezable-result))))
+      (nippy/freeze-to-file temp-file freezable-result)
+      (result-reduce-fn result))))
 
 (defn qualify-keywords [pipe-decl pipe-ns]
   (clojure.walk/postwalk (fn [form]
