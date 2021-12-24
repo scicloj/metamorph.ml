@@ -14,7 +14,7 @@
    :extra-deps {lambdaisland/kaocha {:mvn/version "1.0.902"}
 
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
-                scicloj/scicloj.ml.smile {:mvn/version "6.0.1-SNAPSHOT"}
+                scicloj/scicloj.ml.smile {:mvn/version "6.1.578"}
                 ch.qos.logback/logback-classic {:mvn/version "1.2.3"}
                 com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.1.3"}}}
 
