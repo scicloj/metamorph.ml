@@ -1,3 +1,8 @@
+0.5.0
+- unified dissoc-in options and handler-fn option
+
+
+
 0.4.1
 - adding support for unsupervised learning
 

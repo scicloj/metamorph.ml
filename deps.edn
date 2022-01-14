@@ -8,7 +8,13 @@
 
         
  :aliases
- {:test
+ {:build {:deps {io.github.seancorfield/build-clj
+                          {:git/tag "v0.4.0" :git/sha "54e39ae"}}
+                :ns-default build}
+
+
+  :test
+
   {:jvm-opts ["-Djdk.attach.allowAttachSelf"]
    :extra-paths ["test"]
    :extra-deps {lambdaisland/kaocha {:mvn/version "1.0.902"}
