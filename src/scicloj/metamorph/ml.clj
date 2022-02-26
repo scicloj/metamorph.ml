@@ -561,6 +561,11 @@
          (:thaw-fn
           (options->model-def (:options model)))]
      (thaw-fn (:model-data model)))))
+ 
+(defn lookup-tables-consistent? [train-lookup-table prediction-lookup-table]
+  ;; simplification
+  ;; TODO find beeter way
+  (= train-lookup-table prediction-lookup-table))
 
 
 (defn predict
@@ -572,27 +577,43 @@
     value and values that describe the probability distribution."
   {:malli/schema [:=> [:cat [:fn dataset?]
                        [:map [:options map?]
-                         [:feature-columns sequential?]
-                         [:target-columns sequential?]]]
+                        [:feature-columns sequential?]
+                        [:target-columns sequential?]]]
                        
 
-                    [map?]]}
- [dataset model]
- (let [{:keys [predict-fn] :as model-def} (options->model-def (:options model))
-       feature-ds (ds/select-columns dataset (:feature-columns model))
-       label-columns (:target-columns model)
-       thawed-model (thaw-model model model-def)
-       target-col (first label-columns)
-       pred-ds (predict-fn feature-ds
-                           thawed-model
-                           model)]
+                  [map?]]}
+  [dataset model]
+  (let [{:keys [predict-fn] :as model-def} (options->model-def (:options model))
+        feature-ds (ds/select-columns dataset (:feature-columns model))
+        label-columns (:target-columns model)
+        thawed-model (thaw-model model model-def)
+        target-col (first label-columns)
+        pred-ds (predict-fn feature-ds
+                            thawed-model
+                            model)]
 
-   (if (= :classification (:model-type (meta pred-ds)))
-     (-> (ds-mod/probability-distributions->label-column
-          pred-ds target-col)
-         (ds/update-column target-col
-                           #(vary-meta % assoc :column-type :prediction)))
-     pred-ds)))
+    (if (= :classification (:model-type (meta pred-ds)))
+      (let [predic-ds-classifcation
+            (-> (ds-mod/probability-distributions->label-column
+                 pred-ds target-col)
+                (ds/update-column target-col
+                                  #(vary-meta % assoc :column-type :prediction)))
+
+            train-lookup-table (-> model :target-categorical-maps (get target-col) :lookup-table)
+
+            prediction-lookup-table (-> predic-ds-classifcation (get target-col) meta :categorical-map :lookup-table)]
+
+        
+        (errors/when-not-error (lookup-tables-consistent? train-lookup-table prediction-lookup-table)
+
+                               (str  "The lookup tables of the train-target column and prediction labl column are not consistent: "
+                                     train-lookup-table " vs. " prediction-lookup-table))
+           
+                                
+        predic-ds-classifcation)
+
+
+      pred-ds)))
 
 
 (defn explain
