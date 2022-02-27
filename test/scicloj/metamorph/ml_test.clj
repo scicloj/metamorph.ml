@@ -18,7 +18,9 @@
             [malli.generator :as mg]
             [scicloj.metamorph.ml.evaluation-handler :as eval]
             [scicloj.metamorph.ml.evaluation-handler :refer [get-source-information qualify-pipelines qualify-keywords]])
-  (:import (java.util UUID) (java.io File) (clojure.lang ExceptionInfo)))
+  (:import (java.util UUID)
+           (java.io File)
+           (clojure.lang ExceptionInfo)))
 
 
 (def iris (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
@@ -417,27 +419,59 @@
 (deftest call-without-ds
   (is  (thrown? ExceptionInfo
                 (ml/train ""
-                          {:model-type :smile.classification/decision-tree}))))
+                          {:model-type :test-model}))))
 
 
+(ml/define-model! :test-model-float-predictions
+  (fn train
+    [feature-ds label-ds options])
 
-(comment
-  (def schema
-    (->
-     #'scicloj.metamorph.ml/evaluate-pipelines
-     meta
-     :malli/schema
-     (nth 2)))
+  (fn predict
+    [feature-ds thawed-model {:keys [target-columns
+                                     target-categorical-maps
+                                     top-k
+                                     options]}]
 
-  (-> schema
-      (m/explain evaluations))
+    (ds/new-dataset [(ds/new-column :species
+                                    (repeat (tc/row-count feature-ds) 1.0)
+                                    {:column-type :prediction})]))
+  {})
 
 
-  (require '[malli.dev :as dev])
-  (require '[malli.dev.pretty :as pretty])
-  (dev/start! {:report (pretty/reporter)}))
+(ml/define-model! :test-model-string-predictions
+  (fn train
+    [feature-ds label-ds options])
 
-(m/validate [:or empty? [:map [:a string?]]]
-            {:b "a"}
+  (fn predict
+    [feature-ds thawed-model {:keys [target-columns
+                                     target-categorical-maps
+                                     top-k
+                                     options]}]
 
-            :ok)
+    (ds/new-dataset [(ds/new-column :species
+                                    (repeat (tc/row-count feature-ds) "pred")
+                                    {:column-type :prediction})]))
+  {})
+
+(deftest test-preditc-float
+  (let [model
+        (->
+         (ds/->dataset {:x [0 1 ] :target ["x" "y"]})
+         (ds-mod/set-inference-target :target)
+         (ml/train {:model-type :test-model-float-predictions}))]
+
+
+    (is (= [1.0]
+           (-> (ml/predict (ds/->dataset {:x [0]}) model) :species)))))
+
+
+(deftest test-predict-striong
+  (let [model
+        (->
+         (ds/->dataset {:x [0 1 ] :target ["x" "y"]})
+         (ds-mod/set-inference-target :target)
+         (ml/train {:model-type :test-model-string-predictions}))]
+
+
+    (is (= ["pred"]
+           (-> (ml/predict (ds/->dataset {:x [0]}) model) :species)))))
