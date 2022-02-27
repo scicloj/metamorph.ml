@@ -4,15 +4,11 @@
             [scicloj.metamorph.ml :as ml]
             [scicloj.metamorph.ml.gridsearch :as gs]
             [scicloj.metamorph.ml.loss :as loss]
-            [scicloj.ml.smile.classification]
             [tech.v3.dataset.metamorph :as ds-mm]
             [tech.v3.dataset :as ds]
             [tech.v3.dataset.column-filters :as cf]
             [tech.v3.dataset.modelling :as ds-mod]
             [tablecloth.api :as tc]
-            [scicloj.ml.smile.classification]
-            [scicloj.ml.smile.regression]
-            [fastmath.stats :as stats]
             [taoensso.nippy :as nippy]
             [confuse.multi-class-metrics :as mcm]
             [scicloj.metamorph.ml.metrics]
@@ -41,6 +37,23 @@
          (map vector)
          (mapcat #(tree-seq branch? children %)))))
 
+(ml/define-model! :test-model
+  (fn train
+    [feature-ds label-ds options]
+    {:model-data {:model-as-bytes [1 2 3]
+                  :smile-df-used [:blub]}})
+  (fn predict
+    [feature-ds thawed-model {:keys [target-columns
+                                     target-categorical-maps
+                                     top-k
+                                     options]}]
+
+    (ds/new-dataset [(ds/new-column :species
+                                    (repeat (tc/row-count feature-ds) 1)
+                                    {:column-type :prediction})]))
+  {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
+                 {:coefficients {:petal_width [0]}})})
+
 (deftest evaluate-pipelines-simplest
   (let [
 
@@ -51,7 +64,7 @@
          (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/feature ds))) {} :float)
 
          {:metamorph/id :model}
-         (ml/model {:model-type :smile.classification/random-forest}))
+         (ml/model {:model-type :test-model}))
 
         train-split-seq (tc/split->seq iris :holdout)
         pipe-fn-seq [pipe-fn]
@@ -73,12 +86,13 @@
           (merge best-fitted-context
                  {:metamorph/data new-ds
                   :metamorph/mode :transform}))
-         (:metamorph/data)
-         (ds-mod/column-values->categorical :species))]
+         (:metamorph/data))]
+         ;; (ds-mod/column-values->categorical :species)
 
 
-    (is (= ["versicolor" "versicolor" "virginica" "versicolor" "virginica" "setosa" "virginica" "virginica" "versicolor" "versicolor"]
-           predictions))
+
+    (is (= [1 1 1 1 1 1 1 1 1 1]
+           (:species predictions)))
     (is (=  1 (count evaluations)))
     (is (=  1 (count (first evaluations))))
 
@@ -104,7 +118,7 @@
          (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/feature ds))) {} :float)
 
          {:metamorph/id :model}
-         (ml/model {:model-type :smile.regression/ordinary-least-square}))
+         (ml/model {:model-type :test-model}))
 
         train-split-seq (tc/split->seq iris :holdout)
         pipe-fn-seq [pipe-fn]
@@ -115,6 +129,7 @@
 
         best-fitted-context  (-> evaluations first first :fit-ctx)
         best-pipe-fn         (-> evaluations first first :pipe-fn)]
+
 
     (is (= :petal_width (-> best-fitted-context :model (ml/explain) :coefficients first first)))))
 
@@ -130,7 +145,7 @@
          (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/feature ds))) {} :float)
 
          {:metamorph/id :model}
-         (ml/model {:model-type :smile.regression/ordinary-least-square}))
+         (ml/model {:model-type :test-model}))
 
         train-split-seq (tc/split->seq iris :holdout)
         pipe-fn-seq [pipe-fn]
@@ -159,7 +174,7 @@
          (ds-mm/set-inference-target :species)
          (ds-mm/categorical->number cf/categorical)
 
-         {:metamorph/id :model}(ml/model {:model-type :smile.classification/random-forest}))
+         {:metamorph/id :model}(ml/model {:model-type :test-model}))
 
         train-split-seq (tc/split->seq iris :kfold)
         pipe-fn-seq [pipe-fn pipe-fn]
@@ -212,105 +227,10 @@
 
 
 
-(deftest grid-search
-  (let [
-        ds (->
-            iris
-            (ds-mod/set-inference-target :species))
-            
-
-        grid-search-options
-        {:trees (gs/categorical [10 50 100 500])
-         :split-rule (gs/categorical [:gini :entropy])
-         :model-type :smile.classification/random-forest}
-
-        create-pipe-fn
-        (fn[options]
-          (morph/pipeline
-           (ds-mm/categorical->number cf/categorical)
-           {:metamorph/id :model}(ml/model options)))
-
-        all-options-combinations (gs/sobol-gridsearch grid-search-options)
-
-        pipe-fn-seq (map create-pipe-fn (take 7 all-options-combinations))
-
-        train-test-seq (tc/split->seq ds :kfold {:k 10})
-
-        evaluations
-        (ml/evaluate-pipelines pipe-fn-seq train-test-seq loss/classification-loss :loss)
-
-        new-ds (->
-                (tc/shuffle ds  {:seed 1234})
-                (tc/head 10))
-                
-
-        best-pipe-fn         (-> evaluations first first :pipe-fn)
-
-        best-fitted-context  (-> evaluations first first :fit-ctx)
-
-        predictions
-        (->
-         (best-pipe-fn
-          (merge best-fitted-context
-                 {:metamorph/data new-ds
-                  :metamorph/mode :transform}))
-         (:metamorph/data)
-         (ds-mod/column-values->categorical :species))]
-         
-        ;; (ml/predict-on-best-model (flatten evaluations) new-ds :loss)
-        
-
-    (is (= ["versicolor"
-            "versicolor"
-            "virginica"
-            "versicolor"
-            "virginica"
-            "setosa"
-            "virginica"
-            "virginica"
-            "versicolor"
-            "versicolor"]
-           predictions))))
 
 
-(deftest test-model
-  (let [
-        src-ds (tc/dataset "test/data/iris.csv")
-        ds (->  src-ds
-                (ds/categorical->number cf/categorical)
-                (ds-mod/set-inference-target "species")
-
-                (tc/shuffle {:seed 1234}))
-        feature-ds (cf/feature ds)
-        split-data (first (tc/split->seq ds :holdout {:seed 1234}))
-        train-ds (:train split-data)
-        test-ds  (:test split-data)
-
-        pipeline (fn  [ctx]
-                   ((ml/model {:model-type :smile.classification/random-forest})
-                    ctx))
 
 
-        fitted
-        (pipeline
-         {:metamorph/id "1"
-          :metamorph/mode :fit
-          :metamorph/data train-ds})
-
-
-        prediction
-        (pipeline (merge fitted
-                         {:metamorph/mode :transform
-                          :metamorph/data test-ds}))
-
-        predicted-species (ds-mod/column-values->categorical (:metamorph/data prediction)
-                                                             "species")]
-                                                            
-   (is (= [1.0 0.0 0.0 1.0 2.0]
-          (take 5 (-> prediction (get "1") :scicloj.metamorph.ml/target-ds (get "species") seq))))
-   (is (= ["setosa" "versicolor" "versicolor"]
-          (take 3 predicted-species))
-       (def prediction prediction))))
 
 
 (defn do-xxx [col] col)
@@ -356,7 +276,7 @@
                [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
                 [:tech.v3.dataset.metamorph/categorical->number [:species]]
                 [:tech.v3.dataset.metamorph/update-column :species :clojure.core/identity]
-                {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]]
+                {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :test-model}]]
                files (atom [])
 
                nippy-handler (eval/example-nippy-handler files "/tmp" identity)
@@ -372,45 +292,14 @@
            (fit-pipe-in-new-ns (first @files) iris)))))
 
 
-(deftest round-trip-aliased-names
-  (is (= {1.0 50, 0.0 50, 2.0 50}
 
-         (let [
-
-               base-pipe-declr
-               (qualify-pipelines
-                [
-                 [[:ds-mm/set-inference-target [:species]]
-                  [:ds-mm/categorical->number [:species]]
-                  [:ds-mm/update-column :species ::do-xxx]
-                  [:ds-mm/update-column :species :clojure.core/identity]
-                  {:metamorph/id :model}[:ml/model {:model-type :smile.classification/random-forest}]]]
-                (find-ns 'scicloj.metamorph.ml-test))
-
-
-               files (atom [])
-               nippy-handler (eval/example-nippy-handler files
-                                                 "/tmp"
-                                                 identity)
-                                                 
-                              
-
-               eval-result (ml/evaluate-pipelines
-                            base-pipe-declr
-                            (tc/split->seq iris)
-                            loss/classification-accuracy
-                            :accuracy
-                            {:map-fn :mapv
-                             :evaluation-handler-fn nippy-handler})]
-
-           (fit-pipe-in-new-ns (first @files) iris)))))
 
 (deftest dissoc--all-fn
   (let [
         base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
          [:tech.v3.dataset.metamorph/categorical->number [:species]]
-         {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]]
+         {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :test-model}]]
 
         evaluation-result
         (ml/evaluate-pipelines
@@ -444,7 +333,7 @@
         base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
          [:tech.v3.dataset.metamorph/categorical->number [:species]]
-         {:metamorph/id :model} [:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]]
+         {:metamorph/id :model} [:scicloj.metamorph.ml/model {:model-type :test-model}]]
 
         evaluation-result
         (ml/evaluate-pipelines
@@ -464,7 +353,7 @@
   (let [base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
          [:tech.v3.dataset.metamorph/categorical->number [:species]]
-         {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest}]]
+         {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :test-model}]]
 
         evaluation-result
         (ml/evaluate-pipelines
@@ -495,7 +384,7 @@
         (fn  [node-size]
           [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
            [:tech.v3.dataset.metamorph/categorical->number [:species]]
-           {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest
+           {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :test-model
                                                                :node-size node-size}]])
 
         pipes (map create-base-pipe-decl [1 5 10 20 50 100])
@@ -516,19 +405,19 @@
                               :pipe-fns-clj-file "test/scicloj/metamorph/ml_test.clj"}})]
 
 
-    (is true?
-        (m/validate
-         result-schema
-         evaluation-result)))
+    (is (true?
+         (m/validate
+          result-schema
+          evaluation-result)))))
 
 
 
 
 
- (deftest call-without-ds
-   (is  (thrown? ExceptionInfo
-                 (ml/train ""
-                           {:model-type :smile.classification/decision-tree})))))
+(deftest call-without-ds
+  (is  (thrown? ExceptionInfo
+                (ml/train ""
+                          {:model-type :smile.classification/decision-tree}))))
 
 
 
@@ -549,6 +438,6 @@
   (dev/start! {:report (pretty/reporter)}))
 
 (m/validate [:or empty? [:map [:a string?]]]
-            {:b "a"})
+            {:b "a"}
 
-:ok
+            :ok)
