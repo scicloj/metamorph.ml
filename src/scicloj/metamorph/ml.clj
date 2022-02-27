@@ -27,6 +27,7 @@
         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
         end-transform (System/currentTimeMillis)
 
+
         predictions-ds (cf/prediction (:metamorph/data predicted-ctx))
         trueth-ds (get-in predicted-ctx [:model ::target-ds])
         _ (errors/when-not-error trueth-ds (str  "Pipeline context need to have the true prediction target as a dataset at key path: "
@@ -35,7 +36,6 @@
 
         target-column-names (ds/column-names trueth-ds)
         _ (errors/when-not-error (= 1 (count target-column-names)) "Only 1 target column is supported")
-
 
         predictions-col (get predictions-ds (first target-column-names))
         trueth-col      (get trueth-ds      (first target-column-names))
@@ -608,23 +608,6 @@
                             thawed-model
                             model)]
     pred-ds))
-
-    ;; (if (= :classification (:model-type (meta pred-ds)))
-    ;;   (let [predic-ds-classifcation
-    ;;         (-> (ds-mod/probability-distributions->label-column
-    ;;              pred-ds target-col)
-    ;;             (ds/update-column target-col
-    ;;                               #(vary-meta % assoc :column-type :prediction)))]
-
-    ;;     (validate-lookup-tables model predic-ds-classifcation target-col)
-
-    ;;     (def predic-ds-classifcation predic-ds-classifcation)
-    ;;     predic-ds-classifcation)
-
-
-    ;;   pred-ds)
-
-
 
 
 
