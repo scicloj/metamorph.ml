@@ -37,6 +37,11 @@
 
 
 (defn finalize-regression
+  ;; attention: this function might be smile specific
+  ;; it assumes a certain order of prediction probbalilities in `reg-tens`
+  ;;
+  ;; TODO move to `scicloj.ml.smile` ??
+
   [reg-tens target-cname]
   (let [n-rows (dtype/ecount reg-tens)]
     (-> (dtt/reshape reg-tens [n-rows 1])
@@ -47,6 +52,11 @@
 
 
 (defn finalize-classification
+  ;; attention: this function might be smile specific
+  ;; it assumes a certain relation in the order of prediction probbalilities in `cls-tens`
+  ;; and teh categoricla map
+  ;; TODO move to `scicloj.ml.smile` ??
+
   [cls-tens n-rows target-cname target-categorical-maps]
   (let [rename-map (-> (get-in target-categorical-maps
                                [target-cname :lookup-table])

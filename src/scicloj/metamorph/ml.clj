@@ -561,11 +561,27 @@
          (:thaw-fn
           (options->model-def (:options model)))]
      (thaw-fn (:model-data model)))))
- 
+
+
+
+
 (defn lookup-tables-consistent? [train-lookup-table prediction-lookup-table]
   ;; simplification
-  ;; TODO find beeter way
+  ;; TODO find better way
   (= train-lookup-table prediction-lookup-table))
+
+(defn validate-lookup-tables [model predict-ds-classification target-col]
+  (let [
+        train-lookup-table (-> model :target-categorical-maps (get target-col) :lookup-table)
+
+        prediction-lookup-table (-> predict-ds-classification (get target-col) meta :categorical-map :lookup-table)]
+    ;;  check consistency of the lookup tables
+    ;;  having this violated, likley mean that the model implementation did something wrong
+
+    (errors/when-not-error (lookup-tables-consistent? train-lookup-table prediction-lookup-table)
+
+                           (str  "The lookup tables of the train-target column and prediction lable column are not consistent: "
+                                 train-lookup-table " vs. " prediction-lookup-table))))
 
 
 (defn predict
@@ -591,36 +607,33 @@
         pred-ds (predict-fn feature-ds
                             thawed-model
                             model)]
+    pred-ds))
 
-    (if (= :classification (:model-type (meta pred-ds)))
-      (let [predic-ds-classifcation
-            (-> (ds-mod/probability-distributions->label-column
-                 pred-ds target-col)
-                (ds/update-column target-col
-                                  #(vary-meta % assoc :column-type :prediction)))
+    ;; (if (= :classification (:model-type (meta pred-ds)))
+    ;;   (let [predic-ds-classifcation
+    ;;         (-> (ds-mod/probability-distributions->label-column
+    ;;              pred-ds target-col)
+    ;;             (ds/update-column target-col
+    ;;                               #(vary-meta % assoc :column-type :prediction)))]
 
-            train-lookup-table (-> model :target-categorical-maps (get target-col) :lookup-table)
+    ;;     (validate-lookup-tables model predic-ds-classifcation target-col)
 
-            prediction-lookup-table (-> predic-ds-classifcation (get target-col) meta :categorical-map :lookup-table)]
-
-        
-        (errors/when-not-error (lookup-tables-consistent? train-lookup-table prediction-lookup-table)
-
-                               (str  "The lookup tables of the train-target column and prediction labl column are not consistent: "
-                                     train-lookup-table " vs. " prediction-lookup-table))
-           
-                                
-        predic-ds-classifcation)
+    ;;     (def predic-ds-classifcation predic-ds-classifcation)
+    ;;     predic-ds-classifcation)
 
 
-      pred-ds)))
+    ;;   pred-ds)
+
+
+
+
 
 
 (defn explain
   "Explain (if possible) an ml model.  A model explanation is a model-specific map
   of data that usually indicates some level of mapping between features and importance"
-   {:malli/schema [:=> [:cat map? [:* any?]]
-                   [map?]]}
+  {:malli/schema [:=> [:cat map? [:* any?]]
+                  [map?]]}
   [model & [options]]
   (let [{:keys [explain-fn] :as model-def}
         (options->model-def (:options model))]
