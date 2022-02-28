@@ -442,11 +442,10 @@
   (fn train
     [feature-ds label-ds options])
 
-  (fn predict
-    [feature-ds thawed-model {:keys [target-columns
-                                     target-categorical-maps
-                                     top-k
-                                     options]}]
+  (fn predict [feature-ds thawed-model {:keys [target-columns
+                                               target-categorical-maps
+                                               top-k
+                                               options]}]
 
     (ds/new-dataset [(ds/new-column :species
                                     (repeat (tc/row-count feature-ds) "pred")
