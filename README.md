@@ -41,12 +41,12 @@ which might be a better quick start experience, still full featured as same code
  '[tech.v3.dataset :as ds]
  '[tech.v3.dataset.metamorph :as ds-mm]
  '[scicloj.metamorph.core :as morph]
- ;'[tech.v3.ml.metamorph :as ml-mm]
  '[tech.v3.dataset.modelling :as ds-mod]
  '[tech.v3.dataset.column-filters :as cf]
  '[tablecloth.api.split :as split]
  '[scicloj.metamorph.ml :as ml]
  '[scicloj.metamorph.ml.loss :as loss]
+ '[scicloj.ml.smile.classification]
 
  )
 
@@ -62,6 +62,7 @@ which might be a better quick start experience, still full featured as same code
    (fn [ctx]
      (assoc ctx
             :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
+   {:metamorph/id :model}         
    (ml/model {:model-type :smile.classification/random-forest})))
 
 ;;  the simplest split, produces a seq of one, a single split into train/test
@@ -74,8 +75,8 @@ which might be a better quick start experience, still full featured as same code
   (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss))
 
 ;; we have only one result
-(def best-fitted-context (-> evaluations first :fitted-ctx))
-(def best-pipe-fn (-> evaluations first :pipe-fn))
+(def best-fitted-context (-> evaluations first first :fit-ctx))
+(def best-pipe-fn (-> evaluations first first :pipe-fn))
 
 
 ;;  simulate new data
