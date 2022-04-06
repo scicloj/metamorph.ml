@@ -342,8 +342,8 @@
                              [:other-metrices {:optional true} [:sequential [:map
                                                                              [:name keyword?]
                                                                              [:metric-fn fn?]]]]
-                             [:attach-fn-sources {:optional true} [:map [:ns any?
-                                                                         :pipe-fns-clj-file string?]]]]]
+                             [:attach-fn-sources {:optional true} [:map [:ns any?]
+                                                                   [:pipe-fns-clj-file string?]]]]]
       ::evaluation-result
       [:sequential
        [:sequential
@@ -377,9 +377,9 @@
          [:metric-fn fn?]
          [:pipe-decl [:maybe sequential?]]
          [:pipe-fn fn?]
-         [:source-information [:maybe [:map [:classpath [:sequential string?]
-                                             :fn-sources [:map-of :qualified-symbol [:map [:source-form any?
-                                                                                           :source-str string?]]]]]]]]]]}}
+         [:source-information [:maybe [:map [:classpath [:sequential string?]]
+                                       [:fn-sources [:map-of :qualified-symbol [:map [:source-form any?]
+                                                                                [:source-str string?]]]]]]]]]]}}
 
     [:=>
      [:cat
@@ -723,3 +723,4 @@
   (dev/start! {:report (pretty/reporter)})
 
   :ok)
+
