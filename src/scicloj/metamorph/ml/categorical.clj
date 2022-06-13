@@ -8,8 +8,6 @@
 
 (defn- apply-mappings [ds one-hot-encodings]
   (reduce (fn [data one-hot-encoding]
-            (def data data)
-            (def one-hot-encoding one-hot-encoding)
             (ds-cat/transform-one-hot data one-hot-encoding))
           ds
           one-hot-encodings))
@@ -71,7 +69,7 @@
   "Transformer which mapps categorical variables to numbers. Each value of the
   column gets its won column in one-hot-encoding.
 
-  To handle different levls of a variable between train an dtets data, three
+  To handle different levls of a variable between train an test data, three
   strategies are available:
 
   * `:full`  The levels are retrieved from a dataset at key :metamorph.ml/full-ds in the context
