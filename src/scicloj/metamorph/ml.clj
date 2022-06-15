@@ -691,8 +691,7 @@
                    id (assoc (train data options)
                              ::unsupervised? (get (options->model-def options) :unsupervised? false)))
 
-       :transform  (do
-                     (if (get-in ctx [id ::unsupervised?])
+       :transform  (if (get-in ctx [id ::unsupervised?])
                        ctx
                        (-> ctx
                            (update
@@ -701,7 +700,8 @@
                                    ::feature-ds (cf/feature data)
                                    ::target-ds (cf/target data))
                            (assoc
-                            :metamorph/data (predict data (get ctx id))))))))))
+                            :metamorph/data (predict data (get ctx id)))))))))
+                     
 
 (malli/instrument-ns 'scicloj.metamorph.ml)
 

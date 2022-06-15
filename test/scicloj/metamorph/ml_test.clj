@@ -1,27 +1,24 @@
 (ns scicloj.metamorph.ml-test
-  (:require [clojure.test :refer [deftest is] :as t]
-            [scicloj.metamorph.core :as morph]
-            [scicloj.metamorph.ml :as ml]
-            [scicloj.metamorph.ml.gridsearch :as gs]
-            [scicloj.metamorph.ml.loss :as loss]
-            [tech.v3.dataset.metamorph :as ds-mm]
-            [tech.v3.dataset :as ds]
-            [tech.v3.dataset.column-filters :as cf]
-            [tech.v3.dataset.modelling :as ds-mod]
-            [tablecloth.api :as tc]
-            [taoensso.nippy :as nippy]
-            [confuse.multi-class-metrics :as mcm]
-            [scicloj.metamorph.ml.metrics]
-            [tablecloth.pipeline :as tcp]
-            [malli.core :as m]
-            [malli.instrument :as mi]
-            [malli.generator :as mg]
-            [scicloj.metamorph.ml.evaluation-handler :as eval]
-            [scicloj.metamorph.ml.evaluation-handler :refer [get-source-information qualify-pipelines qualify-keywords]])
-  (:import (java.util UUID)
-           (java.io File)
-           (clojure.lang ExceptionInfo)))
-
+  (:require
+   [clojure.test :as t :refer [deftest is]]
+   [confuse.multi-class-metrics :as mcm]
+   [malli.core :as m]
+   [scicloj.metamorph.core :as morph]
+   [scicloj.metamorph.ml :as ml]
+   [scicloj.metamorph.ml.evaluation-handler
+    :as eval
+    :refer [qualify-pipelines]]
+   [scicloj.metamorph.ml.loss :as loss]
+   [scicloj.metamorph.ml.metrics]
+   [tablecloth.api :as tc]
+   [taoensso.nippy :as nippy]
+   [tech.v3.dataset :as ds]
+   [tech.v3.dataset.column-filters :as cf]
+   [tech.v3.dataset.metamorph :as ds-mm]
+   [tech.v3.dataset.modelling :as ds-mod])
+  (:import
+   (clojure.lang ExceptionInfo)
+   (java.util UUID)))
 
 (def iris (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
 
@@ -56,6 +53,9 @@
   {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
                  {:coefficients {:petal_width [0]}})})
 
+
+
+
 (deftest evaluate-pipelines-simplest
   (let [
 
@@ -89,7 +89,7 @@
                  {:metamorph/data new-ds
                   :metamorph/mode :transform}))
          (:metamorph/data))]
-         ;; (ds-mod/column-values->categorical :species)
+    ;; (ds-mod/column-values->categorical :species)
 
 
 
@@ -408,9 +408,9 @@
 
 
     (is (true?
-         (m/validate
-          result-schema
-          evaluation-result)))))
+          (m/validate
+           result-schema
+           evaluation-result)))))
 
 
 
@@ -461,7 +461,7 @@
 
 
     (is (= [1.0]
-           (-> (ml/predict (ds/->dataset {:x [0]}) model) :species)))))
+         (-> (ml/predict (ds/->dataset {:x [0]}) model) :species)))))
 
 
 (deftest test-predict-striong
@@ -474,3 +474,5 @@
 
     (is (= ["pred"]
            (-> (ml/predict (ds/->dataset {:x [0]}) model) :species)))))
+
+
