@@ -14,12 +14,12 @@
             [tech.v3.datatype.export-symbols :as exporter]
             [tech.v3.dataset.impl.dataset :refer [dataset?]]
             [scicloj.metamorph.ml.malli :as malli]
+            [tech.v3.datatype.export-symbols :as exporter]
             [malli.core :as m])
   (:import java.util.UUID))
 
 
-
-
+(exporter/export-symbols scicloj.metamorph.ml.ensemble ensemble-pipe)
 
 (defn- supervised-eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
 
@@ -79,7 +79,9 @@
           start-fit (System/currentTimeMillis)
           fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
           end-fit (System/currentTimeMillis)
-          _ (errors/when-not-error (:model fitted-ctx) "Pipeline contexts under evaluation need to have the model operation with id :model")
+
+          ;; TODO: double cec this, ensembles do not have it so far in "fit"
+          #_ (errors/when-not-error (:model fitted-ctx) "Pipeline contexts under evaluation need to have the model operation with id :model")
 
 
           eval-pipe-result-train (eval-pipe pipeline-fn fitted-ctx metric-fn train-ds (:other-metrices tune-options))
@@ -685,7 +687,6 @@
 
   (malli/instrument-mm
    (fn [{:metamorph/keys [id data mode] :as ctx}]
-
      (case mode
        :fit (assoc ctx
                    id (assoc (train data options)

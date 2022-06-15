@@ -67,12 +67,12 @@
 
 (deftest test-ensemble
   (let [
-        ensemble-pipe (ensemble/ensemble-pipe pipe-1 pipe-2)
+        ensemble-pipe (ensemble/ensemble-pipe [pipe-1 pipe-1 pipe-2])
 
         fit-ctx
         (morph/fit-pipe iris ensemble-pipe)
 
         transformed-ctx
         (morph/transform-pipe iris ensemble-pipe fit-ctx)]
-    (is (= {0 150}
+    (is (= {1 150}
            (-> transformed-ctx :metamorph/data :prediction frequencies)))))
