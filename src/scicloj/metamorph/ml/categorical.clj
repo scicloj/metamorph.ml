@@ -18,6 +18,7 @@
     (let [_ (assert (ctx :metamorph.ml/full-ds) "Context need to contain full dataset at key :metamorph.ml/full-ds")
           mappings
           (map (fn [col]
+                 (assert (get (:metamorph.ml/full-ds ctx) col) (format  "full-ds need to have col: %s" col))
                  (ds-cat/fit-one-hot
                   (:metamorph.ml/full-ds ctx)
                   col

@@ -22,13 +22,15 @@
 
 
 (defn- supervised-eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
+
   (let [
         start-transform (System/currentTimeMillis)
         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
         end-transform (System/currentTimeMillis)
 
-
         predictions-ds (cf/prediction (:metamorph/data predicted-ctx))
+
+        _ (errors/when-not-error predictions-ds "No column in prediction result was marked as 'prediction' ")
         trueth-ds (get-in predicted-ctx [:model ::target-ds])
         _ (errors/when-not-error trueth-ds (str  "Pipeline context need to have the true prediction target as a dataset at key path: "
                                                  :model ::target-ds " Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
@@ -51,15 +53,13 @@
                   :metric (metric-fn
                            (ds-col/to-double-array trueth-col)
                            (ds-col/to-double-array predictions-col))))
-         other-metrices)]
-
-          
-    {:other-metrices other-metrices-result
-     :timing (- end-transform start-transform)
-     :ctx predicted-ctx
-     :metric metric}))
-
-      
+         other-metrices)
+        eval-result
+        {:other-metrices other-metrices-result
+         :timing (- end-transform start-transform)
+         :ctx predicted-ctx
+         :metric metric}]
+    eval-result))
 
 
 (defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
@@ -71,8 +71,6 @@
      :metric (metric-fn fitted-ctx)}
 
     (supervised-eval-pipe pipeline-fn fitted-ctx metric-fn ds other-metrices)))
-
-
 
 
 (defn- calc-metric [pipeline-fn metric-fn train-ds test-ds tune-options]
@@ -620,8 +618,8 @@
   [model & [options]]
   (let [{:keys [explain-fn] :as model-def}
         (options->model-def (:options model))]
-    (when explain-fn
-      (explain-fn (thaw-model model model-def) model options))))
+     (when explain-fn
+       (explain-fn (thaw-model model model-def) model options))))
 
 
 
