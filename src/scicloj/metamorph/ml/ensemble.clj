@@ -23,7 +23,6 @@
    get combined via majority voting.
    Can be used in the same way as any other pipeline.
 "
-  (def pipes pipes)
   (morph/pipeline
    {:metamorph/id :ensemble}
    (fn [{:metamorph/keys [id data mode] :as ctx}]
@@ -44,34 +43,26 @@
                
 
            (assoc ctx id {
-                          ;; :target-column (-> fitted-ctxs :pipe-0 :model :target-columns first)
                           :fitted-ctxs fitted-ctxs}))
          :transform
          (let [
-
-               _ (def ctx ctx)
-               _ (def id id)
 
 
                target-column (-> ctx (get id) :fitted-ctxs :pipe-0 :model :target-columns first)
                target-categorical-map  (-> ctx (get id) :fitted-ctxs :pipe-0 :model :target-categorical-maps)
 
-               _ (def target-column target-column)
-               _ (def target-categorical-map target-categorical-map)
-               
+
                transformed-ctxs
                (map
                 (fn [pipe-key pipe] (morph/transform-pipe data pipe (-> ctx (get id) :fitted-ctxs pipe-key)))
                 pipe-keys
                 pipes)
-               _ (def transformed-ctxs transformed-ctxs)
 
 
                predictions
                (map
                 #(cf/prediction (get % :metamorph/data))
                 transformed-ctxs)
-               _ (def predictions predictions)
 
 
                columns
@@ -79,13 +70,9 @@
                 (fn [index prediction]
                   (ds/new-column (keyword (str "model-" index)) (get prediction target-column)))
                 predictions)
-               _ (def columns columns)
 
 
                target-ds (-> transformed-ctxs first :model :scicloj.metamorph.ml/target-ds)
-               _ (def target-ds target-ds)
-
-
 
                prediction-ds (-> (ds/new-dataset columns)
 
@@ -100,7 +87,6 @@
                                                     :categorical-map (get target-categorical-map target-column)))]
 
 
-           (def prediction-ds prediction-ds)
            (assoc ctx
                   :model {:scicloj.metamorph.ml/target-ds target-ds}
 
