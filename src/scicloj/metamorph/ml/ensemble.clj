@@ -4,6 +4,8 @@
    [scicloj.metamorph.ml :as ml]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
+   [tech.v3.dataset.categorical :as ds-cat]
+   [tech.v3.dataset.modelling :as ds-mod]
    [tech.v3.dataset.column-filters :as cf]))
 
 (defn majority [l]
@@ -42,7 +44,7 @@
                
 
            (assoc ctx id {
-                          :target-column (-> fitted-ctxs :pipe-0 :model :target-columns first)
+                          ;; :target-column (-> fitted-ctxs :pipe-0 :model :target-columns first)
                           :fitted-ctxs fitted-ctxs}))
          :transform
          (let [
@@ -51,10 +53,12 @@
                _ (def id id)
 
 
-               target-column  (-> ctx (get id) :target-column)
+               target-column (-> ctx (get id) :fitted-ctxs :pipe-0 :model :target-columns first)
+               target-categorical-map  (-> ctx (get id) :fitted-ctxs :pipe-0 :model :target-categorical-maps)
 
                _ (def target-column target-column)
-
+               _ (def target-categorical-map target-categorical-map)
+               
                transformed-ctxs
                (map
                 (fn [pipe-key pipe] (morph/transform-pipe data pipe (-> ctx (get id) :fitted-ctxs pipe-key)))
@@ -81,8 +85,6 @@
                target-ds (-> transformed-ctxs first :model :scicloj.metamorph.ml/target-ds)
                _ (def target-ds target-ds)
 
-               target-ds-meta (-> target-ds :transported meta)
-               _ (def target-ds-meta target-ds-meta)
 
 
                prediction-ds (-> (ds/new-dataset columns)
@@ -92,13 +94,14 @@
                                                   (->> ds
                                                        tc/rows
                                                        (map majority))))
+
                                  (ds/assoc-metadata [target-column]
                                                     :column-type :prediction
                                         ;:categorical? (target-ds-meta :categorical?)
-                                                    :categorical-map (target-ds-meta :categorical-map)))]
+                                                    :categorical-map (get target-categorical-map target-column)))]
 
 
-
+           ;; (ds-cat/fit-categorical-map)
            (def prediction-ds prediction-ds)
            (assoc ctx
                   ;; :scicloj.metamorph.ml/feature-ds (-> transformed-ctxs first :model :scicloj.metamorph.ml/feature-ds)

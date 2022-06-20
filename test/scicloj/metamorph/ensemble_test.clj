@@ -75,4 +75,4 @@
         transformed-ctx
         (morph/transform-pipe iris ensemble-pipe fit-ctx)]
     (is (= {1 150}
-           (-> transformed-ctx :metamorph/data :prediction frequencies)))))
+           (-> transformed-ctx :metamorph/data :species frequencies)))))
