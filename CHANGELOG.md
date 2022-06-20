@@ -1,3 +1,6 @@
+0.6.2
+ - added ensembles
+
 0.5.0
 - unified dissoc-in options and handler-fn option
 
