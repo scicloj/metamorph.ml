@@ -97,14 +97,11 @@
 
                                  (ds/assoc-metadata [target-column]
                                                     :column-type :prediction
-                                        ;:categorical? (target-ds-meta :categorical?)
                                                     :categorical-map (get target-categorical-map target-column)))]
 
 
-           ;; (ds-cat/fit-categorical-map)
            (def prediction-ds prediction-ds)
            (assoc ctx
-                  ;; :scicloj.metamorph.ml/feature-ds (-> transformed-ctxs first :model :scicloj.metamorph.ml/feature-ds)
                   :model {:scicloj.metamorph.ml/target-ds target-ds}
 
                   :metamorph/data prediction-ds
