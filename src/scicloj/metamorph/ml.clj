@@ -466,7 +466,8 @@
                                          explain-fn
                                          options
                                          documentation
-                                         unsupervised?]}]
+                                         unsupervised?]
+                                  :as opts}]
 
   (println "Register model: " model-kwd)
   (swap! model-definitions* assoc model-kwd {:train-fn train-fn
@@ -550,7 +551,7 @@
 
 
 
-  ([model {:keys [thaw-fn]}]
+  ([model {:keys [thaw-fn] :as opts}]
    (if-let [cached-model (get model :thawed-model)]
      cached-model
      (if thaw-fn
