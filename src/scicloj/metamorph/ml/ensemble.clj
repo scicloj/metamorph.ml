@@ -1,11 +1,8 @@
 (ns scicloj.metamorph.ml.ensemble
   (:require
    [scicloj.metamorph.core :as morph]
-   [scicloj.metamorph.ml :as ml]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
-   [tech.v3.dataset.categorical :as ds-cat]
-   [tech.v3.dataset.modelling :as ds-mod]
    [tech.v3.dataset.column-filters :as cf]))
 
 (defn majority [l]

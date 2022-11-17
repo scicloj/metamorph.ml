@@ -15,6 +15,7 @@
             [tech.v3.dataset.impl.dataset :refer [dataset?]]
             [scicloj.metamorph.ml.malli :as malli]
             [tech.v3.datatype.export-symbols :as exporter]
+            [scicloj.metamorph.ml.ensemble]
             [malli.core :as m])
   (:import java.util.UUID))
 
@@ -564,7 +565,14 @@
      (thaw-fn (:model-data model)))))
 
 
-
+;; model
+;; => {:feature-columns [:abstract],
+;;     :id #uuid "39cb58e1-a292-4b07-bede-3a0d534f0a79",
+;;     :model-data {:classes ["yes" "no"]},
+;;     :thawed-model
+;;     #object[ai.djl.fasttext.FtModel 0x72e18cd7 "Model (\n\tName: is-primary-fasttext-model\n\tmodel-type: sup\n)"],
+;;     :options {:model-type :clj-djl/fasttext},
+;;     :target-columns [:is.primary]}
 
 (defn lookup-tables-consistent? [train-lookup-table prediction-lookup-table]
   ;; simplification
