@@ -1,3 +1,7 @@
+0.6.3
+
+- added  :as opts to methods signature
+
 0.6.2
  - added ensembles
 
