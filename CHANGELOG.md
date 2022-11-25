@@ -1,3 +1,8 @@
+unreleased:
+
+- fix metric calculation in evaluate-pipelins 
+    - use reverse ,appings
+
 0.6.3
 
 - added  :as opts to methods signature

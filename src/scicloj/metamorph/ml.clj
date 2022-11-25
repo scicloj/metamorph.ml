@@ -5,6 +5,7 @@
             [tech.v3.dataset :as ds]
             [tech.v3.dataset.column-filters :as cf]
             [tech.v3.dataset.modelling :as ds-mod]
+            [tech.v3.dataset.categorical :as ds-cat]
             [tech.v3.datatype.errors :as errors]
             [tech.v3.datatype.functional :as dfn]
             [tech.v3.dataset.column :as ds-col]
@@ -40,20 +41,20 @@
         target-column-names (ds/column-names trueth-ds)
         _ (errors/when-not-error (= 1 (count target-column-names)) "Only 1 target column is supported")
 
-        predictions-col (get predictions-ds (first target-column-names))
-        trueth-col      (get trueth-ds      (first target-column-names))
+
+        predictions-col (get (ds-cat/reverse-map-categorical-xforms predictions-ds)
+                             (first target-column-names))
+        trueth-col      (get (ds-cat/reverse-map-categorical-xforms trueth-ds)
+                             (first target-column-names))
 
 
-        metric (metric-fn (ds-col/to-double-array trueth-col)
-                          (ds-col/to-double-array predictions-col))
+        metric (metric-fn trueth-col predictions-col)
 
         other-metrices-result
         (map
          (fn [{:keys [name metric-fn] :as m}]
            (assoc m
-                  :metric (metric-fn
-                           (ds-col/to-double-array trueth-col)
-                           (ds-col/to-double-array predictions-col))))
+                  :metric (metric-fn trueth-col predictions-col)))
          other-metrices)
         eval-result
         {:other-metrices other-metrices-result
