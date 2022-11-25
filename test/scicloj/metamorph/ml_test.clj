@@ -35,28 +35,29 @@
     (->> (keys m)
          (map vector)
          (mapcat #(tree-seq branch? children %)))))
+(defn do-define-model []
+  (ml/define-model! :test-model
+    (fn train
+      [feature-ds label-ds options]
+      {:model-data {:model-as-bytes [1 2 3]
+                    :smile-df-used [:blub]}})
+    (fn predict
+      [feature-ds thawed-model {:keys [target-columns
+                                       target-categorical-maps
+                                       top-k
+                                       options]}]
 
-(ml/define-model! :test-model
-  (fn train
-    [feature-ds label-ds options]
-    {:model-data {:model-as-bytes [1 2 3]
-                  :smile-df-used [:blub]}})
-  (fn predict
-    [feature-ds thawed-model {:keys [target-columns
-                                     target-categorical-maps
-                                     top-k
-                                     options]}]
-
-    (ds/new-dataset [(ds/new-column :species
-                                    (repeat (tc/row-count feature-ds) 1)
-                                    {:column-type :prediction})]))
-  {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
-                 {:coefficients {:petal_width [0]}})})
+      (ds/new-dataset [(ds/new-column :species
+                                      (repeat (tc/row-count feature-ds) "setosa")
+                                      {:column-type :prediction})]))
+    {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
+                   {:coefficients {:petal_width [0]}})}))
 
 
 
 
 (deftest evaluate-pipelines-simplest
+  (do-define-model)
   (let [
 
         pipe-fn
@@ -93,7 +94,7 @@
 
 
 
-    (is (= [1 1 1 1 1 1 1 1 1 1]
+    (is (= ["setosa" "setosa" "setosa" "setosa" "setosa" "setosa" "setosa" "setosa" "setosa" "setosa"]
            (:species predictions)))
     (is (=  1 (count evaluations)))
     (is (=  1 (count (first evaluations))))
@@ -138,6 +139,7 @@
 
 
 (deftest test-data-removed
+  (do-define-model)
   (let [
 
         pipe-fn
@@ -169,6 +171,7 @@
     
 
 (deftest evaluate-pipelines-several-cross
+  (do-define-model)
   (let [
 
         pipe-fn
@@ -269,6 +272,7 @@
 
 
 (deftest round-trip-full-names
+  (do-define-model)
   (is (= {1.0 50, 0.0 50, 2.0 50}
 
          (let [files (atom [])
@@ -297,6 +301,7 @@
 
 
 (deftest dissoc--all-fn
+  (do-define-model)
   (let [
         base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
@@ -331,6 +336,7 @@
 
 
 (deftest remove-all
+  (do-define-model)
   (let [
         base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
@@ -343,8 +349,10 @@
          (tc/split->seq iris)
          loss/classification-accuracy
          :accuracy
-         {:evaluation-handler-fn (fn [result] {:train-transform {:metric 1}
-                                               :test-transform {:metric 1}})})]
+         {:evaluation-handler-fn (fn [result]
+                                   {:train-transform {:metric 1}
+                                    :test-transform {:metric 1}})})]
+
                                    
 
     (is (pos? (-> evaluation-result first first :train-transform :metric)))))
@@ -352,6 +360,7 @@
 
 
 (deftest other-metrices
+  (do-define-model)
   (let [base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
          [:tech.v3.dataset.metamorph/categorical->number [:species]]
@@ -365,58 +374,54 @@
          :accuracy
          {
           :other-metrices [{:name :acc-2  :metric-fn loss/classification-accuracy}
-                           {:name :fscore :metric-fn (fn [truth prediction] (mcm/macro-avg-fmeasure (vec truth) (vec prediction)))}
-                           {:name :fpr    :metric-fn scicloj.metamorph.ml.metrics/fnr}]})]
+                           {:name :fscore :metric-fn (fn [truth prediction] 0)}
+                           {:name :acc    :metric-fn scicloj.metamorph.ml.metrics/accuracy}]})]
+
     (is (pos? (-> evaluation-result first first :train-transform :other-metrices first :metric)))
-    (is (pos? (-> evaluation-result first first :train-transform :other-metrices second :metric)))
+    (is (zero? (-> evaluation-result first first :train-transform :other-metrices second :metric)))
     (is (some? (-> evaluation-result first first :train-transform :other-metrices (nth 2) :metric)))))
-
-    ;; evaluation-result
-
-    ;; evaluation-result
-
-    ;; (is (pos? (-> evaluation-result first first :train-transform :timing)))
 
 
 (deftest validate-schema
+ (do-define-model)
+ (let [
 
-  (let [
+       create-base-pipe-decl
+       (fn  [node-size]
+         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
+          [:tech.v3.dataset.metamorph/categorical->number [:species]]
+          {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :test-model
+                                                              :node-size node-size}]])
 
-        create-base-pipe-decl
-        (fn  [node-size]
-          [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
-           [:tech.v3.dataset.metamorph/categorical->number [:species]]
-           {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :test-model
-                                                               :node-size node-size}]])
+       pipes (map create-base-pipe-decl [1 5 10 20 50 100])
 
-        pipes (map create-base-pipe-decl [1 5 10 20 50 100])
+       split (tc/split->seq iris :holdout)
 
-        split (tc/split->seq iris :holdout)
+       result-schema (-> #'ml/evaluate-pipelines meta :malli/schema second :registry :scicloj.metamorph.ml/evaluation-result)
 
-        result-schema (-> #'ml/evaluate-pipelines meta :malli/schema second :registry :scicloj.metamorph.ml/evaluation-result)
-
-        evaluation-result
-        (ml/evaluate-pipelines
-         pipes split
-         loss/classification-accuracy
-         :accuracy
-         {:result-dissoc-in-seq []
-          :return-best-crossvalidation-only false
-          :return-best-pipeline-only false
-          :attach-fn-sources {:ns (find-ns 'clojure.core)
-                              :pipe-fns-clj-file "test/scicloj/metamorph/ml_test.clj"}})]
+       evaluation-result
+       (ml/evaluate-pipelines
+        pipes split
+        loss/classification-accuracy
+        :accuracy
+        {:result-dissoc-in-seq []
+         :return-best-crossvalidation-only false
+         :return-best-pipeline-only false
+         :attach-fn-sources {:ns (find-ns 'clojure.core)
+                             :pipe-fns-clj-file "test/scicloj/metamorph/ml_test.clj"}})]
 
 
-    (is (true?
-          (m/validate
-           result-schema
-           evaluation-result)))))
+   (is (true?
+        (m/validate
+         result-schema
+         evaluation-result)))))
 
 
 
 
 
 (deftest call-without-ds
+  (do-define-model)
   (is  (thrown? ExceptionInfo
                 (ml/train ""
                           {:model-type :test-model}))))

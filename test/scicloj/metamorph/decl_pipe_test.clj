@@ -36,7 +36,12 @@
          (->
           (ml/evaluate-pipelines [decl-pipe] (tc/split->seq data :holdout) loss/classification-accuracy :accuracy)
           first first :train-transform :metric))))
-         
+
+(defn is-zero-metric [decl-pipe]
+  (t/is (zero?
+         (->
+          (ml/evaluate-pipelines [decl-pipe] (tc/split->seq data :holdout) loss/classification-accuracy :accuracy)
+          first first :train-transform :metric))))
 
 (defn identity-1 []
   (fn [ctx] ctx))
@@ -73,20 +78,21 @@
 (defn upper-case-col [col]
   (map clojure.string/upper-case col))
 
-(ml/define-model! :test-model
-  (fn train
-    [feature-ds label-ds options]
-    {})
-  (fn predict
-    [feature-ds thawed-model {:keys [target-columns
-                                     target-categorical-maps
-                                     top-k
-                                     options]}]
+(defn do-define-model []
+  (ml/define-model! :test-model
+    (fn train
+      [feature-ds label-ds options]
+      {})
+    (fn predict
+      [feature-ds thawed-model {:keys [target-columns
+                                       target-categorical-maps
+                                       top-k
+                                       options]}]
 
-    (ds/new-dataset [(ds/new-column :species
-                                    (repeat (tc/row-count feature-ds) 1)
-                                    {:column-type :prediction})]))
-  {})
+      (ds/new-dataset [(ds/new-column :species
+                                      (repeat (tc/row-count feature-ds) "setosa")
+                                      {:column-type :prediction})]))
+    {}))
 
 
 
@@ -94,6 +100,7 @@
 
 
 (deftest test-decl-1
+  (do-define-model)
   (is-pos-metric [[::identity-1]
                   [::identity-2]
                   [::identity-3]
@@ -110,22 +117,25 @@
 
 
 (deftest test-decl-2
+  (do-define-model)
   (is-pos-metric [[:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
                   [::duplicate-columns :type/numerical]
                   [:tech.v3.dataset.metamorph/set-inference-target :species]
                   {:metamorph/id :model} [:scicloj.metamorph.ml/model (merge {:model-type :test-model})]]))
 
 (deftest test-decl-3
-  (is-pos-metric [[::update-species (fn [col] (map  clojure.string/upper-case col))]
-                  [:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
-                  [::identity-1]
-                  [::identity-2]
-                  [::identity-3]
-                  [:tech.v3.dataset.metamorph/set-inference-target :species]
-                  {:metamorph/id :model}[:scicloj.metamorph.ml/model (merge {:model-type :test-model})]]))
+  (do-define-model)
+  (is-zero-metric [[::update-species (fn [col] (map  clojure.string/upper-case col))]
+                   [:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
+                   [::identity-1]
+                   [::identity-2]
+                   [::identity-3]
+                   [:tech.v3.dataset.metamorph/set-inference-target :species]
+                   {:metamorph/id :model}[:scicloj.metamorph.ml/model (merge {:model-type :test-model})]]))
 
 
 (deftest test-decl-4
+  (do-define-model)
   (is-pos-metric [[:tech.v3.dataset.metamorph/categorical->number [:species] {} :int64]
                   [:tech.v3.dataset.metamorph/set-inference-target :species]
                   {:metamorph/id :model}[:scicloj.metamorph.ml/model (merge {:model-type :test-model})]]))
@@ -140,12 +150,13 @@
 
 
 (deftest test-decl-1
-
+  (do-define-model)
   (is-thrown [[::update-species :upper-case-col]]))
 
 
 (t/deftest x
-  (t/is (pos?
+  (do-define-model)
+  (t/is (zero?
          (eval-pipe [[::identity-1]
                      [::update-species identity]
                      [::update-species :clojure.core/identity]
@@ -156,51 +167,3 @@
                      [:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
                      [:tech.v3.dataset.metamorph/set-inference-target :species]
                      {:metamorph/id :model}[:scicloj.metamorph.ml/model (merge {:model-type :test-model})]]))))
-
-
-(comment
-
-  ((update-species identity)
-   {:metamorph/data data})
-  ((update-species clojure.core/identity)
-   {:metamorph/data data})
-  ((update-species :clojure.core/identity)
-   {:metamorph/data data})
-
-
-  ((update-species :identity)
-   {:metamorph/data data})
-
-  ((update-species 'identity)
-   {:metamorph/data data}))
-(comment
-  (eval-pipe [[:not-there]])
-
-  (eval-pipe [[::not-there]])
-
-  (eval-pipe [[:clojure.string/upper-case "hello"]]))
-
-
-
-
-
-(comment
-
-
-  (->
-   (mm/->pipeline [[:ds-mm/update-column :a upper-case-col]])
-   (apply [{:metamorph/data (tech.v3.dataset/->dataset {:a "small"})}]))
-
-
-  (->
-   (mm/->pipeline [[:ds-mm/update-column :a ::upper-case-col]])
-   (apply [{:metamorph/data (tech.v3.dataset/->dataset {:a "x"})}]))
-
-  (->
-   (mm/->pipeline [[:ds-mm/update-column :a :upper-case-col]])
-   (apply [{:metamorph/data (tech.v3.dataset/->dataset {:a "x"})}]))
-
-
-  (tech.v3.dataset/update-column (tech.v3.dataset/->dataset {:a "x"}) :a :a-keyword)
-
-  (upper-case-col (:species data)))

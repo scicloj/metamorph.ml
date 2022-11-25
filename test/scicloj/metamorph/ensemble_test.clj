@@ -9,40 +9,41 @@
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.metamorph :as ds-mm]))
 
-(ml/define-model! :test-model
-  (fn train
-    [feature-ds label-ds options]
-    {:model-data {:model-as-bytes [1 2 3]
-                  :smile-df-used [:blub]}})
-  (fn predict
-    [feature-ds thawed-model {:keys [target-columns
-                                     target-categorical-maps
-                                     top-k
-                                     options]}]
+(defn define-model-1 []
+  (ml/define-model! :test-model
+    (fn train
+      [feature-ds label-ds options]
+      {:model-data {:model-as-bytes [1 2 3]
+                    :smile-df-used [:blub]}})
+    (fn predict
+      [feature-ds thawed-model {:keys [target-columns
+                                       target-categorical-maps
+                                       top-k
+                                       options]}]
 
-    (ds/new-dataset [(ds/new-column :species
-                                    (repeat (tc/row-count feature-ds) 1)
-                                    {:column-type :prediction})]))
-  {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
-                 {:coefficients {:petal_width [0]}})})
+      (ds/new-dataset [(ds/new-column :species
+                                      (repeat (tc/row-count feature-ds) 1)
+                                      {:column-type :prediction})]))
+    {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
+                   {:coefficients {:petal_width [0]}})}))
 
+(defn define-model-2 []
+  (ml/define-model! :test-model-2
+    (fn train
+      [feature-ds label-ds options]
+      {:model-data {:model-as-bytes [1 2 3]
+                    :smile-df-used [:blub]}})
+    (fn predict
+      [feature-ds thawed-model {:keys [target-columns
+                                       target-categorical-maps
+                                       top-k
+                                       options]}]
 
-(ml/define-model! :test-model-2
-  (fn train
-    [feature-ds label-ds options]
-    {:model-data {:model-as-bytes [1 2 3]
-                  :smile-df-used [:blub]}})
-  (fn predict
-    [feature-ds thawed-model {:keys [target-columns
-                                     target-categorical-maps
-                                     top-k
-                                     options]}]
-
-    (ds/new-dataset [(ds/new-column :species
-                                    (repeat (tc/row-count feature-ds) 0)
-                                    {:column-type :prediction})]))
-  {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
-                 {:coefficients {:petal_width [0]}})})
+      (ds/new-dataset [(ds/new-column :species
+                                      (repeat (tc/row-count feature-ds) 0)
+                                      {:column-type :prediction})]))
+    {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
+                   {:coefficients {:petal_width [0]}})}))
 
 (def iris (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
 (def pipe-1
@@ -66,6 +67,8 @@
 
 
 (deftest test-ensemble
+  (define-model-1)
+  (define-model-2)
   (let [
         ensemble-pipe (ensemble/ensemble-pipe [pipe-1 pipe-1 pipe-2])
 
