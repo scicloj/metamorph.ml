@@ -1,7 +1,7 @@
 {:deps {org.clojure/clojure {:mvn/version "1.10.2"}
         scicloj/metamorph {:mvn/version "0.2.3"}
         pppmap/pppmap              {:mvn/version "0.2.2"}
-        scicloj/tablecloth {:mvn/version "6.076"}
+        scicloj/tablecloth {:mvn/version "6.103" :exclusions [ch.qos.logback/logback-classic]}
         metosin/malli {:mvn/version "0.8.4"}}
 
  :paths ["src" "resources"]
@@ -20,7 +20,7 @@
    :extra-deps {lambdaisland/kaocha {:mvn/version "1.0.902"}
 
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
-                ch.qos.logback/logback-classic {:mvn/version "1.2.3"}
+                ch.qos.logback/logback-classic {:mvn/version "1.4.5"}
                 com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.1.3"}}}
 
 
