@@ -1,7 +1,9 @@
 unreleased:
 
-- fix metric calculation in evaluate-pipelins 
-    - use reverse ,appings
+
+0.6.4
+- fix metric calculation in evaluate-pipelines 
+    - use reverse mappings
 
 0.6.3
 
