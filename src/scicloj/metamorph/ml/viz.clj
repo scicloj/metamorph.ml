@@ -10,7 +10,7 @@
    :aerial.hanami.templates/defaults
    {:Y "metric-train-min"
     :X "train-ds-size"
-    :XTYPE "nominal"}
+    :XTYPE "quantitative"}
    :color {:value "orange"}
    :y2 {:field "metric-train-max"
         :legend nil}))
@@ -21,7 +21,7 @@
    :aerial.hanami.templates/defaults
    {:Y "metric-test-min"
     :X "train-ds-size"
-    :XTYPE "nominal"}
+    :XTYPE "quantitative"}
    :color {:value "blue"}
    :y2 {:field "metric-test-max"
         :legend nil}))
@@ -31,7 +31,7 @@
    ht/xy-encoding
    :aerial.hanami.templates/defaults
    {:X "train-ds-size"
-    :XTYPE "nominal"
+    :XTYPE "quantitative"
     :Y "metric"
     :YTYPE "quantitative"}
    :color {:field "train-test-metric"
@@ -51,7 +51,5 @@
                   :encoding errorband-encoding-test}
                  (assoc ht/line-layer
                         :aerial.hanami.templates/defaults
-                        {:ENCODING metric-encoding})]))
-
-
-
+                        {:POINT true
+                         :ENCODING metric-encoding})]))
