@@ -1,6 +1,10 @@
 (ns scicloj.metamorph.ml.viz
   (:require
-            [aerial.hanami.templates :as ht]))
+   [tablecloth.api :as tc]
+   [clojure.math :as math]
+   [tech.v3.datatype.functional :as fun]
+   [aerial.hanami.templates :as ht]
+   [aerial.hanami.common :as hc]))
 
 
 
@@ -53,3 +57,45 @@
                         :aerial.hanami.templates/defaults
                         {:POINT true
                          :ENCODING metric-encoding})]))
+
+(defn rounded-mean [coll]
+  (math/round (fun/mean coll)))
+
+
+(defn mean+std [col]
+  (+
+   (fun/mean col)
+   (fun/standard-deviation col)))
+
+(defn mean-std [col]
+  (-
+   (fun/mean col)
+   (fun/standard-deviation col)))
+
+(defn apply-xform-kvs [spec kvs]
+  (apply hc/xform spec (into [] cat kvs)))
+
+
+
+(defn learning-curve-vl [lc-rf hanami-opts]
+  (let [lc-aggregated
+        (-> lc-rf
+            (tc/group-by :train-size-index)
+
+            (tc/aggregate {:metric-test      #(fun/mean (:metric-test %))
+                           :metric-test-min  #(mean-std (:metric-test %))
+                           :metric-test-max  #(mean+std (:metric-test %))
+                           :metric-train     #(fun/mean (:metric-train %))
+                           :metric-train-min #(mean-std (:metric-train %))
+                           :metric-train-max #(mean+std (:metric-train %))
+                           :train-ds-size    #(rounded-mean (:train-ds-size %))
+                           :test-ds-size     #(rounded-mean (:test-ds-size %))}))]
+
+    (apply-xform-kvs learning-curve-spec
+                     (assoc hanami-opts
+                        :VALDATA
+                        (-> lc-aggregated
+                            (tc/pivot->longer [:metric-test :metric-train]
+                                              {:value-column-name :metric
+                                               :target-columns :train-test-metric})
+                            (tc/rows :as-maps))))))
