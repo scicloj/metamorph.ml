@@ -1,5 +1,5 @@
 unreleased:
-
+ -added uid for grouping of splits
 
 0.6.4
 - fix metric calculation in evaluate-pipelines 

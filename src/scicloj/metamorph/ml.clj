@@ -165,9 +165,10 @@
         split-eval-results
         (->>
          (for [train-test-split train-test-split-seq]
-           (let [{:keys [train test]} train-test-split
+           (let [{:keys [train test split-uid]} train-test-split
                  complete-result
                  (assoc (calc-metric pipe-fn metric-fn train test tune-options)
+                        :split-uid split-uid
                         :loss-or-accuracy loss-or-accuracy
                         :metric-fn metric-fn
                         :pipe-decl pipeline-decl
@@ -350,6 +351,7 @@
       [:sequential
        [:sequential
         [:map {:closed true}
+         [:split-uid [:maybe string?]]
          [:fit-ctx [:map [:metamorph/mode [:enum :fit :transform]]]]
          [:timing-fit int?]
 
@@ -386,7 +388,10 @@
     [:=>
      [:cat
       [:sequential [:or vector? fn?]]
-      [:sequential [:map {:closed true} [:train [:fn dataset?]] [:test {:optional true} [:fn dataset?]]]]
+      [:sequential [:map {:closed true}
+                    [:split-uid {:optional true} string?]
+                    [:train [:fn dataset?]]
+                    [:test  {:optional true}[:fn dataset?]]]]
       fn?
       [:enum :accuracy :loss]]
 
@@ -394,7 +399,10 @@
     [:=>
      [:cat
       [:sequential [:or vector? fn?]]
-      [:sequential [:map {:closed true} [:train [:fn dataset?]] [:test {:optional true} [:fn dataset?]]]]
+      [:sequential [:map {:closed true}
+                    [:split-uid {:optional true} string?]
+                    [:train [:fn dataset?]]
+                    [:test {:optional true} [:fn dataset?]]]]
       fn?
       [:enum :accuracy :loss]
       ::options]
