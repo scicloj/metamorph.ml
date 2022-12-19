@@ -112,6 +112,8 @@
   and increasingly larger  training sets. A model is trained at each
   step and evaluated.
 
+  Returns a vega lite spec of the learninig curve plot.
+
   `dataset` the TMD dataset to use
   `train-sizes` vector of double from 0 to 1, controlling the sizes of the training data.
   `lc-opts`
