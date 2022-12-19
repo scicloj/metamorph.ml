@@ -11,24 +11,13 @@
              [scicloj.ml.smile.classification]))
 
 
-(require
- '[scicloj.ml.core :as ml]
-
- '[scicloj.ml.metamorph :as mm]
- '[scicloj.ml.dataset :as ds]
- '[scicloj.ml.smile.classification])
 
 (def titanic-train
   (->
    (tech.v3.dataset/->dataset "https://github.com/scicloj/metamorph-examples/raw/main/data/titanic/train.csv"
                               {:key-fn keyword})
    (tc/shuffle {:seed 1234})))
-                ;; :parser-fn :string
 
-
-
-
-;; construct pipeline function including Logistic Regression model
 (def pipe-fn
   (mm/pipeline
    (mds/select-columns [:Pclass :Survived :Embarked :Sex])
@@ -36,22 +25,23 @@
                                                           1 "yes"
                                                           0 "no")
                                                       (:Survived ds))))
-   (mm/def-ctx ss)
    (mds/categorical->number [:Survived :Sex :Embarked])
    (mds/set-inference-target :Survived)
 
    {:metamorph/id :model}
    (scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest})))
 
+(t/deftest test-learnining-curve []
+  (let [lc
+        (lc/learning-curve titanic-train
+                           pipe-fn
+                           (range 0.3 1 0.3)
+                           {:k 3})]
 
-(def lc
-  (lc/learning-curve titanic-train
-                     pipe-fn
-                     (range 0.1 1 0.1)
-                     10))
+
+    (t/is (= [:metric-train :train-size-index :metric-test :test-ds-size :train-ds-size]
+             (tc/column-names lc)))
 
 
-(range 0.1 1 0.2)
-
-(tc/row-count
- (tc/head titanic-train (* 20 0.8999999999999)))
+    (t/is (= {"1" 3, "2" 3, "0" 3}
+             (frequencies (:train-size-index lc))))))

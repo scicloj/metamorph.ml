@@ -5,8 +5,8 @@
    [scicloj.metamorph.ml.loss]
    [tablecloth.api :as tc]))
 
-(defn learning-curve [ds pipe-fn train-sizes k]
-  (let [splits (tc/split->seq ds :kfold {:k k})]
+(defn learning-curve [ds pipe-fn train-sizes {:keys [k]}]
+  (let [splits (tc/split->seq ds :kfold {:k k :seed 12345})]
     (->>
                (mapv (fn [{:keys [train test]}]
                        (let [train-test-seq

@@ -3,6 +3,7 @@
    [tablecloth.api :as tc]
    [clojure.math :as math]
    [tech.v3.datatype.functional :as fun]
+   [scicloj.metamorph.ml.learning-curve]
    [aerial.hanami.templates :as ht]
    [aerial.hanami.common :as hc]))
 
@@ -43,7 +44,7 @@
            :legend {"labelExpr" "datum.label == 'metric-test' ? 'Cross validation metric' : datum.label == 'metric-train' ? 'Training score' : ''  "}}))
 
 
-(def learning-curve-spec
+(def _learning-curve-spec
   (assoc ht/layer-chart
          :aerial.hanami.templates/defaults
          {:TITLE "Learning Curve"
@@ -76,10 +77,8 @@
   (apply hc/xform spec (into [] cat kvs)))
 
 
-
-(defn learning-curve-vl [lc-rf hanami-opts]
-  (let [lc-aggregated
-        (-> lc-rf
+(defn learning-curve-vl-data [lc-rf]
+  (-> lc-rf
             (tc/group-by :train-size-index)
 
             (tc/aggregate {:metric-test      #(fun/mean (:metric-test %))
@@ -89,13 +88,35 @@
                            :metric-train-min #(mean-std (:metric-train %))
                            :metric-train-max #(mean+std (:metric-train %))
                            :train-ds-size    #(rounded-mean (:train-ds-size %))
-                           :test-ds-size     #(rounded-mean (:test-ds-size %))}))]
+                           :test-ds-size     #(rounded-mean (:test-ds-size %))})))
 
-    (apply-xform-kvs learning-curve-spec
-                     (assoc hanami-opts
-                        :VALDATA
-                        (-> lc-aggregated
-                            (tc/pivot->longer [:metric-test :metric-train]
-                                              {:value-column-name :metric
-                                               :target-columns :train-test-metric})
-                            (tc/rows :as-maps))))))
+(defn learning-curve-spec [lc-vl-data]
+  (assoc _learning-curve-spec
+         :aerial.hanami.templates/defaults {
+                                            :VALDATA
+                                            (-> lc-vl-data
+                                                (tc/pivot->longer [:metric-test :metric-train]
+                                                                  {:value-column-name :metric
+                                                                   :target-columns :train-test-metric})
+                                                (tc/rows :as-maps))}))
+
+
+(defn learning-curve-vl [lc-vl-spec hanami-opts]
+  (apply-xform-kvs lc-vl-spec hanami-opts))
+
+
+(defn learnining-curve
+  ([dataset pipe-fn train-sizes
+    lc-opts hanami-opts]
+   (->
+    (scicloj.metamorph.ml.learning-curve/learning-curve
+     dataset
+     pipe-fn
+     train-sizes lc-opts)
+    (learning-curve-vl-data)
+    (learning-curve-spec)
+    (learning-curve-vl hanami-opts)))
+  ([dataset pipe-fn]
+   (learnining-curve dataset pipe-fn
+                          [0.1 0.325 0.55 0.775 1]
+                          {} {})))

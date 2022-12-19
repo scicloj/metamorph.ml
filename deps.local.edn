@@ -3,7 +3,7 @@
  :aliases {}
 
  ;; but some extra keys are supported to influence launchpad itself
- :launchpad/aliases [:test :inspect/clerk] ; additional aliases, will be added to whatever
+ :launchpad/aliases [:test :lib/clerk] ; additional aliases, will be added to whatever
                              ; aliases you specify on the command line
  :launchpad/main-opts ["--emacs"]} ; additional CLI flags, so you can encode your
                                   ; own preferences
