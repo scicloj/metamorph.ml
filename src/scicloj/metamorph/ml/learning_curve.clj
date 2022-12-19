@@ -5,7 +5,7 @@
    [scicloj.metamorph.ml.loss]
    [tablecloth.api :as tc]))
 
-(defn learning-curve [ds pipe-fn train-sizes {:keys [k]}]
+(defn learning-curve [ds pipe-fn train-sizes {:keys [k metric-fn loss-or-accuracy]}]
   (let [splits (tc/split->seq ds :kfold {:k k :seed 12345})]
     (->>
                (mapv (fn [{:keys [train test]}]
@@ -21,8 +21,8 @@
                              (scicloj.metamorph.ml/evaluate-pipelines
                               [pipe-fn]
                               train-test-seq
-                              scicloj.metamorph.ml.loss/classification-accuracy
-                              :accuracy
+                              metric-fn
+                              loss-or-accuracy
                               {:evaluation-handler-fn identity
                                :return-best-pipeline-only false
                                :return-best-crossvalidation-only false})]

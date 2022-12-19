@@ -6,6 +6,7 @@
    [scicloj.metamorph.ml.learning-curve :as lc]
    [scicloj.metamorph.ml.viz :as ml-viz]
    [tablecloth.api :as tc]
+   [scicloj.metamorph.ml.loss]
    [scicloj.ml.smile.classification]
    [tablecloth.pipeline :as tc-mm]
    [tech.v3.dataset]
@@ -47,7 +48,9 @@
   (lc/learning-curve titanic-train
                      (make-pipe-fn :smile.classification/logistic-regression)
                      train-sizes
-                     {:k 3}))
+                     {:k 3
+                      :metric-fn scicloj.metamorph.ml.loss/classification-accuracy
+                      :loss-or-accuracy :accuracy}))
 
 
 
@@ -68,7 +71,9 @@
 (-> (lc/learning-curve titanic-train
                        (make-pipe-fn :smile.classification/logistic-regression)
                        train-sizes
-                       {:k 3})
+                       {:k 3
+                        :metric-fn scicloj.metamorph.ml.loss/classification-accuracy
+                        :loss-or-accuracy :accuracy})
     (ml-viz/learning-curve-vl-data)
     (ml-viz/learning-curve-spec)
     (ml-viz/learning-curve-vl {:YSCALE {:zero false}
@@ -82,7 +87,9 @@
  titanic-train
  (make-pipe-fn :smile.classification/logistic-regression)
  train-sizes
- {:k 3}
+ {:k 3
+  :metric-fn scicloj.metamorph.ml.loss/classification-accuracy
+  :loss-or-accuracy :accuracy}
  {:YSCALE {:zero false}
           :TITLE "Learning Curve"
           :YTITLE "Accuracy"})

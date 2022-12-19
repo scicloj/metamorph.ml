@@ -106,6 +106,20 @@
 
 
 (defn learnining-curve
+  "Generates a learnining curve.
+
+  The functions splits  the dataset  in a fixed size test set
+  and increasingly larger  training sets. A model is trained at each
+  step and evaluated.
+
+  `dataset` the TMD dataset to use
+  `train-sizes` vector of double from 0 to 1, controlling the sizes of the training data.
+  `lc-opts`
+     `k` At each step a k cross-validation is done
+     `metric-fn` the metric to use for evaluation the model
+     `loss-or-accuracy`   If the metric-fn calculates :loss or :accuracy
+  `hanami-opts` Options passed to hanami to control the plot
+  "
   ([dataset pipe-fn train-sizes
     lc-opts hanami-opts]
    (->
@@ -118,5 +132,5 @@
     (learning-curve-vl hanami-opts)))
   ([dataset pipe-fn]
    (learnining-curve dataset pipe-fn
-                          [0.1 0.325 0.55 0.775 1]
-                          {} {})))
+                     [0.1 0.325 0.55 0.775 1]
+                     {} {})))
