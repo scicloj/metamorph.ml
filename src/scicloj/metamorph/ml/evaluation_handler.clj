@@ -97,14 +97,14 @@
 
 (defn example-nippy-handler [files output-dir result-reduce-fn]
   (fn [result]
-    (let [_ (def result result)
+    (let [
           freezable-result
           (-> result
               (multi-dissoc-in
                [
                 [:pipe-fn]
                 [:metric-fn]]))
-          _ (def freezable-result freezable-result)
+
           temp-file (str output-dir "/" ( java.util.UUID/randomUUID) ".nippy")
           _ (swap! files #(conj % temp-file))]
       (nippy/freeze-to-file temp-file freezable-result)
@@ -114,15 +114,15 @@
   (clojure.walk/postwalk (fn [form]
                            ;; (println form)
                            (if-let [resolved (resolve-keyword form pipe-ns)]
-                             (do (def resolved resolved)
-                                 (if (var? resolved)
-                                   (let [v (var-get resolved)
-                                         k (keyword
-                                            (-> resolved meta :ns str)
-                                            (-> resolved meta :name str))]
-                                     k)
+                             (do 
+                               (if (var? resolved)
+                                 (let [v (var-get resolved)
+                                       k (keyword
+                                          (-> resolved meta :ns str)
+                                          (-> resolved meta :name str))]
+                                   k)
 
-                                   resolved))
+                                 resolved))
 
 
                              form))

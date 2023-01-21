@@ -14,7 +14,9 @@
 
 
 (defn test "Run the tests." [opts]
-  (bb/run-tests opts))
+  (-> opts
+      (assoc :alias [:runner])
+      (bb/run-tests)))
 
 (defn jar [_]
   (b/write-pom {:class-dir class-dir

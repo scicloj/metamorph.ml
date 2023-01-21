@@ -8,7 +8,8 @@
              [scicloj.metamorph.ml]
              [scicloj.metamorph.ml.loss]
              [scicloj.metamorph.ml.learning-curve :as lc]
-             [scicloj.ml.smile.classification]))
+             [scicloj.ml.smile.classification]
+             [scicloj.metamorph.ml.loss :as loss]))
 
 
 
@@ -36,7 +37,9 @@
         (lc/learning-curve titanic-train
                            pipe-fn
                            (range 0.3 1 0.3)
-                           {:k 3})]
+                           {:k 3
+                            :metric-fn loss/classification-accuracy
+                            :loss-or-accuracy :accuracy})]
 
 
     (t/is (= [:metric-train :train-size-index :metric-test :test-ds-size :train-ds-size]

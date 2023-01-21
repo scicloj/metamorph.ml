@@ -102,7 +102,7 @@
     (is (= #{:min :mean :max :timing :ctx :metric :other-metrices}
            (set (-> evaluations first first :train-transform keys))))
     ;; =>
-    (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-fn :timing-fit :loss-or-accuracy :source-information])
+    (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-fn :timing-fit :loss-or-accuracy :source-information :split-uid])
            (set (keys (first (first evaluations))))))
     (is (contains?   (:fit-ctx (first (first evaluations)))  :metamorph/mode))
     (is (contains?   (:ctx (:train-transform (first (first evaluations))))  :metamorph/mode))
@@ -316,22 +316,26 @@
          :accuracy
          {:evaluation-handler-fn ml/result-dissoc-in-seq--all-fn})]
 
-    (def evaluation-result evaluation-result)
-    (is (= (->>
+    ;(def evaluation-result evaluation-result)
+    (is (= 
+         [[:train-transform]
+          [:train-transform :metric]
+          [:train-transform :min]
+          [:train-transform :mean]
+          [:train-transform :max]
+          [:test-transform]
+          [:test-transform :metric]
+          [:test-transform :min]
+          [:test-transform :mean]
+          [:test-transform :max]
+          [:split-uid]
+          ]
+         (->>
             (flatten evaluation-result)
             (apply merge)
-            keys-in)
-           [
-            [:train-transform]
-            [:train-transform :metric]
-            [:train-transform :min]
-            [:train-transform :mean]
-            [:train-transform :max]
-            [:test-transform]
-            [:test-transform :metric]
-            [:test-transform :min]
-            [:test-transform :mean]
-            [:test-transform :max]]))
+            keys-in
+            vec)
+           ))
     (is (pos? (-> evaluation-result first first :train-transform :metric)))))
 
 
@@ -479,5 +483,6 @@
 
     (is (= ["pred"]
            (-> (ml/predict (ds/->dataset {:x [0]}) model) :species)))))
+
 
 
