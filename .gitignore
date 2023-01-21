@@ -3,3 +3,7 @@
 docs/
 target/
 /pom.xml.asc
+.clj-kondo
+.clerk
+.lsp
+.calva

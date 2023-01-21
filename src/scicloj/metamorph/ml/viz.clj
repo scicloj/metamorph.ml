@@ -59,16 +59,16 @@
                         {:POINT true
                          :ENCODING metric-encoding})]))
 
-(defn rounded-mean [coll]
+(defn- rounded-mean [coll]
   (math/round (fun/mean coll)))
 
 
-(defn mean+std [col]
+(defn- mean+std [col]
   (+
    (fun/mean col)
    (fun/standard-deviation col)))
 
-(defn mean-std [col]
+(defn- mean-std [col]
   (-
    (fun/mean col)
    (fun/standard-deviation col)))
@@ -101,10 +101,6 @@
                                                 (tc/rows :as-maps))}))
 
 
-(defn learning-curve-vl [lc-vl-spec hanami-opts]
-  (apply-xform-kvs lc-vl-spec hanami-opts))
-
-
 (defn learnining-curve
   "Generates a learnining curve.
 
@@ -131,7 +127,7 @@
      train-sizes lc-opts)
     (learning-curve-vl-data)
     (learning-curve-spec)
-    (learning-curve-vl hanami-opts)))
+    (apply-xform-kvs hanami-opts)))
   ([dataset pipe-fn]
    (learnining-curve dataset pipe-fn
                      [0.1 0.325 0.55 0.775 1]

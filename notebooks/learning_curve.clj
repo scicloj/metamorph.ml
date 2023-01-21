@@ -14,6 +14,7 @@
 
 (comment
   (clerk/clear-cache!)
+  (nextjournal.clerk/show! "notebooks/learning_curve.clj")
   (nextjournal.clerk/serve! {:browse true}))
 
 ^{:nextjournal.clerk/viewer :table
@@ -64,22 +65,8 @@
    (ml-viz/learning-curve-spec lc-vl-data))
 
 ^{:nextjournal.clerk/viewer :vega-lite}
-(ml-viz/learning-curve-vl lc-vl-spec {:TITLE "Learning Curve"
+(ml-viz/apply-xform-kvs lc-vl-spec {:TITLE "Learning Curve"
                                       :YTITLE "Accuracy"})
-
-^{:nextjournal.clerk/viewer :vega-lite}
-(-> (lc/learning-curve titanic-train
-                       (make-pipe-fn :smile.classification/logistic-regression)
-                       train-sizes
-                       {:k 3
-                        :metric-fn scicloj.metamorph.ml.loss/classification-accuracy
-                        :loss-or-accuracy :accuracy})
-    (ml-viz/learning-curve-vl-data)
-    (ml-viz/learning-curve-spec)
-    (ml-viz/learning-curve-vl {:YSCALE {:zero false}
-
-                               :TITLE "Learning Curve"
-                               :YTITLE "Accuracy"}))
 
 
 ^{:nextjournal.clerk/viewer :vega-lite}
@@ -91,5 +78,5 @@
   :metric-fn scicloj.metamorph.ml.loss/classification-accuracy
   :loss-or-accuracy :accuracy}
  {:YSCALE {:zero false}
-          :TITLE "Learning Curve"
-          :YTITLE "Accuracy"})
+  :TITLE "Learning Curve"
+  :YTITLE "Accuracy"})
