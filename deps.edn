@@ -1,7 +1,8 @@
 {:deps {org.clojure/clojure {:mvn/version "1.11.1"}
         scicloj/metamorph {:mvn/version "0.2.3"}
         pppmap/pppmap              {:mvn/version "0.2.2"}
-        scicloj/tablecloth {:mvn/version "6.103" :exclusions [ch.qos.logback/logback-classic]}
+        scicloj/tablecloth {:mvn/version "7.000-beta-16" :exclusions [ch.qos.logback/logback-classic]}
+        ;scicloj/tablecloth {:mvn/version "6.103" :exclusions [ch.qos.logback/logback-classic]}
         metosin/malli {:mvn/version "0.8.4"}
         aerial.hanami/aerial.hanami {:mvn/version "0.17.0"}}
 
@@ -18,7 +19,9 @@
 
   {:jvm-opts ["-Djdk.attach.allowAttachSelf"]
    :extra-paths ["test"]
-   :extra-deps {io.github.nextjournal/clerk {:mvn/version "0.12.707"}
+   
+   :extra-deps {com.github.haifengl/smile-core   {:mvn/version "2.6.0"}
+                io.github.nextjournal/clerk {:mvn/version "0.12.707"}
                 lambdaisland/kaocha {:mvn/version "1.0.902"}
                 scicloj/scicloj.ml.smile {:mvn/version "7.0.642"}
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}

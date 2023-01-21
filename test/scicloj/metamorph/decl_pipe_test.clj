@@ -14,7 +14,7 @@
 
 (defn is-thrown [decl-pipe]
 
-  (is (thrown? IllegalArgumentException
+  (is (thrown? RuntimeException
                (->
                 (ml/evaluate-pipelines [decl-pipe] (tc/split->seq data :holdout) loss/classification-accuracy :accuracy)
                 (nth 0) (nth 0) :train-transform :metric))))
@@ -24,15 +24,12 @@
 
 
 (defn eval-pipe [decl-pipe]
-  (def decl-pipe decl-pipe)
-
   (->
    (ml/evaluate-pipelines [decl-pipe] (tc/split->seq data :holdout) loss/classification-accuracy :accuracy)
    first first :train-transform :metric))
 
 (defn is-pos-metric [decl-pipe]
-  (def decl-pipe decl-pipe)
-  (t/is (pos?
+   (t/is (pos?
          (->
           (ml/evaluate-pipelines [decl-pipe] (tc/split->seq data :holdout) loss/classification-accuracy :accuracy)
           first first :train-transform :metric))))
@@ -78,7 +75,7 @@
 (defn upper-case-col [col]
   (map clojure.string/upper-case col))
 
-(defn do-define-model []
+(defn do-define-model [constant-prediction]
   (ml/define-model! :test-model
     (fn train
       [feature-ds label-ds options]
@@ -90,7 +87,7 @@
                                        options]}]
 
       (ds/new-dataset [(ds/new-column :species
-                                      (repeat (tc/row-count feature-ds) "setosa")
+                                      (repeat (tc/row-count feature-ds) constant-prediction)
                                       {:column-type :prediction})]))
     {}))
 
@@ -100,7 +97,7 @@
 
 
 (deftest test-decl-1
-  (do-define-model)
+  (do-define-model "SETOSA")
   (is-pos-metric [[::identity-1]
                   [::identity-2]
                   [::identity-3]
@@ -117,15 +114,15 @@
 
 
 (deftest test-decl-2
-  (do-define-model)
+  (do-define-model "setosa")
   (is-pos-metric [[:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
                   [::duplicate-columns :type/numerical]
                   [:tech.v3.dataset.metamorph/set-inference-target :species]
                   {:metamorph/id :model} [:scicloj.metamorph.ml/model (merge {:model-type :test-model})]]))
 
 (deftest test-decl-3
-  (do-define-model)
-  (is-zero-metric [[::update-species (fn [col] (map  clojure.string/upper-case col))]
+  (do-define-model "SETOSA")
+  (is-pos-metric [[::update-species (fn [col] (map  clojure.string/upper-case col))]
                    [:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
                    [::identity-1]
                    [::identity-2]
@@ -135,12 +132,13 @@
 
 
 (deftest test-decl-4
-  (do-define-model)
+  (do-define-model "setosa")
   (is-pos-metric [[:tech.v3.dataset.metamorph/categorical->number [:species] {} :int64]
                   [:tech.v3.dataset.metamorph/set-inference-target :species]
                   {:metamorph/id :model}[:scicloj.metamorph.ml/model (merge {:model-type :test-model})]]))
 
 (deftest test-decl-5
+  (do-define-model "setosa")
   (is-pos-metric [[:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
                   [:tech.v3.dataset.metamorph/update-column :species :clojure.core/identity]
                   [:tech.v3.dataset.metamorph/set-inference-target :species]
@@ -148,14 +146,13 @@
 
 
 
-
-(deftest test-decl-1
-  (do-define-model)
+(deftest test-decl-6
+  (do-define-model "setosa")
   (is-thrown [[::update-species :upper-case-col]]))
 
 
 (t/deftest x
-  (do-define-model)
+  (do-define-model "SETOSA")
   (t/is (zero?
          (eval-pipe [[::identity-1]
                      [::update-species identity]
