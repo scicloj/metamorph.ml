@@ -1,5 +1,6 @@
 unreleased:
  -added uid for grouping of splits
+ -added learning curve
 
 0.6.4
 - fix metric calculation in evaluate-pipelines 
