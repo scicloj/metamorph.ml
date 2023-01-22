@@ -16,13 +16,10 @@
 
 
   :test
-
-  {:jvm-opts ["-Djdk.attach.allowAttachSelf"]
-   :extra-paths ["test"]
-   
+  {:extra-paths ["test"]
    :extra-deps {com.github.haifengl/smile-core   {:mvn/version "2.6.0"}
                 io.github.nextjournal/clerk {:mvn/version "0.12.707"}
-                lambdaisland/kaocha {:mvn/version "1.0.902"}
+                generateme/fastmath {:mvn/version "2.1.8"}
                 scicloj/scicloj.ml.smile {:mvn/version "7.0.642"}
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
                 ch.qos.logback/logback-classic {:mvn/version "1.4.5"}
@@ -30,12 +27,12 @@
 
 
 
-  :runner {:extra-deps {com.cognitect/test-runner
-                        {:git/url "https://github.com/cognitect-labs/test-runner"
-                         :sha "3cb0a9daf1cb746259dc8309b218f9211ad3b33b"}}
-           :main-opts ["-m" "cognitect.test-runner"
-                       "-d" "test"]}
-
+  :runner
+  {:jvm-opts ["-Djdk.attach.allowAttachSelf"]
+   :extra-deps {eftest/eftest {:mvn/version "0.5.2"}}
+   :main-opts ["-e"  "(require '[eftest.runner :refer [find-tests run-tests]])(run-tests (find-tests \"test\") {:multithread? false})"]}
+  
+  
   :codox {:extra-deps {codox/codox {:mvn/version "0.10.7" :exclusions [org.ow2.asm/asm-all]}
                        codox-theme-rdash/codox-theme-rdash {:mvn/version "0.1.2"}}
           :exec-fn codox.main/generate-docs
