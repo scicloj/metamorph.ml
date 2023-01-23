@@ -57,3 +57,22 @@ that label."
   ^double [lhs rhs]
   (- 1.0
      (classification-accuracy lhs rhs)))
+
+
+(defn auc
+  "Calculates area under the ROC curve. Uses AUC formula from R's 'mlr' package.
+  (sum(r[i]) - n.pos * (n.pos + 1) / 2) / (n.pos * n.neg)
+  See https://github.com/mlr-org/mlr/blob/main/R/measures.R"
+  ^double [predictions labels]
+  (assert (= (count predictions) (count labels)))
+  (assert (= (set labels) #{0 1}))
+  (let [eval-data (ds/dataset {:predictions predictions
+                               :labels labels})
+        ranked-data (ds/order-by eval-data :predictions :desc)
+        n (count labels)
+        n-pos (reduce + (:labels eval-data))
+        n-neg (- n n-pos)
+        rank (range 1 (inc n))]
+    (/ (- (reduce + (map * rank labels))
+          (* n-pos (inc n-pos) 1/2))
+       (* n-pos n-neg))))
