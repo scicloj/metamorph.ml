@@ -12,7 +12,7 @@
           ds
           one-hot-encodings))
 
-(defn transform-one-hot-full [ctx data mode id col-names options]
+(defn- transform-one-hot-full [ctx data mode id col-names options]
   (case mode
     :fit
     (let [_ (assert (ctx :metamorph.ml/full-ds) "Context need to contain full dataset at key :metamorph.ml/full-ds")
@@ -33,7 +33,7 @@
     (assoc ctx :metamorph/data (apply-mappings data (get ctx id)))))
 
 
-(defn validate-mappings [data mappings]
+(defn- validate-mappings [data mappings]
   (run!
    (fn [mapping]
      (let [
@@ -44,7 +44,7 @@
          (throw (IllegalArgumentException. (str  "Some levels of data in :transform were not in :fit for colum xxx: " levels-not-mapped))))))
    mappings))
 
-(defn transform-one-hot-train->test [ctx data mode id col-names options]
+(defn- transform-one-hot-train->test [ctx data mode id col-names options]
   (case mode
     :fit
     (let [mappings
@@ -76,6 +76,11 @@
   * `:full`  The levels are retrieved from a dataset at key :metamorph.ml/full-ds in the context
   * `:independent`  One-hot columns are fitted and transformed independently for train and test  data
   * `:fit` The mapping fitted in mode :fit is used in :transform, and it is assumed that all levels are present in the data during :fit
+
+  `options` can be:
+  *  `:table-args` allows to specify the precise mapping as a sequence of pairs of [val idx] or as a sorted seq of values.
+  *  `:result-datatype`  Datatype of the one-hot-mapping column
+
   "
   ([column-selector strategy] (transform-one-hot column-selector strategy nil))
   ([column-selector strategy options]
