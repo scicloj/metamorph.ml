@@ -4,14 +4,14 @@
             [scicloj.metamorph.ml :as ml]))
 
 
-(defn probability-distributions->labels
+(defn- probability-distributions->labels
   [prob-dists]
   (->> prob-dists
        (map (fn [pred-map]
               (first (apply max-key second pred-map))))))
 
 
-(defn safe-inc
+(defn- safe-inc
     [item]
     (if item
       (inc item)
@@ -31,15 +31,15 @@
                                 [guess
                                  (case normalize
                                    :all  (double (/ v (get answer-counts k)))
-                                   :none v
-                                   )
+                                   :none v)]))
+                                   
 
-                                 ]))
+                                 
                          (into (sorted-map)))]))
           (into (sorted-map)))))
   ([predicted-labels labels]
-   (confusion-map predicted-labels labels :all))
-  )
+   (confusion-map predicted-labels labels :all)))
+  
 
 
 (defn confusion-map->ds
@@ -80,5 +80,5 @@
           (confusion-map (ds/labels test-ds))
           (confusion-map->ds))))
 (comment
-  (confusion-map [:a :b :c :a] [:a :c :c :a] :all)
-  )
+  (confusion-map [:a :b :c :a] [:a :c :c :a] :all))
+  

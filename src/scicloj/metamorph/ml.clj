@@ -107,19 +107,14 @@
          :transform-ctx nil
          :metric nil}))))
 
-(defn reduce-result [r result-dissoc-in-seq]
+(defn- reduce-result [r result-dissoc-in-seq]
   (reduce (fn [x y]
             (dissoc-in x y))
           r
           result-dissoc-in-seq))
           
 
-
-
-
-
-
-(defn format-fn-sources [fn-sources]
+(defn- format-fn-sources [fn-sources]
   (->> fn-sources
 
        (filter #(let [v (val %)
@@ -139,7 +134,7 @@
 
 
 
-(defn get-nice-source-info [pipeline-decl pipe-fns-ns pipe-fns-source-file]
+(defn- get-nice-source-info [pipeline-decl pipe-fns-ns pipe-fns-source-file]
   (when (and  (some? pipe-fns-ns) (some? pipeline-decl))
     (let [source-information (scicloj.metamorph.ml.evaluation-handler/get-source-information
                               pipeline-decl
@@ -262,11 +257,6 @@
 
 (defn result-dissoc-in-seq--all-fn [result]
   (reduce-result result result-dissoc-in-seq--all))
-
-
-
-
-
 
 
 (defn evaluate-pipelines
@@ -580,12 +570,12 @@
 ;;     :options {:model-type :clj-djl/fasttext},
 ;;     :target-columns [:is.primary]}
 
-(defn lookup-tables-consistent? [train-lookup-table prediction-lookup-table]
+(defn- lookup-tables-consistent? [train-lookup-table prediction-lookup-table]
   ;; simplification
   ;; TODO find better way
   (= train-lookup-table prediction-lookup-table))
 
-(defn validate-lookup-tables [model predict-ds-classification target-col]
+(defn- validate-lookup-tables [model predict-ds-classification target-col]
   (let [
         train-lookup-table (-> model :target-categorical-maps (get target-col) :lookup-table)
 
@@ -720,21 +710,3 @@
                      
 
 (malli/instrument-ns 'scicloj.metamorph.ml)
-
-
-
-(comment
-  (require '[malli.dev.pretty :as pretty])
-  (m/explain
-   [:cat {:registry {::blub string?}} ::blub ::blub]
-   ["a" "b"])
-
-  (mi/unstrument!)
-
-
-  (require '[malli.dev :as dev])
-
-  (dev/start! {:report (pretty/reporter)})
-
-  :ok)
-

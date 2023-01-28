@@ -1,12 +1,12 @@
 (ns scicloj.metamorph.ml.preprocessing
   (:require
    [tech.v3.dataset.math :as std-math]
-   [tech.v3.dataset :as ds]
-   [tablecloth.api :as tc]))
+   [tablecloth.api :as tc]
+   [tech.v3.dataset :as ds]))
    
 
 
-(defn preprocessor
+(defn- preprocessor
   ([columns-selector fit-fn transform-fn context-key options]
    (preprocessor columns-selector :name fit-fn transform-fn context-key options))
   ([columns-selector meta-field fit-fn transform-fn context-key options]
