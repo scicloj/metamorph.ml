@@ -1,15 +1,13 @@
 (ns scicloj.metamorph.ml.verify
-  (:require [tech.v3.datatype.functional :as dfn]
-            [tech.v3.datatype :as dtype]
-            [tech.v3.dataset :as ds]
-            [tech.v3.dataset.column-filters :as cf]
-            [tech.v3.dataset.modelling :as ds-mod]
-            [tech.v3.dataset.categorical :as ds-cat]
-            [scicloj.metamorph.ml :as ml]
-            [scicloj.metamorph.ml.loss :as loss]
-            ;; [tablecloth.api :as tc]
-
-            [clojure.test :refer [is]]))
+  (:require
+   [clojure.test :refer [is]]
+   [scicloj.metamorph.ml :as ml]
+   [scicloj.metamorph.ml.loss :as loss] ;; [tablecloth.api :as tc]
+   [tech.v3.dataset :as ds]
+   [tech.v3.dataset.column-filters :as cf]
+   [tech.v3.dataset.modelling :as ds-mod]
+   [tech.v3.datatype :as dtype]
+   [tech.v3.datatype.functional :as dfn]))
 
 
 (def target-colname "petal_width")
@@ -57,10 +55,8 @@
 (defn basic-classification
   ([options-map max-avg-loss]
 
-   (let [split (ds-mod/train-test-split @classification-titanic* options-map)
-         _ (def split split)
-         _ (def options-map options-map)
-         target-colname (first (ds/column-names (cf/target (:test-ds split))))
+   (let [split (ds-mod/train-test-split @classification-titanic* options-map)]
+        target-colname (first (ds/column-names (cf/target (:test-ds split))))
          train-fn (fn []
                     (let [
                           fitted-model (ml/train (:train-ds split) options-map)
@@ -69,7 +65,7 @@
          avg-mae
          (->>
           (repeatedly 5 train-fn)
-          (dfn/mean))]
+          (dfn/mean))
 
      (is (< avg-mae max-avg-loss))))
   ([options-map]

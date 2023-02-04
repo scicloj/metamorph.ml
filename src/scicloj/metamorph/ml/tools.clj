@@ -1,4 +1,6 @@
-(ns scicloj.metamorph.ml.tools)
+(ns scicloj.metamorph.ml.tools
+  (:require
+   [clojure.pprint :as pprint]))
 
 (defn dissoc-in
   "Dissociate a value in a nested assocative structure, identified by a sequence
@@ -23,4 +25,4 @@
 
 
 (defn pp-str [x]
-  (with-out-str (clojure.pprint/pprint x)))
+  (with-out-str (pprint/pprint x)))

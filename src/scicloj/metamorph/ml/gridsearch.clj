@@ -57,7 +57,7 @@
       :n-steps n-steps
       :result-space res-dtype-or-space}))
   ([start end n-steps]
-     (linear start end n-steps :float64))
+   (linear start end n-steps :float64))
   ([start end]
    (linear start end 100 :float64)))
 
@@ -90,9 +90,7 @@
    (reduce (fn [axis [k v]]
              (cond
                (::type v)
-               (let [{:keys [start end n-steps]} v
-                     start (double start)
-                     end (double end)
+               (let [{:keys [n-steps]} v
                      n-steps (dec (double n-steps))]
                  (conj axis {:axis (conj path k)
                              :element v
@@ -150,9 +148,3 @@ user> (ml-gs/sobol-gridsearch opt-map)
        [opt-map])))
   ([opt-map]
    (sobol-gridsearch opt-map 0)))
-
-
-(comment
-  (def opt-map  {:a (categorical [:a :b :c])
-                 :b (linear 0.01 1 10)})
-  )

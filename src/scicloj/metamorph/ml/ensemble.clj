@@ -5,7 +5,7 @@
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.column-filters :as cf]))
 
-(defn majority [l]
+(defn- majority [l]
   (->>
    (frequencies l)
    seq
@@ -15,11 +15,11 @@
    first))
 
 
-(defn  ensemble-pipe [pipes]
+(defn  ensemble-pipe
   "Creates an ensemble pipeline function out of various pipelines. The different predictions
    get combined via majority voting.
-   Can be used in the same way as any other pipeline.
-"
+   Can be used in the same way as any other pipeline."
+  [pipes]
   (morph/pipeline
    {:metamorph/id :ensemble}
    (fn [{:metamorph/keys [id data mode] :as ctx}]
@@ -43,8 +43,6 @@
                           :fitted-ctxs fitted-ctxs}))
          :transform
          (let [
-
-
                target-column (-> ctx (get id) :fitted-ctxs :pipe-0 :model :target-columns first)
                target-categorical-map  (-> ctx (get id) :fitted-ctxs :pipe-0 :model :target-categorical-maps)
 

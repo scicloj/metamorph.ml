@@ -73,7 +73,7 @@
    (fun/mean col)
    (fun/standard-deviation col)))
 
-(defn apply-xform-kvs [spec kvs]
+(defn- apply-xform-kvs [spec kvs]
   (apply hc/xform spec (into [] cat kvs)))
 
 

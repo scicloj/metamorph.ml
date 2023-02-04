@@ -3,8 +3,8 @@
             [tech.v3.dataset :as ds]
             [clojure.set :as set]
             [tablecloth.api :as tc]
-            [scicloj.metamorph.ml.malli :as malli]
-            [scicloj.metamorph.core :as mm]))
+            [scicloj.metamorph.ml.malli :as malli]))
+            
 
 (defn- apply-mappings [ds one-hot-encodings]
   (reduce (fn [data one-hot-encoding]
@@ -40,7 +40,7 @@
            levels-in-mapping (-> mapping :one-hot-table keys set)
            levels-in-data (->  (get data (:src-column mapping)) distinct set)
            levels-not-mapped (set/difference levels-in-data levels-in-mapping)]
-       (if (pos-int? (count levels-not-mapped))
+       (when (pos-int? (count levels-not-mapped))
          (throw (IllegalArgumentException. (str  "Some levels of data in :transform were not in :fit for colum xxx: " levels-not-mapped))))))
    mappings))
 

@@ -1,10 +1,10 @@
 (ns scicloj.metamorph.ml.toydata
-  (:require [tablecloth.api :as tc]
-            [tech.v3.dataset :as ds]
-            [tech.v3.dataset.modelling :as ds-mod]
-            [tech.v3.datatype.functional :as dtfn]
-            [camel-snake-kebab.core :as csk]
-            [clojure.java.io :as io]))
+  (:require
+   [camel-snake-kebab.core :as csk]
+   [clojure.java.io :as io]
+   [tablecloth.api :as tc]
+   [tech.v3.dataset :as ds]
+   [tech.v3.dataset.modelling :as ds-mod]))
             
 
 (defn sonar-ds []
@@ -94,25 +94,3 @@
                         
            (ds/categorical->number [:class] {} :int16)
            (ds-mod/set-inference-target :class))))
-
-
-(comment
-  (->>
-   ( file-seq (io/file "/tmp/20news-bydate-train"))
-   (filter #(.isFile %))
-   (map #(let [path (.toPath %)]
-           (hash-map :category
-                     (keyword (str (.getName path 2)))
-                     :text
-                     (slurp %))))
-                     
-
-           
-   tc/dataset))
-
-(comment
-  [
-   (sonar-ds)
-   (diabetes-ds)
-   (breast-cancer-ds)
-   (iris-ds)])

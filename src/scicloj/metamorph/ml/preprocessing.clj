@@ -1,8 +1,7 @@
 (ns scicloj.metamorph.ml.preprocessing
   (:require
-   [tech.v3.dataset.math :as std-math]
    [tablecloth.api :as tc]
-   [tech.v3.dataset :as ds]))
+   [tech.v3.dataset.math :as std-math]))
    
 
 
@@ -33,10 +32,8 @@
 
 
   `options` are the options for the scaler and can take:
-
-  `mean?` If true (default), the data gets shifted by the column means, so 0 centered
-
-  `stddev?` If true (default), the data gets scaled by the standard deviation of the column
+     `mean?` If true (default), the data gets shifted by the column means, so 0 centered
+     `stddev?` If true (default), the data gets scaled by the standard deviation of the column
 
   metamorph                            | .
   -------------------------------------|----------------------------------------------------------------------------
@@ -59,10 +56,8 @@
   `meta-field` tablecloth meta-field working with `columns-selector`
 
   `options` Options for scaler, can take:
-
-  `min` Minimal value to scale to (default -0.5)
-
-  `max` Maximum value to scale to (default 0.5)
+      `min` Minimal value to scale to (default -0.5)
+      `max` Maximum value to scale to (default 0.5)
 
   metamorph                            | .
   -------------------------------------|----------------------------------------------------------------------------

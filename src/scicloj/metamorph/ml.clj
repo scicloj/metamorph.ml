@@ -1,21 +1,23 @@
 (ns scicloj.metamorph.ml
-  (:require [pppmap.core :as ppp]
-            [scicloj.metamorph.core :as mm]
-            [scicloj.metamorph.ml.loss :as loss]
-            [tech.v3.dataset :as ds]
-            [tech.v3.dataset.column-filters :as cf]
-            [tech.v3.dataset.modelling :as ds-mod]
-            [tech.v3.dataset.categorical :as ds-cat]
-            [tech.v3.datatype.errors :as errors]
-            [tech.v3.datatype.functional :as dfn]
-            [scicloj.metamorph.ml.evaluation-handler]
-            [scicloj.metamorph.ml.tools :refer [dissoc-in]]
-            [tech.v3.datatype.export-symbols :as exporter]
-            [tech.v3.dataset.impl.dataset :refer [dataset?]]
-            [scicloj.metamorph.ml.malli :as malli]
-            [scicloj.metamorph.ml.ensemble]
-            [malli.core :as m])
-  (:import java.util.UUID))
+  (:require
+   [clojure.string :as str]
+   [pppmap.core :as ppp]
+   [scicloj.metamorph.core :as mm]
+   [scicloj.metamorph.ml.ensemble]
+   [scicloj.metamorph.ml.evaluation-handler]
+   [scicloj.metamorph.ml.loss :as loss]
+   [scicloj.metamorph.ml.malli :as malli]
+   [scicloj.metamorph.ml.tools :refer [dissoc-in]]
+   [tech.v3.dataset :as ds]
+   [tech.v3.dataset.categorical :as ds-cat]
+   [tech.v3.dataset.column-filters :as cf]
+   [tech.v3.dataset.impl.dataset :refer [dataset?]]
+   [tech.v3.dataset.modelling :as ds-mod]
+   [tech.v3.datatype.errors :as errors]
+   [tech.v3.datatype.export-symbols :as exporter]
+   [tech.v3.datatype.functional :as dfn])
+  (:import
+   java.util.UUID))
 
 
 (exporter/export-symbols scicloj.metamorph.ml.ensemble ensemble-pipe)
@@ -33,7 +35,6 @@
         trueth-ds (get-in predicted-ctx [:model ::target-ds])
         _ (errors/when-not-error trueth-ds (str  "Pipeline context need to have the true prediction target as a dataset at key path: "
                                                  :model ::target-ds " Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
-
 
         target-column-names (ds/column-names trueth-ds)
         _ (errors/when-not-error (= 1 (count target-column-names)) "Only 1 target column is supported")
@@ -126,7 +127,7 @@
               {k
                (let [str-code
                      (str (:code-source v) (:code-local-source v))]
-                 (if-not (clojure.string/blank? str-code)
+                 (if-not (str/blank? str-code)
                    {:source-str str-code
                     :source-form (read-string str-code)}
                    ""))}))
@@ -606,9 +607,7 @@
   [dataset model]
   (let [{:keys [predict-fn] :as model-def} (options->model-def (:options model))
         feature-ds (ds/select-columns dataset (:feature-columns model))
-        label-columns (:target-columns model)
         thawed-model (thaw-model model model-def)
-        target-col (first label-columns)
         pred-ds (predict-fn feature-ds
                             thawed-model
                             model)]

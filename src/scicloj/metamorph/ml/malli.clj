@@ -1,10 +1,8 @@
 (ns scicloj.metamorph.ml.malli
   (:require
-   [malli.util :as mu]
    [malli.core :as m]
-   [malli.instrument :as mi]
    [malli.dev.pretty :as pretty]
-   [malli.error :as me]
+   [malli.instrument :as mi]
    [tech.v3.dataset.impl.dataset :refer [dataset?]]))
 
 (defn instrument-mm [fn]
