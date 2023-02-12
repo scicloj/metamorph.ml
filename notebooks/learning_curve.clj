@@ -19,6 +19,7 @@
 
 ^{:nextjournal.clerk/viewer :table
   :nextjournal.clerk/opts {:page-size 5}}
+
 (def titanic-train
   (->
    (tech.v3.dataset/->dataset "https://github.com/scicloj/metamorph-examples/raw/main/data/titanic/train.csv"
