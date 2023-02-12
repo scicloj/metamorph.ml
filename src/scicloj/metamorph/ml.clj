@@ -459,6 +459,18 @@
   "Create a model definition.  An ml model is a function that takes a dataset and an
   options map and returns a model.  A model is something that, combined with a dataset,
   produces a inferred dataset."
+  {:malli/schema [:=> [:cat :keyword fn? fn? [:map
+                                              [:hyperparameters {:optional true} [:maybe map?]]
+                                              [:thaw-fn {:optional true} fn?]
+                                              [:explain-fn {:optional true} fn?]
+                                              [:options {:optional true} sequential?]
+                                              [:documentation {:optional true} [:map
+                                                                                [:javadoc {:optional true} [:maybe string?]]
+                                                                                [:user-guide {:optional true} [:maybe string?]]
+                                                                                [:code-example {:optional true} [:maybe string?]]]]
+                                              [:unsupervised? {:optional true} boolean?]]]
+                  :keyword]}
+
   [model-kwd train-fn predict-fn {:keys [hyperparameters
                                          thaw-fn
                                          explain-fn
@@ -479,6 +491,7 @@
 
                                              
   :ok)
+
 
 (defn model-definition-names
   "Return a list of all registered model defintion names."
