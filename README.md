@@ -1,8 +1,8 @@
 [![Clojars Project](https://img.shields.io/clojars/v/scicloj/metamorph.ml.svg)](https://clojars.org/scicloj/metamorph.ml)
-
+[![CI](https://github.com/scicloj/metamorph.ml/actions/workflows/main.yml/badge.svg)](https://github.com/scicloj/metamorph.ml/actions/workflows/main.yml)
 # metamorph.ml
 
-Machine learining functions for [metamorph](https://github.com/scicloj/metamorph) based machine learning pipelines
+Machine learning functions for [metamorph](https://github.com/scicloj/metamorph) based on machine learning pipelines.
 Part of [scicloj.ml](https://github.com/scicloj/scicloj.ml)
 
 ## Main idea
@@ -105,15 +105,15 @@ This library contains the basis functions for machine learning.
 It is documented in `scicloj.ml`, which re-exports the functions of this library:
 https://github.com/scicloj/scicloj.ml
 
-## Train a model
-
-## Predict on a trained model
-
-## Register a trained model
+* Train a model
+* Predict on a trained model
+* Register a trained model
 
 ## Evaluate pipelines
+Instead of running  `train` and `predict` as separate steps, 
+the library offers as well to combine this in one step, and to `evaluate` a model or a pipleine.
 
-`evaluate-pipelines` which takes a sequence of metamorph compliant pipeline-fn (= each pipeline is a series of steps to transform the raw data and a model step)
+The function `evaluate-pipelines` which takes a sequence of metamorph compliant pipeline-fn (= each pipeline is a series of steps to transform the raw data and a model step), does this.
 
 It executes each pipeline first in `mode` :fit and then in `mode` transform, as specified by [metamorph](https://github.com/scicloj/metamorph)
 which a pipeline step containing a model should then translates into a
@@ -214,16 +214,18 @@ standard keys.
 
 A pipeline-fn is a composition of metamorph compliant data transform functions.
 
-The following projects contain them, for both:
+The following projects contain them, for both
 
 - dataset manipulations
+
+and
+
 - train/prediction of models
  
-and custom ones can be created easily:
+and custom ones can be created easily.
 
 - https://github.com/techascent/tech.ml.dataset
 - https://github.com/scicloj/tablecloth
-- https://github.com/techascent/tech.ml
 - https://github.com/scicloj/sklearn-clj
 
 
