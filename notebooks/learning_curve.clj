@@ -81,3 +81,18 @@
  {:YSCALE {:zero false}
   :TITLE "Learning Curve"
   :YTITLE "Accuracy"})
+
+
+^{:nextjournal.clerk/viewer :vega-lite}
+(ml-viz/learnining-curve
+ titanic-train
+ (make-pipe-fn :smile.classification/logistic-regression)
+ train-sizes
+ {:k 3
+  :metric-fn scicloj.metamorph.ml.loss/classification-accuracy
+  :loss-or-accuracy :accuracy}
+ {:YSCALE {:zero false}
+  :TRAIN-COLOR "green"
+  :TEST-COLOR "red"
+  :TITLE "Learning Curve"
+  :YTITLE "Accuracy"})

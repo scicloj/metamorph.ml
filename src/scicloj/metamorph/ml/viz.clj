@@ -16,7 +16,7 @@
    {:Y "metric-train-min"
     :X "train-ds-size"
     :XTYPE "quantitative"}
-   :color {:value "orange"}
+   :color {:value :TEST-COLOR}
    :y2 {:field "metric-train-max"
         :legend nil}))
 
@@ -27,7 +27,7 @@
    {:Y "metric-test-min"
     :X "train-ds-size"
     :XTYPE "quantitative"}
-   :color {:value "blue"}
+   :color {:value :TRAIN-COLOR}
    :y2 {:field "metric-test-max"
         :legend nil}))
 
@@ -41,6 +41,7 @@
     :YTYPE "quantitative"}
    :color {:field "train-test-metric"
            :type "nominal"
+           :scale {:range [:TRAIN-COLOR :TEST-COLOR]}
            :legend {"labelExpr" "datum.label == 'metric-test' ? 'Cross validation metric' : datum.label == 'metric-train' ? 'Training score' : ''  "}}))
 
 
@@ -49,7 +50,9 @@
          :aerial.hanami.templates/defaults
          {:TITLE "Learning Curve"
           :XTITLE "Training size"
-          :YTITLE "metric"}
+          :YTITLE "metric"
+          :TRAIN-COLOR "blue"
+          :TEST-COLOR "orange"}
          :layer [{:mark :errorband
                   :encoding errorband-encoding-train}
                  {:mark :errorband
