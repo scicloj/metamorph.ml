@@ -56,12 +56,11 @@ which might be a better quick start experience, still full featured as same code
 ;;  the (single, fixed) pipe-fn
 (def pipe-fn
   (morph/pipeline
+   ;; set inference traget column
    (ds-mm/set-inference-target :species)
+   ;; convert all categorical variables to numbers
    (ds-mm/categorical->number cf/categorical)
-   ;; sets the ground truth for the prediction into the context at the required key
-   (fn [ctx]
-     (assoc ctx
-            :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
+   ;; train or predict , depending on :mode
    {:metamorph/id :model}         
    (ml/model {:model-type :smile.classification/random-forest})))
 
