@@ -128,8 +128,8 @@ This library does not care, what exactly is the last step.
 It calls the whole pipeline in mode :fit and mode :transform and the model step is
 supposed to do the right thing.
 
-Here is a well behaving model function from `tech.ml`: 
-https://github.com/techascent/tech.ml/blob/38f523a7cea6465f639df6fc4eecd6b3f4de69d0/src/tech/v3/ml/metamorph.clj#L12
+Here is a well behaving model function:
+https://github.com/scicloj/metamorph.ml/blob/973606776cfabbe5a666a6cc0bab5a1833f044c8/src/scicloj/metamorph/ml.clj#L662
 which calls `train` and `predict` accordingly. 
 
 So for each pipeline-fn in the sequence given to `evaluate-models` one model
@@ -159,7 +159,7 @@ pipelines including their variations.
 
 This can be done in various ways, from hand coding each pipeline  or having 
 a pipeline creation function  over to using grid search libraries:
-https://github.com/techascent/tech.ml/blob/38f523a7cea6465f639df6fc4eecd6b3f4de69d0/src/tech/v3/ml/gridsearch.clj#L111
+https://github.com/scicloj/metamorph.ml/blob/973606776cfabbe5a666a6cc0bab5a1833f044c8/src/scicloj/metamorph/ml/gridsearch.clj#L109
 
 A simple pipeline looks like this:
 
@@ -167,9 +167,6 @@ A simple pipeline looks like this:
  (morph/pipeline
          (ds-mm/set-inference-target :species)
          (ds-mm/categorical->number cf/categorical)
-         (fn [ctx]
-           (assoc ctx
-                  :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
          (ml-mm/model {:model-type :smile.classification/random-forest}))
 ```
 
