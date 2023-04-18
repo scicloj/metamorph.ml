@@ -77,6 +77,9 @@ which might be a better quick start experience, still full featured as same code
 (def best-fitted-context (-> evaluations first first :fit-ctx))
 (def best-pipe-fn (-> evaluations first first :pipe-fn))
 
+;; get training loss
+(-> evaluations first first :train-transform :metric)
+;; => 0.06000000000000005
 
 ;;  simulate new data
 (def  new-ds (ds/sample ds 10 {:seed 1234} ))
