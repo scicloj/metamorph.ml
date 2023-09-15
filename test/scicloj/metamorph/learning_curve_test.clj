@@ -42,7 +42,7 @@
                             :loss-or-accuracy :accuracy})]
 
 
-    (t/is (= [:metric-train :train-size-index :metric-test :test-ds-size :train-ds-size]
+    (t/is (= [:metric-train :metric-test :test-ds-size :train-size-index :train-ds-size]
              (tc/column-names lc)))
 
 

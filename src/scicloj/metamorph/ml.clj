@@ -180,8 +180,8 @@
         metric-vec-test (mapv #(get-in % [:test-transform :metric]) split-eval-results)
         metric-vec-train (mapv #(get-in % [:train-transform :metric]) split-eval-results)
 
-        metric-vec-stats-test (dfn/descriptive-statistics [:min :max :mean] metric-vec-test)
-        metric-vec-stats-train (dfn/descriptive-statistics [:min :max :mean] metric-vec-train)
+        metric-vec-stats-test (dfn/descriptive-statistics metric-vec-test [:min :max :mean])
+        metric-vec-stats-train (dfn/descriptive-statistics metric-vec-train [:min :max :mean])
 
 
         evaluations

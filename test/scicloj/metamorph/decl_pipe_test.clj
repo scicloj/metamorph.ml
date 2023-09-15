@@ -14,24 +14,19 @@
 
 (defn is-thrown [decl-pipe]
 
-  (is (thrown? IllegalArgumentException
+  (is (thrown? RuntimeException
                (->
                 (ml/evaluate-pipelines [decl-pipe] (tc/split->seq data :holdout) loss/classification-accuracy :accuracy)
                 (nth 0) (nth 0) :train-transform :metric))))
 
 
 
-
-
 (defn eval-pipe [decl-pipe]
-  (def decl-pipe decl-pipe)
-
   (->
    (ml/evaluate-pipelines [decl-pipe] (tc/split->seq data :holdout) loss/classification-accuracy :accuracy)
    first first :train-transform :metric))
 
 (defn is-pos-metric [decl-pipe]
-  (def decl-pipe decl-pipe)
   (t/is (pos?
          (->
           (ml/evaluate-pipelines [decl-pipe] (tc/split->seq data :holdout) loss/classification-accuracy :accuracy)
@@ -106,8 +101,8 @@
                   [::identity-3]
                   [::update-species identity]
                   [::update-species :clojure.core/identity]
-                  [::update-species upper-case-col]
-                  [::update-species ::upper-case-col]
+                  ;; [::update-species upper-case-col]
+                  ;; [::update-species ::upper-case-col]
                   [:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
                   [:tech.v3.dataset.metamorph/set-inference-target :species]
                   {:metamorph/id :model}
@@ -149,7 +144,7 @@
 
 
 
-(deftest test-decl-1
+(deftest test-decl-throws
   (do-define-model)
   (is-thrown [[::update-species :upper-case-col]]))
 

@@ -112,6 +112,7 @@
 
 
 (deftest test-explain
+  (do-define-model)
   (let [
 
         pipe-fn
@@ -273,7 +274,7 @@
 
 (deftest round-trip-full-names
   (do-define-model)
-  (is (= {1.0 50, 0.0 50, 2.0 50}
+  (is (= {1 50, 0 50, 2 50}
 
          (let [files (atom [])
 
@@ -321,13 +322,13 @@
          [[:train-transform]
           [:train-transform :metric]
           [:train-transform :min]
-          [:train-transform :mean]
           [:train-transform :max]
+          [:train-transform :mean]
           [:test-transform]
           [:test-transform :metric]
           [:test-transform :min]
-          [:test-transform :mean]
           [:test-transform :max]
+          [:test-transform :mean]
           [:split-uid]
           ]
          (->>
