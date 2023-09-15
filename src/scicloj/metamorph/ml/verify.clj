@@ -55,18 +55,20 @@
 (defn basic-classification
   ([options-map max-avg-loss]
 
-   (let [split (ds-mod/train-test-split @classification-titanic* options-map)]
-        target-colname (first (ds/column-names (cf/target (:test-ds split))))
+   (let [split (ds-mod/train-test-split @classification-titanic* options-map)
+         target-colname (first (ds/column-names (cf/target (:test-ds split))))
          train-fn (fn []
-                    (let [
-                          fitted-model (ml/train (:train-ds split) options-map)
+                    (let [fitted-model (ml/train (:train-ds split) options-map)
                           predictions (ml/predict (:test-ds split) fitted-model)]
                       (loss/mae ((:test-ds split) target-colname) (predictions target-colname))))
          avg-mae
          (->>
           (repeatedly 5 train-fn)
           (dfn/mean))
-
+         ]
      (is (< avg-mae max-avg-loss))))
   ([options-map]
    (basic-classification options-map 0.5)))
+
+
+

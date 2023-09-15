@@ -1,3 +1,6 @@
+0.7.1
+ - fixed 'verify' ns
+ 
 0.7
  - using tablecloth 7.0
  - added uid for grouping of splits
