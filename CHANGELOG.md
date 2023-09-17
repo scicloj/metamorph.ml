@@ -1,3 +1,6 @@
+0.7.2
+ - fixed verify ns
+
 0.7.1
  - fixed 'verify' ns
  
