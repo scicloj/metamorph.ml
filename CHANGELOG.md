@@ -1,3 +1,7 @@
+unreleased
+- added dummy classifier
+
+
 0.7.2
  - fixed verify ns
 

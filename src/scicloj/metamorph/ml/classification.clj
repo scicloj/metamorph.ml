@@ -1,6 +1,9 @@
 (ns scicloj.metamorph.ml.classification
   (:require [tech.v3.dataset :as ds]
-            [tech.v3.datatype.pprint :as dtype-pp]))
+            [tech.v3.dataset.modelling :as ds-mod]
+            [tech.v3.datatype.pprint :as dtype-pp]
+            [scicloj.metamorph.ml :as ml]))
+            
             
 (defn- safe-inc
     [item]
@@ -63,6 +66,9 @@
    (confusion-map->ds conf-matrix-map :all)))
 
 
+
+
+
 #_(defn confusion-ds
     [model test-ds]
     (let [predictions (ml/predict model test-ds)
@@ -73,3 +79,32 @@
 (comment
   (confusion-map [:a :b :c :a] [:a :c :c :a] :all))
   
+
+(defn- get-majority-class [target-ds]
+  (let [target-column-name (first
+                            (ds-mod/inference-target-column-names target-ds))]
+    (->>
+     (-> target-ds (get target-column-name) frequencies)
+     (sort-by :second)
+     reverse
+     first
+     first)))
+
+
+(ml/define-model! :metamorph.ml/dummy-classifier
+  (fn [feature-ds target-ds options]
+    (let [target-column-name (first
+                              (ds-mod/inference-target-column-names target-ds))]
+      {:majority-class (get-majority-class target-ds)
+       :distinct-labels (-> target-ds (get target-column-name) distinct)}))
+
+  (fn [feature-ds thawed-model {:keys [options model-data] :as model}]
+    (let [ target-column-name (-> model :target-columns first)
+          dummy-labels (case (:dummy-strategy options)
+                         :majority-class (repeat (:majority-class model-data))
+                         :fixed-class (repeat (:fixed-class options))
+                         :random-class (repeatedly (fn [] (rand-nth (:distinct-labels model-data)))))]
+
+
+      (ds/add-or-update-column feature-ds target-column-name dummy-labels)))
+  {})
