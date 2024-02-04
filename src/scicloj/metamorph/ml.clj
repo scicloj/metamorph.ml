@@ -48,6 +48,27 @@
 
 
 
+(defn score [predictions-ds trueth-ds target-column-name metric-fn other-metrices]
+  (let [
+        predictions-col (get (ds-cat/reverse-map-categorical-xforms predictions-ds)
+                             target-column-name)
+        trueth-col (get (ds-cat/reverse-map-categorical-xforms trueth-ds)
+                        target-column-name)
+
+
+        _ (strict-type-check trueth-col predictions-col)
+        metric (metric-fn trueth-col predictions-col)
+
+        other-metrices-result
+        (map
+         (fn [{:keys [name metric-fn] :as m}]
+           (assoc m
+                  :metric (metric-fn trueth-col predictions-col)))
+         other-metrices)]
+    {:metric metric
+     :other-metrices-result other-metrices-result}))
+
+
 
 (defn- supervised-eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
 
@@ -73,26 +94,16 @@
 
         _ (errors/when-not-error (get predictions-ds target-column-name) (format "Prediction dataset need to have column name: %s " target-column-name))
         _ (check-categorical-maps trueth-ds predictions-ds target-column-name)
-        predictions-col (get (ds-cat/reverse-map-categorical-xforms predictions-ds)
-                             target-column-name)
-        trueth-col      (get (ds-cat/reverse-map-categorical-xforms trueth-ds)
-                             target-column-name)
 
 
-        _ (strict-type-check trueth-col predictions-col)
-        metric (metric-fn trueth-col predictions-col)
+        scores (score predictions-ds trueth-ds target-column-name metric-fn other-metrices)
 
-        other-metrices-result
-        (map
-         (fn [{:keys [name metric-fn] :as m}]
-           (assoc m
-                  :metric (metric-fn trueth-col predictions-col)))
-         other-metrices)
+
         eval-result
-        {:other-metrices other-metrices-result
+        {:other-metrices (:other-metrices-result scores)
          :timing (- end-transform start-transform)
          :ctx predicted-ctx
-         :metric metric}]
+         :metric (:metric scores)}]
     eval-result))
 
 
