@@ -16,7 +16,8 @@
          (map #(str "column-" %) (range 61))
          (concat
           (map #(keyword (str "x" %)) (range 60))
-          [:material])))))
+          [:material])))
+       (ds-mod/set-inference-target :material)))
           
 
 
