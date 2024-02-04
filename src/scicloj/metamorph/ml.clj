@@ -81,7 +81,6 @@
 
         _ (errors/when-not-error predictions-ds "No column in prediction result was marked as 'prediction' ")
         _ (errors/when-not-error (:model predicted-ctx) "Pipelines need to have the 'model' op with id :model")
-
         trueth-ds (get-in predicted-ctx [:model ::target-ds])
         _ (errors/when-not-error trueth-ds (str  "Pipeline context need to have the true prediction target as a dataset at key path: "
                                                  :model ::target-ds " Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
