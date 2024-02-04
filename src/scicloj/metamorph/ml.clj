@@ -314,16 +314,16 @@
    It runs the pipelines  in mode  :fit and in mode :transform for each pipeline-fn in `pipe-fn-seq` for each split in `train-test-split-seq`.
 
    The function returns a seq of seqs of evaluation results per pipe-fn per train-test split.
-   Each of teh evaluation results is a context map, which is specified in the malli schema attached to this function. 
+   Each of the evaluation results is a context map, which is specified in the malli schema attached to this function.
 
    * `pipe-fn-or-decl-seq` need to be  sequence of pipeline functions or pipline declarations which follow the metamorph approach.
       These type of functions get produced typically by calling `scicloj.metamorph/pipeline`. Documentation is here:
 
    * `train-test-split-seq` need to be a sequence of maps containing the  train and test dataset (being tech.ml.dataset) at keys :train and :test.
-    `tableclot.api/split->seq` produces such splits. Supervised models require both keys (:train and :test), while unsupervised models only use :train
+    `tablecloth.api/split->seq` produces such splits. Supervised models require both keys (:train and :test), while unsupervised models only use :train
 
    * `metric-fn` Metric function to use. Typically comming from `tech.v3.ml.loss`. For supervised models the metric-fn receives the trueth
-      and predicted vales as double arrays and should return a single double number.  For unsupervised models he function receives the fitted ctx
+      and predicted values and should return a single double number.  For unsupervised models the function receives the fitted ctx
       and should return a singel double number as well. This metric will be used to sort and eventualy filter the result, depending on the options
       (:return-best-pipeline-only   and :return-best-crossvalidation-only). The notion of `best` comes from metric-fn combined with loss-and-accuracy
   
