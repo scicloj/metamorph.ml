@@ -48,6 +48,4 @@
 
 
         prediction (ml/predict ds model)]
-    (def prediction prediction)
-   (is (= [0 1] (-> prediction :class distinct)))))
-   
+   (is (= [0 1] (-> prediction :class distinct sort)))))

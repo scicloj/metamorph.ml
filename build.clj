@@ -15,7 +15,7 @@
 
 (defn test "Run the tests." [opts]
   (-> opts
-      (assoc :alias [:runner])
+      (assoc :aliases [:runner])
       (bb/run-tests)))
 
 (defn jar [_]

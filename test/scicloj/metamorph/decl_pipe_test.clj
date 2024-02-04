@@ -5,11 +5,15 @@
              [scicloj.metamorph.ml.loss :as loss]
              [tech.v3.dataset.metamorph :as ds-mm]
              [tablecloth.api :as tc]
+             [clojure.string :as str]
              [tech.v3.dataset :as ds]))
 
 (defonce data
   (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
-
+(def iris-target-values (-> data :species distinct sort))
+(def iris-target-values-capital
+  (map str/upper-case
+       (-> data :species distinct sort)))
 
 
 (defn is-thrown [decl-pipe]
@@ -84,9 +88,13 @@
                                        top-k
                                        options]}]
 
-      (ds/new-dataset [(ds/new-column :species
-                                      (repeat (tc/row-count feature-ds) "setosa")
-                                      {:column-type :prediction})]))
+      (let [target-column-name (first target-columns)]
+        (ds/new-dataset [(ds/new-column target-column-name
+                                        (repeat (tc/row-count feature-ds) 0)
+                                        {:column-type :prediction
+                                         :categorical-map (get target-categorical-maps target-column-name)})])))
+
+      
     {}))
 
 
@@ -103,7 +111,7 @@
                   [::update-species :clojure.core/identity]
                   ;; [::update-species upper-case-col]
                   ;; [::update-species ::upper-case-col]
-                  [:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
+                  [:tech.v3.dataset.metamorph/categorical->number [:species] iris-target-values]
                   [:tech.v3.dataset.metamorph/set-inference-target :species]
                   {:metamorph/id :model}
                   [:scicloj.metamorph.ml/model (merge {:model-type :test-model})]]))
@@ -113,7 +121,7 @@
 
 (deftest test-decl-2
   (do-define-model)
-  (is-pos-metric [[:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
+  (is-pos-metric [[:tech.v3.dataset.metamorph/categorical->number [:species ] iris-target-values]
                   [::duplicate-columns :type/numerical]
                   [:tech.v3.dataset.metamorph/set-inference-target :species]
                   {:metamorph/id :model} [:scicloj.metamorph.ml/model (merge {:model-type :test-model})]]))
@@ -121,7 +129,7 @@
 (deftest test-decl-3
   (do-define-model)
   (is-zero-metric [[::update-species (fn [col] (map  clojure.string/upper-case col))]
-                   [:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
+                   [:tech.v3.dataset.metamorph/categorical->number [:species ] iris-target-values :int64]
                    [::identity-1]
                    [::identity-2]
                    [::identity-3]
@@ -131,12 +139,12 @@
 
 (deftest test-decl-4
   (do-define-model)
-  (is-pos-metric [[:tech.v3.dataset.metamorph/categorical->number [:species] {} :int64]
+  (is-pos-metric [[:tech.v3.dataset.metamorph/categorical->number [:species]  iris-target-values :int64]
                   [:tech.v3.dataset.metamorph/set-inference-target :species]
                   {:metamorph/id :model}[:scicloj.metamorph.ml/model (merge {:model-type :test-model})]]))
 
 (deftest test-decl-5
-  (is-pos-metric [[:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
+  (is-pos-metric [[:tech.v3.dataset.metamorph/categorical->number [:species ] iris-target-values :int64]
                   [:tech.v3.dataset.metamorph/update-column :species :clojure.core/identity]
                   [:tech.v3.dataset.metamorph/set-inference-target :species]
                   {:metamorph/id :model}[:scicloj.metamorph.ml/model (merge {:model-type :test-model})]]))
@@ -151,14 +159,13 @@
 
 (t/deftest x
   (do-define-model)
-  (t/is (zero?
+  (t/is (pos?
          (eval-pipe [[::identity-1]
                      [::update-species identity]
                      [::update-species :clojure.core/identity]
 
                      [::update-species upper-case-col]
                      [::update-species ::upper-case-col]
-                     [:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
-                     [:tech.v3.dataset.metamorph/categorical->number [:species ] {} :int64]
+                     [:tech.v3.dataset.metamorph/categorical->number [:species ] iris-target-values-capital :int64]
                      [:tech.v3.dataset.metamorph/set-inference-target :species]
                      {:metamorph/id :model}[:scicloj.metamorph.ml/model (merge {:model-type :test-model})]]))))

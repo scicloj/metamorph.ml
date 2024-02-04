@@ -1,5 +1,7 @@
 unreleased
+
 - added dummy classifier
+- add checks for matching categorical maps between train and predict
 
 
 0.7.2

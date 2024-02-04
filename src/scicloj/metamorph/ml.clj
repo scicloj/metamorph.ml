@@ -22,6 +22,33 @@
 
 (exporter/export-symbols scicloj.metamorph.ml.ensemble ensemble-pipe)
 
+(defn get-categorical-maps [ds]
+  (->> (ds/column-names ds)
+       (map #(list % (-> ds (get %) meta :categorical-map)))
+       (remove #(nil? (second %)))
+       (map #(hash-map (first % ) (second %)))
+       (apply merge)))
+
+
+
+(defn- strict-type-check [trueth-col predictions-col]
+  (errors/when-not-errorf (=
+                           (-> trueth-col meta :datatype)
+                           (-> predictions-col meta :datatype))
+                          "trueth-col and prediction-col do not have same datatype. trueth-col: %s prediction-col: %s"
+                          trueth-col predictions-col))
+
+
+(defn- check-categorical-maps [trueth-ds prediction-ds target-column-name]
+  (let [predict-cat-map (-> prediction-ds (get  target-column-name) meta :categorical-map)
+        trueth-cat-map (-> trueth-ds (get  target-column-name) meta :categorical-map)]
+    (errors/when-not-errorf (= trueth-cat-map predict-cat-map)
+                            "trueth-ds and prediction-ds do not have same categorical-map for target-column '%s'. trueth-ds-cat-map: %s prediction-ds-cat-map: %s"
+                            target-column-name (into {} trueth-cat-map) (into {} predict-cat-map))))
+
+
+
+
 (defn- supervised-eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
 
   (let [
@@ -32,6 +59,8 @@
         predictions-ds (cf/prediction (:metamorph/data predicted-ctx))
 
         _ (errors/when-not-error predictions-ds "No column in prediction result was marked as 'prediction' ")
+        _ (errors/when-not-error (:model predicted-ctx) "Pipelines need to have the 'model' op with id :model")
+
         trueth-ds (get-in predicted-ctx [:model ::target-ds])
         _ (errors/when-not-error trueth-ds (str  "Pipeline context need to have the true prediction target as a dataset at key path: "
                                                  :model ::target-ds " Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
@@ -40,12 +69,17 @@
         _ (errors/when-not-error (= 1 (count target-column-names)) "Only 1 target column is supported")
 
 
+        target-column-name (first target-column-names)
+
+        _ (errors/when-not-error (get predictions-ds target-column-name) (format "Prediction dataset need to have column name: %s " target-column-name))
+        _ (check-categorical-maps trueth-ds predictions-ds target-column-name)
         predictions-col (get (ds-cat/reverse-map-categorical-xforms predictions-ds)
-                             (first target-column-names))
+                             target-column-name)
         trueth-col      (get (ds-cat/reverse-map-categorical-xforms trueth-ds)
-                             (first target-column-names))
+                             target-column-name)
 
 
+        _ (strict-type-check trueth-col predictions-col)
         metric (metric-fn trueth-col predictions-col)
 
         other-metrices-result
@@ -540,7 +574,9 @@
 
                      
         model-data (train-fn feature-ds target-ds options)
+        ;; _ (errors/when-not-error (:model-as-bytes model-data)  "train-fn need to return a map with key :model-as-bytes")
         cat-maps (ds-mod/dataset->categorical-xforms target-ds)]
+
     (merge
      {:model-data model-data
       :options options
@@ -623,10 +659,14 @@
         thawed-model (thaw-model model model-def)
         pred-ds (predict-fn feature-ds
                             thawed-model
-                            model)]
+                            model)
+        target-cat-maps-from-train (-> model :target-categorical-maps)
+        target-cat-maps-from-predict (-> pred-ds get-categorical-maps)]
+
+    (errors/when-not-errorf  (= target-cat-maps-from-predict target-cat-maps-from-train)
+                             "target categorical maps do not match between train an predict. \n train: %s \n predict: %s "
+                             target-cat-maps-from-train target-cat-maps-from-predict)
     pred-ds))
-
-
 
 
 (defn explain
@@ -637,8 +677,8 @@
   [model & [options]]
   (let [{:keys [explain-fn] :as model-def}
         (options->model-def (:options model))]
-     (when explain-fn
-       (explain-fn (thaw-model model model-def) model options))))
+    (when explain-fn
+      (explain-fn (thaw-model model model-def) model options))))
 
 
 

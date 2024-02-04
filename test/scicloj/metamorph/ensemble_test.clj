@@ -21,9 +21,20 @@
                                        top-k
                                        options]}]
 
-      (ds/new-dataset [(ds/new-column :species
-                                      (repeat (tc/row-count feature-ds) 1)
-                                      {:column-type :prediction})]))
+     (let [
+                 predic-col (ds/new-column :species (repeat (tc/row-count feature-ds) 1)
+                                           {:categorical-map (get  target-categorical-maps (first target-columns))
+                                            :column-type :prediction})
+                 predict-ds (ds/new-dataset [predic-col])]
+
+             ;; (def predict-ds predict-ds)
+
+          predict-ds))
+
+     ;; (ds/new-dataset [(ds/new-column :species
+     ;;                                 (repeat (tc/row-count feature-ds) 1)
+     ;;                                 {:column-type :prediction})])
+
     {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
                    {:coefficients {:petal_width [0]}})}))
 
@@ -39,9 +50,16 @@
                                        top-k
                                        options]}]
 
-      (ds/new-dataset [(ds/new-column :species
-                                      (repeat (tc/row-count feature-ds) 0)
-                                      {:column-type :prediction})]))
+     (let [
+                 predic-col (ds/new-column :species (repeat (tc/row-count feature-ds) 0)
+                                           {:categorical-map (get  target-categorical-maps (first target-columns))
+                                            :column-type :prediction})
+                 predict-ds (ds/new-dataset [predic-col])]
+
+             ;; (def predict-ds predict-ds)
+
+          predict-ds))
+     
     {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
                    {:coefficients {:petal_width [0]}})}))
 

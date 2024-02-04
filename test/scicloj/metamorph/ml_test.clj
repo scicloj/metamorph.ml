@@ -9,11 +9,13 @@
     :as eval
     :refer [qualify-pipelines]]
    [scicloj.metamorph.ml.loss :as loss]
+   [scicloj.metamorph.ml.toydata :as toydata]
    [scicloj.metamorph.ml.metrics]
    [tablecloth.api :as tc]
    [taoensso.nippy :as nippy]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.column-filters :as cf]
+   [tech.v3.dataset.categorical :as ds-cat]
    [tech.v3.dataset.metamorph :as ds-mm]
    [tech.v3.dataset.modelling :as ds-mod])
   (:import
@@ -21,7 +23,7 @@
    (java.util UUID)))
 
 (def iris (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
-
+(def iris-target-values (-> iris :species distinct sort))
 
 (defn keys-in
   "Returns a sequence of all key paths in a given map using DFS walk."
@@ -35,6 +37,7 @@
     (->> (keys m)
          (map vector)
          (mapcat #(tree-seq branch? children %)))))
+
 (defn do-define-model []
   (ml/define-model! :test-model
     (fn train
@@ -47,9 +50,14 @@
                                        top-k
                                        options]}]
 
-      (ds/new-dataset [(ds/new-column :species
-                                      (repeat (tc/row-count feature-ds) "setosa")
-                                      {:column-type :prediction})]))
+      (let [
+            predic-col (ds/new-column :species (repeat (tc/row-count feature-ds) 1)
+                                      {:categorical-map (get  target-categorical-maps (first target-columns))
+                                       :column-type :prediction})
+            predict-ds (ds/new-dataset [predic-col])]
+
+        predict-ds))
+
     {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
                    {:coefficients {:petal_width [0]}})}))
 
@@ -63,7 +71,7 @@
         pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
-         (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/target ds))) {} :int)
+         (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/target ds))) iris-target-values :int)
          (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/feature ds))) {} :float)
 
          {:metamorph/id :model}
@@ -93,9 +101,8 @@
     ;; (ds-mod/column-values->categorical :species)
 
 
-
-    (is (= ["setosa" "setosa" "setosa" "setosa" "setosa" "setosa" "setosa" "setosa" "setosa" "setosa"]
-           (:species predictions)))
+    (is (= (repeat 10 "versicolor")
+           (-> predictions ds-cat/reverse-map-categorical-xforms :species seq)))
     (is (=  1 (count evaluations)))
     (is (=  1 (count (first evaluations))))
 
@@ -118,7 +125,7 @@
         pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
-         (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/target ds))) {} :int)
+         (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/target ds))) iris-target-values :int)
          (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/feature ds))) {} :float)
 
          {:metamorph/id :model}
@@ -146,7 +153,7 @@
         pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
-         (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/target ds))) {} :int)
+         (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/target ds))) iris-target-values :int)
          (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/feature ds))) {} :float)
 
          {:metamorph/id :model}
@@ -178,7 +185,7 @@
         pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
-         (ds-mm/categorical->number cf/categorical)
+         (ds-mm/categorical->number cf/categorical iris-target-values)
 
          {:metamorph/id :model}(ml/model {:model-type :test-model}))
 
@@ -281,7 +288,7 @@
                base-pipe-declr
 
                [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
-                [:tech.v3.dataset.metamorph/categorical->number [:species]]
+                [:tech.v3.dataset.metamorph/categorical->number [:species] iris-target-values]
                 [:tech.v3.dataset.metamorph/update-column :species :clojure.core/identity]
                 {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :test-model}]]
                files (atom [])
@@ -306,7 +313,7 @@
   (let [
         base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
-         [:tech.v3.dataset.metamorph/categorical->number [:species]]
+         [:tech.v3.dataset.metamorph/categorical->number [:species] iris-target-values]
          {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :test-model}]]
 
         evaluation-result
@@ -329,14 +336,14 @@
           [:test-transform :min]
           [:test-transform :max]
           [:test-transform :mean]
-          [:split-uid]
-          ]
+          [:split-uid]]
+          
          (->>
             (flatten evaluation-result)
             (apply merge)
             keys-in
-            vec)
-           ))
+            vec)))
+           
     (is (pos? (-> evaluation-result first first :train-transform :metric)))))
 
 
@@ -345,7 +352,7 @@
   (let [
         base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
-         [:tech.v3.dataset.metamorph/categorical->number [:species]]
+         [:tech.v3.dataset.metamorph/categorical->number [:species] iris-target-values]
          {:metamorph/id :model} [:scicloj.metamorph.ml/model {:model-type :test-model}]]
 
         evaluation-result
@@ -368,7 +375,7 @@
   (do-define-model)
   (let [base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
-         [:tech.v3.dataset.metamorph/categorical->number [:species]]
+         [:tech.v3.dataset.metamorph/categorical->number [:species] iris-target-values]
          {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :test-model}]]
 
         evaluation-result
@@ -394,7 +401,7 @@
        create-base-pipe-decl
        (fn  [node-size]
          [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
-          [:tech.v3.dataset.metamorph/categorical->number [:species]]
+          [:tech.v3.dataset.metamorph/categorical->number [:species] iris-target-values]
           {:metamorph/id :model}[:scicloj.metamorph.ml/model {:model-type :test-model
                                                               :node-size node-size}]])
 
@@ -487,3 +494,29 @@
 
 
 
+(defn- define-bad-model []
+  (ml/define-model! :bad-model
+      (fn train
+        [feature-ds label-ds options])
+
+      (fn predict
+        [feature-ds thawed-model {:keys [target-columns
+                                         target-categorical-maps
+                                         top-k
+                                         options]}]
+
+        (->
+         (ds/new-dataset [
+                          (ds/new-column :species
+                                         (repeat (tc/row-count feature-ds) "setosa")
+                                         {:column-type :prediction})])
+         (ds/categorical->number [:species])))
+
+      {}))
+
+(deftest test-bad-model-fails []
+  (define-bad-model)
+
+  (let [model (ml/train  (toydata/iris-ds) {:model-type :bad-model})]
+    (is (thrown-with-msg? Exception #"target categorical maps do not match.*"
+                          (ml/predict (toydata/iris-ds) model)))))

@@ -2,6 +2,7 @@
   (:require  [clojure.test :refer [deftest is are]]
              [scicloj.metamorph.ml.categorical :as cat]
              [scicloj.metamorph.core :as mm]
+             [scicloj.metamorph.ml :as ml]
              [tablecloth.api :as tc]))
 
 

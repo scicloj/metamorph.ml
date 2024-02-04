@@ -1,6 +1,7 @@
 (ns scicloj.metamorph.ml.classification
   (:require [tech.v3.dataset :as ds]
             [tech.v3.dataset.modelling :as ds-mod]
+            [tech.v3.dataset.modelling :as ds-cat]
             [tech.v3.datatype.pprint :as dtype-pp]
             [scicloj.metamorph.ml :as ml]))
             
@@ -98,13 +99,17 @@
       {:majority-class (get-majority-class target-ds)
        :distinct-labels (-> target-ds (get target-column-name) distinct)}))
 
-  (fn [feature-ds thawed-model {:keys [options model-data] :as model}]
-    (let [ target-column-name (-> model :target-columns first)
-          dummy-labels (case (:dummy-strategy options)
-                         :majority-class (repeat (:majority-class model-data))
-                         :fixed-class (repeat (:fixed-class options))
-                         :random-class (repeatedly (fn [] (rand-nth (:distinct-labels model-data)))))]
+  (fn [feature-ds thawed-model {:keys [options model-data target-categorical-maps] :as model}]
+    (let  [ target-column-name (-> model :target-columns first)
+           dummy-labels
+           (take (ds/row-count feature-ds)
+                 (case (:dummy-strategy options)
+                   :majority-class (repeat (:majority-class model-data))
+                   :fixed-class (repeat (:fixed-class options))
+                   :random-class (repeatedly
+                                  (fn [] (rand-nth (:distinct-labels model-data))))))]
 
-
-      (ds/add-or-update-column feature-ds target-column-name dummy-labels)))
+      (ds/new-dataset [(ds/new-column target-column-name dummy-labels {:column-type :prediction
+                                                                       :categorical-map (get target-categorical-maps target-column-name)})])))
+     
   {})
