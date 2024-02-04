@@ -2,7 +2,11 @@
   (:require [scicloj.metamorph.ml.classification :refer [confusion-map]]
             [clojure.test :refer :all]
             [scicloj.metamorph.ml :as ml]
+            [scicloj.metamorph.ml.loss :as loss]
+            [scicloj.metamorph.core :as mm]
             [tech.v3.dataset :as ds]
+            [tech.v3.dataset.modelling :as ds-mod]
+            [tech.v3.dataset.categorical :as ds-cat]
             [scicloj.metamorph.ml.toydata :as toydata]))
 
 
@@ -49,3 +53,50 @@
 
         prediction (ml/predict ds model)]
    (is (= [0 1] (-> prediction :class distinct sort)))))
+
+(deftest categorical-not-needed-for-ml
+
+  (let [ds (->
+            {:x [0] :y [:a]}
+            (ds/->dataset)
+            (ds-mod/set-inference-target :y))
+
+        model (ml/train ds {:model-type :metamorph.ml/dummy-classifier
+                            :dummy-strategy :random-class})]
+
+    (is (= [:a ] (-> (ds/->dataset {:x [0]}) (ml/predict model) :y)))))
+
+
+(deftest dummy-categorical
+
+  (let [ds (->
+            {:x [0] :y [:a]}
+            (ds/->dataset)
+            (ds/categorical->number [:y])
+            (ds-mod/set-inference-target :y))
+
+        model (ml/train ds {:model-type :metamorph.ml/dummy-classifier
+                            :dummy-strategy :random-class})]
+
+
+    (is (= [:a ] (-> (ds/->dataset {:x [0]}) (ml/predict model) (ds-cat/reverse-map-categorical-xforms) :y)))))
+
+(deftest dummy-pipeline-eval
+  (let [pipe-fn (mm/pipeline
+                 {:metamorph/id :model} (ml/model {:model-type :metamorph.ml/dummy-classifier :dummy-strategy :majority-class}))
+        data-split (update-keys
+                    (ds-mod/train-test-split (toydata/breast-cancer-ds) {:seed 123})
+                    {:train-ds :train
+                     :test-ds :test})
+        eval-results (ml/evaluate-pipelines
+                      [pipe-fn]
+                      [data-split]
+                      loss/classification-accuracy
+                      :accuracy)]
+    (is (= 0.391812865497076
+           (->
+            eval-results
+            flatten
+            first
+            :test-transform
+            :metric)))))
