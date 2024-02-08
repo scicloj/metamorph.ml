@@ -7,6 +7,8 @@
             [tech.v3.dataset :as ds]
             [tech.v3.dataset.modelling :as ds-mod]
             [tech.v3.dataset.categorical :as ds-cat]
+            [tablecloth.api :as tc]
+            [scicloj.ml.smile.classification]
             [scicloj.metamorph.ml.toydata :as toydata]))
 
 
@@ -100,3 +102,4 @@
             first
             :test-transform
             :metric)))))
+

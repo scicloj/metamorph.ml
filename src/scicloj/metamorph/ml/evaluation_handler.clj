@@ -1,7 +1,6 @@
 (ns scicloj.metamorph.ml.evaluation-handler
   (:require
    [scicloj.metamorph.ml.tools :refer [dissoc-in pp-str multi-dissoc-in]]
-   [clojure.test :as t]
    [clojure.tools.reader :as tr]
    [clojure.tools.reader.reader-types :as rts]
    [clojure.java.classpath]

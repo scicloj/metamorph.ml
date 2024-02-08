@@ -46,9 +46,8 @@
                     :smile-df-used [:blub]}})
     (fn predict
       [feature-ds thawed-model {:keys [target-columns
-                                       target-categorical-maps
-                                       top-k
-                                       options]}]
+                                       target-categorical-maps]}]
+
 
       (let [
             predic-col (ds/new-column :species (repeat (tc/row-count feature-ds) 1)
@@ -494,29 +493,3 @@
 
 
 
-(defn- define-bad-model []
-  (ml/define-model! :bad-model
-      (fn train
-        [feature-ds label-ds options])
-
-      (fn predict
-        [feature-ds thawed-model {:keys [target-columns
-                                         target-categorical-maps
-                                         top-k
-                                         options]}]
-
-        (->
-         (ds/new-dataset [
-                          (ds/new-column :species
-                                         (repeat (tc/row-count feature-ds) "setosa")
-                                         {:column-type :prediction})])
-         (ds/categorical->number [:species])))
-
-      {}))
-
-(deftest test-bad-model-fails []
-  (define-bad-model)
-
-  (let [model (ml/train  (toydata/iris-ds) {:model-type :bad-model})]
-    (is (thrown-with-msg? Exception #"target categorical maps do not match.*"
-                          (ml/predict (toydata/iris-ds) model)))))

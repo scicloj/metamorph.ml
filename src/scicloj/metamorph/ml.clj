@@ -15,7 +15,10 @@
    [tech.v3.dataset.modelling :as ds-mod]
    [tech.v3.datatype.errors :as errors]
    [tech.v3.datatype.export-symbols :as exporter]
-   [tech.v3.datatype.functional :as dfn])
+   [tech.v3.datatype.functional :as dfn]
+   [clojure.set :as set])
+    ;;
+
   (:import
    java.util.UUID))
 
@@ -32,19 +35,21 @@
 
 
 (defn- strict-type-check [trueth-col predictions-col]
-  (errors/when-not-errorf (=
-                           (-> trueth-col meta :datatype)
-                           (-> predictions-col meta :datatype))
-                          "trueth-col and prediction-col do not have same datatype. trueth-col: %s prediction-col: %s"
-                          trueth-col predictions-col))
+  (when (=
+         (-> trueth-col meta :datatype)
+         (-> predictions-col meta :datatype))
+    (println (format
+              "trueth-col and prediction-col do not have same datatype. trueth-col: %s prediction-col: %s"
+              trueth-col predictions-col))))
 
 
 (defn- check-categorical-maps [trueth-ds prediction-ds target-column-name]
   (let [predict-cat-map (-> prediction-ds (get  target-column-name) meta :categorical-map)
         trueth-cat-map (-> trueth-ds (get  target-column-name) meta :categorical-map)]
-    (errors/when-not-errorf (= trueth-cat-map predict-cat-map)
-                            "trueth-ds and prediction-ds do not have same categorical-map for target-column '%s'. trueth-ds-cat-map: %s prediction-ds-cat-map: %s"
-                            target-column-name (into {} trueth-cat-map) (into {} predict-cat-map))))
+    (when (= trueth-cat-map predict-cat-map)
+      (println
+       "trueth-ds and prediction-ds do not have same categorical-map for target-column '%s'. trueth-ds-cat-map: %s prediction-ds-cat-map: %s"
+       target-column-name (into {} trueth-cat-map) (into {} predict-cat-map)))))
 
 
 
@@ -621,33 +626,26 @@
      (thaw-fn (:model-data model)))))
 
 
-;; model
-;; => {:feature-columns [:abstract],
-;;     :id #uuid "39cb58e1-a292-4b07-bede-3a0d534f0a79",
-;;     :model-data {:classes ["yes" "no"]},
-;;     :thawed-model
-;;     #object[ai.djl.fasttext.FtModel 0x72e18cd7 "Model (\n\tName: is-primary-fasttext-model\n\tmodel-type: sup\n)"],
-;;     :options {:model-type :clj-djl/fasttext},
-;;     :target-columns [:is.primary]}
+(defn- warn-inconsitent-maps [model pred-ds]
 
-(defn- lookup-tables-consistent? [train-lookup-table prediction-lookup-table]
-  ;; simplification
-  ;; TODO find better way
-  (= train-lookup-table prediction-lookup-table))
-
-(defn- validate-lookup-tables [model predict-ds-classification target-col]
-  (let [
-        train-lookup-table (-> model :target-categorical-maps (get target-col) :lookup-table)
-
-        prediction-lookup-table (-> predict-ds-classification (get target-col) meta :categorical-map :lookup-table)]
-    ;;  check consistency of the lookup tables
-    ;;  having this violated, likley mean that the model implementation did something wrong
-
-    (errors/when-not-error (lookup-tables-consistent? train-lookup-table prediction-lookup-table)
-
-                           (str  "The lookup tables of the train-target column and prediction lable column are not consistent: "
-                                 train-lookup-table " vs. " prediction-lookup-table))))
-
+  (let [target-cat-maps-from-train (-> model :target-categorical-maps)
+        target-cat-maps-from-predict (-> pred-ds get-categorical-maps)
+        simple-predicted-values (-> pred-ds cf/prediction (get (first (keys target-cat-maps-from-predict))) seq)
+        inverse-map (-> target-cat-maps-from-predict vals first :lookup-table set/map-invert)]
+    (when  (= target-cat-maps-from-predict target-cat-maps-from-train)
+     (println
+      "target categorical maps do not match between train an predict. \n train: %s \n predict: %s "
+      target-cat-maps-from-train target-cat-maps-from-predict))
+    (when (not (every? some?
+                       (map inverse-map
+                            (distinct simple-predicted-values))))
+      (println
+       (format
+        "Some predicted values are not in catetegorical map. -> Invalid predict fn.
+                            values: %s
+                            categorical map: %s "
+        (vec (distinct simple-predicted-values))
+        (-> target-cat-maps-from-predict vals first :lookup-table))))))
 
 (defn predict
   "Predict returns a dataset with only the predictions in it.
@@ -669,13 +667,9 @@
         thawed-model (thaw-model model model-def)
         pred-ds (predict-fn feature-ds
                             thawed-model
-                            model)
-        target-cat-maps-from-train (-> model :target-categorical-maps)
-        target-cat-maps-from-predict (-> pred-ds get-categorical-maps)]
+                            model)]
 
-    (errors/when-not-errorf  (= target-cat-maps-from-predict target-cat-maps-from-train)
-                             "target categorical maps do not match between train an predict. \n train: %s \n predict: %s "
-                             target-cat-maps-from-train target-cat-maps-from-predict)
+    (warn-inconsitent-maps model pred-ds)
     pred-ds))
 
 
