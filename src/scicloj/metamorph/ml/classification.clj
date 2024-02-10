@@ -103,7 +103,7 @@
     (let  [ target-column-name (-> model :target-columns first)
            dummy-labels
            (take (ds/row-count feature-ds)
-                 (case (:dummy-strategy options)
+                 (case (get options :dummy-strategy :majority-class)
                    :majority-class (repeat (:majority-class model-data))
                    :fixed-class (repeat (:fixed-class options))
                    :random-class (repeatedly
