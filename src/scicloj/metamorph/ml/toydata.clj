@@ -95,3 +95,10 @@
                         
            (ds/categorical->number [:class] {} :int16)
            (ds-mod/set-inference-target :class))))
+
+
+(defn titanic-ds []
+  (->
+     (io/resource "data/titanic.nippy")
+     (io/input-stream)
+     (ds/->dataset {:file-type :nippy})))
