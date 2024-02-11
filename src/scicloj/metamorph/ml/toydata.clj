@@ -97,7 +97,7 @@
            (ds-mod/set-inference-target :class))))
 
 
-(defn titanic-ds []
+(defn titanic-ds-split []
   {:train
    (->
     (io/resource "data/titanic-train.nippy")
