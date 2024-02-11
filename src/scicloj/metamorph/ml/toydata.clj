@@ -98,7 +98,13 @@
 
 
 (defn titanic-ds []
-  (->
-     (io/resource "data/titanic.nippy")
-     (io/input-stream)
-     (ds/->dataset {:file-type :nippy})))
+  {:train
+   (->
+    (io/resource "data/titanic-train.nippy")
+    (io/input-stream)
+    (ds/->dataset {:file-type :nippy}))
+   :test
+   (->
+    (io/resource "data/titanic-test.nippy")
+    (io/input-stream)
+    (ds/->dataset {:file-type :nippy}))})
