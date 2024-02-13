@@ -852,21 +852,25 @@
 
   (malli/instrument-mm
    (fn [{:metamorph/keys [id data mode] :as ctx}]
-     (case mode
-       :fit (assoc ctx
-                   id (assoc (train data options)
-                             ::unsupervised? (get (options->model-def options) :unsupervised? false)))
+     (let [train-fn (get options :caching-train-fn train)
+           predict-fn (get options :caching-predict-fn predict)
+           cleaned-options (dissoc options :caching-train-fn :caching-predict-fn)]
+       (case mode
+         :fit
+         (assoc ctx
+              id (assoc (train-fn data cleaned-options)
+                     ::unsupervised? (get (options->model-def cleaned-options) :unsupervised? false)))
 
-       :transform  (if (get-in ctx [id ::unsupervised?])
+         :transform  (if (get-in ctx [id ::unsupervised?])
                        ctx
                        (-> ctx
                            (update
-                                   id
-                                   assoc
-                                   ::feature-ds (cf/feature data)
-                                   ::target-ds (cf/target data))
+                            id
+                            assoc
+                            ::feature-ds (cf/feature data)
+                            ::target-ds (cf/target data))
                            (assoc
-                            :metamorph/data (predict data (get ctx id)))))))))
+                            :metamorph/data (predict-fn data (get ctx id))))))))))
                      
 
 (malli/instrument-ns 'scicloj.metamorph.ml)
