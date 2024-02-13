@@ -88,4 +88,4 @@
 
 (println
  (-> evaluation-result flatten first :train-transform :mean)
- (-> evaluation-result flatten first :fit-ctx :model :train-result-wrapper :options))
+ (-> evaluation-result flatten first :fit-ctx :model :model-wrapper :options))
