@@ -10,15 +10,26 @@
         
  :aliases
  {:build {:deps {io.github.seancorfield/build-clj
-                          {:git/tag "v0.4.0" :git/sha "54e39ae"}}
-                :ns-default build}
+                 {:git/tag "v0.4.0" :git/sha "54e39ae"}}
+          :ns-default build}
 
+
+  :exp {:extra-deps
+        {
+         io.replikativ/konserve
+         ;; {:mvn/version "0.7.315"}
+         {:local/root "../konserve"}
+         scicloj/scicloj.ml.smile {:mvn/version "7.1.656"}
+         datacraft-sciences/confuse {:mvn/version "0.1.1"}
+         ch.qos.logback/logback-classic {:mvn/version "1.4.5"}
+         com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.1.3"}}}
 
   :test
-
   {:jvm-opts ["-Djdk.attach.allowAttachSelf"]
    :extra-paths ["test"]
-   :extra-deps {io.github.nextjournal/clerk {:mvn/version "0.12.707"}
+   :extra-deps {
+                ;; io.replikativ/konserve {:mvn/version "0.7.315"}
+                io.github.nextjournal/clerk {:mvn/version "0.12.707"}
                 lambdaisland/kaocha {:mvn/version "1.0.902"}
                 scicloj/scicloj.ml.smile {:mvn/version "7.1.656"}
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
@@ -33,4 +44,17 @@
           :exec-args {:language :clojure
                       :metadata {:doc/format :markdown}
                       :themes [:rdash]
-                      :output-path "docs"}}}}
+                      :output-path "docs"}}
+
+  :nrepl
+  {:extra-deps {nrepl/nrepl                   {:mvn/version "1.0.0"}
+                cider/cider-nrepl             {:mvn/version "0.43.0"}
+                refactor-nrepl/refactor-nrepl {:mvn/version "3.6.0"}}
+   :main-opts  ["-m" "nrepl.cmdline"
+                "-p" "12345"
+                "-b" "0.0.0.0"
+                "--middleware" "[refactor-nrepl.middleware/wrap-refactor,cider.nrepl/cider-middleware]"
+                "--interactive"]}}}
+
+
+  
