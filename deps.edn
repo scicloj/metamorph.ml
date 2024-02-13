@@ -20,7 +20,8 @@
                    :ns-default build}
 
            :exp
-           {:extra-deps {io.replikativ/konserve {:mvn/version "0.7.315"}
+           {:extra-deps {
+                         io.replikativ/konserve {:mvn/version "0.7.315"}
                          scicloj/scicloj.ml.smile {:mvn/version "7.1.656"}
                          ch.qos.logback/logback-classic {:mvn/version "1.4.5"}}}
 
