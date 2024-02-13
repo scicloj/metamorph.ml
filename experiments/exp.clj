@@ -94,4 +94,5 @@
 
 (println
  (-> evaluation-result flatten first :test-transform :mean)
+ (-> evaluation-result flatten first :train-transform :mean)
  (-> evaluation-result flatten first :fit-ctx :model :model-wrapper :options))
