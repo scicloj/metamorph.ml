@@ -47,8 +47,7 @@
 
 (defn caching-predict [store dataset wrapped-model]
   (let [k {:op :predict
-           :hash-train-input (:hash-train-inputs wrapped-model)
-
+           :hash-train-inputs (:hash-train-inputs wrapped-model)
            :hash-ds (str (hash dataset))}
         model (:train-result-wrapper wrapped-model)]
     (if (k/exists? store k {:sync? true})
