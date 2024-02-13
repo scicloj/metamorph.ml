@@ -61,8 +61,6 @@
                    {:metamorph/id :model} (ml/model {:model-type :smile.classification/ada-boost
                                                      :wcache wcache})))
 
-                                                     
-
 (def  pipe-fn-lg (morph/pipeline
 
                   {:metamorph/id :model} (ml/model {:model-type :smile.classification/logistic-regression
@@ -86,13 +84,11 @@
 (def  evaluation-result
   (ml/evaluate-pipelines
    (concat
-
     (map pipe-fn-rf
          [10 50 100 150 200 500 750 1000])
     [pipe-fn-slow pipe-fn-lg pipe-fn-ada])
    splits
    loss/classification-accuracy
-
    :accuracy
    {}))
 
