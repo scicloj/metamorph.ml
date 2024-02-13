@@ -37,9 +37,17 @@
 (def splits (tc/split->seq
              (-> iris
                  (ds/categorical->number [:species]))
-             :kfold {:k 10
-                     :seed 123456}))
+             :kfold {:k 11
+                     :seed 4753}))
 (def  store (connect-fs-store "/tmp/store" :opts {:sync? true}))
+
+(def  pipe-fn-ada (morph/pipeline
+                   (morph/lift ds-mod/set-inference-target :species)
+                   {:metamorph/id :model} (ml/model {:model-type :smile.classification/ada-boost
+                                                     :caching-predict-fn (fn [dataset model]
+                                                                           (cache/caching-predict store dataset model))
+                                                     :caching-train-fn (fn [dataset options]
+                                                                         (cache/caching-train store dataset options))})))
 
 (def  pipe-fn-lg (morph/pipeline
                   (morph/lift ds-mod/set-inference-target :species)
@@ -71,7 +79,7 @@
 
    (map pipe-fn-rf
         [10 50 100 150 200 500 750 1000])
-   [pipe-fn-slow pipe-fn-lg])
+   [pipe-fn-slow pipe-fn-lg pipe-fn-ada])
   splits
   loss/classification-accuracy
 
