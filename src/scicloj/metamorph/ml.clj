@@ -35,21 +35,23 @@
 
 
 (defn- strict-type-check [trueth-col predictions-col]
-  (when (=
-         (-> trueth-col meta :datatype)
-         (-> predictions-col meta :datatype))
-    (println (format
-              "trueth-col and prediction-col do not have same datatype. trueth-col: %s prediction-col: %s"
-              trueth-col predictions-col))))
+  (when (not (=
+              (-> trueth-col meta :datatype)
+              (-> predictions-col meta :datatype)))))
+    ;; (println (format
+    ;;           "trueth-col and prediction-col do not have same datatype. trueth-col: %s prediction-col: %s"
+    ;;           trueth-col predictions-col))
+
 
 
 (defn- check-categorical-maps [trueth-ds prediction-ds target-column-name]
   (let [predict-cat-map (-> prediction-ds (get  target-column-name) meta :categorical-map)
         trueth-cat-map (-> trueth-ds (get  target-column-name) meta :categorical-map)]
-    (when (= trueth-cat-map predict-cat-map)
-      (println
-       "trueth-ds and prediction-ds do not have same categorical-map for target-column '%s'. trueth-ds-cat-map: %s prediction-ds-cat-map: %s"
-       target-column-name (into {} trueth-cat-map) (into {} predict-cat-map)))))
+    (when (not (= trueth-cat-map predict-cat-map)))))
+      ;; (println
+      ;;  "trueth-ds and prediction-ds do not have same categorical-map for target-column '%s'. trueth-ds-cat-map: %s prediction-ds-cat-map: %s"
+      ;;  target-column-name (into {} trueth-cat-map) (into {} predict-cat-map))
+
 
 
 
@@ -632,20 +634,23 @@
         target-cat-maps-from-predict (-> pred-ds get-categorical-maps)
         simple-predicted-values (-> pred-ds cf/prediction (get (first (keys target-cat-maps-from-predict))) seq)
         inverse-map (-> target-cat-maps-from-predict vals first :lookup-table set/map-invert)]
-    (when  (= target-cat-maps-from-predict target-cat-maps-from-train)
-     (println
-      "target categorical maps do not match between train an predict. \n train: %s \n predict: %s "
-      target-cat-maps-from-train target-cat-maps-from-predict))
+    (when  (not (= target-cat-maps-from-predict target-cat-maps-from-train)))
+     ;; (println
+     ;;  (format
+     ;;   "target categorical maps do not match between train an predict. \n train: %s \n predict: %s "
+     ;;   target-cat-maps-from-train target-cat-maps-from-predict))
+
     (when (not (every? some?
                        (map inverse-map
-                            (distinct simple-predicted-values))))
-      (println
-       (format
-        "Some predicted values are not in catetegorical map. -> Invalid predict fn.
-                            values: %s
-                            categorical map: %s "
-        (vec (distinct simple-predicted-values))
-        (-> target-cat-maps-from-predict vals first :lookup-table))))))
+                            (distinct simple-predicted-values)))))))
+      ;; (println
+      ;;  (format
+      ;;   "Some predicted values are not in catetegorical map. -> Invalid predict fn.
+      ;;                       values: %s
+      ;;                       categorical map: %s "
+      ;;   (vec (distinct simple-predicted-values))
+      ;;   (-> target-cat-maps-from-predict vals first :lookup-table)))
+
 
 (defn predict
   "Predict returns a dataset with only the predictions in it.
