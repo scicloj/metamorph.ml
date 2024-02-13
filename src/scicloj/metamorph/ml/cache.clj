@@ -121,25 +121,18 @@
     (if (k/exists? store k {:sync? true})
       (get-binary store k)
       (let [train-result (ml/train dataset options)
-            wrapped {:train-result-wrapper train-result
+            wrapped {:model-wrapper train-result
                      :hash-train-inputs (str (hash k))}]
         (k/bassoc store k (nippy/freeze wrapped)
                   {:sync? true})
         wrapped))))
         
         
-(defn- dissoc-in
-  [m [k & ks]]
-  (if-not ks
-    (dissoc m k)
-    (assoc m k (dissoc-in (m k) ks))))
-
-
 (defn caching-predict [store dataset wrapped-model]
   (let [k {:op :predict
            :hash-train-inputs (:hash-train-inputs wrapped-model)
            :hash-ds (str (hash dataset))}
-        model (:train-result-wrapper wrapped-model)]
+        model (:model-wrapper wrapped-model)]
     (if (k/exists? store k {:sync? true})
       (get-binary store k)
       (let [predict-result (ml/predict dataset model)]
