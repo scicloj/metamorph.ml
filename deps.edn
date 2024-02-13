@@ -16,9 +16,7 @@
 
   :exp {:extra-deps
         {
-         io.replikativ/konserve
-         ;; {:mvn/version "0.7.315"}
-         {:local/root "../konserve"}
+         io.replikativ/konserve {:mvn/version "0.7.315"}
          scicloj/scicloj.ml.smile {:mvn/version "7.1.656"}
          datacraft-sciences/confuse {:mvn/version "0.1.1"}
          ch.qos.logback/logback-classic {:mvn/version "1.4.5"}
