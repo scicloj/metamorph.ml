@@ -3,7 +3,8 @@
         pppmap/pppmap               {:mvn/version "0.2.2"}
         scicloj/tablecloth         {:mvn/version "7.007"}
         metosin/malli               {:mvn/version "0.8.4"}
-        aerial.hanami/aerial.hanami {:mvn/version "0.17.0"}}
+        aerial.hanami/aerial.hanami {:mvn/version "0.17.0"}
+        buddy/buddy-hashers          {:mvn/version "2.0.167"}}
 
  :paths ["src" "resources"]
 
@@ -18,9 +19,8 @@
         {
          io.replikativ/konserve {:mvn/version "0.7.315"}
          scicloj/scicloj.ml.smile {:mvn/version "7.1.656"}
-         datacraft-sciences/confuse {:mvn/version "0.1.1"}
-         ch.qos.logback/logback-classic {:mvn/version "1.4.5"}
-         com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.1.3"}}}
+         ch.qos.logback/logback-classic {:mvn/version "1.4.5"}}}
+         
 
   :test
   {:jvm-opts ["-Djdk.attach.allowAttachSelf"]
