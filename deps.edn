@@ -5,7 +5,8 @@
         metosin/malli               {:mvn/version "0.16.0"}
         generateme/fastmath         {:mvn/version "3.0.0-alpha2"}
         aerial.hanami/aerial.hanami {:mvn/version "0.20.0"}
-        buddy/buddy-hashers          {:mvn/version "2.0.167"}}
+        org.clojure/core.cache       {:mvn/version "1.0.225"}
+                buddy/buddy-hashers          {:mvn/version "2.0.167"}}
 
  :paths ["src" "resources"]
 
