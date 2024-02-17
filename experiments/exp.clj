@@ -77,40 +77,50 @@
                                                                            (cache/caching-predict-nippy store dataset model))
                                                       :caching-train-fn (fn [dataset options]
                                                                           (cache/caching-train-nippy store dataset options))})))
-(def  evaluation-result
- (ml/evaluate-pipelines
-  (concat
 
-   (map pipe-fn-rf
-        [10 50 100 150 200 500 750 1000])
-   [pipe-fn-slow pipe-fn-lg pipe-fn-ada])
-  splits
-  loss/classification-accuracy
+(comment
+  (def  evaluation-result
+    (ml/evaluate-pipelines
+     (concat
 
-  :accuracy
-  {}))
+      (map pipe-fn-rf
+           [10 50 100 150 200 500 750 1000])
+      [pipe-fn-slow pipe-fn-lg pipe-fn-ada])
+     splits
+     loss/classification-accuracy
 
-(println
- (-> evaluation-result flatten first :test-transform :mean)
- (-> evaluation-result flatten first :fit-ctx :model :model-wrapper :options))
+     :accuracy
+     {}))
+
+  (println
+   (-> evaluation-result flatten first :test-transform :mean)
+   (-> evaluation-result flatten first :fit-ctx :model :model-wrapper :options)))
 
 
+
+;; (def cache (clojure.core.cache/ttl-cache-factory bytes-cache))
+
+(def cache  (cache/bytes-storage-cache-factory "/tmp/store2/"))
 
 (def  cached-pipe-fn-ada (morph/pipeline
 
                           {:metamorph/id :model} (ml/model {:model-type :smile.classification/ada-boost
-                                                            :caching-predict-fn cache/caching-predict-ccc
+                                                            :caching-predict-fn (fn [dataset model]
+                                                                                  (cache/caching-predict-ccc cache dataset model))
 
-                                                            :caching-train-fn cache/caching-train-ccc})))
+                                                            :caching-train-fn (fn [dataset options]
+                                                                                (cache/caching-train-ccc cache dataset options))})))
 
 (def  cached-pipe-fn-slow (morph/pipeline
                            {:metamorph/id :model} (ml/model {:model-type :slow-model
                                                              :very-slow? true
-                                                             :caching-predict-fn  cache/caching-predict-ccc
-                                                             :caching-train-fn cache/caching-train-ccc})))
+                                                             :caching-predict-fn (fn [dataset model]
+                                                                                   (cache/caching-predict-ccc cache dataset model))
+                                                             :caching-train-fn (fn [dataset options]
+                                                                                 (cache/caching-train-ccc cache dataset options))})))
 (def  evaluation-result
   (ml/evaluate-pipelines
-   [cached-pipe-fn-ada cached-pipe-fn-slow]
+   [cached-pipe-fn-slow cached-pipe-fn-ada]
    splits
    loss/classification-accuracy
 
