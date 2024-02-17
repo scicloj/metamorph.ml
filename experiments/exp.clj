@@ -93,3 +93,26 @@
 (println
  (-> evaluation-result flatten first :test-transform :mean)
  (-> evaluation-result flatten first :fit-ctx :model :model-wrapper :options))
+
+
+
+(def  cached-pipe-fn-ada (morph/pipeline
+
+                          {:metamorph/id :model} (ml/model {:model-type :smile.classification/ada-boost
+                                                            :caching-predict-fn cache/caching-predict-ccc
+
+                                                            :caching-train-fn cache/caching-train-ccc})))
+
+(def  cached-pipe-fn-slow (morph/pipeline
+                           {:metamorph/id :model} (ml/model {:model-type :slow-model
+                                                             :very-slow? true
+                                                             :caching-predict-fn  cache/caching-predict-ccc
+                                                             :caching-train-fn cache/caching-train-ccc})))
+(def  evaluation-result
+  (ml/evaluate-pipelines
+   [cached-pipe-fn-ada cached-pipe-fn-slow]
+   splits
+   loss/classification-accuracy
+
+   :accuracy
+   {}))
