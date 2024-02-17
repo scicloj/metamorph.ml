@@ -4,6 +4,11 @@
             [clojure.java.io :as io]
             [scicloj.metamorph.ml :as ml]
             [buddy.core.hash :as hash]
+            [clojure.core.cache :as cache]
+            [tablecloth.api :as tc]
+            [tech.v3.dataset :as ds]
+            [clojure.core.cache.wrapped :as wcache]
+            [tech.v3.dataset.modelling :as ds-mod]
             [buddy.core.codecs :as codecs]))
 
 
@@ -102,3 +107,114 @@
       (let [predict-result (ml/predict dataset model)]
         (nippy/freeze-to-file cache-file predict-result)
        predict-result))))
+
+
+(def dir "/tmp/store")
+
+(defn item->key [item]
+
+  (if (= :train (:op item))
+    (k->sha256
+     {:op :train
+      :options (:options item)
+      :hash-ds (hash (:dataset item))})
+    (k->sha256
+     {:op :predict
+      :hash-train-inputs (:hash-train-inputs (:model-wrapper item))
+      :hash-ds (hash (:dataset item))})))
+
+
+
+(defn item->file [dir item]
+  (io/file (format "%s/%s.nippy" dir (item->key item))))
+
+
+
+
+(cache/defcache MyCache [cache]
+  cache/CacheProtocol
+  (lookup [cache e]
+
+          (when (cache/has? cache e)
+            (nippy/thaw-from-file (item->file dir e))))
+
+  (lookup [cache e not-found]
+          (if (cache/has? cache e)
+            (nippy/thaw-from-file (item->file dir e))
+            not-found))
+
+
+  (has? [_ e]
+        ;; (println :has? e)
+        (.exists (item->file dir e)))
+  (hit [cache e]
+       (nippy/thaw-from-file (item->file dir e)))
+
+
+  (miss [cache e ret]
+        (def e e)
+        (def ret ret)
+        (if (= :train (:op e))
+          (let [train-result (ml/train (:dataset e)
+                                       (:options e))
+                wrapped {:model-wrapper train-result
+                         :hash-train-inputs (item->key e)}]
+            (nippy/freeze-to-file (item->file dir e) wrapped)
+            wrapped)
+          (let [model (:model-wrapper e)
+                predict-result (ml/predict
+                                (:dataset e)
+                                model)]
+            (nippy/freeze-to-file (item->file dir e) predict-result)
+           predict-result))))
+
+
+        
+        
+
+
+
+(def iris
+  (->
+   (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+   (ds/categorical->number [:species])
+   (ds-mod/set-inference-target :species)))
+
+
+(def c (MyCache. {}))
+
+
+
+(defn caching-train-ccc
+  [dataset options]
+  (cache/through c {:op :train
+                    :dataset dataset
+                    :options options}))
+
+
+
+(defn caching-predict-ccc [dataset wrapped-model]
+  (cache/through c (merge  {:op :predict
+                            :dataset dataset}
+                           wrapped-model)))
+                            
+
+
+
+(comment
+
+  {:op nil
+   :dataset nil
+   :options nil
+   :wrapped-model nil}
+
+
+  (cache/lookup c :e "hello")
+  (cache/through c {:op :train
+                    :dataset iris
+                    :options {:model-type :slow-model}})
+
+
+  (cache/lookup c {:op :train
+                   :dataset iris
+                   :options {:model-type :slow-model}}))

@@ -1,9 +1,10 @@
-{:deps {org.clojure/clojure         {:mvn/version "1.11.1"}
-        scicloj/metamorph           {:mvn/version "0.2.3"}
-        pppmap/pppmap               {:mvn/version "0.2.2"}
-        scicloj/tablecloth         {:mvn/version "7.007"}
-        metosin/malli               {:mvn/version "0.8.4"}
-        aerial.hanami/aerial.hanami {:mvn/version "0.17.0"}
+{:deps {org.clojure/clojure          {:mvn/version "1.11.1"}
+        scicloj/metamorph            {:mvn/version "0.2.3"}
+        pppmap/pppmap                {:mvn/version "0.2.2"}
+        scicloj/tablecloth           {:mvn/version "7.007"}
+        metosin/malli                {:mvn/version "0.8.4"}
+        aerial.hanami/aerial.hanami  {:mvn/version "0.17.0"}
+        org.clojure/core.cache       {:mvn/version "1.0.225"}
         buddy/buddy-hashers          {:mvn/version "2.0.167"}}
 
  :paths ["src" "resources"]
