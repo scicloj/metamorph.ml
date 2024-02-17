@@ -109,9 +109,10 @@
        predict-result))))
 
 
-(def dir "/tmp/store")
+
 
 (defn item->key [item]
+
 
   (if (= :train (:op item))
     (k->sha256
@@ -131,42 +132,82 @@
 
 
 
-(cache/defcache MyCache [cache]
+(cache/defcache BytesStorageCache [cache store-bytes-fn retrieve-bytes-fn exists-bytes-fn delete-bytes-fn]
   cache/CacheProtocol
-  (lookup [cache e]
+  (lookup [_ e]
+          (println :lookup-1)
 
-          (when (cache/has? cache e)
-            (nippy/thaw-from-file (item->file dir e))))
+          (when (exists-bytes-fn (item->key e))
+            (retrieve-bytes-fn (item->key e))))
+  ;; (nippy/thaw-from-file (item->file dir e))
 
-  (lookup [cache e not-found]
-          (if (cache/has? cache e)
-            (nippy/thaw-from-file (item->file dir e))
+
+  (lookup [_ e not-found]
+          (println :lookup-2)
+          (if (exists-bytes-fn (item->key e))
+            (retrieve-bytes-fn (item->key e))
             not-found))
 
 
   (has? [_ e]
-        ;; (println :has? e)
-        (.exists (item->file dir e)))
-  (hit [cache e]
-       (nippy/thaw-from-file (item->file dir e)))
+        (println :has?)
+        (exists-bytes-fn (item->key e)))
+
+  (hit [_ e]
+       (println :hit)
+       (-> e
+           item->key
+           retrieve-bytes-fn
+           (nippy/thaw {:serializable-allowlist #{"*"}})))
+
+  ;; (nippy/thaw-from-file (item->file dir e))
 
 
-  (miss [cache e ret]
-        (def e e)
-        (def ret ret)
+
+  (miss [_ e ret]
+        (println :miss)
+        ;; (def e e)
+        ;; (def ret ret)
+        ;; (println :e e)
+        ;; (println :ret ret)
         (if (= :train (:op e))
           (let [train-result (ml/train (:dataset e)
                                        (:options e))
                 wrapped {:model-wrapper train-result
-                         :hash-train-inputs (item->key e)}]
-            (nippy/freeze-to-file (item->file dir e) wrapped)
+                         :hash-train-inputs (item->key e)}
+                k (item->key e)]
+
+            (store-bytes-fn  k (nippy/freeze wrapped))
             wrapped)
+
+          ;; (BytesStorageCache. cache store-bytes-fn retrieve-bytes-fn exists-bytes-fn delete-bytes-fn)
+
+          ;; (nippy/freeze-to-file (item->file dir e) wrapped)
+
+
           (let [model (:model-wrapper e)
+
+
                 predict-result (ml/predict
                                 (:dataset e)
-                                model)]
-            (nippy/freeze-to-file (item->file dir e) predict-result)
-           predict-result))))
+                                model)
+                k (item->key e)]
+
+            (store-bytes-fn k (nippy/freeze predict-result))
+            predict-result)))
+
+
+            ;; (BytesStorageCache. cache store-bytes-fn retrieve-bytes-fn exists-bytes-fn delete-bytes-fn)
+
+
+
+        
+
+  (evict [_ key]
+         (println :evict)
+         (delete-bytes-fn key)
+         (BytesStorageCache. cache store-bytes-fn retrieve-bytes-fn exists-bytes-fn delete-bytes-fn)))
+
 
 
         
@@ -181,22 +222,44 @@
    (ds-mod/set-inference-target :species)))
 
 
-(def c (MyCache. {}))
 
+
+(defn bytes-storage-cache-factory
+  ([store-bytes-fn retrieve-bytes-fn exists-bytes-fn delete-bytes-fn]
+   (BytesStorageCache. {} store-bytes-fn retrieve-bytes-fn exists-bytes-fn delete-bytes-fn))
+
+
+  ([dir] (bytes-storage-cache-factory (fn [key bytes]
+                                        (println :store-bytes :key key)
+                                        (io/copy bytes (io/file (format "%s/%s.nippy" dir key))))
+                                      (fn [key]
+                                         (println :retrieve-bytes :key key)
+                                        (stream-bytes (io/input-stream (format "%s/%s.nippy" dir key))))
+                                      (fn [key]
+                                        ;; (def dir dir)
+                                        ;; (def key key)
+                                        (println :exists :key key)
+                                        (.exists (io/file (format "%s/%s.nippy" dir key))))
+                                      (fn [key]
+                                        (println :delete-bytes :key key)
+                                        (.delete (io/file (format "%s/%s.nippy" dir key)))))))
 
 
 (defn caching-train-ccc
-  [dataset options]
-  (cache/through c {:op :train
-                    :dataset dataset
-                    :options options}))
+  [cache dataset options]
+  (println :train)
+  (cache/through cache {:op :train
+                        :dataset dataset
+                        :options options}))
 
 
 
-(defn caching-predict-ccc [dataset wrapped-model]
-  (cache/through c (merge  {:op :predict
-                            :dataset dataset}
-                           wrapped-model)))
+(defn caching-predict-ccc [cache dataset wrapped-model]
+  (println :predict)
+  (def wrapped-model wrapped-model)
+  (cache/through cache (merge  {:op :predict
+                                :dataset dataset}
+                               wrapped-model)))
                             
 
 
