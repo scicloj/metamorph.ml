@@ -10,20 +10,26 @@
         
  :aliases
  {:build {:deps {io.github.seancorfield/build-clj
-                          {:git/tag "v0.4.0" :git/sha "54e39ae"}}
-                :ns-default build}
+                 {:git/tag "v0.4.0" :git/sha "54e39ae"}}
+          :ns-default build}
 
 
-  :test
-
-  {:jvm-opts ["-Djdk.attach.allowAttachSelf"]
-   :extra-paths ["test"]
-   :extra-deps {io.github.nextjournal/clerk {:mvn/version "0.12.707"}
-                lambdaisland/kaocha {:mvn/version "1.0.902"}
+  :dev
+  {:extra-deps {io.github.nextjournal/clerk {:mvn/version "0.12.707"}
                 scicloj/scicloj.ml.smile {:mvn/version "7.1.656"}
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
                 ch.qos.logback/logback-classic {:mvn/version "1.4.5"}
                 com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.1.3"}}}
+
+  :test
+  {:jvm-opts ["-Djdk.attach.allowAttachSelf"]
+   :extra-paths ["test"]
+   :extra-deps {
+                lambdaisland/kaocha {:mvn/version "1.0.902"}
+                scicloj/scicloj.ml.smile {:mvn/version "7.1.656"}
+                datacraft-sciences/confuse {:mvn/version "0.1.1"}
+                ch.qos.logback/logback-classic {:mvn/version "1.4.5"}}}
+
 
 
   :runner {:main-opts ["-m" "kaocha.runner"]}

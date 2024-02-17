@@ -55,7 +55,9 @@
                       :loss-or-accuracy :accuracy}))
 
 
-
+(defn render-with-svg [vl-spec]
+  (assoc vl-spec
+          :usermeta {:embedOptions {:renderer "svg"}}))
 
 
 ^{:nextjournal.clerk/viewer :table}
@@ -66,33 +68,38 @@
    (ml-viz/learning-curve-spec lc-vl-data))
 
 ^{:nextjournal.clerk/viewer :vega-lite}
-(ml-viz/apply-xform-kvs lc-vl-spec {:TITLE "Learning Curve"
-                                      :YTITLE "Accuracy"})
+(render-with-svg
+ (ml-viz/apply-xform-kvs lc-vl-spec {:TITLE "Learning Curve"
+                                     :YTITLE "Accuracy"}))
 
 
 ^{:nextjournal.clerk/viewer :vega-lite}
-(ml-viz/learnining-curve
- titanic-train
- (make-pipe-fn :smile.classification/logistic-regression)
- train-sizes
- {:k 3
-  :metric-fn scicloj.metamorph.ml.loss/classification-accuracy
-  :loss-or-accuracy :accuracy}
- {:YSCALE {:zero false}
-  :TITLE "Learning Curve"
-  :YTITLE "Accuracy"})
+(render-with-svg
+ (ml-viz/learnining-curve
+  titanic-train
+  (make-pipe-fn :smile.classification/logistic-regression)
+  train-sizes
+  {:k 3
+   :metric-fn scicloj.metamorph.ml.loss/classification-accuracy
+   :loss-or-accuracy :accuracy}
+  {:YSCALE {:zero false}
+   :TITLE "Learning Curve"
+   :YTITLE "Accuracy"}))
+ 
 
 
 ^{:nextjournal.clerk/viewer :vega-lite}
-(ml-viz/learnining-curve
- titanic-train
- (make-pipe-fn :smile.classification/logistic-regression)
- train-sizes
- {:k 3
-  :metric-fn scicloj.metamorph.ml.loss/classification-accuracy
-  :loss-or-accuracy :accuracy}
- {:YSCALE {:zero false}
-  :TRAIN-COLOR "green"
-  :TEST-COLOR "red"
-  :TITLE "Learning Curve"
-  :YTITLE "Accuracy"})
+(render-with-svg
+ (ml-viz/learnining-curve
+  titanic-train
+  (make-pipe-fn :smile.classification/logistic-regression)
+  train-sizes
+  {:k 3
+   :metric-fn scicloj.metamorph.ml.loss/classification-accuracy
+   :loss-or-accuracy :accuracy}
+  {:YSCALE {:zero false}
+   :TRAIN-COLOR "green"
+   :TEST-COLOR "red"
+   :TITLE "Learning Curve"
+   :YTITLE "Accuracy"}))
+   
