@@ -10,7 +10,7 @@
    [tablecloth.api :as tc]
    [taoensso.nippy :as nippy]
    [tech.v3.dataset :as ds]
-   [clojure.string :as str]
+
    [tech.v3.dataset.modelling :as ds-mod]))
 
 (def iris
@@ -45,66 +45,15 @@
                  
              :kfold {:k 11
                      :seed 12345}))
-(def  store "/tmp/store2")
-
-
-(def dir "/tmp/store2")
-(require '[potemkin])
-(potemkin/def-map-type DiskMap [write-bytes-fn read-bytes-fn]
-
-  (get [_ k default-value]
-       (println :get :k k)
-
-       (let [bytes (read-bytes-fn k)]
-         (if (nil? bytes)
-           default-value
-           (nippy/thaw bytes))))
-
-
-  (assoc [_ k v]
-         (println :assoc :k k)
-
-         (io/copy
-          (nippy/freeze v)
-          (io/file (format "%s/%s.nippy" dir k)))
-         (DiskMap. write-bytes-fn read-bytes-fn))
-
-  (dissoc [_ k]
-          (println :dissoc)
-          (.delete (io/file (format "%s/%s.nippy" dir k)))
-          (DiskMap. write-bytes-fn read-bytes-fn))
-
-
-  (keys [_]
-        (println :keys)
-        (->>
-
-         (file-seq (io/file dir))
-         (filter #(.isFile %))
-         (map #(-> (.getName %) (str/replace ".nippy" "")))))
 
 
 
+(def wcache (wcache/fifo-cache-factory
+             (cache/fs-persisted-map-factory "/tmp/store")
+             {:threshold 1000}))
 
 
-  (meta [_]
-        (println :meta
-                 {}))
-  (with-meta [_ mta]
-    (println :with-meta)
-    (DiskMap. write-bytes-fn read-bytes-fn)))
 
-(def wcache (wcache/fifo-cache-factory (DiskMap. (fn [k bytes]
-                                                   (io/copy
-                                                    bytes
-                                                    (io/file (format "%s/%s.nippy" dir k))))
-                                                 (fn [k]
-                                                   (let [file (io/file (format "%s/%s.nippy"
-                                                                               dir k))]
-                                                     (when (.exists file)
-
-                                                        (cache/stream-bytes (io/input-stream file))))))
-                                      {:threshold 1000}))
 
 
 
@@ -112,33 +61,33 @@
 
                    {:metamorph/id :model} (ml/model {:model-type :smile.classification/ada-boost
                                                      :caching-predict-fn (fn [dataset model]
-                                                                           (cache/caching-predict-nippy-2 wcache dataset model))
+                                                                           (cache/caching-predict wcache dataset model))
                                                      :caching-train-fn (fn [dataset options]
-                                                                         (cache/caching-train-nippy-2 wcache dataset options))})))
+                                                                         (cache/caching-train wcache dataset options))})))
 
 (def  pipe-fn-lg (morph/pipeline
 
                   {:metamorph/id :model} (ml/model {:model-type :smile.classification/logistic-regression
                                                     :caching-predict-fn (fn [dataset model]
-                                                                          (cache/caching-predict-nippy-2 wcache dataset model))
+                                                                          (cache/caching-predict wcache dataset model))
                                                     :caching-train-fn (fn [dataset options]
-                                                                        (cache/caching-train-nippy-2 wcache dataset options))})))
+                                                                        (cache/caching-train wcache dataset options))})))
 
 (defn  pipe-fn-rf [trees] (morph/pipeline
 
                            {:metamorph/id :model} (ml/model {:model-type :smile.classification/random-forest
                                                              :trees trees
                                                              :caching-predict-fn (fn [dataset model]
-                                                                                   (cache/caching-predict-nippy-2 wcache dataset model))
+                                                                                   (cache/caching-predict wcache dataset model))
                                                              :caching-train-fn (fn [dataset options]
-                                                                                 (cache/caching-train-nippy-2 wcache dataset options))})))
+                                                                                 (cache/caching-train wcache dataset options))})))
 (def  pipe-fn-slow (morph/pipeline
                     {:metamorph/id :model} (ml/model {:model-type :slow-model
                                                       :very-slow? true
                                                       :caching-predict-fn (fn [dataset model]
-                                                                           (cache/caching-predict-nippy-2 wcache dataset model))
+                                                                           (cache/caching-predict wcache dataset model))
                                                       :caching-train-fn (fn [dataset options]
-                                                                          (cache/caching-train-nippy-2 wcache dataset options))})))
+                                                                          (cache/caching-train wcache dataset options))})))
 
 
 (def  evaluation-result
@@ -157,6 +106,15 @@
 (println
  (-> evaluation-result flatten first :test-transform :mean)
  (-> evaluation-result flatten first :fit-ctx :model :model-wrapper :options))
+
+
+
+
+
+
+
+
+
 
 
 
@@ -188,5 +146,5 @@
 
 
   (println
-     (-> evaluation-result flatten first :test-transform :mean)
-     (-> evaluation-result flatten first :fit-ctx :model :model-wrapper :options)))
+   (-> evaluation-result flatten first :test-transform :mean)
+   (-> evaluation-result flatten first :fit-ctx :model :model-wrapper :options)))

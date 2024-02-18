@@ -2,4 +2,4 @@
   .
   ((cider-clojure-cli-aliases
     .
-    "test"))))
+    "test:exp"))))
