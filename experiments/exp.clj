@@ -1,16 +1,13 @@
 (ns exp
   (:require
    [clojure.core.cache.wrapped :as wcache]
-   [clojure.java.io :as io]
    [scicloj.metamorph.core :as morph]
    [scicloj.metamorph.ml :as ml]
    [scicloj.metamorph.ml.cache :as cache]
    [scicloj.metamorph.ml.loss :as loss]
    [scicloj.ml.smile.classification]
    [tablecloth.api :as tc]
-   [taoensso.nippy :as nippy]
    [tech.v3.dataset :as ds]
-
    [tech.v3.dataset.modelling :as ds-mod]))
 
 (def iris
@@ -106,45 +103,3 @@
 (println
  (-> evaluation-result flatten first :test-transform :mean)
  (-> evaluation-result flatten first :fit-ctx :model :model-wrapper :options))
-
-
-
-
-
-
-
-
-
-
-
-
-(comment
-  (def  cached-pipe-fn-ada (morph/pipeline
-
-                            {:metamorph/id :model} (ml/model {:model-type :smile.classification/ada-boost
-                                                              :caching-predict-fn (fn [dataset model]
-                                                                                    (cache/caching-predict-nippy-2 wcache dataset model))
-
-                                                              :caching-train-fn (fn [dataset options]
-                                                                                  (cache/caching-train-nippy-2 wcache dataset options))})))
-
-  (def  cached-pipe-fn-slow (morph/pipeline
-                             {:metamorph/id :model} (ml/model {:model-type :slow-model
-                                                               :very-slow? true
-                                                               :caching-predict-fn (fn [dataset model]
-                                                                                     (cache/caching-predict-nippy-2 wcache dataset model))
-                                                               :caching-train-fn (fn [dataset options]
-                                                                                   (cache/caching-train-nippy-2 wcache dataset options))})))
-  (def  evaluation-result
-    (ml/evaluate-pipelines
-     [cached-pipe-fn-slow cached-pipe-fn-ada]
-     splits
-     loss/classification-accuracy
-
-     :accuracy
-     {}))
-
-
-  (println
-   (-> evaluation-result flatten first :test-transform :mean)
-   (-> evaluation-result flatten first :fit-ctx :model :model-wrapper :options)))
