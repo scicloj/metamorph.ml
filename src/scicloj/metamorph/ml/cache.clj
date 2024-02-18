@@ -12,7 +12,7 @@
             [buddy.core.codecs :as codecs]))
 
 
-(defn- stream-bytes [is]
+(defn stream-bytes [is]
   (let [baos (java.io.ByteArrayOutputStream.)]
     (io/copy is baos)
     (.toByteArray baos)))
@@ -73,14 +73,6 @@
 
 
 (defn caching-train-nippy
-  "A variant of ml/train which caches training results.
-   It constructs a `hash` out of:
-      * hash of dataset
-      * hash of options
-
-   and checks if present in 'store'. I fpresent it retunrs teh result,
-  otherwise it class ml/train and stores resukt in store under the key `hash`
-  "
   [dir dataset options]
   (let [hash-ds (str (hash dataset))
         k {:op :train
@@ -107,6 +99,57 @@
       (let [predict-result (ml/predict dataset model)]
         (nippy/freeze-to-file cache-file predict-result)
        predict-result))))
+
+
+(defn caching-train-nippy-2
+  [wcache dataset options]
+  (let [k (k->sha256
+           {:op :train
+            :dataset dataset
+            :options options})]
+    (wcache/lookup-or-miss
+     wcache
+     k
+     (fn [item]
+
+       (let [train-result (ml/train
+                           dataset
+                           options)
+
+             wrapped {:model-wrapper train-result
+                      :hash-train-inputs (str (hash k))}
+             bytes (nippy/freeze wrapped)]
+         (println :bytes bytes)
+         wrapped)))))
+
+
+(defn caching-predict-nippy-2 [wcache dataset wrapped-model]
+  (let [k
+        (k->sha256
+
+         {:op :predict
+          :hash-train-inputs (:hash-train-inputs wrapped-model)
+          :hash-ds (str (hash dataset))})
+        model (:model-wrapper wrapped-model)]
+
+
+    (wcache/lookup-or-miss
+     wcache
+     k
+     (fn [item]
+
+       (let [predict-result
+             (ml/predict dataset model)
+             bytes (nippy/freeze predict-result)]
+         (println :bytes bytes)
+         predict-result)))))
+
+
+
+    
+
+
+
 
 
 
@@ -158,7 +201,8 @@
        (-> e
            item->key
            retrieve-bytes-fn
-           (nippy/thaw {:serializable-allowlist #{"*"}})))
+           (nippy/thaw {:serializable-allowlist #{"*"}}))
+       cache)
 
   ;; (nippy/thaw-from-file (item->file dir e))
 
@@ -170,34 +214,38 @@
         ;; (def ret ret)
         ;; (println :e e)
         ;; (println :ret ret)
-        (if (= :train (:op e))
-          (let [train-result (ml/train (:dataset e)
-                                       (:options e))
-                wrapped {:model-wrapper train-result
-                         :hash-train-inputs (item->key e)}
-                k (item->key e)]
-
-            (store-bytes-fn  k (nippy/freeze wrapped))
-            wrapped)
-
-          ;; (BytesStorageCache. cache store-bytes-fn retrieve-bytes-fn exists-bytes-fn delete-bytes-fn)
-
-          ;; (nippy/freeze-to-file (item->file dir e) wrapped)
+        (let [k (item->key e)
+              val
+              (if (= :train (:op e))
+                (let [train-result (ml/train (:dataset e)
+                                             (:options e))
+                      wrapped {:model-wrapper train-result
+                               :hash-train-inputs (item->key e)}]
 
 
-          (let [model (:model-wrapper e)
+                  (store-bytes-fn  k (nippy/freeze wrapped))
+                  wrapped)
+
+                ;; (BytesStorageCache. cache store-bytes-fn retrieve-bytes-fn exists-bytes-fn delete-bytes-fn)
+
+                ;; (nippy/freeze-to-file (item->file dir e) wrapped)
 
 
-                predict-result (ml/predict
-                                (:dataset e)
-                                model)
-                k (item->key e)]
-
-            (store-bytes-fn k (nippy/freeze predict-result))
-            predict-result)))
+                (let [model (:model-wrapper e)
 
 
-            ;; (BytesStorageCache. cache store-bytes-fn retrieve-bytes-fn exists-bytes-fn delete-bytes-fn)
+                      predict-result (ml/predict
+                                      (:dataset e)
+                                      model)]
+
+
+                  (store-bytes-fn k (nippy/freeze predict-result))
+                  predict-result))]
+          (BytesStorageCache. (assoc cache k nil) store-bytes-fn retrieve-bytes-fn exists-bytes-fn delete-bytes-fn)))
+
+
+
+            ;;
 
 
 
