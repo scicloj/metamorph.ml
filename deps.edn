@@ -7,7 +7,7 @@
         aerial.hanami/aerial.hanami {:mvn/version "0.20.0"}
         org.clojure/core.cache       {:mvn/version "1.0.225"}
         potemkin/potemkin            {:mvn/version "0.4.7"}
-        buddy/buddy-hashers          {:mvn/version "2.0.167"}}
+        io.replikativ/hasch          {:mvn/version "0.3.94"}}
 
  :paths ["src" "resources"]
 

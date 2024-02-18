@@ -8,7 +8,10 @@
    [scicloj.ml.smile.classification]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
+   [taoensso.nippy]
    [tech.v3.dataset.modelling :as ds-mod]))
+
+
 
 (def iris
   (->
@@ -16,13 +19,17 @@
    (ds/categorical->number [:species])
    (ds-mod/set-inference-target :species)))
 
+
+
+
+
 (ml/define-model! :slow-model
   (fn train
     [feature-ds label-ds options]
     (println "wait 2s")
     (dotimes [n 2]
-        (println :wait  n)
-        (Thread/sleep 1000)))
+      (println :wait  n)
+      (Thread/sleep 1000)))
 
 
   (fn predict [feature-ds thawed-model model]
@@ -37,54 +44,43 @@
                                     {:column-type :prediction})]))
   {})
 
-(def splits (tc/split->seq
-             (-> iris)
-                 
-             :kfold {:k 11
-                     :seed 12345}))
 
+(def splits (tc/split->seq)
+  (-> iris)
+                 
+  :kfold {:k 11
+          :seed 12345})
 
 
 (def wcache (wcache/fifo-cache-factory
              (cache/fs-persisted-map-factory "/tmp/store")
              {:threshold 1000}))
 
-
-
-
-
-
 (def  pipe-fn-ada (morph/pipeline
 
                    {:metamorph/id :model} (ml/model {:model-type :smile.classification/ada-boost
-                                                     :caching-predict-fn (fn [dataset model]
-                                                                           (cache/caching-predict wcache dataset model))
-                                                     :caching-train-fn (fn [dataset options]
-                                                                         (cache/caching-train wcache dataset options))})))
+                                                     :wcache wcache})))
+
+                                                     
 
 (def  pipe-fn-lg (morph/pipeline
 
                   {:metamorph/id :model} (ml/model {:model-type :smile.classification/logistic-regression
-                                                    :caching-predict-fn (fn [dataset model]
-                                                                          (cache/caching-predict wcache dataset model))
-                                                    :caching-train-fn (fn [dataset options]
-                                                                        (cache/caching-train wcache dataset options))})))
+                                                    :wcache wcache})))
+                                                    
 
 (defn  pipe-fn-rf [trees] (morph/pipeline
 
                            {:metamorph/id :model} (ml/model {:model-type :smile.classification/random-forest
                                                              :trees trees
-                                                             :caching-predict-fn (fn [dataset model]
-                                                                                   (cache/caching-predict wcache dataset model))
-                                                             :caching-train-fn (fn [dataset options]
-                                                                                 (cache/caching-train wcache dataset options))})))
+                                                             :wcache wcache})))
+
 (def  pipe-fn-slow (morph/pipeline
                     {:metamorph/id :model} (ml/model {:model-type :slow-model
                                                       :very-slow? true
-                                                      :caching-predict-fn (fn [dataset model]
-                                                                           (cache/caching-predict wcache dataset model))
-                                                      :caching-train-fn (fn [dataset options]
-                                                                          (cache/caching-train wcache dataset options))})))
+                                                      :wcache wcache})))
+
+                                                      
 
 
 (def  evaluation-result
