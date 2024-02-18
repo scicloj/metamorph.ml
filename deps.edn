@@ -7,6 +7,8 @@
         it.unimi.dsi/fastutil       {:mvn/version "8.5.15"}
         buddy/buddy-hashers          {:mvn/version "2.0.167"}
         org.clojure/core.cache       {:mvn/version "1.0.225"}
+        io.replikativ/hasch          {:mvn/version "0.3.94"}
+
         aerial.hanami/aerial.hanami {:mvn/version "0.20.0"
                                      ;; we only need hanami templating
                                      :exclusions [org.clojure/clojurescript
@@ -25,9 +27,6 @@
                                                   cljsjs/vega-tooltip]}
         ;; needed by hanami
         org.clojure/data.json {:mvn/version "0.2.6"}
- 
- 
- 
         potemkin/potemkin            {:mvn/version "0.4.7"}}
 
  :paths ["src" "resources"]

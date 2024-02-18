@@ -18,8 +18,10 @@
    [tech.v3.datatype.functional :as dfn]
    [scicloj.metamorph.ml.tidy-models :as tidy]
    [clojure.set :as set]
-   [clojure.core.cache :as cache])
-    ;;
+   [clojure.core.cache.wrapped :as wcache]
+   [taoensso.nippy :as nippy]
+   [hasch.core]
+   [hasch.hex])
 
   (:import
    java.util.UUID))
@@ -809,6 +811,60 @@
       loss/mae)))
 
 
+
+
+(defn- k->sha256 [k]
+  (-> k
+      taoensso.nippy/freeze
+      hasch.core/edn-hash
+      hasch.hex/encode))
+
+
+(defn- caching-train
+  [wcache dataset options]
+  (let [k (k->sha256
+           {:op :train
+            :dataset dataset
+            :options options})]
+    (wcache/lookup-or-miss
+     wcache
+     k
+     (fn [item]
+
+       (let [train-result (train
+                           dataset
+                           options)
+
+             wrapped {:model-wrapper train-result
+                      :hash-train-inputs (str (hash k))}
+             bytes (nippy/freeze wrapped)]
+         (println :bytes bytes)
+         wrapped)))))
+
+
+(defn- caching-predict [wcache dataset wrapped-model]
+  (let [k
+        (k->sha256
+
+         {:op :predict
+          :hash-train-inputs (:hash-train-inputs wrapped-model)
+          :hash-ds (str (hash dataset))})
+        model (:model-wrapper wrapped-model)]
+
+
+    (wcache/lookup-or-miss
+     wcache
+     k
+     (fn [item]
+
+       (let [predict-result
+             (predict dataset model)
+             bytes (nippy/freeze predict-result)]
+         (println :bytes bytes)
+         predict-result)))))
+
+
+
 (defn model
   "Executes a machine learning model in train/predict (depending on :mode)
   from the `metamorph.ml` model registry.
@@ -821,6 +877,9 @@
 
   Options:
   - `:model-type` - Keyword for the model to use
+  _ `:wcache` - an cache of type 'clojure.core.cache.wrapped'. If present this is used
+     to cach all invocations of `train` and `ml`. Depending on cache config various
+     scenarious are  supported. See namespace `metamorph.ml.cache`
 
   Further options get passed to `train` functions and are model specific.
 
@@ -854,14 +913,16 @@
 
   (malli/instrument-mm
    (fn [{:metamorph/keys [id data mode] :as ctx}]
-     (let [train-fn (get options :caching-train-fn train)
-           predict-fn (get options :caching-predict-fn predict)
-           cleaned-options (dissoc options :caching-train-fn :caching-predict-fn)]
+     (let [wcache (get options :wcache)
+
+           train-fn (if wcache (fn [dataset options] (caching-train wcache dataset options)) train)
+           predict-fn (if wcache (fn [dataset model] (caching-predict wcache dataset model)) predict)
+           cleaned-options (dissoc options :wcache)]
        (case mode
          :fit
          (assoc ctx
-              id (assoc (train-fn data cleaned-options)
-                     ::unsupervised? (get (options->model-def cleaned-options) :unsupervised? false)))
+                id (assoc (train-fn data cleaned-options)
+                          ::unsupervised? (get (options->model-def cleaned-options) :unsupervised? false)))
 
          :transform  (if (get-in ctx [id ::unsupervised?])
                        ctx
