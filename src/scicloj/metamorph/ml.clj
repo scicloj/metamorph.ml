@@ -189,7 +189,7 @@
 
 
 
-(defn- get-nice-source-info [pipeline-decl pipe-fns-ns pipe-fns-source-file]
+(defn get-nice-source-info [pipeline-decl pipe-fns-ns pipe-fns-source-file]
   (when (and  (some? pipe-fns-ns) (some? pipeline-decl))
     (let [source-information (scicloj.metamorph.ml.evaluation-handler/get-source-information
                               pipeline-decl
