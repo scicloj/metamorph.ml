@@ -806,7 +806,7 @@
 
 (defn- k->sha256 [k]
   (-> k
-      taoensso.nippy/freeze
+      hash
       hasch.core/edn-hash
       hasch.hex/encode))
 
@@ -827,9 +827,9 @@
                            options)
 
              wrapped {:model-wrapper train-result
-                      :hash-train-inputs (str (hash k))}
-             bytes (nippy/freeze wrapped)]
-         (println :bytes bytes)
+                      :hash-train-inputs k}]
+             
+
          wrapped)))))
 
 
@@ -849,9 +849,9 @@
      (fn [item]
 
        (let [predict-result
-             (predict dataset model)
-             bytes (nippy/freeze predict-result)]
-         (println :bytes bytes)
+             (predict dataset model)]
+             
+
          predict-result)))))
 
 
