@@ -833,23 +833,27 @@
 
        (let [train-result (train
                            dataset
-                           options)
+                           options)]
 
-             wrapped {:model-wrapper train-result
-                      :hash-train-inputs k}]
+             ;; wrapped {:model-wrapper train-result
+             ;;          :hash-train-inputs k}
+
              
 
-         wrapped)))))
+         {:hash-train-inputs k
+          :train-result train-result})))))
+         
 
 
-(defn- caching-predict [wcache dataset wrapped-model]
+(defn- caching-predict [wcache dataset model hash-train-inputs]
   (let [k
         (k->sha256
 
          {:op :predict
-          :hash-train-inputs (:hash-train-inputs wrapped-model)
-          :hash-ds (str (hash dataset))})
-        model (:model-wrapper wrapped-model)]
+          :hash-train-inputs (:hash-train-inputs hash-train-inputs)
+          :hash-ds (str (hash dataset))})]
+        ;; model (:model-wrapper wrapped-model)
+
 
 
     (wcache/lookup-or-miss
@@ -914,26 +918,39 @@
   (malli/instrument-mm
    (fn [{:metamorph/keys [id data mode] :as ctx}]
      (let [wcache (get options :wcache)
-
-           train-fn (if wcache (fn [dataset options] (caching-train wcache dataset options)) train)
-           predict-fn (if wcache (fn [dataset model] (caching-predict wcache dataset model)) predict)
            cleaned-options (dissoc options :wcache)]
        (case mode
          :fit
-         (assoc ctx
-                id (assoc (train-fn data cleaned-options)
-                          ::unsupervised? (get (options->model-def cleaned-options) :unsupervised? false)))
+         (let [result-and-hash (if wcache
+                                 (caching-train wcache data cleaned-options)
+                                 {:train-result (train data cleaned-options)
+                                  :hash-train-inputs nil})]
 
-         :transform  (if (get-in ctx [id ::unsupervised?])
-                       ctx
-                       (-> ctx
-                           (update
-                            id
-                            assoc
-                            ::feature-ds (cf/feature data)
-                            ::target-ds (cf/target data))
-                           (assoc
-                            :metamorph/data (predict-fn data (get ctx id))))))))))
+           (def result-and-hash result-and-hash)
+
+
+           (assoc ctx
+                  id (assoc (:train-result result-and-hash)
+                            ::unsupervised? (get (options->model-def cleaned-options) :unsupervised? false)
+                            ::hash-train-inputs (:hash-train-inputs result-and-hash))))
+
+         :transform  (do
+                       (def  ctx ctx)
+                       (if (get-in ctx [id ::unsupervised?])
+                         ctx
+                         (-> ctx
+                             (update
+                              id
+                              assoc
+                              ::feature-ds (cf/feature data)
+                              ::target-ds (cf/target data))
+                             (assoc
+                              :metamorph/data (if wcache
+                                                (caching-predict wcache
+                                                                 data
+                                                                 (get ctx id)
+                                                                 (-> ctx (get id) ::hash-train-inputs))
+                                                (predict data (get ctx id))))))))))))
                      
 
 (malli/instrument-ns 'scicloj.metamorph.ml)
