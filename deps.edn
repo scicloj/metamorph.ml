@@ -49,8 +49,7 @@
                 ch.qos.logback/logback-classic {:mvn/version "1.5.6"}
                 criterium/criterium {:mvn/version  "0.4.6"}
                 com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.3.0"}}}
-
-
+        
   :exp {:jvm-opts ["-Djdk.attach.allowAttachSelf" "-Xmx8G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
         :extra-paths ["exp"]
         :extra-deps

@@ -14,11 +14,16 @@
 * added read/write support for TMD<->libsvm files
  
 
+
+- aded optional train/predict caching
+
+
 0.9.0
 
 - added linear models from fastmath 
 - added tidy output validation
 - added support for design-matrix
+
 
 0.8.2
  -fixed metric bug
@@ -64,6 +69,7 @@
 - added titanic toy data
 - added ggplot toydaya
 - added visualisation for learning curve
+
 
 0.7.2
  - fixed verify ns
