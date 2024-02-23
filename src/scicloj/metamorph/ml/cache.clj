@@ -111,7 +111,6 @@
   (string->bytes-map-factory
 
    (fn [k bytes]
-     (println :write k)
      (io/copy bytes (->cache-file dir k)))
 
    (fn [k]
