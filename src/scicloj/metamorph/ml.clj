@@ -19,7 +19,6 @@
    [scicloj.metamorph.ml.tidy-models :as tidy]
    [clojure.set :as set]
    [clojure.core.cache.wrapped :as wcache]
-   [taoensso.nippy :as nippy]
    [hasch.core]
    [hasch.hex])
 
