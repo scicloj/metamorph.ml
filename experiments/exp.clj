@@ -9,9 +9,11 @@
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
    [taoensso.nippy]
-   [tech.v3.dataset.modelling :as ds-mod]))
+   [tech.v3.dataset.modelling :as ds-mod]
+   [taoensso.carmine :as car :refer [wcar]]))
 
-
+(defonce my-conn-pool (car/connection-pool {})) ; Create a new stateful pool
+(def     my-wcar-opts {:pool my-conn-pool})
 
 (def iris
   (->
@@ -45,16 +47,16 @@
   {})
 
 
-(def splits (tc/split->seq)
-  (-> iris)
-                 
-  :kfold {:k 11
-          :seed 12345})
+(def splits (tc/split->seq
+             iris
+             :kfold
+             {:k 11
+              :seed 12345}))
 
 
-(def wcache (wcache/fifo-cache-factory
-             (cache/fs-persisted-map-factory "/tmp/store")
-             {:threshold 1000}))
+
+(def wcache (wcache/basic-cache-factory
+             (cache/redis-persisted-map-factory my-wcar-opts)))
 
 (def  pipe-fn-ada (morph/pipeline
 
@@ -93,8 +95,10 @@
    splits
    loss/classification-accuracy
 
-   :accuracy
-   {}))
+   :accuracy))
+   
+
+
 
 (println
  (-> evaluation-result flatten first :test-transform :mean)

@@ -3,6 +3,7 @@ unreleased
 - added dummy classifier
 - add checks for matching categorical maps between train and predict
 - added titanic toy data
+- aded optional train/predict caching
 
 
 0.7.2
