@@ -18,7 +18,6 @@
    [tech.v3.datatype.functional :as dfn]
    [clojure.set :as set]
    [clojure.core.cache.wrapped :as wcache]
-   [taoensso.nippy :as nippy]
    [hasch.core]
    [hasch.hex])
 

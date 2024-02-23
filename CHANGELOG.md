@@ -1,4 +1,7 @@
 unreleased
+
+- aded optional train/predict caching
+
 0.8.2
  -fixed metric bug
  
@@ -43,6 +46,7 @@ unreleased
 - added titanic toy data
 - added ggplot toydaya
 - added visualisation for learning curve
+
 
 0.7.2
  - fixed verify ns
