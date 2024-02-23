@@ -209,23 +209,23 @@
                         pipeline-decl-or-fn)
 
         split-eval-results
-        (->>
-         (for [train-test-split train-test-split-seq]
-           (let [{:keys [train test split-uid]} train-test-split
-                 complete-result
-                 (assoc (calc-metric pipe-fn metric-fn train test tune-options)
-                        :split-uid split-uid
-                        :loss-or-accuracy loss-or-accuracy
-                        :metric-fn metric-fn
-                        :pipe-decl pipeline-decl
-                        :pipe-fn pipe-fn
-                        :source-information
-                        (get-nice-source-info pipeline-decl
-                                              (get-in tune-options [:attach-fn-sources :ns])
-                                              (get-in tune-options [:attach-fn-sources :pipe-fns-clj-file])))
 
-                 reduced-result ((tune-options :evaluation-handler-fn) complete-result)]
-             reduced-result)))
+        (for [train-test-split train-test-split-seq]
+          (let [{:keys [train test split-uid]} train-test-split
+                complete-result
+                (assoc (calc-metric pipe-fn metric-fn train test tune-options)
+                       :split-uid split-uid
+                       :loss-or-accuracy loss-or-accuracy
+                       :metric-fn metric-fn
+                       :pipe-decl pipeline-decl
+                       :pipe-fn pipe-fn
+                       :source-information
+                       (get-nice-source-info pipeline-decl
+                                             (get-in tune-options [:attach-fn-sources :ns])
+                                             (get-in tune-options [:attach-fn-sources :pipe-fns-clj-file])))
+
+                reduced-result ((tune-options :evaluation-handler-fn) complete-result)]
+            reduced-result))
              
 
 
