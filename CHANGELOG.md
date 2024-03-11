@@ -3,7 +3,7 @@ unreleased
 - added dummy classifier
 - add checks for matching categorical maps between train and predict
 - added titanic toy data
-
+- added ggplot toydaya
 
 0.7.2
  - fixed verify ns
