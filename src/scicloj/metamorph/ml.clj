@@ -16,10 +16,13 @@
    [tech.v3.datatype.errors :as errors]
    [tech.v3.datatype.export-symbols :as exporter]
    [tech.v3.datatype.functional :as dfn]
-   [clojure.set :as set])
+   [taoensso.nippy :as nippy]
+   [clojure.set :as set]
+   [com.rpl.nippy-serializable-fn])
     ;;
 
   (:import
+   [org.mlflow.tracking MlflowClient MlflowContext]
    java.util.UUID))
 
 
@@ -66,6 +69,7 @@
         _ (strict-type-check trueth-col predictions-col)
         metric (metric-fn trueth-col predictions-col)
 
+
         other-metrices-result
         (map
          (fn [{:keys [name metric-fn] :as m}]
@@ -77,43 +81,43 @@
 
 
 
-(defn- supervised-eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
+(defn supervised-eval-pipe [mlflow pipeline-fn fitted-ctx metric-fn ds other-metrices]
 
-  (let [
-        start-transform (System/currentTimeMillis)
-        predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
-        end-transform (System/currentTimeMillis)
+  (let* [
+         start-transform (System/currentTimeMillis)
+         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
+         end-transform (System/currentTimeMillis)
 
-        predictions-ds (cf/prediction (:metamorph/data predicted-ctx))
+         predictions-ds (cf/prediction (:metamorph/data predicted-ctx))
 
-        _ (errors/when-not-error predictions-ds "No column in prediction result was marked as 'prediction' ")
-        _ (errors/when-not-error (:model predicted-ctx) "Pipelines need to have the 'model' op with id :model")
-        trueth-ds (get-in predicted-ctx [:model ::target-ds])
-        _ (errors/when-not-error trueth-ds (str  "Pipeline context need to have the true prediction target as a dataset at key path: "
-                                                 :model ::target-ds " Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
+         _ (errors/when-not-error predictions-ds "No column in prediction result was marked as 'prediction' ")
+         _ (errors/when-not-error (:model predicted-ctx) "Pipelines need to have the 'model' op with id :model")
+         trueth-ds (get-in predicted-ctx [:model ::target-ds])
+         _ (errors/when-not-error trueth-ds (str  "Pipeline context need to have the true prediction target as a dataset at key path: "
+                                                  :model ::target-ds " Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
 
-        target-column-names (ds/column-names trueth-ds)
-        _ (errors/when-not-error (= 1 (count target-column-names)) "Only 1 target column is supported")
-
-
-        target-column-name (first target-column-names)
-
-        _ (errors/when-not-error (get predictions-ds target-column-name) (format "Prediction dataset need to have column name: %s " target-column-name))
-        _ (check-categorical-maps trueth-ds predictions-ds target-column-name)
+         target-column-names (ds/column-names trueth-ds)
+         _ (errors/when-not-error (= 1 (count target-column-names)) "Only 1 target column is supported")
 
 
-        scores (score predictions-ds trueth-ds target-column-name metric-fn other-metrices)
+         target-column-name (first target-column-names)
+
+         _ (errors/when-not-error (get predictions-ds target-column-name) (format "Prediction dataset need to have column name: %s " target-column-name))
+         _ (check-categorical-maps trueth-ds predictions-ds target-column-name)
 
 
-        eval-result
-        {:other-metrices (:other-metrices-result scores)
-         :timing (- end-transform start-transform)
-         :ctx predicted-ctx
-         :metric (:metric scores)}]
+
+         scores (score predictions-ds trueth-ds target-column-name metric-fn other-metrices)
+
+         eval-result
+         {:other-metrices (:other-metrices-result scores)
+          :timing (- end-transform start-transform)
+          :ctx predicted-ctx
+          :metric (:metric scores)}]
     eval-result))
 
 
-(defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
+(defn- eval-pipe [mlflow pipeline-fn fitted-ctx metric-fn ds other-metrices]
 
   (if  (-> fitted-ctx :model ::unsupervised?)
     {:other-metrices []
@@ -121,10 +125,10 @@
      :ctx {}
      :metric (metric-fn fitted-ctx)}
 
-    (supervised-eval-pipe pipeline-fn fitted-ctx metric-fn ds other-metrices)))
+    (supervised-eval-pipe mlflow pipeline-fn fitted-ctx metric-fn ds other-metrices)))
 
 
-(defn- calc-metric [pipeline-fn metric-fn train-ds test-ds tune-options]
+(defn- calc-metric [mlflow-run pipeline-fn metric-fn train-ds test-ds tune-options]
   (try
     (let [
           start-fit (System/currentTimeMillis)
@@ -135,20 +139,23 @@
           #_ (errors/when-not-error (:model fitted-ctx) "Pipeline contexts under evaluation need to have the model operation with id :model")
 
 
-          eval-pipe-result-train (eval-pipe pipeline-fn fitted-ctx metric-fn train-ds (:other-metrices tune-options))
+          eval-pipe-result-train (eval-pipe mlflow-run pipeline-fn fitted-ctx metric-fn train-ds (:other-metrices tune-options))
           eval-pipe-result-test (if (-> fitted-ctx :model ::unsupervised?)
                                   {:other-metrices []
                                    :timing 0
                                    :ctx fitted-ctx
                                    :metric 0}
-                                  (eval-pipe pipeline-fn fitted-ctx metric-fn test-ds (:other-metrices tune-options)))]
+                                  (eval-pipe mlflow-run pipeline-fn fitted-ctx metric-fn test-ds (:other-metrices tune-options)))
+          eval-pipe-result
+          {:fit-ctx  fitted-ctx
+           :timing-fit (- end-fit start-fit)
+           :train-transform eval-pipe-result-train
+           :test-transform eval-pipe-result-test}]
+      eval-pipe-result)
           
 
           
-         {:fit-ctx  fitted-ctx
-           :timing-fit (- end-fit start-fit)
-           :train-transform eval-pipe-result-train
-           :test-transform eval-pipe-result-test})
+         
 
 
     (catch Exception e
@@ -194,9 +201,13 @@
                               pipe-fns-source-file)]
       (update source-information :fn-sources format-fn-sources))))
 
+(defn map->strmap [m]
+  (zipmap
+   (map name (keys m))
+   (map str (vals  m))))
 
 
-(defn- evaluate-one-pipeline [pipeline-decl-or-fn train-test-split-seq metric-fn loss-or-accuracy tune-options]
+(defn- evaluate-one-pipeline [mlflow pipeline-decl-or-fn train-test-split-seq metric-fn loss-or-accuracy tune-options]
 
   (let [
 
@@ -211,7 +222,7 @@
          (for [train-test-split train-test-split-seq]
            (let [{:keys [train test split-uid]} train-test-split
                  complete-result
-                 (assoc (calc-metric pipe-fn metric-fn train test tune-options)
+                 (assoc (calc-metric mlflow pipe-fn metric-fn train test tune-options)
                         :split-uid split-uid
                         :loss-or-accuracy loss-or-accuracy
                         :metric-fn metric-fn
@@ -222,9 +233,15 @@
                                               (get-in tune-options [:attach-fn-sources :ns])
                                               (get-in tune-options [:attach-fn-sources :pipe-fns-clj-file])))
 
+                 ;; _ (def complete-result complete-result)
+                 nippy-file-eval (java.io.File/createTempFile "eval" ".nippy")
+                 _ (println :freeze-to nippy-file-eval)
+
+                 _ (nippy/freeze-to-file nippy-file-eval complete-result)
                  reduced-result ((tune-options :evaluation-handler-fn) complete-result)]
              reduced-result)))
              
+
 
 
 
@@ -253,7 +270,28 @@
             :accuracy (->> evaluations  (take-last 1)))
           (case loss-or-accuracy
             :loss evaluations
-            :accuracy (-> evaluations  reverse)))]
+            :accuracy (-> evaluations  reverse)))
+        ;; _ (def evaluations evaluations)
+
+        nippy-file (java.io.File/createTempFile "model" ".nippy")
+        mlflow-run (.startRun mlflow)]
+
+    (.logParams mlflow-run (->> evaluations first :fit-ctx :model :options map->strmap))
+    (.logMetric mlflow-run "metric" (->> evaluations first :test-transform :mean))
+
+
+    (.deleteOnExit nippy-file)
+    (nippy/freeze-to-file
+     nippy-file
+     (->> evaluations first :fit-ctx :model))
+
+    (.logArtifact mlflow-run (.toPath nippy-file) "model")
+    (.endRun mlflow-run)
+
+
+
+
+
     result))
 
 
@@ -385,7 +423,8 @@
                                                                              [:name keyword?]
                                                                              [:metric-fn fn?]]]]
                              [:attach-fn-sources {:optional true} [:map [:ns any?]
-                                                                   [:pipe-fns-clj-file string?]]]]]
+                                                                   [:pipe-fns-clj-file string?]]]
+                             [:mlflow {:optional true} any?]]]
       ::evaluation-result
       [:sequential
        [:sequential
@@ -454,6 +493,7 @@
                               :return-best-pipeline-only true
                               :return-best-crossvalidation-only true
                               :evaluation-handler-fn default-result-dissoc-in-fn}
+
                          
                              options)
          map-fn
@@ -463,10 +503,15 @@
            :mapv mapv)
 
 
+
+
+
+
          pipe-evals
          (map-fn
           (fn [pipe-fn-or-decl]
             (evaluate-one-pipeline
+             (:mlflow options)
              pipe-fn-or-decl
              train-test-split-seq
              metric-fn

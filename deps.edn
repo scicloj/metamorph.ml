@@ -3,7 +3,9 @@
         pppmap/pppmap               {:mvn/version "0.2.2"}
         scicloj/tablecloth         {:mvn/version "7.007"}
         metosin/malli               {:mvn/version "0.8.4"}
-        aerial.hanami/aerial.hanami {:mvn/version "0.17.0"}}
+        aerial.hanami/aerial.hanami {:mvn/version "0.17.0"}
+        org.mlflow/mlflow-client {:mvn/version  "2.10.2"}
+        com.rpl/nippy-serializable-fns {:mvn/version "0.4.2"}}
 
  :paths ["src" "resources"]
 
