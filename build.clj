@@ -29,6 +29,7 @@
                 :lib lib
                 :version version
                 :basis basis
+                :pom-data pom-template
                 :src-dirs ["src"]})
   (b/copy-dir {:src-dirs ["src" "resources"]
                :target-dir class-dir})
