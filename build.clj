@@ -18,6 +18,12 @@
       (assoc :aliases [:runner])
       (bb/run-tests)))
 
+(def pom-template
+  [[:licenses
+    [:license
+     [:name "Eclipse Public License"]
+     [:url "https://www.eclipse.org/legal/epl-v10.html"]]]])
+
 (defn jar [_]
   (b/write-pom {:class-dir class-dir
                 :lib lib
