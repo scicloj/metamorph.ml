@@ -1,5 +1,8 @@
 unreleased
 
+
+0.7.3
+
 - added dummy classifier
 - add checks for matching categorical maps between train and predict
 - added titanic toy data
