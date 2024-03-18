@@ -5,7 +5,7 @@
    [scicloj.metamorph.ml :as ml]
    [scicloj.metamorph.ml.learning-curve :as lc]
    [scicloj.metamorph.ml.viz :as ml-viz]
-   [scicloj.metamorph.ml.viz.learning-curve :as ml-viz-lc]
+   [scicloj.metamorph.ml.viz.learning-curve :as mlviz.lc]
 
    [nextjournal.clerk.viewer]
    [tablecloth.api :as tc]
@@ -65,10 +65,10 @@
 
 ^{:nextjournal.clerk/viewer nextjournal.clerk.viewer/table-viewer}
 (def lc-vl-data
-  (ml-viz-lc/vl-data lc-df))
+  (mlviz.lc/vl-data lc-df))
 
 (def lc-vl-spec
-  (ml-viz-lc/spec lc-vl-data))
+  (mlviz.lc/spec lc-vl-data))
 
 
 
@@ -117,8 +117,9 @@
    :metric-fn scicloj.metamorph.ml.loss/classification-accuracy
    :loss-or-accuracy :accuracy}
   {:YSCALE {:zero false}
-   :TRAIN-COLOR "green"
-   :TEST-COLOR "red"
-   :TITLE "Learning Curve"
-   :YTITLE "Accuracy"}))
+   :TRAIN-COLOR "pink"
+   :TEST-COLOR "black"
+   :TITLE "Leaning Curve"
+   :YTITLE "Accuracy"})
    
+ )

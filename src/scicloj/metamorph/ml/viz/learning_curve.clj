@@ -3,9 +3,8 @@
      [tablecloth.api :as tc]
      [clojure.math :as math]
      [tech.v3.datatype.functional :as fun]
-     [scicloj.metamorph.ml.learning-curve]
-     [aerial.hanami.templates :as ht]
-     [aerial.hanami.common :as hc]))
+     [aerial.hanami.templates :as ht]))
+     
 
 (def errorband-encoding-train
   (assoc
@@ -14,8 +13,8 @@
    {:Y "metric-train-min"
     :X "train-ds-size"
     :XTYPE "quantitative"
-    :TEST-COLOR "orange"}
-   :color {:value :TEST-COLOR}
+    :TRAIN-COLOR "orange"}
+   :color {:value :TRAIN-COLOR}
    :y2 {:field "metric-train-max"
         :legend nil}))
 
@@ -26,9 +25,9 @@
    {:Y "metric-test-min"
     :X "train-ds-size"
     :XTYPE "quantitative"
-    :TRAIN-COLOR "blue"}
+    :TEST-COLOR "blue"}
 
-   :color {:value :TRAIN-COLOR}
+   :color {:value :TEST-COLOR}
    :y2 {:field "metric-test-max"
         :legend nil}))
 
@@ -41,10 +40,10 @@
     :Y "metric"
     :YTYPE "quantitative"
     :TRAIN-COLOR "blue"
-        :TEST-COLOR "orange"}
+    :TEST-COLOR "orange"}
    :color {:field "train-test-metric"
            :type "nominal"
-           :scale {:range [:TRAIN-COLOR :TEST-COLOR]}
+           :scale {:range [:TEST-COLOR :TRAIN-COLOR]}
            :legend {"labelExpr" "datum.label == 'metric-test' ? 'Cross validation metric' : datum.label == 'metric-train' ? 'Training score' : ''  "}}))
 
 (def layer

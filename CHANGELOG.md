@@ -1,5 +1,9 @@
 unreleased
 
+0.7.7
+- fixed test/train color assignments
+- adde more docu
+
 0.7.6
 - fixed metric.clj filename for ClojureDoc generation
 

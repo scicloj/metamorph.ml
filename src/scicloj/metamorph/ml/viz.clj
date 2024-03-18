@@ -9,10 +9,10 @@
 
 
 (defn learning-curve
-  "Generates a learnining curve.
+  "Generates a learning  curve.
 
-  The functions splits  the dataset  in a fixed size test set
-  and increasingly larger  training sets. A model is trained at each
+  The functions splits the dataset in a fixed size test set
+  and increasingly larger training sets. A model is trained at each
   step and evaluated.
 
   Returns a vega lite spec of the learninig curve plot.
@@ -23,7 +23,11 @@
      `k` At each step a k cross-validation is done
      `metric-fn` the metric to use for evaluation the model
      `loss-or-accuracy`   If the metric-fn calculates :loss or :accuracy
-  `hanami-opts` Options passed to hanami to control the plot u
+  `hanami-opts` Options passed to hanami to control the plot. Can be the default hanami
+   substituions keys or:
+       `TRAIN-COLOR:`   Color used for the train curve (default: blue)
+       `TEST-COLOR:`    Color used for the test curve (default: orange)
+
   "
   ([dataset pipe-fn train-sizes
     lc-opts hanami-opts]
