@@ -1,5 +1,8 @@
 unreleased
 
+0.7.8
+- fixed default colors of error bands
+
 0.7.7
 - fixed test/train color assignments
 - adde more docu
