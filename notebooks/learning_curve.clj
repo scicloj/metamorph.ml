@@ -120,6 +120,6 @@
    :TRAIN-COLOR "pink"
    :TEST-COLOR "black"
    :TITLE "Leaning Curve"
-   :YTITLE "Accuracy"})
+   :YTITLE "Accuracy"}))
    
- )
+ 

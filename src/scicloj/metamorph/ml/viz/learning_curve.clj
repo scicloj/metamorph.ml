@@ -13,7 +13,7 @@
    {:Y "metric-train-min"
     :X "train-ds-size"
     :XTYPE "quantitative"
-    :TRAIN-COLOR "orange"}
+    :TRAIN-COLOR "blue"}
    :color {:value :TRAIN-COLOR}
    :y2 {:field "metric-train-max"
         :legend nil}))
@@ -25,7 +25,7 @@
    {:Y "metric-test-min"
     :X "train-ds-size"
     :XTYPE "quantitative"
-    :TEST-COLOR "blue"}
+    :TEST-COLOR "orange"}
 
    :color {:value :TEST-COLOR}
    :y2 {:field "metric-test-max"
