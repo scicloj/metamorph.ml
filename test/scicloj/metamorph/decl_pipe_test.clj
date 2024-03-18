@@ -144,6 +144,7 @@
                   {:metamorph/id :model}[:scicloj.metamorph.ml/model (merge {:model-type :test-model})]]))
 
 (deftest test-decl-5
+  (do-define-model)
   (is-pos-metric [[:tech.v3.dataset.metamorph/categorical->number [:species ] iris-target-values :int64]
                   [:tech.v3.dataset.metamorph/update-column :species :clojure.core/identity]
                   [:tech.v3.dataset.metamorph/set-inference-target :species]
