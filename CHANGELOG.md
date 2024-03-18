@@ -1,5 +1,8 @@
 unreleased
 
+0.7.6
+- fixed metric.clj filename for ClojureDoc generation
+
 0.7.5
 - removed WIP files
 
