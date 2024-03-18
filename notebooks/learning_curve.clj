@@ -5,6 +5,9 @@
    [scicloj.metamorph.ml :as ml]
    [scicloj.metamorph.ml.learning-curve :as lc]
    [scicloj.metamorph.ml.viz :as ml-viz]
+   [scicloj.metamorph.ml.viz.learning-curve :as ml-viz-lc]
+
+   [nextjournal.clerk.viewer]
    [tablecloth.api :as tc]
    [scicloj.metamorph.ml.loss]
    [scicloj.ml.smile.classification]
@@ -15,11 +18,11 @@
 (comment
   (clerk/clear-cache!)
   (nextjournal.clerk/show! "notebooks/learning_curve.clj")
+
   (nextjournal.clerk/serve! {:browse true}))
 
-^{:nextjournal.clerk/viewer :table
+^{:nextjournal.clerk/viewer nextjournal.clerk.viewer/table-viewer
   :nextjournal.clerk/opts {:page-size 5}}
-
 (def titanic-train
   (->
    (tech.v3.dataset/->dataset "https://github.com/scicloj/metamorph-examples/raw/main/data/titanic/train.csv"
@@ -45,7 +48,8 @@
 (def train-sizes
   [ 0.04 0.05 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1])
 
-^{:nextjournal.clerk/viewer :table}
+
+^{:nextjournal.clerk/viewer nextjournal.clerk.viewer/table-viewer};;
 (def lc-df
   (lc/learning-curve titanic-train
                      (make-pipe-fn :smile.classification/logistic-regression)
@@ -59,23 +63,38 @@
   (assoc vl-spec
           :usermeta {:embedOptions {:renderer "svg"}}))
 
-
-^{:nextjournal.clerk/viewer :table}
+^{:nextjournal.clerk/viewer nextjournal.clerk.viewer/table-viewer}
 (def lc-vl-data
-  (ml-viz/learning-curve-vl-data lc-df))
+  (ml-viz-lc/vl-data lc-df))
 
 (def lc-vl-spec
-   (ml-viz/learning-curve-spec lc-vl-data))
+  (ml-viz-lc/spec lc-vl-data))
 
-^{:nextjournal.clerk/viewer :vega-lite}
+
+
+
+^{:nextjournal.clerk/viewer nextjournal.clerk.viewer/vega-lite-viewer}
 (render-with-svg
  (ml-viz/apply-xform-kvs lc-vl-spec {:TITLE "Learning Curve"
                                      :YTITLE "Accuracy"}))
 
 
-^{:nextjournal.clerk/viewer :vega-lite}
+^{:nextjournal.clerk/viewer nextjournal.clerk.viewer/vega-lite-viewer}
 (render-with-svg
- (ml-viz/learnining-curve
+ (ml-viz/learning-curve
+  titanic-train
+  (make-pipe-fn :smile.classification/logistic-regression)
+  {:k 3
+   :metric-fn scicloj.metamorph.ml.loss/classification-accuracy
+   :loss-or-accuracy :accuracy}))
+
+
+
+
+
+^{:nextjournal.clerk/viewer nextjournal.clerk.viewer/vega-lite-viewer}
+(render-with-svg
+ (ml-viz/learning-curve
   titanic-train
   (make-pipe-fn :smile.classification/logistic-regression)
   train-sizes
@@ -88,9 +107,9 @@
  
 
 
-^{:nextjournal.clerk/viewer :vega-lite}
+^{:nextjournal.clerk/viewer nextjournal.clerk.viewer/vega-lite-viewer}
 (render-with-svg
- (ml-viz/learnining-curve
+ (ml-viz/learning-curve
   titanic-train
   (make-pipe-fn :smile.classification/logistic-regression)
   train-sizes

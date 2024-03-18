@@ -16,9 +16,10 @@
 
   `dataset` the TMD dataset to use
   `train-sizes` vector of double from 0 to 1, controlling the sizes of the training data.
-  `k` At each step a k cross-validation is done
-  `metric-fn` the metric to use for evaluation the model
-  `loss-or-accuracy`   If the metric-fn calculates :loss or :accuracy
+  `options`
+     `k` At each step a k cross-validation is done
+     `metric-fn` the metric to use for evaluation the model
+     `loss-or-accuracy`   If the metric-fn calculates :loss or :accuracy
 
   "
   [ds pipe-fn train-sizes {:keys [k metric-fn loss-or-accuracy]}]

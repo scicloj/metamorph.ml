@@ -1,5 +1,8 @@
 unreleased
 
+0.7.4
+- fixed Clojars links and ClojureDoc
+- refatored learnining curve
 
 0.7.3
 

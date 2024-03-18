@@ -2,8 +2,8 @@
 [![CI](https://github.com/scicloj/metamorph.ml/actions/workflows/main.yml/badge.svg)](https://github.com/scicloj/metamorph.ml/actions/workflows/main.yml)
 # metamorph.ml
 
-Machine learning functions for [metamorph](https://github.com/scicloj/metamorph) based on machine learning pipelines.
-Part of [scicloj.ml](https://github.com/scicloj/scicloj.ml)
+Machine learning functions for [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) and [metamorph](https://github.com/scicloj/metamorph).
+
 
 ## Main idea
 

@@ -6,7 +6,7 @@
 (def lib 'scicloj/metamorph.ml)
 ; alternatively, use MAJOR.MINOR.COMMITS:
 ;; (def version (format "6.2.%s" (b/git-count-revs nil)))
-(def version "0.7.3")
+(def version "0.7.4")
 (def class-dir "target/classes")
 (def basis (b/create-basis {:project "deps.edn"}))
 (def jar-file (format "target/%s-%s.jar" (name lib) version))
@@ -18,18 +18,30 @@
       (assoc :aliases [:runner])
       (bb/run-tests)))
 
-(def pom-template
-  [[:licenses
+(defn- pom-template [version]
+  [[:description "Machine learning functions for tech.ml.dataset"]
+   [:url "https://github.com/scicloj/metamorph.ml"]
+   [:licenses
     [:license
      [:name "Eclipse Public License"]
-     [:url "https://www.eclipse.org/legal/epl-v10.html"]]]])
+     [:url "http://www.eclipse.org/legal/epl-v10.html"]]]
+   [:developers
+    [:developer
+     [:name "Carsten Behring"]]]
+   [:scm
+    [:url "https://github.com/scicloj/metamorph.ml"]
+    [:connection "scm:git:https://github.com/scicloj/metamorph.ml.git"]
+    [:developerConnection "scm:git:https://github.com/scicloj/metamorph.ml.git"]
+
+    [:tag (str "v" version)]]])
+
 
 (defn jar [_]
   (b/write-pom {:class-dir class-dir
                 :lib lib
                 :version version
                 :basis basis
-                :pom-data pom-template
+                :pom-data (pom-template version)
                 :src-dirs ["src"]})
   (b/copy-dir {:src-dirs ["src" "resources"]
                :target-dir class-dir})
