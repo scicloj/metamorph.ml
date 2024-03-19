@@ -13,7 +13,12 @@
       1))
 
 (defn confusion-map
+  "Creates a confusion-matrix in map form. Can be either as raw counts or normalized.
+  `normalized` when :all (default) it is normalized
+                    :none otherwise
+   "
   ([predicted-labels labels normalize]
+
    (let [answer-counts (frequencies labels)]
      (->> (map vector predicted-labels labels)
           (reduce (fn [total-map [pred actual]]
@@ -38,47 +43,34 @@
 
 
 (defn confusion-map->ds
-  ([conf-matrix-map normalize]
-   (let [all-labels (->> (keys conf-matrix-map)
-                         sort)
-         header-column (merge {:column-name "column-name"}
-                              (->> all-labels
-                                   (map #(vector % %))
-                                   (into {})))
-         column-names (concat [:column-name]
-                              all-labels)]
-     (->> all-labels
-          (map (fn [label-name]
-                 (let [entry (get conf-matrix-map label-name)]
-                   (merge {:column-name label-name}
-                          (->> all-labels
-                               (map (fn [entry-name]
-                                      [entry-name (dtype-pp/format-object
-                                                   (get entry entry-name
-                                                        (case normalize
-                                                          :none 0
-                                                          :all 0.0)))]))
-                               (into {}))))))
-          (concat [header-column])
-          (ds/->>dataset)
-          ;;Ensure order is consistent
-          (#(ds/select-columns % column-names)))))
-  ([conf-matrix-map]
-   (confusion-map->ds conf-matrix-map :all)))
-
-
-
-
-
-#_(defn confusion-ds
-    [model test-ds]
-    (let [predictions (ml/predict model test-ds)
-          answers (ds/labels test-ds)]
-      (-> (probability-distributions->labels predictions)
-          (confusion-map (ds/labels test-ds))
-          (confusion-map->ds))))
-(comment
-  (confusion-map [:a :b :c :a] [:a :c :c :a] :all))
+  "Converts teh confusion-matrix map obtained via `confusion-mao` into a dataset representation"
+  [conf-matrix-map]
+  (let [
+        conf-matrix-map conf-matrix-map
+        all-counts (flatten (map vals (vals conf-matrix-map)))
+        _ (assert (or
+                   (every? float? all-counts)
+                   (every? int? all-counts))
+                  (str "All counts need to be either int? or float?, but are: " all-counts))
+        is-integer (integer? (first all-counts))
+        all-labels (->> (keys conf-matrix-map)
+                        sort)
+        column-names (concat [:column-name]
+                             all-labels)]
+    (->> all-labels
+         (map (fn [label-name]
+                (let [entry (get conf-matrix-map label-name)]
+                  (merge {:column-name label-name}
+                         (->> all-labels
+                              (map (fn [entry-name]
+                                     [entry-name (dtype-pp/format-object
+                                                  (get entry entry-name
+                                                       (if is-integer
+                                                         0
+                                                         0.0)))]))
+                              (into {}))))))
+         (ds/->>dataset)
+         (#(ds/select-columns % column-names)))))
   
 
 (defn- get-majority-class [target-ds]

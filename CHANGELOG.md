@@ -1,4 +1,5 @@
 unreleased
+- fixed and dcoumented confusion-map->ds
 
 0.7.8
 - fixed default colors of error bands

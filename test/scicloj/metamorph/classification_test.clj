@@ -1,5 +1,5 @@
 (ns scicloj.metamorph.classification-test
-  (:require [scicloj.metamorph.ml.classification :refer [confusion-map]]
+  (:require [scicloj.metamorph.ml.classification :refer [confusion-map confusion-map->ds]]
             [clojure.test :refer :all]
             [scicloj.metamorph.ml :as ml]
             [scicloj.metamorph.ml.loss :as loss]
@@ -22,6 +22,24 @@
        (confusion-map [:a :b :c :a] [:a :c :c :a])
        {:a {:a 1.0}
         :c {:b 0.5 :c 0.5}})))
+
+
+(deftest test-confusion-map->ds
+  (is (=
+       [{:column-name :a, :a "2", :c "0"}
+        {:column-name :c, :a "0", :c "1"}]
+       (-> (confusion-map [:a :b :c :a] [:a :c :c :a] :none)
+           (confusion-map->ds)
+           (tc/rows :as-maps))))
+
+
+  (is (=
+       [{:column-name :a, :a "1.000", :c "0.000"}
+        {:column-name :c, :a "0.000", :c "0.5000"}]
+       (-> (confusion-map [:a :b :c :a] [:a :c :c :a] :all)
+           (confusion-map->ds)
+           (tc/rows :as-maps)))))
+
 
 
 (deftest dummy-classification-fixed-label []
