@@ -1,5 +1,6 @@
 unreleased
-- fixed and dcoumented confusion-map->ds
+- fixed and documented confusion-map->ds
+- added confusin matrix plot
 
 0.7.8
 - fixed default colors of error bands

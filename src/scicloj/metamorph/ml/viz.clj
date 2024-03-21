@@ -2,7 +2,8 @@
   (:require
    [aerial.hanami.common :as hc]
    [scicloj.metamorph.ml.learning-curve]
-   [scicloj.metamorph.ml.viz.learning-curve]))
+   [scicloj.metamorph.ml.viz.learning-curve]
+   [scicloj.metamorph.ml.viz.confusionmatrix]))
 
 (defn apply-xform-kvs [spec kvs]
   (apply hc/xform spec (into [] cat kvs)))
@@ -50,3 +51,17 @@
                    [0.1 0.325 0.55 0.775 1]
                    lc-opts
                    hanami-opts)))
+
+
+(defn confusion-matrix
+  (
+   [predicted-labels labels
+    opts
+    hanami-opts]
+
+   (->
+    (scicloj.metamorph.ml.viz.confusionmatrix/cm-values predicted-labels labels opts)
+    (scicloj.metamorph.ml.viz.confusionmatrix/confusion-matrix-chart)
+    (apply-xform-kvs hanami-opts)))
+   
+  ([predicted-labels labels] (confusion-matrix predicted-labels labels {} {})))
