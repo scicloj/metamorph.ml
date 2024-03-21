@@ -1,11 +1,9 @@
 (ns scicloj.metamorph.ml.viz.confusionmatrix
   (:require
-   [aerial.hanami.common :as hc]
    [aerial.hanami.templates :as ht]
    [scicloj.metamorph.ml.classification :as cl]
    [scicloj.metamorph.ml.learning-curve]
    [scicloj.metamorph.ml.viz.learning-curve]))
-
 
 
 

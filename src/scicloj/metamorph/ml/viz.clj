@@ -54,11 +54,18 @@
 
 
 (defn confusion-matrix
-  (
-   [predicted-labels labels
+  "Generates a confusin matrix plot out of `predicted-labels` and `labels`
+
+   `opts`
+     `normalize` : Can be :none (default) or :all and decides if the values in the matrix are counts or percentages.
+
+   `hanami-opts` Options passed to hanami to control the plot. Can be any of the default hanami
+   substituions keys.
+
+  "
+  ([predicted-labels labels
     opts
     hanami-opts]
-
    (->
     (scicloj.metamorph.ml.viz.confusionmatrix/cm-values predicted-labels labels opts)
     (scicloj.metamorph.ml.viz.confusionmatrix/confusion-matrix-chart)
