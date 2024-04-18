@@ -514,6 +514,7 @@
                                               [:hyperparameters {:optional true} [:maybe map?]]
                                               [:thaw-fn {:optional true} fn?]
                                               [:explain-fn {:optional true} fn?]
+                                              [:loglik-fn {:optional true} fn?]
                                               [:options {:optional true} sequential?]
                                               [:documentation {:optional true} [:map
                                                                                 [:javadoc {:optional true} [:maybe string?]]
@@ -525,6 +526,7 @@
   [model-kwd train-fn predict-fn {:keys [hyperparameters
                                          thaw-fn
                                          explain-fn
+                                         loglik-fn
                                          options
                                          documentation
                                          unsupervised?]
@@ -536,6 +538,7 @@
                                              :hyperparameters hyperparameters
                                              :thaw-fn thaw-fn
                                              :explain-fn explain-fn
+                                             :loglik-fn loglik-fn
                                              :options options
                                              :unsupervised? unsupervised?
                                              :documentation documentation})
@@ -676,6 +679,16 @@
 
     (warn-inconsitent-maps model pred-ds)
     pred-ds))
+
+
+(defn loglik [model y yhat]
+
+  (let [loglik-fn
+        (get
+         (options->model-def (:options model))
+         :loglik-fn)]
+    (loglik-fn y yhat)))
+
 
 
 (defn explain
