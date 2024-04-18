@@ -108,3 +108,10 @@
     (io/resource "data/titanic-test.nippy")
     (io/input-stream)
     (ds/->dataset {:file-type :nippy}))})
+
+(defn mtcars-ds []
+  (->
+   (io/resource "data/mtcars.csv")
+   (io/input-stream)
+   (ds/->dataset {:file-type :csv
+                  :key-fn keyword})))
