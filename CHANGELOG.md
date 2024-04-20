@@ -1,4 +1,6 @@
 unreleased
+
+0.7.9
 - fixed and documented confusion-map->ds
 - added confusin matrix plot
 - added generic handling of loglikelyhood

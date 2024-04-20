@@ -6,7 +6,7 @@
 (def lib 'scicloj/metamorph.ml)
 ; alternatively, use MAJOR.MINOR.COMMITS:
 ;; (def version (format "6.2.%s" (b/git-count-revs nil)))
-(def version "0.7.8")
+(def version "0.7.9")
 (def class-dir "target/classes")
 (def basis (b/create-basis {:project "deps.edn"}))
 (def jar-file (format "target/%s-%s.jar" (name lib) version))
