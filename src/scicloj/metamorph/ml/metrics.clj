@@ -1,6 +1,10 @@
 (ns scicloj.metamorph.ml.metrics
   "Excellent metrics tools from the cortex project."
   (:require [tech.v3.datatype :as dtype]
+            [tech.v3.dataset :as ds]
+            [tech.v3.dataset.modelling :as ds-mod]
+            [fastmath.core :as fm]
+            [scicloj.metamorph.ml :as ml]
             [tech.v3.datatype.functional :as dfn]))
 
 (defn wrongs
@@ -257,3 +261,35 @@
                        (get predictions-by-class class)
                        iou-fn
                        iou-threshold)))})))
+
+
+
+
+(defn AIC [model ds prediction-ds]
+  (let [inference-target (first (ds-mod/inference-target-column-names ds))
+        l (ml/loglik model
+                     (get ds inference-target)
+                     (get prediction-ds inference-target))
+
+        p (dec ( ds/column-count ds))
+        k (+ 2 p)]
+
+    (-
+     (* 2 k)
+     (* 2 l))))
+
+
+(defn BIC [model ds prediction-ds]
+  (let [inference-target (first (ds-mod/inference-target-column-names ds))
+        l
+        (ml/loglik model
+                   (get ds inference-target)
+                   (get prediction-ds inference-target))
+
+
+        n (ds/row-count ds)
+        p (dec ( ds/column-count ds))
+        k (+ 2 p)]
+
+    (+  (* -2 l)
+        (* k  (fm/ln n)))))

@@ -1,6 +1,9 @@
 unreleased
 - fixed and documented confusion-map->ds
 - added confusin matrix plot
+- added generic handling of loglikelyhood
+- added mtcars data
+- added aic and bic
 
 0.7.8
 - fixed default colors of error bands
