@@ -1,5 +1,8 @@
 unreleased
 
+0.7.10
+- added missisng deps
+
 0.7.9
 - fixed and documented confusion-map->ds
 - added confusin matrix plot
