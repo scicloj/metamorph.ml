@@ -19,7 +19,7 @@
 
 
   :dev
-  {:extra-deps {io.github.nextjournal/clerk {:mvn/version "1.88.1376"}
+  {:extra-deps {io.github.nextjournal/clerk {:mvn/version "0.15.957"}
                 scicloj/scicloj.ml.smile {:mvn/version "7.3"}
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
                 ch.qos.logback/logback-classic {:mvn/version "1.5.6"}
@@ -29,7 +29,7 @@
   {:jvm-opts ["-Djdk.attach.allowAttachSelf"]
    :extra-paths ["test"]
    :extra-deps {
-                lambdaisland/kaocha {:mvn/version "1.88.1376"}
+                lambdaisland/kaocha {:mvn/version "0.15.957"}
                 scicloj/scicloj.ml.smile {:mvn/version "7.3"}
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
                 ch.qos.logback/logback-classic {:mvn/version "1.5.6"}}}

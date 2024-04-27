@@ -1,7 +1,9 @@
 unreleased
+- upgraded deps
+
 
 0.7.10
-- added missisng deps
+- added missing deps
 
 0.7.9
 - fixed and documented confusion-map->ds
