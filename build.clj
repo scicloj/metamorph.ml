@@ -1,7 +1,12 @@
 (ns build
   (:refer-clojure :exclude [test])
-  (:require [clojure.tools.build.api :as b] ; for b/git-count-revs
-            [org.corfield.build :as bb]))
+  (:require
+   [camel-snake-kebab.core :as csk]
+   [clj-yaml.core :as yaml]
+   [clojure.java.io :as io]
+   [clojure.pprint :as pp]
+   [clojure.tools.build.api :as b] ; for b/git-count-revs
+   [org.corfield.build :as bb]))
 
 (def lib 'scicloj/metamorph.ml)
 ; alternatively, use MAJOR.MINOR.COMMITS:
@@ -66,3 +71,25 @@
   (-> opts
       (assoc :lib lib :version version)
       (bb/deploy)))
+
+(defn build-glance-columns [ops]
+  (with-open [w (io/writer "resources/columms-glance.edn")]
+    (-> (slurp "https://raw.githubusercontent.com/alexpghayes/modeltests/main/data-raw/columns_glance.yaml")
+        (yaml/parse-string
+         :key-fn #(-> % :key  csk/->kebab-case-keyword))
+        (pp/pprint w))))
+
+
+(defn build-tidy-columns [opts]
+  (with-open [w (io/writer "resources/columms-tidy.edn")]
+    (-> (slurp "https://raw.githubusercontent.com/alexpghayes/modeltests/main/data-raw/columns_tidy.yaml")
+        (yaml/parse-string
+         :key-fn #(-> % :key  csk/->kebab-case-keyword))
+        (pp/pprint w))))
+
+(defn build-augment-columns [ops]
+  (with-open [w (io/writer "resources/columms-augment.edn")]
+    (-> (slurp "https://raw.githubusercontent.com/alexpghayes/modeltests/main/data-raw/columns_augment.yaml")
+        (yaml/parse-string
+         :key-fn #(-> % :key  csk/->kebab-case-keyword))
+        (pp/pprint w))))
