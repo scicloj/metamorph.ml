@@ -1,5 +1,7 @@
 unreleased
-
+0.8.2
+ -fixed metric bug
+ 
 0.8.1
  -fixed bug in ml/tidy
 
