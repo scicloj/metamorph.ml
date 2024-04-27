@@ -1,5 +1,8 @@
 unreleased
 
+0.8.1
+ -fixed bug in ml/tidy
+
 0.8.0
 - upgraded deps
 - added suport for glance,augment,tidy

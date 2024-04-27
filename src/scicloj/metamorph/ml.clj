@@ -715,7 +715,7 @@
         (get
          (options->model-def (:options model))
          :tidy-fn)]
-    (if (tidy-fn)
+    (if tidy-fn
       (tidy-fn model)
       (ds/->dataset {}))))
 
