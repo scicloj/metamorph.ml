@@ -265,26 +265,22 @@
 
 
 
-(defn AIC [model y yhat]
+(defn AIC [model y yhat feature-count]
   (let [
         l (ml/loglik model
                      y
                      yhat)
-
-
-        p (dec ( count y))
+        p feature-count
         k (+ 2 p)]
-
     (-
      (* 2 k)
      (* 2 l))))
 
 
-(defn BIC [model y yhat sample-size]
+(defn BIC [model y yhat sample-size feature-count]
   (let [l (ml/loglik model y yhat)
         n sample-size
-        p (dec ( count y))
+        p feature-count
         k (+ 2 p)]
-
     (+  (* -2 l)
         (* k  (fm/ln n)))))

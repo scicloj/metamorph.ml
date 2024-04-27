@@ -546,7 +546,7 @@
                                              :explain-fn explain-fn
                                              :loglik-fn loglik-fn
                                              :glance-fn glance-fn
-                                             :tidyfn tidy-fn
+                                             :tidy-fn tidy-fn
                                              :augment-fn augment-fn
                                              :options options
                                              :unsupervised? unsupervised?
