@@ -265,13 +265,14 @@
 
 
 
-(defn AIC [model ds prediction-ds]
-  (let [inference-target (first (ds-mod/inference-target-column-names ds))
+(defn AIC [model y yhat]
+  (let [
         l (ml/loglik model
-                     (get ds inference-target)
-                     (get prediction-ds inference-target))
+                     y
+                     yhat)
 
-        p (dec ( ds/column-count ds))
+
+        p (dec ( count y))
         k (+ 2 p)]
 
     (-
@@ -279,16 +280,10 @@
      (* 2 l))))
 
 
-(defn BIC [model ds prediction-ds]
-  (let [inference-target (first (ds-mod/inference-target-column-names ds))
-        l
-        (ml/loglik model
-                   (get ds inference-target)
-                   (get prediction-ds inference-target))
-
-
-        n (ds/row-count ds)
-        p (dec ( ds/column-count ds))
+(defn BIC [model y yhat sample-size]
+  (let [l (ml/loglik model y yhat)
+        n sample-size
+        p (dec ( count y))
         k (+ 2 p)]
 
     (+  (* -2 l)

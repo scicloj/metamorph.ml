@@ -1,6 +1,6 @@
 unreleased
 - upgraded deps
-
+- added suport for glance,augment,tidy
 
 0.7.10
 - added missing deps

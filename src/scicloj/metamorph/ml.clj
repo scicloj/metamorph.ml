@@ -515,6 +515,9 @@
                                               [:thaw-fn {:optional true} fn?]
                                               [:explain-fn {:optional true} fn?]
                                               [:loglik-fn {:optional true} fn?]
+                                              [:tidy-fn {:optional true} fn?]
+                                              [:augment-fn {:optional true} fn?]
+                                              [:glance-fn {:optional true} fn?]
                                               [:options {:optional true} sequential?]
                                               [:documentation {:optional true} [:map
                                                                                 [:javadoc {:optional true} [:maybe string?]]
@@ -527,6 +530,9 @@
                                          thaw-fn
                                          explain-fn
                                          loglik-fn
+                                         tidy-fn
+                                         glance-fn
+                                         augment-fn
                                          options
                                          documentation
                                          unsupervised?]
@@ -539,6 +545,9 @@
                                              :thaw-fn thaw-fn
                                              :explain-fn explain-fn
                                              :loglik-fn loglik-fn
+                                             :glance-fn glance-fn
+                                             :tidyfn tidy-fn
+                                             :augment-fn augment-fn
                                              :options options
                                              :unsupervised? unsupervised?
                                              :documentation documentation})
@@ -688,6 +697,74 @@
          (options->model-def (:options model))
          :loglik-fn)]
     (loglik-fn y yhat)))
+
+(defn tidy
+  "summarizes information about model components.
+  Returns a dataset with rows from this list:
+ https://raw.githubusercontent.com/scicloj/metamorph.ml/main/resources/columms-tidy.edn
+
+  No other row names should be used.
+ Each model will only return a small subset of possible rows.
+ The list of allowed row names might change over time.
+
+ A model might not implement this function, and then an empty dataset will be returned.
+
+  "
+  [model]
+  (let [tidy-fn
+        (get
+         (options->model-def (:options model))
+         :tidy-fn)]
+    (if (tidy-fn)
+      (tidy-fn model)
+      (ds/->dataset {}))))
+
+(defn glance
+  "Gives a glance on the model, returning a dataset with model information
+  about the entire model.
+
+  Potential row names are these:
+  https://raw.githubusercontent.com/scicloj/metamorph.ml/main/resources/columms-glance.edn
+
+ No other row names should be used.
+ Each model will only return a small subset of possible rows.
+ The list of allowed row names might change over time.
+
+ A model might not implement this function, and then an empty dataset will be returned.
+ "
+  [model]
+  (let [glance-fn
+        (get
+         (options->model-def (:options model))
+         :glance-fn)]
+    (if glance-fn
+      (glance-fn model)
+      (ds/->dataset {}))))
+
+
+(defn augment
+  "
+  Adds informations about observations to a dataset
+
+  Potential row names are these:
+  https://raw.githubusercontent.com/scicloj/metamorph.ml/main/resources/columms-augment.edn
+
+ No other row names should be used.
+ Each model will only return a small subset of possible rows.
+
+  A model might not implement this function, and then the dataset is
+  returned unchanged.
+
+"
+  [model data]
+
+  (let [augment-fn
+        (get
+         (options->model-def (:options model))
+         :augment-fn)]
+    (if augment-fn
+      (augment-fn model data)
+      data)))
 
 
 

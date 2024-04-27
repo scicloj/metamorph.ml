@@ -48,9 +48,13 @@
                              :dummy-strategy :fixed-class
                              :fixed-class 0})
 
+
+
         prediction (ml/predict ds model)]
 
+
     (is (= (:species prediction) (repeat 150 0)))))
+
 
 
 (deftest dummy-classification-majority []
