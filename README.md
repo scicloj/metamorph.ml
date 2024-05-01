@@ -2,7 +2,7 @@
 [![CI](https://github.com/scicloj/metamorph.ml/actions/workflows/main.yml/badge.svg)](https://github.com/scicloj/metamorph.ml/actions/workflows/main.yml)
 [![cljdoc badge](https://cljdoc.org/badge/scicloj/metamorph.ml)](https://cljdoc.org/d/scicloj/metamorph.ml)
 
-![metamorph logo](https://github.com/scicloj/graphic-design/blob/live/icons/Metamorph.svg)
+![ml logo](https://github.com/scicloj/graphic-design/blob/live/icons/scicloj.ml.svg)
 
 # metamorph.ml
 
