@@ -15,21 +15,30 @@
     {:term
      (concat (:target-columns model)
              (:feature-columns model))
+
      :estimate
      (.estimateRegressionParameters (:model-data model))
      :std.error
      (.estimateRegressionParametersStandardErrors (:model-data model))}))
 
-(defn- glance-ols [model]
-    (def model model)
 
-    (ds/->dataset
-     {:totss
-      (.calculateTotalSumOfSquares (:model-data model))
-      :adj.r.squared
-      (.calculateAdjustedRSquared (:model-data model))
-      :rss
-      (.calculateResidualSumOfSquares (:model-data model))}))
+(defn- augment-fn [model data]
+  (-> data
+      (tc/add-column :.residuals (.estimateResiduals (:model-data model)))))
+
+
+(defn- glance-ols [model]
+
+  {:totss
+     (.calculateTotalSumOfSquares (:model-data model))
+     :adj.r.squared
+     (.calculateAdjustedRSquared (:model-data model))
+     :rss
+     (.calculateResidualSumOfSquares (:model-data model))
+
+     ;; (.estimateRegressandVariance (:model-data model)) ; TODO what this ?
+     :sigma
+     (.estimateErrorVariance (:model-data model))})
 
 (defn- train-ols [feature-ds target-ds options]
   (let [
@@ -63,4 +72,5 @@
   predict-ols
   {
    :tidy-fn tidy-ols
-   :glance-fn glance-ols})
+   :glance-fn glance-ols
+   :augment-fn augment-fn})
