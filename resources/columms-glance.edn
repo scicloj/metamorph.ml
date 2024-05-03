@@ -62,6 +62,7 @@
  :lambda-gcv "choice of lambda that minimizes GCV.",
  :log-lik
  "The log-likelihood of the model. [stats::logLik()] may be a useful reference.",
+ :mae "mean absolute error"
  :max.cluster.size "Max number of elements in clusters.",
  :max.hazard "Maximal estimated hazard.",
  :max.time "The maximum observed event or censoring time.",
@@ -77,6 +78,7 @@
  :missing-method "Method for eliminating missing data.",
  :model
  "A character string denoting the model at which the optimal BIC occurs.",
+ :mse "Mean Squared Deviation"
  :n "The total number of observations.",
  :n.clusters "Number of clusters.",
  :n.factors "The number of fitted factors.",
@@ -123,9 +125,13 @@
  "McFadden's rho squared with respect to an equal shares (no information) model.",
  :rmean "Restricted mean (see [survival::print.survfit()]).",
  :rmean.std.error "Restricted mean standard error.",
+ :rmse "Root mean squared deviation"
  :rmsea "Root mean square error of approximation.",
  :rmsea.conf.high "95 percent upper bound on RMSEA.",
  :rscore "Robust log-rank statistic",
+
+ :rss "Residual Sum Squared"
+
  :score "Score.",
  :sigma "Estimated standard error of the residuals.",
  :sigma-2-j
