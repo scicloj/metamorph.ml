@@ -1,6 +1,9 @@
 [![Clojars Project](https://img.shields.io/clojars/v/scicloj/metamorph.ml.svg)](https://clojars.org/scicloj/metamorph.ml)
 [![CI](https://github.com/scicloj/metamorph.ml/actions/workflows/main.yml/badge.svg)](https://github.com/scicloj/metamorph.ml/actions/workflows/main.yml)
 [![cljdoc badge](https://cljdoc.org/badge/scicloj/metamorph.ml)](https://cljdoc.org/d/scicloj/metamorph.ml)
+
+![ml logo](https://github.com/scicloj/graphic-design/blob/live/icons/scicloj.ml.svg)
+
 # metamorph.ml
 
 Machine learning functions for [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) and [metamorph](https://github.com/scicloj/metamorph).
