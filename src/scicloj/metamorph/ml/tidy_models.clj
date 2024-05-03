@@ -1,6 +1,8 @@
 (ns scicloj.metamorph.ml.tidy-models
   (:require
-   [clojure.edn :as edn]))
+   [clojure.edn :as edn]
+   [clojure.set :as set]
+   [tech.v3.dataset :as ds]))
 
 
 (def allowed-glance-columns
@@ -17,16 +19,26 @@
 
 
 
-
-(defn validate-tidy-ds [ds]
-
+(defn- validate-ds [ds allowed-columns fn-name]
   (let [
-
         invalid-keys
-        (clojure.set/difference
-         (into #{} (keys ds))
-         (into #{} allowed-tidy-columns))]
-
+        (set/difference
+         (into #{} (ds/column-names ds))
+         (into #{} allowed-columns))]
     (if (empty? invalid-keys)
       ds
-      (throw (Exception. "" (format "invalid keys from tidy-fn: %s" invalid-keys))))))
+      (throw (Exception. (format "invalid keys from %s: %s" fn-name invalid-keys))))))
+
+(defn validate-tidy-ds [ds]
+  (validate-ds ds allowed-tidy-columns "tidy-fn"))
+
+(defn validate-glance-ds [ds]
+  (validate-ds ds allowed-glance-columns "glance-fn"))
+
+
+
+(defn validate-augment-ds [ds data]
+  (validate-ds
+   ds
+   (concat allowed-augment-columns (ds/column-names data))
+   "augment-fn"))
