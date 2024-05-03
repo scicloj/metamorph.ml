@@ -1,9 +1,7 @@
-{:adj.r.squared
- "Adjusted R squared statistic, which is like the R squared statistic except taking degrees of freedom into account.",
+{:adj.r.squared "Adjusted R squared statistic, which is like the R squared statistic except taking degrees of freedom into account.",
  :agfi "Adjusted goodness of fit.",
  :aic "Akaike's Information Criterion for the model.",
- :ai-cc
- "Small sample corrected Akaike's Information Criterion for the model.",
+ :ai-cc "Small sample corrected Akaike's Information Criterion for the model.",
  :alpha "Estimated correlation parameter for geepack::geeglm.",
  :alternative "The alternative hypothesis. Usually character.",
  :autocorrelation "Autocorrelation.",
@@ -11,17 +9,13 @@
  :betweenss "The total between-cluster sum of squares.",
  :bic "Bayesian Information Criterion for the model.",
  :cfi "Comparative fit index.",
- :chi.squared
- "The Pearson Chi-Square goodness of fit statistic for multiway tables.",
+ :chi.squared "The Pearson Chi-Square goodness of fit statistic for multiway tables.",
  :chisq "Model chi squared.",
- :cochran.qe
- "In meta-analysis, test statistic for the Cochran's Q_e test of residual heterogeneity.",
- :cochran.qm
- "In meta-analysis, test statistic for the Cochran's Q_m omnibus test of coefficients.",
+ :cochran.qe "In meta-analysis, test statistic for the Cochran's Q_e test of residual heterogeneity.",
+ :cochran.qm "In meta-analysis, test statistic for the Cochran's Q_m omnibus test of coefficients.",
  :conf.high "Upper bound on confidence interval.",
  :conf.low "Lower bound on confidence interval.",
- :converged
- "Logical indicating if the model fitting procedure was succesful and converged.",
+ :converged "Logical indicating if the model fitting procedure was succesful and converged.",
  :convergence "Convergence code.",
  :crit "Minimized criterion",
  :cv.crit "Cross-validation score",
@@ -41,11 +35,9 @@
  :g.squared "The likelihood ratio/deviance statistic.",
  :gamma "Estimated scale parameter for geepack::geeglm.",
  :gradient.count "Number of calls to `gr`.",
- :h
- "H statistic for computing confidence interval of major axis slope.",
+ :h "H statistic for computing confidence interval of major axis slope.",
  :h.squared "Value of the H-Squared statistic.",
- :hypvol
- "If the other model contains a noise component, the value of the hypervolume parameter. Otherwise `NA`.",
+ :hypvol "If the other model contains a noise component, the value of the hypervolume parameter. Otherwise `NA`.",
  :i.squared "Value of the I-Squared statistic.",
  :independence "Whether the model assumed dyadic independence.",
  :is-conv "Whether the fit successfully converged.",
@@ -55,13 +47,10 @@
  :k-lw "Modified L-W estimate of the ridge constant.",
  :lag.order "Lag order.",
  :lambda "Choice of lambda corresponding to `spar`.",
- :lambda.-1se
- "The value of the penalization parameter lambda that results in the sparsest model while remaining within one standard error of the minimum loss.",
- :lambda.min
- "The value of the penalization parameter lambda that achieved minimum loss as estimated by cross validation.",
+ :lambda.-1se "The value of the penalization parameter lambda that results in the sparsest model while remaining within one standard error of the minimum loss.",
+ :lambda.min "The value of the penalization parameter lambda that achieved minimum loss as estimated by cross validation.",
  :lambda-gcv "choice of lambda that minimizes GCV.",
- :log-lik
- "The log-likelihood of the model. [stats::logLik()] may be a useful reference.",
+ :log-lik "The log-likelihood of the model. [stats::logLik()] may be a useful reference.",
  :mae "mean absolute error"
  :max.cluster.size "Max number of elements in clusters.",
  :max.hazard "Maximal estimated hazard.",
@@ -76,8 +65,7 @@
  :min.hazard "Minimal estimated hazard.",
  :min.time "The minimum observed event or censoring time.",
  :missing-method "Method for eliminating missing data.",
- :model
- "A character string denoting the model at which the optimal BIC occurs.",
+ :model "A character string denoting the model at which the optimal BIC occurs.",
  :mse "Mean Squared Deviation"
  :n "The total number of observations.",
  :n.clusters "Number of clusters.",
@@ -97,45 +85,34 @@
  :number.interaction "Number of interactions.",
  :offtable "Total number of person-years off table.",
  :p.value "P-value corresponding to the test statistic.",
- :p.value.cochran.qe
- "In meta-analysis, p-value for the Cochran's Q_e test of residual heterogeneity.",
- :p.value.cochran.qm
- "In meta-analysis, p-value for the Cochran's Q_m omnibus test of coefficients.",
+ :p.value.cochran.qe "In meta-analysis, p-value for the Cochran's Q_e test of residual heterogeneity.",
+ :p.value.cochran.qm "In meta-analysis, p-value for the Cochran's Q_m omnibus test of coefficients.",
  :p.value.original "P-value of original Durbin-Watson statistic.",
  :p.value.-sargan "P-value for Sargan test.",
- :p.value.transformed
- "P-value of autocorrelation after transformation.",
+ :p.value.transformed "P-value of autocorrelation after transformation.",
  :p.value.weak.instr "P-value for weak instrument F-test.",
  :p.value.-wu.-hausman "P-value for Wu-Hausman test.",
- :parameter
- "Parameter field in the htest, typically degrees of freedom.",
+ :parameter "Parameter field in the htest, typically degrees of freedom.",
  :pen.crit "Penalized criterion.",
  :power "Power achieved by the analysis.",
  :power.reached "Whether the desired power was reached.",
- :pseudo.r.squared
- "Like the R squared statistic, but for situations when the R squared statistic isn't defined.",
- :r.squared
- "R squared statistic, or the percent of variation explained by the model. Also known as the coefficient of determination.",
+ :pseudo.r.squared "Like the R squared statistic, but for situations when the R squared statistic isn't defined.",
+ :r.squared "R squared statistic, or the percent of variation explained by the model. Also known as the coefficient of determination.",
  :records "Number of observations",
  :residual.deviance "The residual deviance of the model",
  :rho "Spearman's rho autocorrelation",
- :rho-2
- "McFadden's rho squared with respect to a market shares (constants-only) model.",
- :rho-20
- "McFadden's rho squared with respect to an equal shares (no information) model.",
+ :rho-2 "McFadden's rho squared with respect to a market shares (constants-only) model.",
+ :rho-20 "McFadden's rho squared with respect to an equal shares (no information) model.",
  :rmean "Restricted mean (see [survival::print.survfit()]).",
  :rmean.std.error "Restricted mean standard error.",
  :rmse "Root mean squared deviation"
  :rmsea "Root mean square error of approximation.",
  :rmsea.conf.high "95 percent upper bound on RMSEA.",
  :rscore "Robust log-rank statistic",
-
  :rss "Residual Sum Squared"
-
  :score "Score.",
  :sigma "Estimated standard error of the residuals.",
- :sigma-2-j
- "The square root of the estimated residual variance for the j-th longitudinal process.",
+ :sigma-2-j "The square root of the estimated residual variance for the j-th longitudinal process.",
  :spar "Smoothing parameter.",
  :srmr "Standardised root mean residual.",
  :statistic "Test statistic.",
@@ -143,17 +120,14 @@
  :statistic.weak.instr "Statistic for weak instrument F-test.",
  :statistic.-wu.-hausman "Statistic for Wu-Hausman test.",
  :tau "Quantile.",
- :tau.squared
- "In meta-analysis, estimated amount of residual heterogeneity.",
- :tau.squared.se
- "In meta-analysis, standard error of residual heterogeneity.",
+ :tau.squared "In meta-analysis, estimated amount of residual heterogeneity.",
+ :tau.squared.se "In meta-analysis, standard error of residual heterogeneity.",
  :theta "Angle between OLS lines `lm(y ~ x)` and `lm(x ~ y)`.",
  :timepoints "Number of timepoints.",
  :tli "Tucker Lewis index.",
  :tot.withinss "The total within-cluster sum of squares.",
  :total "Total number of person-years tabulated.",
- :total.variance
- "Total cumulative proportion of variance accounted for by all factors.",
+ :total.variance "Total cumulative proportion of variance accounted for by all factors.",
  :totss "The total sum of squares.",
  :value "Minimized or maximized output value.",
  :within.r.squared "R squared within fixed-effect groups."}

@@ -2,10 +2,8 @@
  :adj.p.value "P-value adjusted for multiple comparisons.",
  :alternative "Alternative hypothesis (character).",
  :at.value "Value(s) used to calculate AMEs.",
- :at.variable
- "Variable(s) used to calculate average marginal effects (AMEs).",
- :atmean
- "Marginal effects were calculated as either partial effects for the mean observation (TRUE), or as mean partial effects (FALSE).",
+ :at.variable "Variable(s) used to calculate average marginal effects (AMEs).",
+ :atmean "Marginal effects were calculated as either partial effects for the mean observation (TRUE), or as mean partial effects (FALSE).",
  :autocorrelation "Autocorrelation.",
  :bias "Bias of the statistic.",
  :ci.width "Expected width of confidence interval.",
@@ -21,27 +19,21 @@
  :conf.low "Lower bound on the confidence interval for the estimate.",
  :contrast "Levels being compared.",
  :cumulative "Cumulative percentage of variation explained.",
- :cutoff
- "The cutoff used for classification. Observations with predicted probabilities above this value were assigned class 1, and observations with predicted probabilities below this value were assigned class 0.",
+ :cutoff "The cutoff used for classification. Observations with predicted probabilities above this value were assigned class 1, and observations with predicted probabilities below this value were assigned class 0.",
  :delta "True difference in means.",
  :den.df "Degrees of freedom of the denominator.",
- :denominator
- "The denominator, which is tau=kendall_score/denominator.",
- :dev.ratio
- "Fraction of null deviance explained at each value of lambda.",
+ :denominator "The denominator, which is tau=kendall_score/denominator.",
+ :dev.ratio "Fraction of null deviance explained at each value of lambda.",
  :df "Degrees of freedom used by this term in the model.",
  :distance "Distance between items.",
  :estimate "The estimated value of the regression term.",
- :estimate-1
- "Sometimes two estimates are computed, such as in a two-sample t-test.",
- :estimate-2
- "Sometimes two estimates are computed, such as in a two-sample t-test.",
+ :estimate-1 "Sometimes two estimates are computed, such as in a two-sample t-test.",
+ :estimate-2 "Sometimes two estimates are computed, such as in a two-sample t-test.",
  :event "Observed number of events.",
  :exp "Weighted expected number of events in each group.",
  :expected "Expected number of events.",
  :fpr "False positive rate.",
- :freq
- "Vector of frequencies at which the spectral density is estimated.",
+ :freq "Vector of frequencies at which the spectral density is estimated.",
  :gcv "Generalized cross validation error estimate.",
  :group "The group (if specified) in the lavaan model.",
  :group-1 "First group being compared.",
@@ -56,10 +48,8 @@
  :lhs "Left hand side.",
  :log-lik "Log-likelihood at the fitted value of the parameters.",
  :mcmc.error "The MCMC error.",
- :mean
- "The mean for each component. In case of 2+ dimensional models, a column with the mean is added for each dimension. NA for noise component.",
- :meansq
- "Mean sum of squares. Equal to total sum of squares divided by degrees of freedom.",
+ :mean "The mean for each component. In case of 2+ dimensional models, a column with the mean is added for each dimension. NA for noise component.",
+ :meansq "Mean sum of squares. Equal to total sum of squares divided by degrees of freedom.",
  :method "Method used.",
  :n "Number of subjects in each group.",
  :n.censor "Number of censored events.",
@@ -69,17 +59,13 @@
  :num.df "Degrees of freedom.",
  :nzero "Number of non-zero coefficients for the given lambda.",
  :obs "weighted observed number of events in each group.",
- :op
- "The operator in the model syntax (e.g. `~~` for covariances, or `~` for regression parameters).",
+ :op "The operator in the model syntax (e.g. `~~` for covariances, or `~` for regression parameters).",
  :outcome "Outcome of manifest variable.",
  :p "True proportion.",
- :p.value
- "The two-sided p-value associated with the observed statistic.",
- :p.value.-sargan
- "p-value for Sargan test of overidentifying restrictions.",
+ :p.value "The two-sided p-value associated with the observed statistic.",
+ :p.value.-sargan "p-value for Sargan test of overidentifying restrictions.",
  :p.value.weakinst "p-value for weak instruments test.",
- :p.value.-wu.-hausman
- "p-value for Wu-Hausman weak instruments test for endogeneity.",
+ :p.value.-wu.-hausman "p-value for Wu-Hausman weak instruments test for endogeneity.",
  :parameter "The parameter being modeled.",
  :pc "An integer vector indicating the principal component.",
  :percent "Percentage of variation explained.",
@@ -87,36 +73,27 @@
  :proportion "The mixing proportion of each component",
  :pyears "Person-years of exposure.",
  :quantile nil,
- :response
- "Which response column the coefficients correspond to (typically `Y1`, `Y2`, etc).",
+ :response "Which response column the coefficients correspond to (typically `Y1`, `Y2`, etc).",
  :rhs "Right hand side.",
  :robust.se "robust version of standard error estimate.",
  :row "Row ID of the original observation.",
  :scale "Scaling factor of estimated coefficient.",
  :sd "Standard deviation.",
- :series
- "Name of the series (present only for multivariate time series).",
+ :series "Name of the series (present only for multivariate time series).",
  :sig.level "Significance level (Type I error probability).",
  :size "Number of points assigned to cluster.",
- :spec
- "Vector (for univariate series) or matrix (for multivariate series) of estimates of the spectral density at frequencies corresponding to freq.",
+ :spec "Vector (for univariate series) or matrix (for multivariate series) of estimates of the spectral density at frequencies corresponding to freq.",
  :state "State (if multistate survfit object inputted).",
- :statistic
- "The value of a T-statistic to use in a hypothesis that the regression term is non-zero.",
- :statistic.-sargan
- "Statistic for Sargan test of overidentifying restrictions.",
+ :statistic "The value of a T-statistic to use in a hypothesis that the regression term is non-zero.",
+ :statistic.-sargan "Statistic for Sargan test of overidentifying restrictions.",
  :statistic.weakinst "Statistic for Wu-Hausman test.",
- :statistic.-wu.-hausman
- "Statistic for Wu-Hausman weak instruments test for endogeneity.",
+ :statistic.-wu.-hausman "Statistic for Wu-Hausman weak instruments test for endogeneity.",
  :std-estimate "The standardized regression coefficients.",
- :std.all
- "Standardized estimates based on both the variances of both (continuous) observed and latent variables.",
+ :std.all "Standardized estimates based on both the variances of both (continuous) observed and latent variables.",
  :std.dev "Standard deviation explained by this PC.",
  :std.error "The standard error of the regression term.",
- :std.lv
- "Standardized estimates based on the variances of the (continuous) latent variables only.",
- :std.nox
- "Standardized estimates based on both the variances of both (continuous) observed and latent variables, but not the variances of exogenous covariates.",
+ :std.lv "Standardized estimates based on the variances of the (continuous) latent variables only.",
+ :std.nox "Standardized estimates based on both the variances of both (continuous) observed and latent variables, but not the variances of exogenous covariates.",
  :step "Which step of lambda choices was used.",
  :strata "Strata if stratified survfit object inputted.",
  :stratum "The error stratum.",
@@ -128,12 +105,10 @@
  :tpr "The true positive rate at the given cutoff.",
  :type "Either \"weighted\" or \"unweighted\".",
  :uniqueness "Proportion of residual, or unexplained variance.",
- :value
- "The value/estimate of the component. Results from data reshaping.",
+ :value "The value/estimate of the component. Results from data reshaping.",
  :var-kendall-score "Variance of the kendall_score.",
  :variable "Variable under consideration.",
- :variance
- "In case of one-dimensional and spherical models, the variance for each component, omitted otherwise. `NA` for noise component.",
+ :variance "In case of one-dimensional and spherical models, the variance for each component, omitted otherwise. `NA` for noise component.",
  :withinss "The within-cluster sum of squares.",
  :y.level "The response level.",
  :y.value "The response level.",
