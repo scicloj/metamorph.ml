@@ -24,21 +24,23 @@
 
 (defn- augment-fn [model data]
   (-> data
-      (tc/add-column :.residuals (.estimateResiduals (:model-data model)))))
+      (tc/add-column :.resid (.estimateResiduals (:model-data model)))))
 
 
 (defn- glance-ols [model]
 
-  {:totss
-     (.calculateTotalSumOfSquares (:model-data model))
-     :adj.r.squared
-     (.calculateAdjustedRSquared (:model-data model))
-     :rss
-     (.calculateResidualSumOfSquares (:model-data model))
+  (ds/->dataset
+   {
+    :totss
+    (.calculateTotalSumOfSquares (:model-data model))
+    :adj.r.squared
+    (.calculateAdjustedRSquared (:model-data model))
+    :rss
+    (.calculateResidualSumOfSquares (:model-data model))
 
-     ;; (.estimateRegressandVariance (:model-data model)) ; TODO what this ?
-     :sigma
-     (.estimateErrorVariance (:model-data model))})
+    ;; (.estimateRegressandVariance (:model-data model)) ; TODO what this ?
+    :sigma
+    (.estimateErrorVariance (:model-data model))}))
 
 (defn- train-ols [feature-ds target-ds options]
   (let [

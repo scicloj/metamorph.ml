@@ -16,6 +16,7 @@
    [tech.v3.datatype.errors :as errors]
    [tech.v3.datatype.export-symbols :as exporter]
    [tech.v3.datatype.functional :as dfn]
+   [scicloj.metamorph.ml.tidy-models :as tidy]
    [clojure.set :as set])
     ;;
 
@@ -715,9 +716,13 @@
         (get
          (options->model-def (:options model))
          :tidy-fn)]
+
     (if tidy-fn
-      (tidy-fn model)
+      (tidy/validate-tidy-ds
+       (tidy-fn model))
       (ds/->dataset {}))))
+
+
 
 (defn glance
   "Gives a glance on the model, returning a dataset with model information
@@ -738,8 +743,10 @@
          (options->model-def (:options model))
          :glance-fn)]
     (if glance-fn
-      (glance-fn model)
+      (tidy/validate-glance-ds
+       (glance-fn model))
       (ds/->dataset {}))))
+
 
 
 (defn augment
@@ -763,7 +770,9 @@
          (options->model-def (:options model))
          :augment-fn)]
     (if augment-fn
-      (augment-fn model data)
+      (tidy/validate-augment-ds
+       (augment-fn model data)
+       data)
       data)))
 
 
