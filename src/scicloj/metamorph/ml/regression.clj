@@ -64,7 +64,8 @@
                         (dec (first shape)))]
     ols))
 
-(defn- predict-ols [feature-ds thawed-model {:keys [options model-data target-categorical-maps] :as model}])
+(defn- predict-ols [feature-ds thawed-model model]
+  (throw "Prediction is not supported by this model."))
 
 
 (ml/define-model! :metamorph.ml/ols
