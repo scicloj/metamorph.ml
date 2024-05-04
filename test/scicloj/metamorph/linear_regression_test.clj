@@ -3,6 +3,7 @@
    [scicloj.metamorph.ml :as ml]
    [scicloj.metamorph.ml.toydata :as data]
    [tech.v3.dataset :as ds]
+   [scicloj.metamorph.ml.regression]
    [tech.v3.dataset.modelling :as ds-mod]))
 
 (def ds
