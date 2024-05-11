@@ -1,6 +1,6 @@
 unreleased
 
-- added OLS
+- added fastmath/lm
 - added tidy output validation
 
 0.8.2
