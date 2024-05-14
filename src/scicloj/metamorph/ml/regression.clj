@@ -8,6 +8,7 @@
 
 
 (defn- tidy-ols [model]
+
   (let [coeff (:coefficients (:model-data model))]
     (ds/->dataset
      {
@@ -19,6 +20,10 @@
       :estimate (map :estimate coeff)
       :p.value (map :p-value coeff)
       :std.error (map :stderr coeff)})))
+
+
+
+
 
 
 
@@ -39,8 +44,16 @@
       :aic (:aic model-data)
       :bic (:bic model-data)
       :totss (:tss model-data)
+      :n (:observations model-data)
       :adj.r.squared (:adjusted-r-squared model-data)
-      :rss (:rss model-data)})))
+      :r.squared (:r-squared model-data)
+      :rss (:rss model-data)
+      :statistic (:f-statistic model-data)
+      :p.value (:p-value model-data)
+      :df (-> model-data :df :model)
+
+      :df.residual (-> model-data :df :residuals)})))
+
 
 
 (defn- train-ols [feature-ds target-ds options]
