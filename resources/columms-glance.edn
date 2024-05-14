@@ -68,7 +68,7 @@
 ;; :missing-method "Method for eliminating missing data.",
 ;; :model "A character string denoting the model at which the optimal BIC occurs.",
  :mse "Mean Squared Deviation"
-;; :n "The total number of observations.",
+:n "The total number of observations.",
 ;; :n.clusters "Number of clusters.",
 ;; :n.factors "The number of fitted factors.",
 ;; :n.max "Maximum number of subjects at risk.",
