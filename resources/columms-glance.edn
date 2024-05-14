@@ -21,7 +21,7 @@
 ;; :crit "Minimized criterion",
 ;; :cv.crit "Cross-validation score",
 ;; :den.df "Degrees of freedom of the denominator",
-;; :deviance "Deviance of the model.",
+ :deviance "Deviance of the model.",
  :df "Degrees of freedom used by the model."
 ;; :df.null "Degrees of freedom used by the null model.",
  :df.residual "Residual degrees of freedom.",
