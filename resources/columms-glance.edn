@@ -116,7 +116,7 @@
 ;; :sigma-2-j "The square root of the estimated residual variance for the j-th longitudinal process.",
 ;; :spar "Smoothing parameter.",
 ;; :srmr "Standardised root mean residual.",
-;; :statistic "Test statistic.",
+:statistic "Test statistic.",
 ;; :statistic.-sargan "Statistic for Sargan test.",
 ;; :statistic.weak.instr "Statistic for weak instrument F-test.",
 ;; :statistic.-wu.-hausman "Statistic for Wu-Hausman test.",
