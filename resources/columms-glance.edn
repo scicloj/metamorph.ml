@@ -24,7 +24,7 @@
 ;; :deviance "Deviance of the model.",
  :df "Degrees of freedom used by the model."
 ;; :df.null "Degrees of freedom used by the null model.",
-;; :df.residual "Residual degrees of freedom.",
+ :df.residual "Residual degrees of freedom.",
 ;; :dw.original "Durbin-Watson statistic of original fit.",
 ;; :dw.transformed "Durbin-Watson statistic of transformed fit.",
 ;; :edf "The effective degrees of freedom.",
