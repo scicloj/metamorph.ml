@@ -88,7 +88,7 @@
  ;; :statistic.-sargan "Statistic for Sargan test of overidentifying restrictions.",
  ;; :statistic.weakinst "Statistic for Wu-Hausman test.",
  ;; :statistic.-wu.-hausman "Statistic for Wu-Hausman weak instruments test for endogeneity.",
- ;; :std-estimate "The standardized regression coefficients.",
+ :std-estimate "The standardized regression coefficients.",
  ;; :std.all "Standardized estimates based on both the variances of both (continuous) observed and latent variables.",
  ;; :std.dev "Standard deviation explained by this PC.",
   :std.error "The standard error of the regression term."
