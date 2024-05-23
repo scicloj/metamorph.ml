@@ -4,10 +4,13 @@
    [scicloj.metamorph.ml :as ml]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
-   [tech.v3.dataset.column-filters :as cf]))
+   [tech.v3.datatype :as dt]
+   [tech.v3.dataset.tensor :as dtt]
+   [tech.v3.dataset.column-filters :as cf])
+  (:import [org.apache.commons.math3.stat.regression OLSMultipleLinearRegression]))
 
 
-(defn- tidy-ols [model]
+(defn- tidy-fm-ols [model]
 
   (let [coeff (:coefficients (:model-data model))]
     (ds/->dataset
@@ -27,7 +30,7 @@
 
 
 
-(defn- augment-fn [model data]
+(defn- augment-fm-fn [model data]
   (let [residuals (-> model :model-data :residual)]
     (-> data
         (tc/add-columns {:.resid (:residuals residuals)
@@ -35,7 +38,7 @@
 
 
 
-(defn- glance-ols [model]
+(defn- glance-fm-ols [model]
   (let [model-data (:model-data model)]
     (ds/->dataset
      {
@@ -56,7 +59,7 @@
 
 
 
-(defn- train-ols [feature-ds target-ds options]
+(defn- train-fm-ols [feature-ds target-ds options]
   (let [
         xss
         (->
@@ -71,11 +74,70 @@
 
     (fm-reg/lm ys xss)))
 
+(defn- predict-fm-ols [feature-ds thawed-model model]
+  (throw "Prediction is not supported by this model."))
+
+
+
+
+(defn- tidy-ols [model]
+   (ds/->dataset
+    {:term
+     (concat (:target-columns model)
+             (:feature-columns model))
+
+     :estimate
+     (.estimateRegressionParameters (:model-data model))
+     :std.error
+     (.estimateRegressionParametersStandardErrors (:model-data model))}))
+
+
+(defn- augment-fn [model data]
+  (-> data
+      (tc/add-column :.resid (.estimateResiduals (:model-data model)))))
+
+
+(defn- glance-ols [model]
+
+  (ds/->dataset
+   {
+    :totss
+    (.calculateTotalSumOfSquares (:model-data model))
+    :adj.r.squared
+    (.calculateAdjustedRSquared (:model-data model))
+    :rss
+    (.calculateResidualSumOfSquares (:model-data model))
+
+    ;; (.estimateRegressandVariance (:model-data model)) ; TODO what this ?
+    :sigma
+    (.estimateErrorVariance (:model-data model))}))
+
+(defn- train-ols[feature-ds target-ds options]
+  (let [
+
+        ds (tc/append target-ds feature-ds)
+        values
+        (->
+         ds
+
+         (dtt/dataset->tensor)
+         (dt/->double-array))
+        shape
+        (ds/shape ds)
+
+
+        ols (OLSMultipleLinearRegression.)
+        _
+        (.newSampleData ols values
+                        (second shape)
+                        (dec (first shape)))]
+    ols))
+
 (defn- predict-ols [feature-ds thawed-model model]
   (throw "Prediction is not supported by this model."))
 
 
-(ml/define-model! :fastmath/ols
+(ml/define-model! :metamorph.ml/ols
   train-ols
   predict-ols
   {
@@ -83,8 +145,13 @@
    :glance-fn glance-ols
    :augment-fn augment-fn})
 
-
-
+(ml/define-model! :fastmath/ols
+  train-fm-ols
+  predict-fm-ols
+  {
+   :tidy-fn tidy-fm-ols
+   :glance-fn glance-fm-ols
+   :augment-fn augment-fm-fn})
 
 
 
