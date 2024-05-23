@@ -68,7 +68,7 @@
 ;; :missing-method "Method for eliminating missing data.",
 ;; :model "A character string denoting the model at which the optimal BIC occurs.",
  :mse "Mean Squared Deviation"
- :n "The total number of observations.",
+ :n "The total number of observations."
 ;; :n.clusters "Number of clusters.",
 ;; :n.factors "The number of fitted factors.",
 ;; :n.max "Maximum number of subjects at risk.",
@@ -116,7 +116,15 @@
 ;; :sigma-2-j "The square root of the estimated residual variance for the j-th longitudinal process.",
 ;; :spar "Smoothing parameter.",
 ;; :srmr "Standardised root mean residual.",
+<<<<<<< HEAD
 :statistic "Test statistic.",
+=======
+<<<<<<< HEAD
+;; :statistic "Test statistic.",
+=======
+:statistic "Test statistic.",
+>>>>>>> 778eff62acb97776cd1e3f783ce8dee9566230b9
+>>>>>>> fastmathOLS
 ;; :statistic.-sargan "Statistic for Sargan test.",
 ;; :statistic.weak.instr "Statistic for weak instrument F-test.",
 ;; :statistic.-wu.-hausman "Statistic for Wu-Hausman test.",

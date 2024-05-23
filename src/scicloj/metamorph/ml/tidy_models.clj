@@ -14,15 +14,15 @@ https://github.com/scicloj/metamorph.ml/tree/main/resources/*.edn
 
 (defn allowed-glance-columns []
   (keys
-   (edn/read-string (slurp "https://raw.githubusercontent.com/scicloj/metamorph.ml/linearRegression/resources/columms-glance.edn"))))
+   (edn/read-string (slurp "https://raw.githubusercontent.com/scicloj/metamorph.ml/main/resources/columms-glance.edn"))))
 
 (defn allowed-tidy-columns []
   (keys
-   (edn/read-string (slurp "https://raw.githubusercontent.com/scicloj/metamorph.ml/linearRegression/resources/columms-tidy.edn"))))
+   (edn/read-string (slurp "https://raw.githubusercontent.com/scicloj/metamorph.ml/main/resources/columms-tidy.edn"))))
 
 (defn allowed-augment-columns []
   (keys
-   (edn/read-string (slurp "https://raw.githubusercontent.com/scicloj/metamorph.ml/linearRegression/resources/columms-augment.edn"))))
+   (edn/read-string (slurp "https://raw.githubusercontent.com/scicloj/metamorph.ml/main/resources/columms-augment.edn"))))
 
 (defn _get-allowed-keys []
   {:glance (allowed-glance-columns)

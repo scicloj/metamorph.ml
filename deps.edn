@@ -3,7 +3,7 @@
         pppmap/pppmap               {:mvn/version "1.0.0"}
         scicloj/tablecloth          {:mvn/version "7.029.2"}
         metosin/malli               {:mvn/version "0.16.0"}
-        generateme/fastmath         {:mvn/version "2.4.0"}
+        generateme/fastmath         {:mvn/version "3.0.0-SNAPSHOT"}
         aerial.hanami/aerial.hanami {:mvn/version "0.20.0"}}
 
  :paths ["src" "resources"]
