@@ -1,4 +1,8 @@
 unreleased
+
+- added OLS
+- added tidy output validation
+
 0.8.2
  -fixed metric bug
  
