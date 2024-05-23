@@ -164,10 +164,10 @@
 
 
 
-(->
- (ml/glance model)
- (ds/rows)
- first)
+;; (->
+;;  (ml/glance model)
+;;  (ds/rows)
+;;  first)
 ;; => {:p.value 3.7931521057466E-7,
 ;;     :statistic 13.932463690208833,
 ;;     :adj.r.squared 0.8066423189909859,
