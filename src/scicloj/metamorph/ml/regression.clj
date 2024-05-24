@@ -75,9 +75,13 @@
     (fm-reg/lm ys xss)))
 
 (defn- predict-fm-ols [feature-ds thawed-model model]
-  (throw "Prediction is not supported by this model."))
+  (let [prediction (map
+                    (:model-data model)
+                    (-> feature-ds ds/rowvecs))]
 
 
+    (ds/->dataset (hash-map (-> model :target-columns first)
+                            prediction))))
 
 
 (defn- tidy-ols [model]
@@ -134,7 +138,7 @@
     ols))
 
 (defn- predict-ols [feature-ds thawed-model model]
-  (throw "Prediction is not supported by this model."))
+  (throw (Exception. "Prediction is not supported by this model.")))
 
 
 (ml/define-model! :metamorph.ml/ols
