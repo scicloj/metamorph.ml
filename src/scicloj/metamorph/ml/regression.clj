@@ -6,8 +6,12 @@
    [tech.v3.dataset :as ds]
    [tech.v3.datatype :as dt]
    [tech.v3.dataset.tensor :as dtt]
+   [fastmath.core :as m]
+   [fastmath.vector :as v]
+
    [tech.v3.dataset.column-filters :as cf])
-  (:import [org.apache.commons.math3.stat.regression OLSMultipleLinearRegression]))
+  (:import [org.apache.commons.math3.stat.regression OLSMultipleLinearRegression]
+           [fastmath.java Array]))
 
 
 (defn- tidy-fm-ols [model]
@@ -85,36 +89,41 @@
 
 
 (defn- tidy-ols [model]
-   (ds/->dataset
-    {:term
-     (concat (:target-columns model)
-             (:feature-columns model))
+  (let [ols (->  model :model-data :ols)]
+    (ds/->dataset
+     {:term
+      (concat (:target-columns ols)
+              (:feature-columns ols))
 
-     :estimate
-     (.estimateRegressionParameters (:model-data model))
-     :std.error
-     (.estimateRegressionParametersStandardErrors (:model-data model))}))
+      :estimate
+      (.estimateRegressionParameters ols)
+      :std.error
+      (.estimateRegressionParametersStandardErrors ols)})))
 
 
-(defn- augment-fn [model data]
-  (-> data
-      (tc/add-column :.resid (.estimateResiduals (:model-data model)))))
+(defn- augment-fn [model
+                   data]
+  (let [ols (->  model :model-data :ols)]
+    (-> data
+        (tc/add-column :.resid (.estimateResiduals ols)))))
 
 
 (defn- glance-ols [model]
 
-  (ds/->dataset
-   {
-    :totss
-    (.calculateTotalSumOfSquares (:model-data model))
-    :adj.r.squared
-    (.calculateAdjustedRSquared (:model-data model))
-    :rss
-    (.calculateResidualSumOfSquares (:model-data model))
 
-    ;; (.estimateRegressandVariance (:model-data model)) ; TODO what this ?
-    :sigma
-    (.estimateErrorVariance (:model-data model))}))
+  (let [ols (->  model :model-data :ols)]
+    (ds/->dataset
+     {
+      :totss
+      (.calculateTotalSumOfSquares ols)
+      :adj.r.squared
+      (.calculateAdjustedRSquared ols)
+      :rss
+      (.calculateResidualSumOfSquares ols)
+
+      ;; (.estimateRegressandVariance (:model-data model)) ; TODO what this ?
+      :sigma
+      (.estimateErrorVariance ols)})))
 
 (defn- train-ols[feature-ds target-ds options]
   (let [
@@ -131,14 +140,49 @@
 
 
         ols (OLSMultipleLinearRegression.)
+
         _
         (.newSampleData ols values
                         (second shape)
-                        (dec (first shape)))]
-    ols))
+                        (dec (first shape)))
+        beta (.estimateRegressionParameters ols)]
+    {:ols ols
+     :beta beta}))
+
+
+
+(defn- single-predict [model xs]
+
+  (let [intercept (Array/aget beta 0)
+
+
+        coefficients (vec (rest beta))]
+
+    (m/+ (v/dot coefficients xs) intercept)))
+ 
 
 (defn- predict-ols [feature-ds thawed-model model]
-  (throw (Exception. "Prediction is not supported by this model.")))
+
+
+
+  (let [xs
+        (->
+         feature-ds
+         ds/rowvecs)
+
+        xs
+        (into-array (map double-array xs))
+
+
+        predicted-values
+        (map
+         #(single-predict model %)
+         xs)]
+    (ds/->dataset {(-> model :target-columns first) predicted-values})))
+
+
+
+  
 
 
 (ml/define-model! :metamorph.ml/ols
