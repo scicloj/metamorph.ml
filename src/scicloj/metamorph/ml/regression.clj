@@ -150,12 +150,11 @@
      :beta beta}))
 
 
-
 (defn- single-predict [model xs]
 
-  (let [intercept (Array/aget beta 0)
-
-
+  (def model model)
+  (let [beta (-> model :model-data :beta)
+        intercept (Array/aget beta 0)
         coefficients (vec (rest beta))]
 
     (m/+ (v/dot coefficients xs) intercept)))
