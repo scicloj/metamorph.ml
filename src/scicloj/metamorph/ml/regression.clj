@@ -83,9 +83,11 @@
                     (:model-data model)
                     (-> feature-ds ds/rowvecs))]
 
-
-    (ds/->dataset (hash-map (-> model :target-columns first)
-                            prediction))))
+    (let [target-column-name (-> model :target-columns first)]
+      (ds/new-dataset [target-column-name
+                       (ds/new-column target-column-name
+                                      prediction
+                                      {:column-type :prediction})]))))
 
 
 (defn- tidy-ols [model]
@@ -177,11 +179,13 @@
         (map
          #(single-predict model %)
          xs)]
-    (ds/->dataset {(-> model :target-columns first) predicted-values})))
+    (let [target-column-name (-> model :target-columns first)]
+      (ds/new-dataset [target-column-name
+                       (ds/new-column target-column-name
+                                      predicted-values
+                                      {:column-type :prediction})]))))
 
 
-
-  
 
 
 (ml/define-model! :metamorph.ml/ols
