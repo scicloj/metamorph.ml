@@ -867,6 +867,19 @@
                                    ::target-ds (cf/target data))
                            (assoc
                             :metamorph/data (predict data (get ctx id)))))))))
-                     
+
 
 (malli/instrument-ns 'scicloj.metamorph.ml)
+
+
+
+(defn require-tribuo-models!
+  "Add scicloj.ml.tribuo to the pipeline and require its namespace,
+  thus defining all relevant tribuo models.
+  This approach is necessary due to a current problem
+  with scicloj.ml.tribuo as a transitive dependency."
+  []
+  (clojure.repl.deps/add-libs
+   '{scicloj/scicloj.ml.tribuo {:git/url "https://github.com/scicloj/scicloj.ml.tribuo"
+                                :git/sha "f4ebf1e1bb78eb99dd35ca886d75b9f65d800e8d"}})
+  (require 'scicloj.ml.tribuo))

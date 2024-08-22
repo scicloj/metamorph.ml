@@ -1,8 +1,9 @@
 unreleased
 
-- changed Clojure version
 - added fastmath/lm
 - added tidy output validation
+- changed Clojure version
+- added require-tribuo-models! function
 
 0.8.2
  -fixed metric bug
