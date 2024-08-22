@@ -1,5 +1,6 @@
 unreleased
 
+- changed Clojure version
 - added fastmath/lm
 - added tidy output validation
 
