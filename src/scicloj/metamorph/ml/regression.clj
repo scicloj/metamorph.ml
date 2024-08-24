@@ -35,21 +35,20 @@
 
 
 (defn- augment-fm-fn [model data]
-  (let [residuals (-> model :model-data :residual)]
+  (let [residuals (-> model :model-data :residuals)]
     (-> data
-        (tc/add-columns {:.resid (:residuals residuals)
+        (tc/add-columns {:.resid (:raw residuals)
                          :.fitted (:fitted (:model-data model))}))))
 
 
 
 (defn- glance-fm-ols [model]
-  (let [model-data (:model-data model)]
+  (let [{:as model-data :keys [ll]} (:model-data model)]
     (ds/->dataset
-     {
-      :mse (:mse model-data)
-      :log-lik (:log-likelihood model-data)
-      :aic (:aic model-data)
-      :bic (:bic model-data)
+     {:mse (:msreg model-data)
+      :log-lik (:log-likelihood ll)
+      :aic (:aic ll)
+      :bic (:bic ll)
       :totss (:tss model-data)
       :n (:observations model-data)
       :adj.r.squared (:adjusted-r-squared model-data)
@@ -58,8 +57,7 @@
       :statistic (:f-statistic model-data)
       :p.value (:p-value model-data)
       :df (-> model-data :df :model)
-
-      :df.residual (-> model-data :df :residuals)})))
+      :df.residual (-> model-data :df :residual)})))
 
 
 
@@ -160,7 +158,7 @@
         coefficients (vec (rest beta))]
 
     (m/+ (v/dot coefficients xs) intercept)))
- 
+
 
 (defn- predict-ols [feature-ds thawed-model model]
 
@@ -184,7 +182,6 @@
                        (ds/new-column target-column-name
                                       predicted-values
                                       {:column-type :prediction})]))))
-
 
 
 
