@@ -8,9 +8,6 @@
 
     "features": {
     	"ghcr.io/devcontainers-contrib/features/clojure-asdf:2": {},
-     	"ghcr.io/devcontainers-contrib/features/tmux-apt-get:1": {},
-		"ghcr.io/devcontainers-contrib/features/redis-homebrew:1" : {},
-		"ghcr.io/rocker-org/devcontainer-features/r-apt:latest": {},
 		"ghcr.io/devcontainers-contrib/features/bash-command:1": {"command": "apt-get update && apt-get install -y rlwrap"}
 
 
@@ -23,12 +20,11 @@
 			"extensions": 
 			[
 				"vscjava.vscode-java-pack",
-				"borkdude.clj-kondo",
 				"betterthantomorrow.calva"
 			]
 		}
 	},
 
-	"remoteUser": "vscode",
+	"remoteUser": "vscode"
 	//"postStartCommand": "tmux new -d /home/vscode/.asdf/shims/clojure -Sdeps '{:deps {nrepl/nrepl {:mvn/version,\"1.0.0\"},cider/cider-nrepl {:mvn/version,\"RELEASE\"}}},refactor-nrepl/refactor-nrepl {:mvn/version \"RELEASE\"}}' -m nrepl.cmdline -p 12345 --middleware \"[cider.nrepl/cider-middleware]\" &"
 }
