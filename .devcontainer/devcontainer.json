@@ -22,12 +22,11 @@
 			"extensions": 
 			[
 				"vscjava.vscode-java-pack",
-				"borkdude.clj-kondo",
 				"betterthantomorrow.calva"
 			]
 		}
 	},
 
-	"remoteUser": "vscode",
+	"remoteUser": "vscode"
 	//"postStartCommand": "tmux new -d /home/vscode/.asdf/shims/clojure -Sdeps '{:deps {nrepl/nrepl {:mvn/version,\"1.0.0\"},cider/cider-nrepl {:mvn/version,\"RELEASE\"}}},refactor-nrepl/refactor-nrepl {:mvn/version \"RELEASE\"}}' -m nrepl.cmdline -p 12345 --middleware \"[cider.nrepl/cider-middleware]\" &"
 }
