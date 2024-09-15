@@ -1,4 +1,7 @@
 unreleased
+
+- fixed #19
+
 0.8.2
  -fixed metric bug
  

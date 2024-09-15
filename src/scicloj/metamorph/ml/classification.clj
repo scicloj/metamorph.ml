@@ -102,6 +102,6 @@
                                   (fn [] (rand-nth (:distinct-labels model-data))))))]
 
       (ds/new-dataset [(ds/new-column target-column-name dummy-labels {:column-type :prediction
-                                                                       :categorical-map (get target-categorical-maps target-column-name)})])))
+                                                                       })])))
      
   {:glance-fn (fn [_] (ds/->dataset {:npar 0}))})
