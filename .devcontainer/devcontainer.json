@@ -1,5 +1,5 @@
 {
-	"name": "my Clojure app",
+	"name": "metamorph.ml",
 	"build": {
 		"dockerfile": "Dockerfile"
 
