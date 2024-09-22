@@ -664,18 +664,6 @@
       ;;   (vec (distinct simple-predicted-values))
       ;;   (-> target-cat-maps-from-predict vals first :lookup-table)))
 
-(defn- assoc-categorical-maps [pred-ds target-categorical-map target-columns]
-  (if target-categorical-map
-    (reduce (fn [ds col]
-              (ds/assoc-metadata
-               ds
-               [col]
-               :categorical-map (get target-categorical-map col)))
-            pred-ds
-            target-columns
-            )
-    pred-ds))
-
 
 (defn predict
   "Predict returns a dataset with only the predictions in it.
@@ -695,17 +683,13 @@
   (let [{:keys [predict-fn] :as model-def} (options->model-def (:options model))
         feature-ds (ds/select-columns dataset (:feature-columns model))
         thawed-model (thaw-model model model-def)
-        pred-ds 
-        (-> 
-         (predict-fn feature-ds
-                     thawed-model
-                     model)
-         (assoc-categorical-maps 
-                                 (:target-categorical-maps model)
-                                 (:target-columns model)))]
+        pred-ds (predict-fn feature-ds
+                            thawed-model
+                            model)]
 
     (warn-inconsitent-maps model pred-ds)
     pred-ds))
+
 
 (defn loglik [model y yhat]
 

@@ -1,7 +1,7 @@
 (ns scicloj.metamorph.ml-test
   (:require
-   [scicloj.ml.smile.classification]
    [clojure.test :as t :refer [deftest is]]
+   [confuse.multi-class-metrics :as mcm]
    [malli.core :as m]
    [scicloj.metamorph.core :as morph]
    [scicloj.metamorph.ml :as ml]
@@ -9,8 +9,10 @@
     :as eval
     :refer [qualify-pipelines]]
    [scicloj.metamorph.ml.loss :as loss]
+   [scicloj.metamorph.ml.toydata :as toydata]
    [scicloj.metamorph.ml.metrics]
    [tablecloth.api :as tc]
+   [taoensso.nippy :as nippy]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.categorical :as ds-cat]
@@ -49,7 +51,7 @@
 
       (let [
             predic-col (ds/new-column :species (repeat (tc/row-count feature-ds) 1)
-                                      {
+                                      {:categorical-map (get  target-categorical-maps (first target-columns))
                                        :column-type :prediction})
             predict-ds (ds/new-dataset [predic-col])]
 
@@ -471,14 +473,14 @@
         (->
          (ds/->dataset {:x [0 1 ] :target ["x" "y"]})
          (ds-mod/set-inference-target :target)
-         (ml/train {:model-type :test-model-float-predictions}))
-        prediction (ml/predict (ds/->dataset {:x [0]}) model)
-        ]
+         (ml/train {:model-type :test-model-float-predictions}))]
+
+
     (is (= [1.0]
-         (->  prediction :species)))))
+         (-> (ml/predict (ds/->dataset {:x [0]}) model) :species)))))
 
 
-(deftest test-predict-string
+(deftest test-predict-striong
   (let [model
         (->
          (ds/->dataset {:x [0 1 ] :target ["x" "y"]})
@@ -489,47 +491,5 @@
     (is (= ["pred"]
            (-> (ml/predict (ds/->dataset {:x [0]}) model) :species)))))
 
-
-(deftest test-cat-reverse-float
-  (let [model
-        (->
-         (ds/->dataset {:x [0 1] :target ["x" "y"]})
-         (ds/categorical->number [:target])
-         (ds-mod/set-inference-target :target)
-         (ml/train {:model-type :smile.classification/logistic-regression}))
-        prediction (ml/predict (ds/->dataset {:x [0]}) model)]
-
-
-    (is
-     (= ["x"]
-        (-> prediction ds-cat/reverse-map-categorical-xforms :target)))
-    (is (= [0.0]
-           (-> prediction :target)))))
-
-
-(deftest test-cat-reverse-int
-  (let [train
-        (->
-         (ds/->dataset {:x [0 1] :target ["x" "y"]})
-         (ds/categorical->number [:target] [] :int16)
-         (ds-mod/set-inference-target :target)
-         )
-
-        model
-        (-> train
-         (ml/train {:model-type :smile.classification/logistic-regression}))
-        prediction (ml/predict (ds/->dataset {:x [0]}) model)]
-
-    (is
-     (= ["x"]
-        (-> prediction ds-cat/reverse-map-categorical-xforms :target)))
-    
-    
-    ;; TODO inconsistent
-    ;; https://github.com/scicloj/scicloj.ml.smile/issues/16
-    (is (= [0 1]
-           (-> train :target seq)))
-    (is (= [0.0]
-           (-> prediction :target seq)))))
 
 
