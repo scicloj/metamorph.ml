@@ -345,8 +345,8 @@
 
 
        * `:return-best-pipeline-only` - Only return information of the best performing pipeline. Default is true.
-       * `:return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is true.
-       * `:map-fn` - Controls parallelism, so if we use map (:map) , pmap (:pmap) or :mapv to map over different pipelines. Default :pmap
+       * `:return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is `true`.
+       * `:map-fn` - Controls parallelism, so if we use map (:map) , pmap (:pmap) or :mapv to map over different pipelines. Default is `:map`
        * `:evaluation-handler-fn` - Gets called once with the complete result of an individual pipeline evaluation.
            It can be used to adapt the data returned for each evaluation and / or to make side effects using
            the evaluatio data.
