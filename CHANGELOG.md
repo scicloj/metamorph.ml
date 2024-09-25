@@ -1,5 +1,7 @@
 unreleased
 
+- added fastmath/lm
+- added tidy output validation
 - fixed #19
 
 0.8.2

@@ -1,5 +1,5 @@
 {
-	"name": "my Clojure app",
+	"name": "metamorph.ml",
 	"build": {
 		"dockerfile": "Dockerfile"
 
@@ -8,8 +8,6 @@
 
     "features": {
     	"ghcr.io/devcontainers-contrib/features/clojure-asdf:2": {},
-     	"ghcr.io/devcontainers-contrib/features/tmux-apt-get:1": {},
-		"ghcr.io/devcontainers-contrib/features/redis-homebrew:1" : {},
 		"ghcr.io/devcontainers-contrib/features/bash-command:1": {"command": "apt-get update && apt-get install -y rlwrap"}
 
 

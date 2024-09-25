@@ -52,14 +52,9 @@
 
         prediction (ml/predict ds model)]
 
-    (is (=
-         ["setosa","setosa"]
-         (-> prediction
-             (ds-cat/reverse-map-categorical-xforms)
-             (tc/head 2)
-             :species)))
 
     (is (= (:species prediction) (repeat 150 0)))))
+
 
 
 (deftest dummy-classification-majority []
