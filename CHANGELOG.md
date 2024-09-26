@@ -1,5 +1,7 @@
 unreleased
 
+0.9.0
+
 - added linear models from fastmath 
 - added tidy output validation
 - added support for design-matrix
