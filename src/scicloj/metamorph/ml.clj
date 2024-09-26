@@ -55,10 +55,8 @@
 
 
 
-
 (defn score [predictions-ds trueth-ds target-column-name metric-fn other-metrices]
-  (let [
-        predictions-col (get (ds-cat/reverse-map-categorical-xforms predictions-ds)
+  (let [predictions-col (get (ds-cat/reverse-map-categorical-xforms predictions-ds)
                              target-column-name)
         trueth-col (get (ds-cat/reverse-map-categorical-xforms trueth-ds)
                         target-column-name)
@@ -331,7 +329,9 @@
     `tablecloth.api/split->seq` produces such splits. Supervised models require both keys (:train and :test), while unsupervised models only use :train
 
    * `metric-fn` Metric function to use. Typically comming from `tech.v3.ml.loss`. For supervised models the metric-fn receives the trueth
-      and predicted values and should return a single double number.  For unsupervised models the function receives the fitted ctx
+      and predicted values and should return a single double number.  The metric fns receives a a seq *without* categorical maps. These
+      get reverse-applied to the prediction , if present, before passing the values to the metriic fn.
+      For unsupervised models the function receives the fitted ctx
       and should return a singel double number as well. This metric will be used to sort and eventualy filter the result, depending on the options
       (:return-best-pipeline-only   and :return-best-crossvalidation-only). The notion of `best` comes from metric-fn combined with loss-and-accuracy
   

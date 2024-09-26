@@ -491,5 +491,112 @@
     (is (= ["pred"]
            (-> (ml/predict (ds/->dataset {:x [0]}) model) :species)))))
 
+(defn- do-score [predict-col trueth-col metric-fn]
+  (ml/score
+   (ds/new-dataset  [predict-col])
+   (ds/new-dataset  [trueth-col])
+   :species
+   metric-fn
+   {})
+  )
 
 
+(defn is-accuracy [predict-col trueth-col metric-fn expected-acc]
+  (is (= {:metric expected-acc, :other-metrices-result []}
+         (do-score predict-col trueth-col metric-fn))))
+
+
+
+(defn- score-categorical [predict-col-seq predict-a-b-table
+                          trueth-col-seq trueth-a-b-table
+                          metric-fn
+                          ]
+  (do-score 
+      (ds/new-column  :species predict-col-seq
+                   (when predict-a-b-table
+                     {:categorical-map
+                      {:lookup-table predict-a-b-table
+                       :src-column :species}}))
+   (ds/new-column  :species trueth-col-seq
+                   (when trueth-a-b-table
+                     {:categorical-map
+                      {:lookup-table trueth-a-b-table
+                       :src-column :species}})
+                   )
+   metric-fn
+))
+
+(defn is-mapped-columns-accuracy [
+                                 predict-col-seq predict-a-b-table
+                                 trueth-col-seq trueth-a-b-table
+                                 metric-fn
+                                 expected-accuracy]
+  
+  (is (= {:metric expected-accuracy, :other-metrices-result []}
+         
+         (score-categorical
+          predict-col-seq predict-a-b-table
+          trueth-col-seq trueth-a-b-table
+          metric-fn
+          ))))
+
+
+(deftest test-score
+
+  (is-accuracy
+   (ds/new-column  :species [1 1 1 1 1 1] nil)
+   (ds/new-column  :species [1 1 1 0 0 0] nil)
+   loss/classification-accuracy
+   0.5)
+
+
+  (is-accuracy
+   (ds/new-column  :species [:a :a] nil)
+   (ds/new-column  :species [:a :b] nil)
+   loss/classification-accuracy
+   0.5)
+
+  (is-mapped-columns-accuracy [0 1] {:a 0 :b 1}
+                              [0 1] {:a 0 :b 1}
+                              loss/classification-accuracy
+                              1.0)
+
+  (is-mapped-columns-accuracy [0 1] {:a 0 :b 1}
+                              [1 0] {:a 1 :b 0}
+                              loss/classification-accuracy
+                              1.0)
+
+  (is-mapped-columns-accuracy [:a :b] nil
+                              [1 0] {:a 1 :b 0}
+                              loss/classification-accuracy
+                              1.0)
+
+  (is-mapped-columns-accuracy [:a :b] nil
+                              [:a :b] nil
+                              loss/classification-accuracy
+                              1.0)
+
+  (is-mapped-columns-accuracy [0.0 1.0] {:a 0 :b 1}
+                              [0.0 1.0] {:a 0 :b 1}
+                              loss/classification-accuracy
+                              1.0)
+
+
+  
+  (is-mapped-columns-accuracy [0 1] {:a 0 :b 1}
+                              [1 0] {:a 0 :b 1}
+                              loss/classification-accuracy
+                              0.0))
+
+(deftest score-failing
+  (is (thrown? Exception
+               (score-categorical [0.0 1.0] {:a 0.0 :b 1.0}
+                                  [0 1]     {:a 0 :b 1}
+                                  loss/classification-accuracy
+                                  ))
+    
+      )
+  (is (thrown? Exception
+               (score-categorical   [0 1] {:a 0.0 :b 1.0}
+                                    [0 1] {:a 0.0 :b 1.0}
+                                    loss/classification-accuracy))))
