@@ -1,8 +1,8 @@
 unreleased
 
-- added fastmath/lm
+- added linear models from fastmath 
 - added tidy output validation
-- fixed #19
+- added support for design-matrix
 
 0.8.2
  -fixed metric bug
