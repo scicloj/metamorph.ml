@@ -112,5 +112,5 @@
             (ds/categorical->number cf/categorical))]
 
 
-    (def design-matrix design-matrix)
+    
     design-matrix))
