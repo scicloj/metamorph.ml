@@ -1,7 +1,6 @@
 (ns scicloj.metamorph.ml-test
   (:require
    [clojure.test :as t :refer [deftest is]]
-   [confuse.multi-class-metrics :as mcm]
    [malli.core :as m]
    [scicloj.metamorph.core :as morph]
    [scicloj.metamorph.ml :as ml]
@@ -9,13 +8,11 @@
     :as eval
     :refer [qualify-pipelines]]
    [scicloj.metamorph.ml.loss :as loss]
-   [scicloj.metamorph.ml.toydata :as toydata]
    [scicloj.metamorph.ml.metrics]
    [tablecloth.api :as tc]
-   [taoensso.nippy :as nippy]
    [tech.v3.dataset :as ds]
-   [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.categorical :as ds-cat]
+   [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.metamorph :as ds-mm]
    [tech.v3.dataset.modelling :as ds-mod])
   (:import
