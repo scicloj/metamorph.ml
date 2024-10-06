@@ -34,7 +34,9 @@
            :test
            {:jvm-opts ["-Djdk.attach.allowAttachSelf"]
             :extra-paths ["test"]
-            :extra-deps {lambdaisland/kaocha {:mvn/version "1.88.1376"}
+            :extra-deps {
+                         lambdaisland/kaocha {:mvn/version "1.88.1376"}
+                         io.replikativ/konserve {:mvn/version "0.7.315"}
                          scicloj/scicloj.ml.smile {:mvn/version "7.3"}
                          datacraft-sciences/confuse {:mvn/version "0.1.1"}
                          ch.qos.logback/logback-classic {:mvn/version "1.5.6"}}}
