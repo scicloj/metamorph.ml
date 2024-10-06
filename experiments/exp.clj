@@ -45,11 +45,11 @@
   {})
 
 
-(def splits (tc/split->seq)
-  (-> iris)
-                 
-  :kfold {:k 11
-          :seed 12345})
+(def splits (tc/split->seq
+             iris
+             :kfold
+             {:k 11
+              :seed 12345}))
 
 
 (def wcache (wcache/fifo-cache-factory

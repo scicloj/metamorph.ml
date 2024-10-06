@@ -27,7 +27,7 @@
                                                   cljsjs/vega-tooltip]}
         ;; needed by hanami
         org.clojure/data.json {:mvn/version "0.2.6"}
-        potemkin/potemkin            {:mvn/version "0.4.7"}}
+        potemkin/potemkin     {:mvn/version "0.4.7"}}
 
  :paths ["src" "resources"]
 
@@ -64,7 +64,9 @@
   {:jvm-opts ["-Djdk.attach.allowAttachSelf","-Xmx14G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
    :extra-paths ["test"]
    :extra-deps {com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.3.0"}
-                lambdaisland/kaocha {:mvn/version "1.88.1376"}
+                
+                         lambdaisland/kaocha {:mvn/version "1.88.1376"}
+                         io.replikativ/konserve {:mvn/version "0.7.315"}
                 scicloj/scicloj.ml.smile {:mvn/version "7.3"}
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
                 ch.qos.logback/logback-classic {:mvn/version "1.5.6"}
