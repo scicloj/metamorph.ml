@@ -4,7 +4,8 @@
         scicloj/tablecloth          {:mvn/version "7.029.2"}
         metosin/malli               {:mvn/version "0.16.0"}
         generateme/fastmath         {:mvn/version "3.0.0-alpha2"}
-        aerial.hanami/aerial.hanami {:mvn/version "0.20.0"}}
+        aerial.hanami/aerial.hanami {:mvn/version "0.20.0"}
+        buddy/buddy-hashers          {:mvn/version "2.0.167"}}
 
  :paths ["src" "resources"]
 
@@ -16,6 +17,10 @@
                           camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.3"}}
                    :ns-default build}
 
+           :exp
+           {:extra-deps {io.replikativ/konserve {:mvn/version "0.7.315"}
+                         scicloj/scicloj.ml.smile {:mvn/version "7.1.656"}
+                         ch.qos.logback/logback-classic {:mvn/version "1.4.5"}}}
 
            :dev
            {:extra-deps {io.github.nextjournal/clerk {:mvn/version "0.15.957"}
@@ -24,15 +29,6 @@
                          ch.qos.logback/logback-classic {:mvn/version "1.5.6"}
                          com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.3.0"}}}
 
-           :exp {:extra-deps
-                 {io.replikativ/konserve
-                  ;; {:mvn/version "0.7.315"}
-                  {:local/root "../konserve"}
-                  scicloj/scicloj.ml.smile {:mvn/version "7.1.656"}
-                  datacraft-sciences/confuse {:mvn/version "0.1.1"}
-                  ch.qos.logback/logback-classic {:mvn/version "1.4.5"}
-                  com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.1.3"}}}
-
            :test
            {:jvm-opts ["-Djdk.attach.allowAttachSelf"]
             :extra-paths ["test"]
@@ -40,4 +36,5 @@
                          scicloj/scicloj.ml.smile {:mvn/version "7.3"}
                          datacraft-sciences/confuse {:mvn/version "0.1.1"}
                          ch.qos.logback/logback-classic {:mvn/version "1.5.6"}}}
+
            :runner {:main-opts ["-m" "kaocha.runner"]}}}
