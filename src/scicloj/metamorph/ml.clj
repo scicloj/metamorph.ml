@@ -823,13 +823,14 @@
   [wcache dataset options]
   (let [k (k->sha256
            {:op :train
-            :dataset dataset
+            :dataset (.hashCode dataset)
             :options options})]
     (wcache/lookup-or-miss
      wcache
      k
      (fn [item]
 
+       (println :cache-miss)
        (let [train-result (train
                            dataset
                            options)]
@@ -850,7 +851,7 @@
 
          {:op :predict
           :hash-train-inputs (:hash-train-inputs hash-train-inputs)
-          :hash-ds (str (hash dataset))})]
+          :hash-ds (str (.hashCode dataset))})]
         ;; model (:model-wrapper wrapped-model)
 
 

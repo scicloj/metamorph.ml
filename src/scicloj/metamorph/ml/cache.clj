@@ -25,8 +25,8 @@
          (if (nil? bytes)
            default-value
            (if (not (bytes? bytes))   ;; carmine auto-thaws
-               bytes                  ;
-               (nippy/thaw bytes {:serializable-allowlist #{"*"}})))))
+             bytes                  ;
+             (nippy/thaw bytes {:serializable-allowlist #{"*"}})))))
 
   (assoc [_ k v]
          (write-bytes-fn k (nippy/freeze v))
@@ -85,7 +85,7 @@
   See `presisted-map-factory`"
   [wcar-opts]
 
- 
+
   (string->bytes-map-factory
 
    (fn [k bytes]
@@ -151,8 +151,8 @@
         (k/bassoc store k (nippy/freeze wrapped)
                   {:sync? true})
         wrapped))))
-        
-        
+
+
 (defn caching-predict [store dataset wrapped-model]
   (let [k {:op :predict
            :hash-train-inputs (:hash-train-inputs wrapped-model)
