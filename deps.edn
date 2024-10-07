@@ -6,9 +6,11 @@
         generateme/fastmath         {:mvn/version "3.0.0-alpha2"}
         aerial.hanami/aerial.hanami {:mvn/version "0.20.0"}
         org.clojure/core.cache       {:mvn/version "1.0.225"}
-        potemkin/potemkin            {:mvn/version "0.4.7"}
-        io.replikativ/hasch          {:mvn/version "0.3.94"}
-        com.taoensso/carmine         {:mvn/version "3.3.1"}}
+        ;potemkin/potemkin            {:mvn/version "0.4.7"}
+        ;io.replikativ/hasch          {:mvn/version "0.3.94"}
+        io.replikativ/konserve       {:mvn/version "0.7.316"}
+        ;com.taoensso/carmine         {:mvn/version "3.3.1"}
+        }
 
 
  :paths ["src" "resources"]
