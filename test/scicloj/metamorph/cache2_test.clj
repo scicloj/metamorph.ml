@@ -35,40 +35,23 @@
   ;; todo good enough ?
   (str
    (hash {:ds dataset
-          :options options}))
-  )
+          :options options})))
 
 
-(defn hash-predict-args-as-string [dataset model]
-  ;; todo good enough ?
-  (str
-   (hash {:ds dataset
-          :model (dissoc model :id )})))
 
 
 (def store (connect-fs-store "/tmp/store" 
-                             
-                             ;:default-serializer :NippySerializer
-                             ;:serializers {:NippySerializer (->NippySerializer)} 
-                             
                              :opts {:sync? true
                                     }))
 (def trained-model
   (ml/train dataset options))
 
-(clojure.reflect/reflect smile-model-0)
-(.w smile-model-0)
 
 (def trained-model-bytes
   (nippy/freeze trained-model))
 
-(def smile-model-0 (ml/thaw-model trained-model))
-(def smile-model-1 (ml/thaw-model trained-model))
 
-(= smile-model-0 smile-model-1)
 
-(hash
- (bites/to-bytes smile-model-1))
 
 (def train-arg-hash (hash-train-args-as-string dataset options))
 train-arg-hash
@@ -82,12 +65,14 @@ train-arg-hash
 (def m (k/bget store train-arg-hash
                (fn locked-cb [{is :input-stream}]
                  (println :is is)
-                 (nippy/thaw (slurp-bytes is)))
+                 (nippy/thaw (slurp-bytes is)
+                             {
+                              :serializable-allowlist #{"java.util.Properties" 
+                                                        "smile.data.formula.Formula",
+                                                        "smile.data.DataFrameImpl"}}
+                             ))
                {:sync? true}))
 
-(def predict-args-hash (hash-predict-args-as-string 
-                        dataset 
-                        trained-model))
 
 predict-args-hash
 ;;=> "-1883638799"

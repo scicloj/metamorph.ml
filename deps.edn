@@ -6,12 +6,12 @@
         generateme/fastmath         {:mvn/version "3.0.0-alpha2"}
         aerial.hanami/aerial.hanami {:mvn/version "0.20.0"}
         org.clojure/core.cache       {:mvn/version "1.0.225"}
-        ;potemkin/potemkin            {:mvn/version "0.4.7"}
-        ;io.replikativ/hasch          {:mvn/version "0.3.94"}
+        potemkin/potemkin            {:mvn/version "0.4.7"}
+        io.replikativ/hasch          {:mvn/version "0.3.94"}
         io.replikativ/konserve       {:mvn/version "0.7.316"}
         org.clj-commons/byte-streams {:mvn/version "0.3.4"}
         bites/bites {:mvn/version "0.3.12"}
-        ;com.taoensso/carmine         {:mvn/version "3.3.1"}
+        com.taoensso/carmine         {:mvn/version "3.3.1"}
         }
 
 
@@ -26,12 +26,12 @@
            :exp
            {:extra-deps {
                          io.replikativ/konserve {:mvn/version "0.7.315"}
-                         scicloj/scicloj.ml.smile {:mvn/version "7.1.656"}
+                         org.scicloj/scicloj.ml.smile {:mvn/version "7.4.2"}
                          ch.qos.logback/logback-classic {:mvn/version "1.4.5"}}}
 
            :dev
            {:extra-deps {io.github.nextjournal/clerk {:mvn/version "0.15.957"}
-                         scicloj/scicloj.ml.smile {:mvn/version "7.4.1"}
+                         org.scicloj/scicloj.ml.smile {:mvn/version "7.4.2"}
                          datacraft-sciences/confuse {:mvn/version "0.1.1"}
                          ch.qos.logback/logback-classic {:mvn/version "1.5.6"}
                          com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.3.0"}}}

@@ -1,29 +1,34 @@
 (ns scicloj.metamorph.ml
-  (:require
-   [clojure.string :as str]
-   [pppmap.core :as ppp]
-   [scicloj.metamorph.core :as mm]
-   [scicloj.metamorph.ml.ensemble]
-   [scicloj.metamorph.ml.evaluation-handler]
-   [scicloj.metamorph.ml.loss :as loss]
-   [scicloj.metamorph.ml.malli :as malli]
-   [scicloj.metamorph.ml.tools :refer [dissoc-in]]
-   [tech.v3.dataset :as ds]
-   [tech.v3.dataset.categorical :as ds-cat]
-   [tech.v3.dataset.column-filters :as cf]
-   [tech.v3.dataset.impl.dataset :refer [dataset?]]
-   [tech.v3.dataset.modelling :as ds-mod]
-   [tech.v3.datatype.errors :as errors]
-   [tech.v3.datatype.export-symbols :as exporter]
-   [tech.v3.datatype.functional :as dfn]
-   [scicloj.metamorph.ml.tidy-models :as tidy]
-   [clojure.set :as set]
-   [clojure.core.cache.wrapped :as wcache]
-   [hasch.core]
-   [hasch.hex])
+  (:require [clojure.core.cache.wrapped :as wcache]
+            [clojure.java.io :as io]
+            [clojure.set :as set]
+            [clojure.string :as str]
+            [hasch.core]
+            [hasch.hex]
+            [pppmap.core :as ppp]
+            [scicloj.metamorph.core :as mm]
+            [scicloj.metamorph.ml.ensemble]
+            [scicloj.metamorph.ml.evaluation-handler]
+            [scicloj.metamorph.ml.loss :as loss]
+            [scicloj.metamorph.ml.malli :as malli]
+            [scicloj.metamorph.ml.tidy-models :as tidy]
+            [scicloj.metamorph.ml.tools :refer [dissoc-in]]
+            [tech.v3.dataset :as ds]
+            [tech.v3.dataset.categorical :as ds-cat]
+            [tech.v3.dataset.column-filters :as cf]
+            [tech.v3.dataset.impl.dataset :refer [dataset?]]
+            [tech.v3.dataset.modelling :as ds-mod]
+            [tech.v3.datatype.errors :as errors]
+            [tech.v3.datatype.export-symbols :as exporter]
+            [tech.v3.datatype.functional :as dfn]
+            [scicloj.metamorph.ml :as ml]
+            [taoensso.nippy :as nippy]
+            [konserve.core :as k]
+            [scicloj.ml.smile.classification]
+            [konserve.filestore :refer [connect-fs-store]]
+            )
 
-  (:import
-   java.util.UUID))
+  (:import java.util.UUID))
 
 
 
@@ -581,6 +586,24 @@
   (:hyperparameters (options->model-def {:model-type model-kwd})))
 
 
+(defn- hash-train-args-as-string [dataset options]
+  ;; todo good enough ?
+  (str
+   (hash {:ds dataset
+          :options options})))
+
+(def store (connect-fs-store "/tmp/store"
+                             :opts {:sync? true}))
+
+
+(defn slurp-bytes
+  "Slurp the bytes from a slurpable thing"
+  [x]
+  (with-open [out (java.io.ByteArrayOutputStream.)]
+    (io/copy (io/input-stream x) out)
+    (.toByteArray out)))
+
+
 (defn train
   "Given a dataset and an options map produce a model.  The model-type keyword in the
   options map selects which model definition to use to train the model.  Returns a map
@@ -595,29 +618,47 @@
   {:malli/schema [:=> [:cat [:fn dataset?] map?]
                   [map?]]}
   [dataset options]
-  (let [{:keys [train-fn unsupervised?]} (options->model-def options)
-        feature-ds (cf/feature  dataset)
-        _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
-                                 "No features provided")
-        target-ds (if unsupervised?
-                    nil
-                    (do
-                      (errors/when-not-error (> (ds/row-count (cf/target dataset)) 0) "No target columns provided, see tech.v3.dataset.modelling/set-inference-target")
-                      (cf/target dataset)))
+  (let [ train-arg-hash (hash-train-args-as-string dataset options)]
+    
+    (if (k/exists? store train-arg-hash {:sync? true})
+      (k/bget store train-arg-hash
+              (fn locked-cb [{is :input-stream}]
+                (println :is is)
+                (nippy/thaw (slurp-bytes is)
+                            {:serializable-allowlist #{"java.util.Properties"
+                                                       "smile.data.formula.Formula",
+                                                       "smile.data.DataFrameImpl"}}))
+              {:sync? true})
 
-                     
-        model-data (train-fn feature-ds target-ds options)
+      (let [{:keys [train-fn unsupervised?]} (options->model-def options)
+            feature-ds (cf/feature  dataset)
+            _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
+                                     "No features provided")
+            target-ds (if unsupervised?
+                        nil
+                        (do
+                          (errors/when-not-error (> (ds/row-count (cf/target dataset)) 0) "No target columns provided, see tech.v3.dataset.modelling/set-inference-target")
+                          (cf/target dataset)))
+
+            
+            model-data (train-fn feature-ds target-ds options)
         ;; _ (errors/when-not-error (:model-as-bytes model-data)  "train-fn need to return a map with key :model-as-bytes")
-        cat-maps (ds-mod/dataset->categorical-xforms target-ds)]
+            cat-maps (ds-mod/dataset->categorical-xforms target-ds)
+            model 
+            (merge
+             {:model-data model-data
+              :options options
+              :id (UUID/randomUUID)
+              :feature-columns (vec (ds/column-names feature-ds))
+              :target-columns (vec (ds/column-names target-ds))}
+             (when-not (== 0 (count cat-maps))
+               {:target-categorical-maps cat-maps}))
+            trained-model-bytes (nippy/freeze model)]
 
-    (merge
-     {:model-data model-data
-      :options options
-      :id (UUID/randomUUID)
-      :feature-columns (vec (ds/column-names feature-ds))
-      :target-columns (vec (ds/column-names target-ds))}
-     (when-not (== 0 (count cat-maps))
-       {:target-categorical-maps cat-maps}))))
+        (k/bassoc store train-arg-hash trained-model-bytes {:sync? true})
+        model
+        ))
+    ))
 
 
 (defn thaw-model
@@ -925,7 +966,7 @@
                                  {:train-result (train data cleaned-options)
                                   :hash-train-inputs nil})]
 
-           (def result-and-hash result-and-hash)
+           ;(def result-and-hash result-and-hash)
 
 
            (assoc ctx

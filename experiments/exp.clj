@@ -61,24 +61,28 @@
 (def  pipe-fn-ada (morph/pipeline
 
                    {:metamorph/id :model} (ml/model {:model-type :smile.classification/ada-boost
-                                                     :wcache wcache})))
+                                                     ;:wcache wcache
+                                                     })))
 
 (def  pipe-fn-lg (morph/pipeline
 
                   {:metamorph/id :model} (ml/model {:model-type :smile.classification/logistic-regression
-                                                    :wcache wcache})))
+                                                    ;:wcache wcache
+                                                    })))
                                                     
 
 (defn  pipe-fn-rf [trees] (morph/pipeline
 
                            {:metamorph/id :model} (ml/model {:model-type :smile.classification/random-forest
                                                              :trees trees
-                                                             :wcache wcache})))
+                                                             ;:wcache wcache
+                                                             })))
 
 (def  pipe-fn-slow (morph/pipeline
                     {:metamorph/id :model} (ml/model {:model-type :slow-model
                                                       :very-slow? true
-                                                      :wcache wcache})))
+                                                      ;:wcache wcache
+                                                      })))
 
                                                       
 
