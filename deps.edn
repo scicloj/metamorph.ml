@@ -9,6 +9,8 @@
         ;potemkin/potemkin            {:mvn/version "0.4.7"}
         ;io.replikativ/hasch          {:mvn/version "0.3.94"}
         io.replikativ/konserve       {:mvn/version "0.7.316"}
+        org.clj-commons/byte-streams {:mvn/version "0.3.4"}
+        bites/bites {:mvn/version "0.3.12"}
         ;com.taoensso/carmine         {:mvn/version "3.3.1"}
         }
 

@@ -11,7 +11,9 @@
              [scicloj.ml.smile.classification]
              [clojure.java.io :as io]
              [konserve.filestore :refer [connect-fs-store]]
-             [konserve.protocols :as kp])
+             [konserve.protocols :as kp]
+             [ bites.core :as bites]
+             [clj-commons.byte-streams :as bs])
   (:import [java.nio.file Files]
            [java.nio.file.attribute FileAttribute]))
 
@@ -27,8 +29,6 @@
 (def dataset (data/iris-ds))
 (def options {:model-type :smile.classification/logistic-regression})
 
-(def train-result
-  (ml/train dataset options))
 
 
 (defn hash-train-args-as-string [dataset options]
@@ -39,6 +39,12 @@
   )
 
 
+(defn hash-predict-args-as-string [dataset model]
+  ;; todo good enough ?
+  (str
+   (hash {:ds dataset
+          :model (dissoc model :id )})))
+
 
 (def store (connect-fs-store "/tmp/store" 
                              
@@ -47,23 +53,46 @@
                              
                              :opts {:sync? true
                                     }))
+(def trained-model
+  (ml/train dataset options))
 
-(def train-result-binary
-  (nippy/freeze train-result))
+(clojure.reflect/reflect smile-model-0)
+(.w smile-model-0)
+
+(def trained-model-bytes
+  (nippy/freeze trained-model))
+
+(def smile-model-0 (ml/thaw-model trained-model))
+(def smile-model-1 (ml/thaw-model trained-model))
+
+(= smile-model-0 smile-model-1)
+
+(hash
+ (bites/to-bytes smile-model-1))
 
 (def train-arg-hash (hash-train-args-as-string dataset options))
+train-arg-hash
+;;=> "-661618312"
 
 (k/dissoc store train-arg-hash {:sync? true})
 ;; binay
-(k/bassoc store train-arg-hash train-result-binary {:sync? true})
+(k/bassoc store train-arg-hash trained-model-bytes {:sync? true})
 (k/exists? store train-arg-hash {:sync? true})
-(k/bget store train-arg-hash
-        (fn locked-cb [{is :input-stream}]
-          (println :is is)
-          (nippy/thaw (slurp-bytes is)))
-        {:sync? true})
 
+(def m (k/bget store train-arg-hash
+               (fn locked-cb [{is :input-stream}]
+                 (println :is is)
+                 (nippy/thaw (slurp-bytes is)))
+               {:sync? true}))
 
+(def predict-args-hash (hash-predict-args-as-string 
+                        dataset 
+                        trained-model))
+
+predict-args-hash
+;;=> "-1883638799"
+
+(ml/predict dataset m)
 
 
 
@@ -89,7 +118,7 @@
   (k/dissoc store train-arg-hash)
   (k/exists? store train-arg-hash {:sync? true})
   
-  (k/assoc store train-arg-hash train-result {:sync? true})
+  (k/assoc store train-arg-hash trained-model {:sync? true})
 
   
   )  
