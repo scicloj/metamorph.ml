@@ -21,7 +21,15 @@
     ;;
 
   (:import
+   [org.mlflow.tracking MlflowClient]
+   [org.mlflow.tracking MlflowContext]
+
    java.util.UUID))
+
+
+(def mf (MlflowContext. "http://127.0.0.1:8080"))
+;(def id (.createExperiment mf "iris"))
+;
 
 
 (exporter/export-symbols scicloj.metamorph.ml.ensemble ensemble-pipe)
@@ -71,12 +79,14 @@
            (assoc m
                   :metric (metric-fn trueth-col predictions-col)))
          other-metrices)]
+    
+    
     {:metric metric
      :other-metrices-result other-metrices-result}))
 
 
 
-(defn- supervised-eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
+(defn- supervised-eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices active-run]
 
   (let [
         start-transform (System/currentTimeMillis)
@@ -112,7 +122,7 @@
     eval-result))
 
 
-(defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
+(defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices active-run]
 
   (if  (-> fitted-ctx :model ::unsupervised?)
     {:other-metrices []
@@ -120,30 +130,35 @@
      :ctx {}
      :metric (metric-fn fitted-ctx)}
 
-    (supervised-eval-pipe pipeline-fn fitted-ctx metric-fn ds other-metrices)))
+    (supervised-eval-pipe pipeline-fn fitted-ctx metric-fn ds other-metrices active-run)))
 
 
 (defn- calc-metric [pipeline-fn metric-fn train-ds test-ds tune-options]
   (try
     (let [
+          active-run (.startRun mf)
           start-fit (System/currentTimeMillis)
-          fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
+          fitted-ctx (pipeline-fn {:active-run active-run
+                                   :metamorph/mode :fit  
+                                   :metamorph/data train-ds})
           end-fit (System/currentTimeMillis)
 
           ;; TODO: double cec this, ensembles do not have it so far in "fit"
           #_ (errors/when-not-error (:model fitted-ctx) "Pipeline contexts under evaluation need to have the model operation with id :model")
 
 
-          eval-pipe-result-train (eval-pipe pipeline-fn fitted-ctx metric-fn train-ds (:other-metrices tune-options))
+          eval-pipe-result-train (eval-pipe pipeline-fn fitted-ctx metric-fn train-ds (:other-metrices tune-options) active-run)
           eval-pipe-result-test (if (-> fitted-ctx :model ::unsupervised?)
                                   {:other-metrices []
                                    :timing 0
                                    :ctx fitted-ctx
                                    :metric 0}
-                                  (eval-pipe pipeline-fn fitted-ctx metric-fn test-ds (:other-metrices tune-options)))]
+                                  (eval-pipe pipeline-fn fitted-ctx metric-fn test-ds (:other-metrices tune-options) active-run))]
           
 
-          
+         (.logMetric active-run "metric-train" (-> eval-pipe-result-train :metric))
+         (.logMetric active-run "metric-test" (-> eval-pipe-result-test :metric))
+         (.endRun active-run) 
          {:fit-ctx  fitted-ctx
            :timing-fit (- end-fit start-fit)
            :train-transform eval-pipe-result-train
@@ -306,6 +321,7 @@
    [:loss-or-accuracy]
    [:source-information]])
 
+
 (defn result-dissoc-in-seq--all-fn [result]
   (reduce-result result result-dissoc-in-seq--all))
 
@@ -451,11 +467,12 @@
   ;;
 
   ([pipe-fn-or-decl-seq train-test-split-seq metric-fn loss-or-accuracy options]
-   (let [used-options (merge {:map-fn :map
+   (let [
+         used-options (merge {:map-fn :map
                               :return-best-pipeline-only true
                               :return-best-crossvalidation-only true
                               :evaluation-handler-fn default-result-dissoc-in-fn}
-                         
+
                              options)
          map-fn
          (case (used-options :map-fn)
@@ -495,7 +512,6 @@
            (case loss-or-accuracy
              :loss     (->> pipe-eval-means  (map :pipe-eval))
              :accuracy (->> pipe-eval-means  reverse (mapv :pipe-eval))))]
-
 
      result-pipe-evals))
 
@@ -853,9 +869,13 @@
   (malli/instrument-mm
    (fn [{:metamorph/keys [id data mode] :as ctx}]
      (case mode
-       :fit (assoc ctx
-                   id (assoc (train data options)
-                             ::unsupervised? (get (options->model-def options) :unsupervised? false)))
+       :fit (do 
+              (def options options)
+              (.logParam (:active-run ctx) "model-type" (str (:model-type options)))
+              (.logParam (:active-run ctx) "trees" (str (:trees options)))
+              (assoc ctx
+                       id (assoc (train data options)
+                                 ::unsupervised? (get (options->model-def options) :unsupervised? false))))
 
        :transform  (if (get-in ctx [id ::unsupervised?])
                        ctx
