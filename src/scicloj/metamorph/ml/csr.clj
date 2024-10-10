@@ -49,16 +49,6 @@
 
 
 
-
-
-
-
-
-(m/rows->RealMatrix (->dense {:values [10 20 30 40 50 60 70 80]
-                              :column-indices [0  1  1  3  2  3  4  5]
-                              :row-pointers [0  2  4  7  8]}
-                             4 6))
-
 (comment
   (import '[ml.dmlc.xgboost4j.java DMatrix DMatrix$SparseType])
   (DMatrix.
