@@ -100,7 +100,7 @@
 (defn ->term-frequency-old [tidy-text-ds]
   (-> tidy-text-ds
       (tc/group-by  [:term :document :label])
-      (tc/aggregate #(hash-map :tterm-count (ds/row-count %)))
+      (tc/aggregate #(hash-map :term-count (ds/row-count %)))
       (tc/rename-columns {:summary-term-count :term-count})))
 
 
