@@ -17,10 +17,10 @@
 
 (defn- process-line [string-table line-split-fn text-tokenizer-fn acc line]
   (let [[text meta](line-split-fn line) 
-        words (text-tokenizer-fn text)
+        tokens (text-tokenizer-fn text)
         
-        index-count (count words)]
-    (.addAllReducible string-table words)
+        index-count (count tokens)]
+    (.addAllReducible string-table tokens)
     (let [new-acc (conj acc 
                         {:index-count index-count
                          :meta meta})]
@@ -88,11 +88,11 @@
 
         ds
         (ds/new-dataset
-         [(ds/new-column :word string-table
+         [(ds/new-column :token string-table
                          {}
                          [])
                ;(ds/new-column :word string-table  [])
-          (ds/new-column :word-index word-pos nil [])
+          (ds/new-column :token-index word-pos nil [])
           (ds/new-column :document line-idx nil [])
           (ds/new-column :meta metas nil [])])]
 
@@ -108,20 +108,20 @@
 
 (defn ->term-frequency [tidy-text-ds]
   (-> tidy-text-ds
-      (tc/group-by  [:word :document :label])
-      (tc/aggregate #(hash-map :tf (ds/row-count %)))
-      (tc/rename-columns {:summary-tf :tf})))
+      (tc/group-by  [:token :document :label])
+      (tc/aggregate #(hash-map :token-count (ds/row-count %)))
+      (tc/rename-columns {:summary-token-count :token-count})))
 
 
 (defn add-word-idx [tidy-text-ds]
   (let [word->int-table
         (zipmap
-         (-> tidy-text-ds :word .data st/int->string)
+         (-> tidy-text-ds :token .data st/int->string)
          (range))]
     (-> tidy-text-ds
         (tc/add-column
-         :word-idx
-         #(map word->int-table (:word %))))))
+         :token-idx
+         #(map word->int-table (:token %))))))
 
 
 
