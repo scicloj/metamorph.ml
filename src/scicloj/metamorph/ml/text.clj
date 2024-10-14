@@ -88,11 +88,11 @@
 
         ds
         (ds/new-dataset
-         [(ds/new-column :token string-table
+         [(ds/new-column :term string-table
                          {}
                          [])
                ;(ds/new-column :word string-table  [])
-          (ds/new-column :token-index word-pos nil [])
+          (ds/new-column :term-index word-pos nil [])
           (ds/new-column :document line-idx nil [])
           (ds/new-column :meta metas nil [])])]
 
@@ -107,21 +107,57 @@
 
 
 (defn ->term-frequency [tidy-text-ds]
-  (-> tidy-text-ds
-      (tc/group-by  [:token :document :label])
-      (tc/aggregate #(hash-map :token-count (ds/row-count %)))
-      (tc/rename-columns {:summary-token-count :token-count})))
+  
+  (let [N
+        (tc/row-count
+         (tc/unique-by tidy-text-ds :document))
+        
+        n-tokens-per-document
+        (-> tidy-text-ds
+            (tc/group-by :document)
+            (tc/aggregate {:n-terms-per-document ds/row-count})
+            (tc/rename-columns {:$group-name :document}))
+        idf
+        (-> tidy-text-ds
+            (tc/unique-by [:term :document])
+            (tc/group-by  [:term])
+            (tc/aggregate #(Math/log10 (/ N (tc/row-count %))))
+            (tc/rename-columns {"summary" :idf }))]
 
+    (-> tidy-text-ds
+        (tc/left-join n-tokens-per-document [ :document])
+        (tc/left-join idf [:term])
+        (tc/group-by  [:term :document :label])
+        (tc/aggregate 
+         (fn [ds-per-token]
+           (let [token-count (ds/row-count ds-per-token)
+                 tf (float (/ token-count (first (:n-terms-per-document ds-per-token))))
+                 idf (first (:idf ds-per-token))
+                 tf-idf (* tf idf)]
+             (hash-map
+              :term-count token-count
+              :tf tf
+              :idf idf
+              :tfidf tf-idf)
+             )))
+        (tc/rename-columns {:summary-term-count :term-count
+                            :summary-tf :tf
+                            :summary-idf :idf
+                            :summary-tfidf :tfidf}))))
+
+
+
+  
 
 (defn add-word-idx [tidy-text-ds]
   (let [word->int-table
         (zipmap
-         (-> tidy-text-ds :token .data st/int->string)
+         (-> tidy-text-ds :term .data st/int->string)
          (range))]
     (-> tidy-text-ds
         (tc/add-column
-         :token-idx
-         #(map word->int-table (:token %))))))
+         :term-idx
+         #(map word->int-table (:term %))))))
 
 
 
