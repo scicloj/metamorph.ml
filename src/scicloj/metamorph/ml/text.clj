@@ -9,27 +9,26 @@
 
 (defn- process-file [reader line-func line-acc max-lines skip-lines]
   (with-open [rdr (BufferedReader. reader)]
-    (reduce line-func line-acc 
-            (take max-lines 
+    (reduce line-func line-acc
+            (take max-lines
                   (drop skip-lines
                         (line-seq rdr))))))
 
 
 (defn- process-line [string-table line-split-fn text-tokenizer-fn acc line]
-  (let [[text meta](line-split-fn line) 
+  (let [[text meta] (line-split-fn line)
         tokens (text-tokenizer-fn text)
-        
+
         index-count (count tokens)]
     (.addAllReducible string-table tokens)
-    (let [new-acc (conj acc 
+    (let [new-acc (conj acc
                         {:index-count index-count
                          :meta meta})]
       (when (zero? (rem (count new-acc) 10000))
         (println (count new-acc)))
-      new-acc))
-  )
+      new-acc)))
 
-(defn ->tidy-text 
+(defn ->tidy-text
   "Reads, parses and tokenizes a text file into a tech.v3.dataset in the tidy-text format,
    so one word per row. 
    It does the parsing and conversion strictly line based, so it should work for large documents.
@@ -48,14 +47,11 @@
    `max-lines` max lines to return
    "
   [reader line-split-fn
-          text-tokenizer-fn  
+   text-tokenizer-fn
 
-                   & {:keys [skip-lines max-lines] 
-                      :or {skip-lines  0
-                           max-lines Integer/MAX_VALUE
-                                                  }}
-
-                   ]
+   & {:keys [skip-lines max-lines]
+      :or {skip-lines  0
+           max-lines Integer/MAX_VALUE}}]
 
   (let [string-table (st/string-table-from-strings [])
         index-counts-and-label
@@ -96,22 +92,25 @@
           (ds/new-column :document line-idx nil [])
           (ds/new-column :meta metas nil [])])]
 
-    ds
-    )
+    ds)
     ;; drops empty string 
     ;;https://clojurians.zulipchat.com/#narrow/stream/236259-tech.2Eml.2Edataset.2Edev/topic/is.20empty.20string.20a.20.22missing.22.20.3F
-      
+  )
 
-     
-    )
+(defn ->term-frequency-old [tidy-text-ds]
+  (-> tidy-text-ds
+      (tc/group-by  [:term :document :label])
+      (tc/aggregate #(hash-map :tterm-count (ds/row-count %)))
+      (tc/rename-columns {:summary-term-count :term-count})))
+
 
 
 (defn ->term-frequency [tidy-text-ds]
-  
+
   (let [N
         (tc/row-count
          (tc/unique-by tidy-text-ds :document))
-        
+
         n-tokens-per-document
         (-> tidy-text-ds
             (tc/group-by :document)
@@ -122,13 +121,13 @@
             (tc/unique-by [:term :document])
             (tc/group-by  [:term])
             (tc/aggregate #(Math/log10 (/ N (tc/row-count %))))
-            (tc/rename-columns {"summary" :idf }))]
+            (tc/rename-columns {"summary" :idf}))]
 
     (-> tidy-text-ds
-        (tc/left-join n-tokens-per-document [ :document])
+        (tc/left-join n-tokens-per-document [:document])
         (tc/left-join idf [:term])
         (tc/group-by  [:term :document :label])
-        (tc/aggregate 
+        (tc/aggregate
          (fn [ds-per-token]
            (let [token-count (ds/row-count ds-per-token)
                  tf (float (/ token-count (first (:n-terms-per-document ds-per-token))))
@@ -138,8 +137,7 @@
               :term-count token-count
               :tf tf
               :idf idf
-              :tfidf tf-idf)
-             )))
+              :tfidf tf-idf))))
         (tc/rename-columns {:summary-term-count :term-count
                             :summary-tf :tf
                             :summary-idf :idf
@@ -147,7 +145,7 @@
 
 
 
-  
+
 
 (defn add-word-idx [tidy-text-ds]
   (let [word->int-table
@@ -162,42 +160,40 @@
 
 
 (comment
-  
+
   (require '[tech.v3.dataset.impl.column :as col-impl])
   (def col
     (tech.v3.dataset/new-column :text
                                 (tech.v3.dataset.string-table/string-table-from-strings ["hello" "world" "hello"])
                                 {}
                                 []))
-  
+
   (-> col .data class)
    ;;=> tech.v3.dataset.string_table.StringTable
 ;;OK
-  
+
   (-> col dt/clone .data class)
-  
+
 ;;=> ham_fisted.ArrayLists$ObjectArraySubList
 ;; not OK
-  
+
   (-> col dt/clone ds-base/column->string-table)
-  
+
 ;;=> Execution error at tech.v3.dataset.base/column->string-table (base.clj:847).
 ;;   Column :text does not contain a string table
 ;;   
-  
+
   (-> col dt/clone ds-base/ensure-column-string-table .data)
   ;;=> [1 2 1]
 ;;OK, but reparses the data
-  
+
 ;;=> [1 2 1]
-  
+
   (->
    (ds/new-dataset [col])
    :text
    .data
-   .data
-   )
-  )
+   .data))
 
 
 
