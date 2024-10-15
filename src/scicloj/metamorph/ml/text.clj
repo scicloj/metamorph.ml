@@ -106,7 +106,6 @@
 
 
 (defn ->term-frequency [tidy-text-ds]
-
   (let [N
         (tc/row-count
          (tc/unique-by tidy-text-ds :document))
@@ -129,12 +128,12 @@
         (tc/group-by  [:term :document :label])
         (tc/aggregate
          (fn [ds-per-token]
-           (let [token-count (ds/row-count ds-per-token)
-                 tf (float (/ token-count (first (:n-terms-per-document ds-per-token))))
+           (let [term-count (ds/row-count ds-per-token)
+                 tf (float (/ term-count (first (:n-terms-per-document ds-per-token))))
                  idf (first (:idf ds-per-token))
                  tf-idf (* tf idf)]
              (hash-map
-              :term-count token-count
+              :term-count term-count
               :tf tf
               :idf idf
               :tfidf tf-idf))))
@@ -148,15 +147,16 @@
 
 
 (defn add-word-idx [tidy-text-ds]
-  (let [word->int-table
-        (zipmap
-         (-> tidy-text-ds :term .data st/int->string)
-         (range))]
+  (let [term-col-as-string-table (ds-base/column->string-table (:term tidy-text-ds))
+        word->int-table
+        (-> (st/get-str-table term-col-as-string-table) :str->int)]
+    
     (-> tidy-text-ds
         (tc/add-column
          :term-idx
-         #(map word->int-table (:term %))))))
-
+         (fn [ds]
+           (map #(get word->int-table %) 
+                (:term ds)))))))
 
 
 (comment
