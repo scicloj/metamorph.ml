@@ -97,11 +97,18 @@
     ;;https://clojurians.zulipchat.com/#narrow/stream/236259-tech.2Eml.2Edataset.2Edev/topic/is.20empty.20string.20a.20.22missing.22.20.3F
   )
 
-(defn ->term-frequency-old [tidy-text-ds]
-  (-> tidy-text-ds
-      (tc/group-by  [:term :document :label])
-      (tc/aggregate #(hash-map :term-count (ds/row-count %)))
-      (tc/rename-columns {:summary-term-count :term-count})))
+
+(defn- add-word-idx [tidy-text-ds]
+  (let [term-col-as-string-table (ds-base/column->string-table (:term tidy-text-ds))
+        word->int-table
+        (-> (st/get-str-table term-col-as-string-table) :str->int)]
+
+    (-> tidy-text-ds
+        (tc/add-column
+         :term-idx
+         (fn [ds]
+           (map #(get word->int-table %)
+                (:term ds)))))))
 
 
 
@@ -140,23 +147,13 @@
         (tc/rename-columns {:summary-term-count :term-count
                             :summary-tf :tf
                             :summary-idf :idf
-                            :summary-tfidf :tfidf}))))
+                            :summary-tfidf :tfidf})
+        add-word-idx
+        (tc/drop-columns [:term]))))
 
 
 
 
-
-(defn add-word-idx [tidy-text-ds]
-  (let [term-col-as-string-table (ds-base/column->string-table (:term tidy-text-ds))
-        word->int-table
-        (-> (st/get-str-table term-col-as-string-table) :str->int)]
-    
-    (-> tidy-text-ds
-        (tc/add-column
-         :term-idx
-         (fn [ds]
-           (map #(get word->int-table %) 
-                (:term ds)))))))
 
 
 (comment

@@ -31,9 +31,7 @@
         tf
         (->
          (text/->term-frequency text))
-        tf-with-index
-        (->
-         (text/add-word-idx tf))]
+]
 
     (is (= 576
            (tc/row-count text)))
@@ -45,14 +43,14 @@
            (-> text
                (tc/head)
                (tc/rows :maps))))
-    (is (= ["Is" "Is" "it" "it" "it"] (take 5 (-> tf :term))))
+    ;(is (= ["Is" "Is" "it" "it" "it"] (take 5 (-> tf :term))))
     (is (= {0 68, 1 24, 2 136, 3 135, 4 63}
            (-> tf :document frequencies)))
     (is (= {1 355, 2 36, 4 7, 6 3, 3 18, 5 2, 7 4, 11 1}
            (-> tf :term-count frequencies)))
 
     (is (= [1 1 2 2 2 3 3 3 3 4]
-           (-> tf-with-index (tc/head 10) :term-idx)))))
+           (-> tf (tc/head 10) :term-idx)))))
 
 (deftest tfidf
   (let [tidy
@@ -75,8 +73,9 @@
 
         tf (text/->term-frequency tidy)]
 
-    (is (= '("this" "this" "is" "is" "a" "sample" "another" "example")
-           (-> tf :term seq)))
+    (is (= ;;'("this" "this" "is" "is" "a" "sample" "another" "example")
+           '(1 1 2 2 3 4 5 6)
+           (-> tf :term-idx seq)))
 
     (is (=
          ["0.20000000298023224"
