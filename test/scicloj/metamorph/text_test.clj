@@ -26,7 +26,7 @@
         (-> (text/->tidy-text (io/reader "test/data/reviews.csv")
                               parse-review-line
                               #(str/split % #" ")
-                              ;:max-lines 5
+                              :max-lines 5
                               :skip-lines 1)
 
             )
@@ -38,13 +38,20 @@
          (text/->term-frequency text))
         ]
 
-    (def text text)
+    (tc/columns text)
+    
+    (def int->str int->str)
     (is (= 596
            (tc/row-count text)))
 
     (is (= '(:term-idx :term-pos :document :meta)
            (tc/column-names text)))
 
+    (is (= :int16 (-> text :term-idx meta :datatype)))
+    (is (= :int16 (-> text :term-pos meta :datatype)))
+    (is (= :int16 (-> text :document meta :datatype)))
+    (is (= :int16 (-> text :meta meta :datatype)))
+    
     (is (= [["Is" 0 0 3] ["it" 1 0 3] ["a" 2 0 3] ["great" 3 0 3] ["product" 4 0 3]]
            (->>
             (-> text

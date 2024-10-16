@@ -99,7 +99,7 @@
          (fn [idx count]
            (dt/const-reader idx count))
          :int16
-         (dt/const-reader 1 (dt/ecount index-counts-and-label))
+         (range)
          (map :index-count index-counts-and-label))]
     (dt/coalesce-blocks! container counts)))
 
