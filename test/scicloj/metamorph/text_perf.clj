@@ -21,7 +21,7 @@
        (fn [line] [line
                    (rand-int 6)])
        #(str/split % #" ")
-       :max-lines 100000
+       ;:max-lines 1000000
        :skip-lines 1)))
 
 

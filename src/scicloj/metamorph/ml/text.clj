@@ -51,7 +51,7 @@
     (apply print (.format time-format (java.util.Date.)) " - " s))
   )
 
-(defn make-document-col-container-1 [index-counts-and-label col-]
+(defn make-document-col-container-1 [index-counts-and-label col-size]
   (->
    (map
     (fn [idx count]
@@ -61,25 +61,6 @@
    (dt/concat-buffers))
 )
 
-
-(defn make-document-col-container-2 [index-counts-and-label col-size]
-  (let [counts
-        (dt/emap
-         (fn [idx count]
-           (dt/const-reader idx count))
-         :int16
-         ;(dt/->reader (range (dt/ecount index-counts-and-label)))
-         (dt/const-reader 1 (dt/ecount index-counts-and-label))
-         (map :index-count index-counts-and-label))
-
-        ;; length
-        ;; (func/reduce-+
-        ;;  (dt/emap #(dt/get-value (dt/shape %) 0) :int16 counts))
-        
-        ]
-    (dt/coalesce-blocks! (dt/make-container :int16 col-size) counts)
-    ))
-
 (defn make-metas-col-container-1 [index-counts-and-label col-size]
   (dt/make-container
    :int16
@@ -87,35 +68,6 @@
     (map
      #(repeat (:index-count %) (:meta %))
      index-counts-and-label))))
-
-(defn make-metas-col-container-2 [index-counts-and-label col-size]
-  (def col-size col-size)
-  (let [metas
-        (dt/emap
-         (fn [m]
-           (dt/const-reader  (:meta m) (:index-count m)))
-         :object
-         index-counts-and-label)
-        
-        ;; length
-        ;; (func/reduce-+
-        ;;  (dt/emap :index-count :int16 index-counts-and-label))
-        
-        ]
-
-    (def metas metas)
-;    (def length length)
-    (dt/coalesce-blocks! (dt/make-container :int16 col-size) metas)
-     ;(dt/copy-raw->item! metas ))
-    
-    ))
-
-
-(def index-counts-and-label [{:meta 2 :index-count 1}
-                             {:meta 3 :index-count 5}])
-
-(make-metas-col-container-1 index-counts-and-label 6)
-(make-metas-col-container-2 index-counts-and-label 6)
 
 
 
@@ -127,6 +79,33 @@
      #(range (:index-count %))
      index-counts-and-label))))
 
+
+(defn make-metas-col-container-2 [index-counts-and-label col-size]
+  (let [container (dt/make-container :int16 col-size)
+        metas
+        (dt/emap
+         (fn [m]
+           (dt/const-reader  (:meta m) (:index-count m)))
+         :object
+         index-counts-and-label)]
+
+    (dt/coalesce-blocks! container metas)))
+
+
+(defn make-document-col-container-2 [index-counts-and-label col-size]
+  (let [container (dt/make-container :int16 col-size)
+        counts
+        (dt/emap
+         (fn [idx count]
+           (dt/const-reader idx count))
+         :int16
+         (dt/const-reader 1 (dt/ecount index-counts-and-label))
+         (map :index-count index-counts-and-label))]
+    (dt/coalesce-blocks! container counts)))
+
+
+
+
 (defn- make-word-pos-col-container-2 [index-counts-and-label col-size]
   (let [container (dt/make-container :int16 col-size)
         pos
@@ -137,7 +116,6 @@
     (dt/coalesce-blocks! container pos)
     )
 )
-(def col-size 6)
 
 (defn ->tidy-text
   "Reads, parses and tokenizes a text file into a tech.v3.dataset in the tidy-text format,
@@ -205,7 +183,7 @@
         _ (debug :measure-metas (mm/measure metas))
 
         col-term-index
-        (col-impl/construct-column [] (.data string-table)
+        (col-impl/construct-column [] (st/indices string-table)
                                    {:datatype :int16
                                     :name :term-idx})
         col-term-pos
@@ -348,29 +326,6 @@
 
 (comment
   (require '[criterium.core :as criterim])
-
-  (def col-size (apply + (map :index-count index-counts-and-label)))
-  (def metas-1 (make-metas-col-container-1 index-counts-and-label col-size))
-  (def metas-2 (make-metas-col-container-1 index-counts-and-label col-size))
-
-  (time (count (make-document-col-container-1 index-counts-and-label col-size )))
-  (time (count (make-document-col-container-2 index-counts-and-label col-size)))
-  (time (count (make-metas-col-container-1 index-counts-and-label col-size)))
-  (time (count (make-metas-col-container-2 index-counts-and-label col-size)))
-
-  (count document-1)
-  (count document-2)
-
-
-
-  (time
-   (ds/new-dataset [(col-impl/construct-column
-                     []
-                     (make-document-col-container-2 index-counts-and-label)
-                     {:datatype :int64 :name :document})]))
-
-
-
 
 
   )
