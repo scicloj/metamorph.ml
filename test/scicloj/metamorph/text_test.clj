@@ -6,10 +6,10 @@
             [scicloj.metamorph.ml.text :as text]
             [tech.v3.dataset.string-table :as string-table]
             [tablecloth.api :as tc]
-            [criterium.core :as criterim]
+        
             [tech.v3.dataset.string-table :as st]
             
-            [clj-memory-meter.core :as mm]))
+            ))
 
 
 
@@ -32,8 +32,7 @@
             )
         
         text (:dataset tidy)
-        string-table (:string-table tidy)
-        int->str (st/int->string string-table)
+        int->str (:int->str tidy)
         tf
         (->
          (text/->term-frequency text))
@@ -103,50 +102,64 @@
     (is (= '("0.0" "0.0" "0.0" "0.0" "0.12041200005987107" "0.060206000029935536" "0.08600857403459163" "0.12901285656619094")
            (map str (-> tf :tfidf))))))
 
+(comment
 
 
-(require '[clj-memory-meter.core :as mm])
-
-
-(defn load-reviews[] 
-  (-> (text/->tidy-text 
-       (io/reader "repeatedAbstrcats_3.7m_.txt")
-                        (fn [line] [line 
-                                    (rand-int 6)])
-                        #(str/split % #" ")
-                       :max-lines 10000
-                        :skip-lines 1) ))
-
-(def reviews (load-reviews))
-(def reviews-text (:dataset reviews))
+  (require '[clj-memory-meter.core :as mm])
+  
 
 
 
+  (defn load-reviews [] 
+    (-> (text/->tidy-text 
+         (io/reader "repeatedAbstrcats_3.7m_.txt")
+         (fn [line] [line 
+                     (rand-int 6)])
+         #(str/split % #" ")
+         :max-lines 10000
+         :skip-lines 1) ))
+  
+  
 
-(mm/measure
- (:term-idx reviews-text))
+  (def reviews (load-reviews))
+  
+  (def reviews-text (:dataset reviews))
+  
+  
+
+
+
+
+  (mm/measure
+   (:term-idx reviews-text))
+  
 ;;=> "318.8 KiB"
-
-(mm/measure
- (meta (:term-pos reviews-text)))
+  
+  (mm/measure
+   (meta (:term-pos reviews-text)))
+  
 ;;=> "1.0 MiB"
-
-(mm/measure
- (:document reviews-text))
+  
+  (mm/measure
+   (:document reviews-text))
+  
 ;;=> "45.7 KiB"
-
-(mm/measure
- (:meta reviews-text)
- )
+  
+  (mm/measure
+   (:meta reviews-text)
+   )
+  
+  
 ;;=> "1.0 MiB"
-
-(println
- (mm/measure reviews-text
-             :debug true))
+  
 ;;=> "2.4 MiB"
+  
+  (println 
+   :tc-row-count
+   (tc/row-count (:dataset reviews)))
+  
 
-(println 
- (tc/row-count (:dataset reviews)))
-
-(println
- (mm/measure reviews-text))
+  (println
+   :reviews-text
+   (mm/measure reviews-text))
+  )

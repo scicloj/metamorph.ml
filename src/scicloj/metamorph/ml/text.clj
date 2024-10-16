@@ -7,7 +7,12 @@
             [tech.v3.dataset.string-table :as st]
             [tech.v3.datatype :as dt]
             [tech.v3.dataset.impl.dataset :as ds-impl]
-            [tech.v3.datatype :as dtt])
+            [tech.v3.datatype :as dtt]
+            [clj-memory-meter.core :as mm]
+            [pppmap.core :as ppp]
+            [tech.v3.datatype.functional :as func]
+            [tech.v3.datatype.functional :as func]
+            [tech.v3.datatype.functional :as fun])
   (:import [java.io BufferedReader]))
 
 
@@ -31,6 +36,49 @@
       (when (zero? (rem (count new-acc) 10000))
         (println (count new-acc)))
       new-acc)))
+
+(def time-format (java.text.SimpleDateFormat. "HH:mm:ss.SSSS"))
+(def prevoius-debug-time (atom (java.time.LocalTime/now)))
+(defn debug [& s]
+  (let [duration
+        (.toSeconds
+         (java.time.Duration/between
+          @prevoius-debug-time
+          (java.time.LocalTime/now)))]
+    
+    (reset! prevoius-debug-time (java.time.LocalTime/now))
+    (apply println (format "(%s) - " duration)  (.format time-format (java.util.Date.)) " - " s))
+  )
+
+(defn make-document-col-container-1 [index-counts-and-label]
+  (->
+   (map
+    (fn [idx count]
+      (dt/const-reader idx count))
+    (range)
+    (map :index-count index-counts-and-label))
+   (dt/concat-buffers))
+)
+
+
+(defn make-document-col-container-2 [index-counts-and-label]
+  (let [counts
+        (dt/emap
+         (fn [idx count]
+           (dt/const-reader idx count))
+         :int64
+         (range)
+         (map :index-count index-counts-and-label))
+
+        length
+        (func/reduce-+
+         (seq
+          (dt/emap #(dt/get-value (dt/shape %) 0) :int64 counts)))]
+    (first
+     (dt/copy-raw->item! counts (dt/make-container :int64 length)))
+))
+
+
 
 (defn ->tidy-text
   "Reads, parses and tokenizes a text file into a tech.v3.dataset in the tidy-text format,
@@ -58,7 +106,7 @@
            max-lines Integer/MAX_VALUE}}]
 
   (let [string-table (st/string-table-from-strings [])
-        _ (println :parse)
+        _ (debug :parse)
         index-counts-and-label
         (process-file reader
                       (partial process-line string-table line-split-fn text-tokenizer-fn)
@@ -67,51 +115,86 @@
 
 
 
-        _ (println :line-idx)
-        line-idx
-        (->
-         (map-indexed
-          (fn [idx count]
-            (dt/const-reader idx count))
-          (map :index-count index-counts-and-label))
-         (dt/concat-buffers))
+        _ (def index-counts-and-label index-counts-and-label)
+        _ (debug :count-index-nad-labels (count index-counts-and-label))
+        _ (debug :line-idx)
 
-        _ (println :word-pos)
+        line-idx (make-document-col-container-2 index-counts-and-label)
+        
+
+        _ (debug :word-pos)
         word-pos
         (flatten
-         (mapv
+         (map
           #(range (:index-count %))
           index-counts-and-label))
 
-        _ (println :label)
+        _ (debug :label)
         metas
         (flatten
-         (mapv
+         (map
           #(repeat (:index-count %) (:meta %))
           index-counts-and-label))
 
-        _ (println :new-ds) 
+        _ (def string-table string-table)
+        _ (def metas metas)
+
+
+
+        _ (debug :count-indices
+                   (count (st/indices string-table)))
+
+
+
+        _ (debug :measure-data (mm/measure (.data string-table)))
+        _ (debug :measure-word-pos (mm/measure word-pos))
+        _ (debug :measure-line-idx (mm/measure line-idx))
+        _ (debug :measure-metas (mm/measure metas))
+
+        _ (debug :make-col-term-index)
+        col-term-index
+        (col-impl/construct-column [] (.data string-table)
+                                   {:datatype :int16
+                                    :name :term-idx})
+        _ (debug :make-col-term-pos)
+        col-term-pos
+        (col-impl/construct-column []
+                                   (dtt/make-container :int16 word-pos)
+                                   {:datatype :int16 :name :term-pos})
+
+        _ (debug :make-col-document)
+        col-document
+        (col-impl/construct-column []
+                                   (dtt/make-container :int16 line-idx)
+                                   {:datatype :int16 :name :document})
+        _ (debug :make-col-meta)
+        col-meta
+        (col-impl/construct-column []
+                                   (dtt/make-container :int16 metas)
+                                   {:datatype :int16 :name :meta})
+        _ (debug :make-ds)
         ds
         (ds/new-dataset
-         [(col-impl/construct-column [] (.data string-table)
-                                     {:datatype :int16
-                                      :name :term-idx})
-          (col-impl/construct-column []
-                                     (dtt/make-container :int16 word-pos)
-                                     {:datatype :int16 :name :term-pos})
+         [col-term-index col-term-pos col-document col-meta])]
 
-          (col-impl/construct-column []
-                                     (dtt/make-container :int16 line-idx)
-                                     {:datatype :int16 :name :document})
+    
+    ;(debug :col-term-index col-term-index)
+    ;(debug :col-term-pos  col-term-pos)
+    ;(debug :col-line-idx  col-document)
+    ;(debug :col-metas col-meta)
+    ;(debug :string-table string-table)
+    (debug :string-table-count (count string-table))
 
-          (col-impl/construct-column []
-                                     (dtt/make-container :int16 metas)
-                                     {:datatype :int16 :name :meta})])]
+    (debug :measure-col-term-index (mm/measure col-term-index))
+    (debug :measure-col-term-pos (mm/measure col-term-pos))
+    (debug :measure-col-line-idx (mm/measure col-document))
+    (debug :measure-col-metas (mm/measure col-meta))
+    (debug :measure-string-table (mm/measure string-table))
+    (debug :measure-ds (mm/measure ds))
+
 
     {:dataset ds
-     :string-table string-table})
-    ;; drops empty string 
-    ;;https://clojurians.zulipchat.com/#narrow/stream/236259-tech.2Eml.2Edataset.2Edev/topic/is.20empty.20string.20a.20.22missing.22.20.3F
+     :int->str (st/int->string string-table)})
   )
 
 
@@ -211,4 +294,24 @@
    .data))
 
 
+
+
+
+
+(comment
+  (require '[criterium.core :as criterim])
+
+  (def document-1 (make-document-col-container-1 index-counts-and-label))
+  (def document-2 (make-document-col-container-2 index-counts-and-label))
+
+  (count document-2)
+
+  (= document-1 document-2)
+  (criterim/quick-bench
+   (make-document-col-container-1 index-counts-and-label))
+  (criterim/quick-bench
+   (make-document-col-container-2 index-counts-and-label))
+
+
+  )
 

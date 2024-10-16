@@ -11,18 +11,18 @@
   
             [clj-memory-meter.core :as mm]))
 
-(defn- parse-review-line [line]
-  (let [splitted (first
-                  (csv/read-csv line))]
-    [(first splitted)
-     (dec (Integer/parseInt (second splitted)))]))
-
-(def r
-  (-> (text/->tidy-text (io/reader "test/data/reviews.csv")
-                        parse-review-line
-                        #(str/split % #" ")
-                        :skip-lines 1)))
   
 
-(count (:string-table r))
+(add-tap println)
 
+(defn load-reviews []
+  (-> (text/->tidy-text
+       (io/reader "repeatedAbstrcats_3.7m_.txt")
+       (fn [line] [line
+                   (rand-int 6)])
+       #(str/split % #" ")
+       :max-lines 20000
+       :skip-lines 1)))
+
+
+(load-reviews)
