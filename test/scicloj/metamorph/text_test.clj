@@ -38,9 +38,9 @@
          (text/->term-frequency text))
         ]
 
-    (tc/columns text)
-    
+    (def text text)
     (def int->str int->str)
+    (def tf tf)
     (is (= 596
            (tc/row-count text)))
 

@@ -16,7 +16,9 @@
   (:import [java.io BufferedReader]))
 
 
-(defn- process-file [reader line-func line-acc max-lines skip-lines]
+(defn- process-file [reader line-func 
+                     line-acc 
+                     max-lines skip-lines]
   (with-open [rdr (BufferedReader. reader)]
     (reduce line-func line-acc
             (take max-lines
@@ -30,12 +32,20 @@
 
         index-count (count tokens)]
     (.addAllReducible string-table tokens)
-    (let [new-acc (conj acc
-                        {:index-count index-count
-                         :meta meta})]
-      (when (zero? (rem (count new-acc) 10000))
-        (println (count new-acc)))
-      new-acc)))
+    (let [meta-list (:meta-list acc)
+          index-list (:index-list acc)
+
+          _ (def label-list label-list)
+          _ (def meta-list meta-list)
+          _ (def index-count index-count)
+          _ (def meta meta)
+          _ (def acc acc)
+          _ (.add meta-list meta)
+          _ (.add index-list index-count)
+]
+      (when (zero? (rem (dt/ecount index-list) 10000))
+        (println (dt/ecount index-list)))
+      acc)))
 
 (def time-format (java.text.SimpleDateFormat. "HH:mm:ss.SSSS"))
 (def prevoius-debug-time (atom (java.time.LocalTime/now)))
@@ -84,10 +94,11 @@
   (let [container (dt/make-container :int16 col-size)
         metas
         (dt/emap
-         (fn [m]
-           (dt/const-reader  (:meta m) (:index-count m)))
+         (fn [index meta]
+           (dt/const-reader meta index))
          :object
-         index-counts-and-label)]
+         (:index-list index-counts-and-label)
+         (:meta-list index-counts-and-label))]
 
     (dt/coalesce-blocks! container metas)))
 
@@ -100,7 +111,9 @@
            (dt/const-reader idx count))
          :int16
          (range)
-         (map :index-count index-counts-and-label))]
+         (:index-list index-counts-and-label)
+         )
+        ]
     (dt/coalesce-blocks! container counts)))
 
 
@@ -110,9 +123,9 @@
   (let [container (dt/make-container :int16 col-size)
         pos
         (dt/emap
-         #(range (:index-count %))
+         range
          :int16
-         index-counts-and-label)]
+         (:index-list index-counts-and-label))]
     (dt/coalesce-blocks! container pos)
     )
 )
@@ -147,13 +160,17 @@
         index-counts-and-label
         (process-file reader
                       (partial process-line string-table line-split-fn text-tokenizer-fn)
-                      [] max-lines skip-lines)
+                      {:meta-list (dt/make-list :object)
+                       :index-list (dt/make-list :int32)
+                      }
+                      max-lines skip-lines)
 
+        
 
-
-
-        col-size (func/reduce-+ (dt/emap :index-count :int16 index-counts-and-label))
         _ (def index-counts-and-label index-counts-and-label)
+
+
+        col-size (func/reduce-+ (:index-list index-counts-and-label))
         _ (debug :count-index-nad-labels (count index-counts-and-label))
         _ (debug :make-document-col-container)
         line-idx (make-document-col-container-2 index-counts-and-label col-size)
