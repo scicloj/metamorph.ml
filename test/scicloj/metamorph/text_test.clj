@@ -26,7 +26,7 @@
         (-> (text/->tidy-text (io/reader "test/data/reviews.csv")
                               parse-review-line
                               #(str/split % #" ")
-                              :max-lines 5
+                              ;:max-lines 5
                               :skip-lines 1)
 
             )

@@ -13,7 +13,7 @@
 
   
 
-(add-tap println)
+
 
 (defn load-reviews []
   (-> (text/->tidy-text
@@ -21,7 +21,7 @@
        (fn [line] [line
                    (rand-int 6)])
        #(str/split % #" ")
-       :max-lines 20000
+       :max-lines 100000
        :skip-lines 1)))
 
 
