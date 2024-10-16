@@ -1,9 +1,13 @@
 (ns scicloj.metamorph.ml.text
   (:require [tablecloth.api :as tc]
             [tech.v3.dataset :as ds]
+            [tech.v3.dataset.column :as col]
+            [tech.v3.dataset.impl.column :as col-impl]
             [tech.v3.dataset.base :as ds-base]
             [tech.v3.dataset.string-table :as st]
-            [tech.v3.datatype :as dt])
+            [tech.v3.datatype :as dt]
+            [tech.v3.dataset.impl.dataset :as ds-impl]
+            [tech.v3.datatype :as dtt])
   (:import [java.io BufferedReader]))
 
 
@@ -54,6 +58,7 @@
            max-lines Integer/MAX_VALUE}}]
 
   (let [string-table (st/string-table-from-strings [])
+        _ (println :parse)
         index-counts-and-label
         (process-file reader
                       (partial process-line string-table line-split-fn text-tokenizer-fn)
@@ -62,6 +67,7 @@
 
 
 
+        _ (println :line-idx)
         line-idx
         (->
          (map-indexed
@@ -70,29 +76,40 @@
           (map :index-count index-counts-and-label))
          (dt/concat-buffers))
 
+        _ (println :word-pos)
         word-pos
         (flatten
-         (map
+         (mapv
           #(range (:index-count %))
           index-counts-and-label))
 
+        _ (println :label)
         metas
         (flatten
-         (map
+         (mapv
           #(repeat (:index-count %) (:meta %))
           index-counts-and-label))
 
+        _ (println :new-ds) 
         ds
         (ds/new-dataset
-         [(ds/new-column :term string-table
-                         {}
-                         [])
-               ;(ds/new-column :word string-table  [])
-          (ds/new-column :term-index word-pos nil [])
-          (ds/new-column :document line-idx nil [])
-          (ds/new-column :meta metas nil [])])]
+         [(col-impl/construct-column [] (.data string-table)
+                                     {:datatype :int16
+                                      :name :term-idx})
+          (col-impl/construct-column []
+                                     (dtt/make-container :int16 word-pos)
+                                     {:datatype :int16 :name :term-pos})
 
-    ds)
+          (col-impl/construct-column []
+                                     (dtt/make-container :int16 line-idx)
+                                     {:datatype :int16 :name :document})
+
+          (col-impl/construct-column []
+                                     (dtt/make-container :int16 metas)
+                                     {:datatype :int16 :name :meta})])]
+
+    {:dataset ds
+     :string-table string-table})
     ;; drops empty string 
     ;;https://clojurians.zulipchat.com/#narrow/stream/236259-tech.2Eml.2Edataset.2Edev/topic/is.20empty.20string.20a.20.22missing.22.20.3F
   )
@@ -124,15 +141,15 @@
             (tc/rename-columns {:$group-name :document}))
         idf
         (-> tidy-text-ds
-            (tc/unique-by [:term :document])
-            (tc/group-by  [:term])
+            (tc/unique-by [:term-idx :document])
+            (tc/group-by  [:term-idx])
             (tc/aggregate #(Math/log10 (/ N (tc/row-count %))))
             (tc/rename-columns {"summary" :idf}))]
 
     (-> tidy-text-ds
         (tc/left-join n-tokens-per-document [:document])
-        (tc/left-join idf [:term])
-        (tc/group-by  [:term :document :label])
+        (tc/left-join idf [:term-idx])
+        (tc/group-by  [:term-idx :document :label])
         (tc/aggregate
          (fn [ds-per-token]
            (let [term-count (ds/row-count ds-per-token)
@@ -148,8 +165,9 @@
                             :summary-tf :tf
                             :summary-idf :idf
                             :summary-tfidf :tfidf})
-        add-word-idx
-        (tc/drop-columns [:term]))))
+        ;add-word-idx
+        ;(tc/drop-columns [:term])
+        )))
 
 
 
