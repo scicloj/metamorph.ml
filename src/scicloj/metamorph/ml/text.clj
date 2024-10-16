@@ -1,18 +1,14 @@
 (ns scicloj.metamorph.ml.text
   (:require [tablecloth.api :as tc]
             [tech.v3.dataset :as ds]
-            [tech.v3.dataset.column :as col]
             [tech.v3.dataset.impl.column :as col-impl]
             [tech.v3.dataset.base :as ds-base]
             [tech.v3.dataset.string-table :as st]
             [tech.v3.datatype :as dt]
-            [tech.v3.dataset.impl.dataset :as ds-impl]
             [tech.v3.datatype :as dtt]
             [clj-memory-meter.core :as mm]
-            [pppmap.core :as ppp]
             [tech.v3.datatype.functional :as func]
-            [tech.v3.datatype.functional :as func]
-            [tech.v3.datatype.functional :as fun])
+            )
   (:import [java.io BufferedReader]))
 
 
@@ -34,12 +30,6 @@
     (.addAllReducible string-table tokens)
     (let [meta-list (:meta-list acc)
           index-list (:index-list acc)
-
-          _ (def label-list label-list)
-          _ (def meta-list meta-list)
-          _ (def index-count index-count)
-          _ (def meta meta)
-          _ (def acc acc)
           _ (.add meta-list meta)
           _ (.add index-list index-count)
 ]
@@ -61,49 +51,21 @@
     (apply print (.format time-format (java.util.Date.)) " - " s))
   )
 
-(defn make-document-col-container-1 [index-counts-and-label col-size]
-  (->
-   (map
-    (fn [idx count]
-      (dt/const-reader idx count))
-    (range)
-    (map :index-count index-counts-and-label))
-   (dt/concat-buffers))
-)
 
-(defn make-metas-col-container-1 [index-counts-and-label col-size]
-  (dt/make-container
-   :int16
-   (flatten
-    (map
-     #(repeat (:index-count %) (:meta %))
-     index-counts-and-label))))
-
-
-
-(defn- make-word-pos-col-container-1 [index-counts-and-label col-size]
-  (dt/->array-buffer
-   :int16
-   (flatten
-    (map
-     #(range (:index-count %))
-     index-counts-and-label))))
-
-
-(defn make-metas-col-container-2 [index-counts-and-label col-size]
+(defn make-metas-col-container [index-and-lable-lists col-size]
   (let [container (dt/make-container :int16 col-size)
         metas
         (dt/emap
          (fn [index meta]
            (dt/const-reader meta index))
          :object
-         (:index-list index-counts-and-label)
-         (:meta-list index-counts-and-label))]
+         (:index-list index-and-lable-lists)
+         (:meta-list index-and-lable-lists))]
 
     (dt/coalesce-blocks! container metas)))
 
 
-(defn make-document-col-container-2 [index-counts-and-label col-size]
+(defn make-document-col-container [index-and-lable-lists col-size]
   (let [container (dt/make-container :int16 col-size)
         counts
         (dt/emap
@@ -111,7 +73,7 @@
            (dt/const-reader idx count))
          :int16
          (range)
-         (:index-list index-counts-and-label)
+         (:index-list index-and-lable-lists)
          )
         ]
     (dt/coalesce-blocks! container counts)))
@@ -119,13 +81,13 @@
 
 
 
-(defn- make-word-pos-col-container-2 [index-counts-and-label col-size]
+(defn- make-term-pos-col-container [index-and-lable-lists col-size]
   (let [container (dt/make-container :int16 col-size)
         pos
         (dt/emap
          range
          :int16
-         (:index-list index-counts-and-label))]
+         (:index-list index-and-lable-lists))]
     (dt/coalesce-blocks! container pos)
     )
 )
@@ -155,11 +117,11 @@
       :or {skip-lines  0
            max-lines Integer/MAX_VALUE}}]
 
-  (let [string-table (st/string-table-from-strings [])
+  (let [term-index-string-table (st/string-table-from-strings [])
         _ (debug :parse)
-        index-counts-and-label
+        index-and-lable-lists
         (process-file reader
-                      (partial process-line string-table line-split-fn text-tokenizer-fn)
+                      (partial process-line term-index-string-table line-split-fn text-tokenizer-fn)
                       {:meta-list (dt/make-list :object)
                        :index-list (dt/make-list :int32)
                       }
@@ -167,50 +129,46 @@
 
         
 
-        _ (def index-counts-and-label index-counts-and-label)
+        _ (def index-and-lable-lists index-and-lable-lists)
 
 
-        col-size (func/reduce-+ (:index-list index-counts-and-label))
-        _ (debug :count-index-nad-labels (count index-counts-and-label))
+        col-size (func/reduce-+ (:index-list index-and-lable-lists))
+        _ (debug :count-index-nad-labels (count index-and-lable-lists))
         _ (debug :make-document-col-container)
-        line-idx (make-document-col-container-2 index-counts-and-label col-size)
+        document-index (make-document-col-container index-and-lable-lists col-size)
 
 
-        _ (debug :make-word-pos-col-container)
-        word-pos (make-word-pos-col-container-2 index-counts-and-label col-size)
+        _ (debug :make-term-pos-col-container)
+        term-pos (make-term-pos-col-container index-and-lable-lists col-size)
 
 
         _ (debug :make-metas-col-container)
-        metas (make-metas-col-container-2 index-counts-and-label col-size)
-
-
-        _ (def string-table string-table)
-        _ (def metas metas)
+        metas (make-metas-col-container index-and-lable-lists col-size)
 
 
 
         _ (debug :count-indices
-                 (count (st/indices string-table)))
+                 (count (st/indices term-index-string-table)))
 
 
 
-        _ (debug :measure-data (mm/measure (.data string-table)))
-        _ (debug :measure-word-pos (mm/measure word-pos))
-        _ (debug :measure-line-idx (mm/measure line-idx))
+        _ (debug :measure-term-index-st (mm/measure (.data term-index-string-table)))
+        _ (debug :measure-term-pos (mm/measure term-pos))
+        _ (debug :measure-document-idx (mm/measure document-index))
         _ (debug :measure-metas (mm/measure metas))
 
         col-term-index
-        (col-impl/construct-column [] (st/indices string-table)
+        (col-impl/construct-column [] (st/indices term-index-string-table)
                                    {:datatype :int16
                                     :name :term-idx})
         col-term-pos
         (col-impl/construct-column []
-                                   word-pos
+                                   term-pos
                                    {:datatype :int16 :name :term-pos})
 
         col-document
         (col-impl/construct-column []
-                                   line-idx
+                                   document-index
                                    {:datatype :int64 :name :document})
         col-meta
         (col-impl/construct-column []
@@ -226,18 +184,18 @@
     ;(debug :col-line-idx  col-document)
     ;(debug :col-metas col-meta)
     ;(debug :string-table string-table)
-    (debug :string-table-count (count string-table))
+    (debug :string-table-count (count term-index-string-table))
 
     (debug :measure-col-term-index (mm/measure col-term-index))
     (debug :measure-col-term-pos (mm/measure col-term-pos))
-    (debug :measure-col-line-idx (mm/measure col-document))
+    (debug :measure-col-document-idx (mm/measure col-document))
     (debug :measure-col-metas (mm/measure col-meta))
-    (debug :measure-string-table (mm/measure string-table))
+    (debug :measure-term-index-string-table (mm/measure term-index-string-table))
     (debug :measure-ds (mm/measure ds))
 
 
     {:dataset ds
-     :int->str (st/int->string string-table)})
+     :int->str (st/int->string term-index-string-table)})
   )
 
 

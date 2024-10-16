@@ -17,11 +17,10 @@
 
 (defn load-reviews []
   (-> (text/->tidy-text
-       (io/reader "repeatedAbstrcats_3.7m_.txt")
+       (io/reader "bigdata/repeatedAbstrcats_3.7m_.txt")
        (fn [line] [line
                    (rand-int 6)])
        #(str/split % #" ")
-       ;:max-lines 1000000
        :skip-lines 1)))
 
 
