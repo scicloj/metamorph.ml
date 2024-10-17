@@ -4,12 +4,14 @@
             [tech.v3.dataset.impl.column :as col-impl]
             [tech.v3.dataset.base :as ds-base]
             [tech.v3.dataset.string-table :as st]
+            [tech.v3.dataset.dynamic-int-list :as dyn-int-list]
             [tech.v3.datatype :as dt]
             [tech.v3.datatype :as dtt]
             [clj-memory-meter.core :as mm]
             [tech.v3.datatype.functional :as func]
             )
   (:import [java.io BufferedReader]))
+
 
 
 (defn- process-file [reader line-func 
@@ -52,8 +54,8 @@
   )
 
 
-(defn make-metas-col-container [index-and-lable-lists col-size]
-  (let [container (dt/make-container :int16 col-size)
+(defn make-metas-col-container [index-and-lable-lists col-size datatype]
+  (let [container (dt/make-container datatype col-size)
         metas
         (dt/emap
          (fn [index meta]
@@ -65,13 +67,13 @@
     (dt/coalesce-blocks! container metas)))
 
 
-(defn make-document-col-container [index-and-lable-lists col-size]
-  (let [container (dt/make-container :int16 col-size)
+(defn make-document-col-container [index-and-lable-lists col-size datatype]
+  (let [container (dt/make-container datatype col-size)
         counts
         (dt/emap
          (fn [idx count]
            (dt/const-reader idx count))
-         :int16
+         datatype
          (range)
          (:index-list index-and-lable-lists)
          )
@@ -81,12 +83,12 @@
 
 
 
-(defn- make-term-pos-col-container [index-and-lable-lists col-size]
-  (let [container (dt/make-container :int16 col-size)
+(defn- make-term-pos-col-container [index-and-lable-lists col-size datatype]
+  (let [container (dt/make-container datatype col-size)
         pos
         (dt/emap
          range
-         :int16
+         datatype
          (:index-list index-and-lable-lists))]
     (dt/coalesce-blocks! container pos)
     )
@@ -117,39 +119,36 @@
       :or {skip-lines  0
            max-lines Integer/MAX_VALUE}}]
 
-  (let [term-index-string-table (st/string-table-from-strings [])
+  (let [datatype-document :int32
+        datatype-term-pos :int16
+        datatype-metas :int8
+
+        term-index-string-table (st/string-table-from-strings [])
         _ (debug :parse)
         index-and-lable-lists
         (process-file reader
                       (partial process-line term-index-string-table line-split-fn text-tokenizer-fn)
                       {:meta-list (dt/make-list :object)
-                       :index-list (dt/make-list :int32)
-                      }
+                       :index-list (dyn-int-list/dynamic-int-list)}
                       max-lines skip-lines)
 
-        
+
 
         _ (def index-and-lable-lists index-and-lable-lists)
 
 
         col-size (func/reduce-+ (:index-list index-and-lable-lists))
-        _ (debug :count-index-nad-labels (count index-and-lable-lists))
+        _ (debug :count-index-aad-label-lists (count (:index-list index-and-lable-lists)))
         _ (debug :make-document-col-container)
-        document-index (make-document-col-container index-and-lable-lists col-size)
+        document-index (make-document-col-container index-and-lable-lists col-size datatype-document)
 
 
         _ (debug :make-term-pos-col-container)
-        term-pos (make-term-pos-col-container index-and-lable-lists col-size)
+        term-pos (make-term-pos-col-container index-and-lable-lists col-size datatype-term-pos)
 
 
         _ (debug :make-metas-col-container)
-        metas (make-metas-col-container index-and-lable-lists col-size)
-
-
-
-        _ (debug :count-indices
-                 (count (st/indices term-index-string-table)))
-
+        metas (make-metas-col-container index-and-lable-lists col-size datatype-metas)
 
 
         _ (debug :measure-term-index-st (mm/measure (.data term-index-string-table)))
@@ -157,60 +156,29 @@
         _ (debug :measure-document-idx (mm/measure document-index))
         _ (debug :measure-metas (mm/measure metas))
 
-        col-term-index
-        (col-impl/construct-column [] (st/indices term-index-string-table)
-                                   {:datatype :int16
-                                    :name :term-idx})
-        col-term-pos
-        (col-impl/construct-column []
-                                   term-pos
-                                   {:datatype :int16 :name :term-pos})
-
-        col-document
-        (col-impl/construct-column []
-                                   document-index
-                                   {:datatype :int64 :name :document})
-        col-meta
-        (col-impl/construct-column []
-                                   metas
-                                   {:datatype :int16 :name :meta})
+        col-term-index (ds/new-column :term-idx  (st/indices term-index-string-table) {} [])
+        col-term-pos (ds/new-column :term-pos  term-pos {} [])
+        col-document (ds/new-column :document document-index {} [])
+        col-meta (ds/new-column :meta metas {} [])
         ds
         (ds/new-dataset
          [col-term-index col-term-pos col-document col-meta])]
 
-    
-    ;(debug :col-term-index col-term-index)
-    ;(debug :col-term-pos  col-term-pos)
-    ;(debug :col-line-idx  col-document)
-    ;(debug :col-metas col-meta)
-    ;(debug :string-table string-table)
     (debug :string-table-count (count term-index-string-table))
+    (debug :string-table-vocab-size (count (st/int->string term-index-string-table)))
+    (debug :measure-term-index-string-table (mm/measure term-index-string-table))
+ 
 
     (debug :measure-col-term-index (mm/measure col-term-index))
     (debug :measure-col-term-pos (mm/measure col-term-pos))
     (debug :measure-col-document-idx (mm/measure col-document))
     (debug :measure-col-metas (mm/measure col-meta))
-    (debug :measure-term-index-string-table (mm/measure term-index-string-table))
     (debug :measure-ds (mm/measure ds))
 
 
     {:dataset ds
      :int->str (st/int->string term-index-string-table)})
   )
-
-
-(defn- add-word-idx [tidy-text-ds]
-  (let [term-col-as-string-table (ds-base/column->string-table (:term tidy-text-ds))
-        word->int-table
-        (-> (st/get-str-table term-col-as-string-table) :str->int)]
-
-    (-> tidy-text-ds
-        (tc/add-column
-         :term-idx
-         (fn [ds]
-           (map #(get word->int-table %)
-                (:term ds)))))))
-
 
 
 (defn ->term-frequency [tidy-text-ds]

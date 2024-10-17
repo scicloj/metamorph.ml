@@ -31,7 +31,7 @@
                 com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.3.0"}}}
 
   :test
-  {:jvm-opts ["-Djdk.attach.allowAttachSelf","-Xmx12G"]
+  {:jvm-opts ["-Djdk.attach.allowAttachSelf","-Xmx14G"]
    :extra-paths ["test"]
    :extra-deps {
                 lambdaisland/kaocha {:mvn/version "1.88.1376"}

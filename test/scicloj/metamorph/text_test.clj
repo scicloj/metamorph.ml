@@ -6,12 +6,7 @@
             [scicloj.metamorph.ml.text :as text]
             [tech.v3.dataset.string-table :as string-table]
             [tablecloth.api :as tc]
-        
-            [tech.v3.dataset.string-table :as st]
-            
-            ))
-
-
+            [tech.v3.dataset.string-table :as st]))
 
 (defn- parse-review-line [line]
   (let [splitted (first
@@ -20,22 +15,16 @@
      (dec (Integer/parseInt (second splitted)))]))
 
 (deftest ->tidy-text
-
   (let [tidy
-
         (-> (text/->tidy-text (io/reader "test/data/reviews.csv")
                               parse-review-line
                               #(str/split % #" ")
                               :max-lines 5
-                              :skip-lines 1)
-
-            )
+                              :skip-lines 1))
         
         text (:dataset tidy)
         int->str (:int->str tidy)
-        tf
-        (->
-         (text/->term-frequency text))
+        tf (text/->term-frequency text)
         ]
     (is (= 596
            (tc/row-count text)))
@@ -45,8 +34,8 @@
 
     (is (= :int16 (-> text :term-idx meta :datatype)))
     (is (= :int16 (-> text :term-pos meta :datatype)))
-    (is (= :int16 (-> text :document meta :datatype)))
-    (is (= :int16 (-> text :meta meta :datatype)))
+    (is (= :int32 (-> text :document meta :datatype)))
+    (is (= :int8 (-> text :meta meta :datatype)))
     
     (is (= [["Is" 0 0 3] ["it" 1 0 3] ["a" 2 0 3] ["great" 3 0 3] ["product" 4 0 3]]
            (->>
