@@ -21,7 +21,7 @@
        (fn [line] [line
                    (rand-int 6)])
        #(str/split % #" ")
-       ;:max-lines 100
+       ;:max-lines 100000
        :skip-lines 1
        :datatype-document :int32
        :datatype-term-pos :int32
@@ -32,6 +32,10 @@
  (def df
       (:dataset (load-reviews)))
 
+
+ (println)
+ (println :meta 
+          (-> df :meta .data))
  (println :shape (tc/shape df))
  (println :col-datatypes
                     (map
