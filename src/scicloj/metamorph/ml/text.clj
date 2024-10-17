@@ -6,7 +6,6 @@
             [tech.v3.dataset.string-table :as st]
             [tech.v3.dataset.dynamic-int-list :as dyn-int-list]
             [tech.v3.datatype :as dt]
-            [tech.v3.datatype :as dtt]
             [clj-memory-meter.core :as mm]
             [tech.v3.datatype.functional :as func]
             )
@@ -54,45 +53,42 @@
   )
 
 
-(defn make-metas-col-container [index-and-lable-lists col-size datatype]
-  (let [container (dt/make-container datatype col-size)
+(defn- make-col-container [map-fn res-dataype  container-size datas]
+  (let [container (dt/make-container res-dataype container-size)
         metas
-        (dt/emap
-         (fn [index meta]
-           (dt/const-reader meta index))
-         :object
-         (:index-list index-and-lable-lists)
-         (:meta-list index-and-lable-lists))]
+        (apply dt/emap map-fn res-dataype datas)]
+    
+    (dt/coalesce-blocks! container metas))
+  )
 
-    (dt/coalesce-blocks! container metas)))
-
-
-(defn make-document-col-container [index-and-lable-lists col-size datatype]
-  (let [container (dt/make-container datatype col-size)
-        counts
-        (dt/emap
-         (fn [idx count]
-           (dt/const-reader idx count))
-         datatype
-         (range)
-         (:index-list index-and-lable-lists)
-         )
-        ]
-    (dt/coalesce-blocks! container counts)))
+(defn- make-metas-col-container [index-and-lable-lists col-size datatype]
+  (make-col-container
+   (fn [index meta]
+     (dt/const-reader meta index))
+   datatype
+   col-size
+   [(:index-list index-and-lable-lists)
+    (:meta-list index-and-lable-lists)
+    ]
+   ))
 
 
+(defn- make-document-col-container [index-and-lable-lists col-size datatype]
+  (make-col-container
+   (fn [idx count]
+     (dt/const-reader idx count))
+   datatype
+   col-size
+   [(range)
+    (:index-list index-and-lable-lists)]))
 
 
 (defn- make-term-pos-col-container [index-and-lable-lists col-size datatype]
-  (let [container (dt/make-container datatype col-size)
-        pos
-        (dt/emap
-         range
-         datatype
-         (:index-list index-and-lable-lists))]
-    (dt/coalesce-blocks! container pos)
-    )
-)
+  (make-col-container
+   range
+   datatype
+   col-size
+   [(:index-list index-and-lable-lists)]))
 
 (defn ->tidy-text
   "Reads, parses and tokenizes a text file into a tech.v3.dataset in the tidy-text format,
@@ -115,14 +111,17 @@
   [reader line-split-fn
    text-tokenizer-fn
 
-   & {:keys [skip-lines max-lines]
+   & {:keys [skip-lines max-lines
+             datatype-document 
+             datatype-term-pos
+             datatype-metas]
       :or {skip-lines  0
+           datatype-document :int32
+           datatype-term-pos :int16
+           datatype-metas    :int8
            max-lines Integer/MAX_VALUE}}]
 
-  (let [datatype-document :int32
-        datatype-term-pos :int16
-        datatype-metas :int8
-
+  (let [
         term-index-string-table (st/string-table-from-strings [])
         _ (debug :parse)
         index-and-lable-lists
@@ -134,7 +133,6 @@
 
 
 
-        _ (def index-and-lable-lists index-and-lable-lists)
 
 
         col-size (func/reduce-+ (:index-list index-and-lable-lists))
@@ -217,8 +215,6 @@
                             :summary-tf :tf
                             :summary-idf :idf
                             :summary-tfidf :tfidf})
-        ;add-word-idx
-        ;(tc/drop-columns [:term])
         )))
 
 

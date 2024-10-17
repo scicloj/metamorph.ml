@@ -1,15 +1,15 @@
 (ns scicloj.metamorph.text-perf
-  (:require [clojure.data.csv :as csv]
+  (:require 
             [clojure.java.io :as io]
             [clojure.string :as str]
-            [clojure.test :refer [deftest is]]
+            
             [scicloj.metamorph.ml.text :as text]
-            [tech.v3.dataset.string-table :as string-table]
+            
             [tablecloth.api :as tc]
-            [criterium.core :as criterim]
-            [tech.v3.dataset.string-table :as st]
+            
+            
   
-            [clj-memory-meter.core :as mm]))
+            ))
 
   
 
@@ -21,10 +21,25 @@
        (fn [line] [line
                    (rand-int 6)])
        #(str/split % #" ")
-       :skip-lines 1)))
+       ;:max-lines 100
+       :skip-lines 1
+       :datatype-document :int32
+       :datatype-term-pos :int32
+       :datatype-metas    :int8)))
 
 
-(load-reviews)
+
+ (def df
+      (:dataset (load-reviews)))
+
+ (println :shape (tc/shape df))
+ (println :col-datatypes
+                    (map
+                     (fn [name col]
+                       [name (-> col meta :datatype)])
+                     (tc/column-names df)
+                     (tc/columns df)))
+ 
 
 
 ;; 14G of RAM needed

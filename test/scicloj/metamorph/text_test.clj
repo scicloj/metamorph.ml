@@ -14,6 +14,29 @@
     [(first splitted)
      (dec (Integer/parseInt (second splitted)))]))
 
+(defn- parse-review-line-as-mape [line]
+  (let [splitted (first
+                  (csv/read-csv line))]
+    [(first splitted)
+     {:label 
+      (dec (Integer. (second splitted)))}]))
+
+(deftest ->tidy-text-with-objec-d
+
+  (let [{:keys [dataset]}
+        (text/->tidy-text (io/reader "test/data/reviews.csv")
+                          parse-review-line-as-mape
+                          #(str/split % #" ")
+                          :max-lines 5
+                          :skip-lines 1
+                          :datatype-metas :object
+                          
+                          )]
+    (is ( = {:label 3}
+          (-> dataset :meta first)))))
+
+
+
 (deftest ->tidy-text
   (let [tidy
         (-> (text/->tidy-text (io/reader "test/data/reviews.csv")
