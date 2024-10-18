@@ -1,14 +1,15 @@
 (ns scicloj.metamorph.ml.text
-  (:require [tablecloth.api :as tc]
+  (:require [clj-memory-meter.core :as mm]
+            [ham-fisted.api :as hf]
+            [ham-fisted.reduce :as hf-reduce]
+            [tablecloth.api :as tc]
             [tech.v3.dataset :as ds]
-            [tech.v3.dataset.impl.column :as col-impl]
             [tech.v3.dataset.base :as ds-base]
-            [tech.v3.dataset.string-table :as st]
             [tech.v3.dataset.dynamic-int-list :as dyn-int-list]
+            [tech.v3.dataset.string-table :as st]
             [tech.v3.datatype :as dt]
-            [clj-memory-meter.core :as mm]
             [tech.v3.datatype.functional :as func]
-            )
+            [tech.v3.datatype.functional :as fun])
   (:import [java.io BufferedReader]))
 
 
@@ -222,6 +223,65 @@
         )))
 
 
+(defn create-term->idf-map [df]
+  (let [N 
+        (double
+         (tc/row-count
+          (tc/unique-by df :document)))]
+    (hf-reduce/preduce
+     (fn [] (hf/mut-map))
+     (fn [m [term-idx row-indices]]
+       (let [documents 
+             (hf/double-array-list
+              (distinct (ds/select-rows (:document df) row-indices)))]
+         (hf/assoc! m term-idx (Math/log10 (/ N (hf/constant-count documents))))))
+     (fn [m-1 m-2]
+       (hf/merge m-1 m-2))
+
+     (ds/group-by-column->indexes df :term-idx))))
+
+
+(defn ->tfidf [text]
+  (let [term->idf-map
+        (create-term->idf-map text)]
+    (->>
+     (hf-reduce/preduce (fn [] (hf/object-array-list))
+                        (fn [l [document-idx row-indices]]
+                          (let [term-idxs
+                                (ds/select-rows (:term-idx text) row-indices)
+                                freqs (hf/frequencies term-idxs)
+                                n-terms (hf/constant-count row-indices)
+                                term-count (hf/int-array-list (hf/vals freqs))
+                                tfs (hf/double-array-list (fun// term-count (float n-terms)))
+                                terms (hf/int-array-list (hf/keys freqs))
+                                idfs (hf/double-array-list (map term->idf-map terms))]
+
+                            ;; (def row-indices row-indices)
+                            ;; (def n-terms n-terms)
+                            ;; (def term-idxs term-idxs)
+                            ;; (def freqs freqs)
+                            ;; (def term-count term-count)
+                            ;; (def terms terms)
+                            ;; (def idfs idfs)
+                            ;; (def tfs tfs)
+
+                            (-> l
+                                (hf/conj!
+                                 (hf/hash-map
+                                  :document (hf/int-array-list (hf/repeat (hf/constant-count freqs) document-idx))
+                                  :term-idx terms
+                                  :tf tfs
+                                  :term-count term-count
+                                  :n-terms (hf/int-array-list (hf/repeat (hf/constant-count freqs) n-terms))
+                                  :idfs idfs
+                                  :tfidf (hf/double-array-list (map * tfs idfs)))))))
+                        (fn [list-1 list-2]
+                          (hf/add-all! list-1 list-2))
+                        (ds/group-by-column->indexes text :document))
+     (hf/union-reduce-maps
+      (fn [l-1 l-2]
+        (hf/add-all! l-1 l-2)))
+     (ds/->>dataset))))
 
 
 

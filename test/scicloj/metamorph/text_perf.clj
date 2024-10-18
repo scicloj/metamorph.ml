@@ -11,9 +11,8 @@
             [criterium.core :as criterium]
             [criterium.core :as criterim]
             [tech.v3.datatype.functional :as func]
-            [tech.v3.dataset.reductions :as reductions]))
-
-
+            [tech.v3.dataset.reductions :as reductions]
+            [ham-fisted.api :as hf]))
 
 
 
@@ -23,7 +22,7 @@
        (fn [line] [line
                    (rand-int 6)])
        #(str/split % #" ")
-       :max-lines 10000
+       :max-lines 1000
        :skip-lines 1
        :datatype-document :int32
        :datatype-term-pos :int32
@@ -45,6 +44,7 @@
             [name (-> col meta :datatype)])
           (tc/column-names df)
           (tc/columns df)))
+
 
 
 ;; 14G of RAM needed
@@ -69,7 +69,7 @@
 ;; 23:48:52.0483  -  :measure-col-document-idx 4.5 GiB  (0) 
 ;; 23:48:52.0484  -  :measure-col-metas 1.1 GiB  (2) 
 ;; 23:48:55.0310  -  :measure-ds 12.4 GiB
-
+ 
 
 
 
@@ -77,51 +77,49 @@
 
 
  ; --------------------------
-(comment
+ (comment
 
-  (defn- parse-review-line [line]
-    (let [splitted (first
-                    (csv/read-csv line))]
-      [(first splitted)
-       (dec (Integer/parseInt (second splitted)))]))
-  
-  (def ds-and-st
+   (defn- parse-review-line [line]
+     (let [splitted (first
+                     (csv/read-csv line))]
+       [(first splitted)
+        (dec (Integer/parseInt (second splitted)))]))
 
-    (text/->tidy-text
-     (io/reader
+   (def ds-and-st
+
+     (text/->tidy-text
+      (io/reader
        ;;https://en.wikipedia.org/wiki/Tf%E2%80%93idf
-      (java.io.StringReader. "this is a a sample,1\nthis is another another example example example,2"))
+       (java.io.StringReader. "this is a a sample,1\nthis is another another example example example,2"))
        ;(io/reader "test/data/reviews.csv")
-     parse-review-line
-     #(str/split % #" ")
-     :max-lines 5
-     :skip-lines 0))
-  
-
-
-  (def text
-    (-> (:dataset ds-and-st)
-        (tc/rename-columns {:meta :label})))
-  
-  
-  )
+      parse-review-line
+      #(str/split % #" ")
+      :max-lines 5
+      :skip-lines 0))
 
 
 
+   (def text
+     (-> (:dataset ds-and-st)
+         (tc/rename-columns {:meta :label}))))
+         
+         
 
+
+(->tfidf text term->idf-map)
 
 
 (comment
   ;; new idf
-  
 
-  
+
+
 
 
 
   (require '[tech.v3.datatype.argops :as argops]
            '[tech.v3.dataset.reductions :as reductions])
-  
+
 
   (defn idf [text]
     (let [N
@@ -133,7 +131,7 @@
           (tc/group-by  [:term-idx])
           (tc/aggregate #(Math/log10 (/ N (tc/row-count %))))
           (tc/rename-columns {"summary" :idf}))))
-  
+
 
   (defn idf [text]
     (let [N
@@ -143,18 +141,16 @@
 
           (tc/unique-by [:term-idx :document])
           (reductions/group-by-column-agg :term-idx
-                                          {:idf }
-                                          )
+                                          {:idf})
           (tc/group-by  [:term-idx])
           (tc/aggregate #(Math/log10 (/ N (tc/row-count %))))
           (tc/rename-columns {"summary" :idf}))))
-  
+
 
 
   (defn idf-is [text terms-grouped-by-document]
 
-    (let [
-          N (dt/ecount terms-grouped-by-document)
+    (let [N (dt/ecount terms-grouped-by-document)
 
           row-indexes-grouped-by-term-idx
           (ds/group-by-column->indexes text :term-idx)
@@ -163,8 +159,7 @@
           (dt/emap
            first
            :int32
-           row-indexes-grouped-by-term-idx
-           )
+           row-indexes-grouped-by-term-idx)
 
           idf
           (->>
@@ -180,13 +175,12 @@
            (fun/log10))]
       (ds/new-dataset [(ds/new-column :term-idx term-idx {} [])
                        (ds/new-column :idf (seq idf) {} [])])))
-  
+
 
 
   (defn tf [text terms-grouped-by-document]
 
-    (let [
-          n-terms-in-doc
+    (let [n-terms-in-doc
           (dt/coalesce-blocks!
            (dt/make-container :int32 (ds/row-count text))
            (dt/emap
@@ -207,7 +201,7 @@
                 (dt/emap f :int32 term-idxs)))
             :int32
             terms-grouped-by-document))]
-      
+
       (-> text
           (ds/add-column (ds/new-column :term-fq term-fq {} []))
           (ds/add-column (ds/new-column :n-terms-in-doc n-terms-in-doc {} []))
@@ -216,7 +210,7 @@
           (tc/add-column :tf (fn [ds]
                                (fun// (:term-fq ds)
                                       (double-array (:n-terms-in-doc ds))))))))
-  
+
 
 
   (time
@@ -227,13 +221,10 @@
          joined
          (tc/full-join idf tf :term-idx)
          tfidf (fun/* (:tf joined) (:idf joined))]
-     (ds/add-column joined (ds/new-column :tfidf tfidf {} [])))
+     (ds/add-column joined (ds/new-column :tfidf tfidf {} []))))
 
-   )
-  
 
   (time
-   (text/->term-frequency df))
-  )
+   (text/->term-frequency df)))
 
 
