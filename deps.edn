@@ -4,7 +4,8 @@
         scicloj/tablecloth          {:mvn/version "7.029.2"}
         metosin/malli               {:mvn/version "0.16.0"}
         generateme/fastmath         {:mvn/version "3.0.0-alpha2"}
-        aerial.hanami/aerial.hanami {:mvn/version "0.20.0"}}
+        aerial.hanami/aerial.hanami {:mvn/version "0.20.0"}
+        }
 
  :paths ["src" "resources"]
 
@@ -26,10 +27,11 @@
                 
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
                 ch.qos.logback/logback-classic {:mvn/version "1.5.6"}
+                criterium/criterium {:mvn/version  "0.4.6"}
                 com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.3.0"}}}
 
   :test
-  {:jvm-opts ["-Djdk.attach.allowAttachSelf"]
+  {:jvm-opts ["-Djdk.attach.allowAttachSelf","-Xmx14G"]
    :extra-paths ["test"]
    :extra-deps {
                 lambdaisland/kaocha {:mvn/version "1.88.1376"}

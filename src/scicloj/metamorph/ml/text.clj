@@ -1,13 +1,21 @@
 (ns scicloj.metamorph.ml.text
   (:require [tablecloth.api :as tc]
             [tech.v3.dataset :as ds]
+            [tech.v3.dataset.impl.column :as col-impl]
             [tech.v3.dataset.base :as ds-base]
             [tech.v3.dataset.string-table :as st]
-            [tech.v3.datatype :as dt])
+            [tech.v3.dataset.dynamic-int-list :as dyn-int-list]
+            [tech.v3.datatype :as dt]
+            [clj-memory-meter.core :as mm]
+            [tech.v3.datatype.functional :as func]
+            )
   (:import [java.io BufferedReader]))
 
 
-(defn- process-file [reader line-func line-acc max-lines skip-lines]
+
+(defn- process-file [reader line-func 
+                     line-acc 
+                     max-lines skip-lines]
   (with-open [rdr (BufferedReader. reader)]
     (reduce line-func line-acc
             (take max-lines
@@ -21,12 +29,66 @@
 
         index-count (count tokens)]
     (.addAllReducible string-table tokens)
-    (let [new-acc (conj acc
-                        {:index-count index-count
-                         :meta meta})]
-      (when (zero? (rem (count new-acc) 10000))
-        (println (count new-acc)))
-      new-acc)))
+    (let [meta-list (:meta-list acc)
+          index-list (:index-list acc)
+          _ (.add meta-list meta)
+          _ (.add index-list index-count)
+]
+      (when (zero? (rem (dt/ecount index-list) 10000))
+        (println (dt/ecount index-list)))
+      acc)))
+
+(def time-format (java.text.SimpleDateFormat. "HH:mm:ss.SSSS"))
+(def prevoius-debug-time (atom (java.time.LocalTime/now)))
+(defn debug [& s]
+  (let [duration
+        (.toSeconds
+         (java.time.Duration/between
+          @prevoius-debug-time
+          (java.time.LocalTime/now)))]
+    
+    (reset! prevoius-debug-time (java.time.LocalTime/now))
+    (println (format "  (%s) " duration))
+    (apply print (.format time-format (java.util.Date.)) " - " s))
+  )
+
+
+(defn- make-col-container [map-fn res-dataype  container-size datas]
+  (let [container (dt/make-container res-dataype container-size)
+        metas
+        (apply dt/emap map-fn res-dataype datas)]
+    
+    (dt/coalesce-blocks! container metas))
+  )
+
+(defn- make-metas-col-container [index-and-lable-lists col-size datatype]
+  (make-col-container
+   (fn [index meta]
+     (dt/const-reader meta index))
+   datatype
+   col-size
+   [(:index-list index-and-lable-lists)
+    (:meta-list index-and-lable-lists)
+    ]
+   ))
+
+
+(defn- make-document-col-container [index-and-lable-lists col-size datatype]
+  (make-col-container
+   (fn [idx count]
+     (dt/const-reader idx count))
+   datatype
+   col-size
+   [(range)
+    (:index-list index-and-lable-lists)]))
+
+
+(defn- make-term-pos-col-container [index-and-lable-lists col-size datatype]
+  (make-col-container
+   range
+   datatype
+   col-size
+   [(:index-list index-and-lable-lists)]))
 
 (defn ->tidy-text
   "Reads, parses and tokenizes a text file into a tech.v3.dataset in the tidy-text format,
@@ -49,64 +111,75 @@
   [reader line-split-fn
    text-tokenizer-fn
 
-   & {:keys [skip-lines max-lines]
+   & {:keys [skip-lines max-lines
+             datatype-document 
+             datatype-term-pos
+             datatype-metas]
       :or {skip-lines  0
+           datatype-document :int32
+           datatype-term-pos :int16
+           datatype-metas    :int8
            max-lines Integer/MAX_VALUE}}]
 
-  (let [string-table (st/string-table-from-strings [])
-        index-counts-and-label
+  (let [
+        term-index-string-table (st/string-table-from-strings [])
+        _ (debug :parse)
+        index-and-lable-lists
         (process-file reader
-                      (partial process-line string-table line-split-fn text-tokenizer-fn)
-                      [] max-lines skip-lines)
+                      (partial process-line term-index-string-table line-split-fn text-tokenizer-fn)
+                      {:meta-list (dt/make-list :object)
+                       :index-list (dyn-int-list/dynamic-int-list)}
+                      max-lines skip-lines)
 
 
 
 
-        line-idx
-        (->
-         (map-indexed
-          (fn [idx count]
-            (dt/const-reader idx count))
-          (map :index-count index-counts-and-label))
-         (dt/concat-buffers))
 
-        word-pos
-        (flatten
-         (map
-          #(range (:index-count %))
-          index-counts-and-label))
+        col-size (func/reduce-+ (:index-list index-and-lable-lists))
+        _ (debug :count-index-aad-label-lists (count (:index-list index-and-lable-lists)))
+        _ (debug :make-document-col-container)
+        document-index (make-document-col-container index-and-lable-lists col-size datatype-document)
 
-        metas
-        (flatten
-         (map
-          #(repeat (:index-count %) (:meta %))
-          index-counts-and-label))
 
+        _ (debug :make-term-pos-col-container)
+        term-pos (make-term-pos-col-container index-and-lable-lists col-size datatype-term-pos)
+
+
+        _ (debug :make-metas-col-container)
+        metas (make-metas-col-container index-and-lable-lists col-size datatype-metas)
+
+
+        _ (debug :measure-term-index-st (mm/measure (.data term-index-string-table)))
+        _ (debug :measure-term-pos (mm/measure term-pos))
+        _ (debug :measure-document-idx (mm/measure document-index))
+        _ (debug :measure-metas (mm/measure metas))
+
+        col-term-index (ds/new-column :term-idx  (st/indices term-index-string-table) {} [])
+        col-term-pos (ds/new-column :term-pos  term-pos {} [])
+        col-document (ds/new-column :document document-index {} [])
+        col-meta (ds/new-column :meta metas {} [])
         ds
         (ds/new-dataset
-         [(ds/new-column :term string-table
-                         {}
-                         [])
-               ;(ds/new-column :word string-table  [])
-          (ds/new-column :term-index word-pos nil [])
-          (ds/new-column :document line-idx nil [])
-          (ds/new-column :meta metas nil [])])]
+         [col-term-index col-term-pos col-document col-meta])]
 
-    ds)
-    ;; drops empty string 
-    ;;https://clojurians.zulipchat.com/#narrow/stream/236259-tech.2Eml.2Edataset.2Edev/topic/is.20empty.20string.20a.20.22missing.22.20.3F
+    (debug :string-table-count (count term-index-string-table))
+    (debug :string-table-vocab-size (count (st/int->string term-index-string-table)))
+    (debug :measure-term-index-string-table (mm/measure term-index-string-table))
+ 
+
+    (debug :measure-col-term-index (mm/measure col-term-index))
+    (debug :measure-col-term-pos (mm/measure col-term-pos))
+    (debug :measure-col-document-idx (mm/measure col-document))
+    (debug :measure-col-metas (mm/measure col-meta))
+    (debug :measure-ds (mm/measure ds))
+
+
+    {:dataset ds
+     :int->str (st/int->string term-index-string-table)})
   )
-
-(defn ->term-frequency-old [tidy-text-ds]
-  (-> tidy-text-ds
-      (tc/group-by  [:term :document :label])
-      (tc/aggregate #(hash-map :term-count (ds/row-count %)))
-      (tc/rename-columns {:summary-term-count :term-count})))
-
 
 
 (defn ->term-frequency [tidy-text-ds]
-
   (let [N
         (tc/row-count
          (tc/unique-by tidy-text-ds :document))
@@ -118,44 +191,34 @@
             (tc/rename-columns {:$group-name :document}))
         idf
         (-> tidy-text-ds
-            (tc/unique-by [:term :document])
-            (tc/group-by  [:term])
+            (tc/unique-by [:term-idx :document])
+            (tc/group-by  [:term-idx])
             (tc/aggregate #(Math/log10 (/ N (tc/row-count %))))
             (tc/rename-columns {"summary" :idf}))]
 
     (-> tidy-text-ds
         (tc/left-join n-tokens-per-document [:document])
-        (tc/left-join idf [:term])
-        (tc/group-by  [:term :document :label])
+        (tc/left-join idf [:term-idx])
+        (tc/group-by  [:term-idx :document :label])
         (tc/aggregate
          (fn [ds-per-token]
-           (let [token-count (ds/row-count ds-per-token)
-                 tf (float (/ token-count (first (:n-terms-per-document ds-per-token))))
+           (let [term-count (ds/row-count ds-per-token)
+                 tf (float (/ term-count (first (:n-terms-per-document ds-per-token))))
                  idf (first (:idf ds-per-token))
                  tf-idf (* tf idf)]
              (hash-map
-              :term-count token-count
+              :term-count term-count
               :tf tf
               :idf idf
               :tfidf tf-idf))))
         (tc/rename-columns {:summary-term-count :term-count
                             :summary-tf :tf
                             :summary-idf :idf
-                            :summary-tfidf :tfidf}))))
+                            :summary-tfidf :tfidf})
+        )))
 
 
 
-
-
-(defn add-word-idx [tidy-text-ds]
-  (let [word->int-table
-        (zipmap
-         (-> tidy-text-ds :term .data st/int->string)
-         (range))]
-    (-> tidy-text-ds
-        (tc/add-column
-         :term-idx
-         #(map word->int-table (:term %))))))
 
 
 
@@ -196,4 +259,13 @@
    .data))
 
 
+
+
+
+
+(comment
+  (require '[criterium.core :as criterim])
+
+
+  )
 

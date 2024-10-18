@@ -4,10 +4,9 @@
             [clojure.string :as str]
             [clojure.test :refer [deftest is]]
             [scicloj.metamorph.ml.text :as text]
-            [tech.v3.dataset.base :as ds-base]
-            [tablecloth.api :as tc]))
-
-
+            [tech.v3.dataset.string-table :as string-table]
+            [tablecloth.api :as tc]
+            [tech.v3.dataset.string-table :as st]))
 
 (defn- parse-review-line [line]
   (let [splitted (first
@@ -15,68 +14,94 @@
     [(first splitted)
      (dec (Integer/parseInt (second splitted)))]))
 
+(defn- parse-review-line-as-mape [line]
+  (let [splitted (first
+                  (csv/read-csv line))]
+    [(first splitted)
+     {:label 
+      (dec (Integer. (second splitted)))}]))
+
+(deftest ->tidy-text-with-objec-d
+
+  (let [{:keys [dataset]}
+        (text/->tidy-text (io/reader "test/data/reviews.csv")
+                          parse-review-line-as-mape
+                          #(str/split % #" ")
+                          :max-lines 5
+                          :skip-lines 1
+                          :datatype-metas :object
+                          
+                          )]
+    (is ( = {:label 3}
+          (-> dataset :meta first)))))
+
+
+
 (deftest ->tidy-text
-
-  (let [text
-
+  (let [tidy
         (-> (text/->tidy-text (io/reader "test/data/reviews.csv")
                               parse-review-line
                               #(str/split % #" ")
                               :max-lines 5
-                              :skip-lines 1)
-            (tc/drop-missing)
-            (tc/drop-rows #(empty? (:term %)))
-            (tc/drop-rows #(nil? (:term %)))
-            (tc/drop-rows #(= "" (:term %))))
-        tf
-        (->
-         (text/->term-frequency text))
-        tf-with-index
-        (->
-         (text/add-word-idx tf))]
-
-    (is (= 576
+                              :skip-lines 1))
+        
+        text (:dataset tidy)
+        int->str (:int->str tidy)
+        tf (text/->term-frequency text)
+        ]
+    (is (= 596
            (tc/row-count text)))
 
-    (is (= '(:term :term-index :document :meta)
+    (is (= '(:term-idx :term-pos :document :meta)
            (tc/column-names text)))
 
+    (is (= :int16 (-> text :term-idx meta :datatype)))
+    (is (= :int16 (-> text :term-pos meta :datatype)))
+    (is (= :int32 (-> text :document meta :datatype)))
+    (is (= :int8 (-> text :meta meta :datatype)))
+    
     (is (= [["Is" 0 0 3] ["it" 1 0 3] ["a" 2 0 3] ["great" 3 0 3] ["product" 4 0 3]]
-           (-> text
-               (tc/head)
-               (tc/rows :maps))))
-    (is (= ["Is" "Is" "it" "it" "it"] (take 5 (-> tf :term))))
-    (is (= {0 68, 1 24, 2 136, 3 135, 4 63}
+           (->>
+            (-> text
+                (tc/head)
+                (tc/rows :maps))
+            (map (fn [[term-index a b c]]
+                   [(int->str term-index) a b c])))))
+    
+
+    (is (= 
+           {0 68, 3 136, 4 64, 2 137, 1 24}
            (-> tf :document frequencies)))
-    (is (= {1 355, 2 36, 4 7, 6 3, 3 18, 5 2, 7 4, 11 1}
+    (is (= 
+           {7 4, 1 356, 4 7, 13 1, 6 4, 3 18, 2 36, 11 1, 5 2}
            (-> tf :term-count frequencies)))
 
     (is (= [1 1 2 2 2 3 3 3 3 4]
-           (-> tf-with-index (tc/head 10) :term-idx)))))
+           (-> tf (tc/head 10) :term-idx)))))
 
 (deftest tfidf
-  (let [tidy
-        (->
-         (text/->tidy-text
-          (io/reader
+  (let [ds-and-st
+
+        (text/->tidy-text
+         (io/reader
       ;;https://en.wikipedia.org/wiki/Tf%E2%80%93idf
-           (java.io.StringReader. "this is a a sample,1\nthis is another another example example example,2"))
+          (java.io.StringReader. "this is a a sample,1\nthis is another another example example example,2"))
       ;(io/reader "test/data/reviews.csv")
-          parse-review-line
-          #(str/split % #" ")
-          :max-lines 5
-          :skip-lines 0)
-         (tc/drop-missing)
-         (tc/drop-rows #(empty? (:term %)))
-         (tc/drop-rows #(nil? (:term %)))
-         (tc/drop-rows #(= "" (:term %)))
-         (tc/rename-columns {:meta :label}))
+         parse-review-line
+         #(str/split % #" ")
+         :max-lines 5
+         :skip-lines 0)
+
+       text 
+        (-> (:dataset ds-and-st)
+        (tc/rename-columns {:meta :label}))
 
 
-        tf (text/->term-frequency tidy)]
+        tf (text/->term-frequency text)]
 
-    (is (= '("this" "this" "is" "is" "a" "sample" "another" "example")
-           (-> tf :term seq)))
+    (is (= ;;'("this" "this" "is" "is" "a" "sample" "another" "example")
+           '(1 1 2 2 3 4 5 6)
+           (-> tf :term-idx seq)))
 
     (is (=
          ["0.20000000298023224"
@@ -92,8 +117,67 @@
     (is (= '("0.0" "0.0" "0.0" "0.0" "0.12041200005987107" "0.060206000029935536" "0.08600857403459163" "0.12901285656619094")
            (map str (-> tf :tfidf))))))
 
-
 (comment
+
+
+  (require '[clj-memory-meter.core :as mm])
+  
+
+
+
+  (defn load-reviews [] 
+    (-> (text/->tidy-text 
+         (io/reader "repeatedAbstrcats_3.7m_.txt")
+         (fn [line] [line 
+                     (rand-int 6)])
+         #(str/split % #" ")
+         :max-lines 10000
+         :skip-lines 1) ))
+  
+  
+
+  (def reviews (load-reviews))
+  
+  (def reviews-text (:dataset reviews))
+  
+  
+
+
+
+
+  (mm/measure
+   (:term-idx reviews-text))
+  
+;;=> "318.8 KiB"
+  
+  (mm/measure
+   (meta (:term-pos reviews-text)))
+  
+;;=> "1.0 MiB"
+  
+  (mm/measure
+   (:document reviews-text))
+  
+;;=> "45.7 KiB"
+  
+  (mm/measure
+   (:meta reviews-text)
+   )
+  
+  
+;;=> "1.0 MiB"
+  
+;;=> "2.4 MiB"
+  
+  (println 
+   :tc-row-count
+   (tc/row-count (:dataset reviews)))
+  
+
+  (println
+   :reviews-text
+   (mm/measure reviews-text))
+  )
 
   (def tidy
     (-> (text/->tidy-text (io/reader "test/data/reviews.csv")
