@@ -144,66 +144,21 @@
            (map str (-> tf :tfidf))))))
 
 (comment
-
-
-  (require '[clj-memory-meter.core :as mm])
   
-
-
-
-  (defn load-reviews [] 
-    (-> (text/->tidy-text 
+  (require '[clj-memory-meter.core :as mm])
+  (defn load-reviews []
+    (-> (text/->tidy-text
          (io/reader "repeatedAbstrcats_3.7m_.txt")
-         (fn [line] [line 
+         (fn [line] [line
                      (rand-int 6)])
          #(str/split % #" ")
          :max-lines 10000
-         :skip-lines 1) ))
-  
-  
+         :skip-lines 1)))
+
 
   (def reviews (load-reviews))
-  
   (def reviews-text (:dataset reviews))
-  
-  
 
-
-
-
-  (mm/measure
-   (:term-idx reviews-text))
-  
-;;=> "318.8 KiB"
-  
-  (mm/measure
-   (meta (:term-pos reviews-text)))
-  
-;;=> "1.0 MiB"
-  
-  (mm/measure
-   (:document reviews-text))
-  
-;;=> "45.7 KiB"
-  
-  (mm/measure
-   (:meta reviews-text)
-   )
-  
-  
-;;=> "1.0 MiB"
-  
-;;=> "2.4 MiB"
-  
-  (println 
-   :tc-row-count
-   (tc/row-count (:dataset reviews)))
-  
-
-  (println
-   :reviews-text
-   (mm/measure reviews-text))
-  )
 
   (def tidy
     (-> (text/->tidy-text (io/reader "test/data/reviews.csv")
