@@ -114,5 +114,40 @@
   (def
     tf-with-index
     (->
-     (text/add-word-idx tf)))
-  )
+     (text/add-word-idx tf))))
+
+
+(require '[tech.v3.dataset :as ds])
+(require '[ham-fisted.reduce :as hf-reduce]
+         '[ham-fisted.api :as hf])
+
+
+(defn ->tf [text]
+  (hf-reduce/preduce (fn [] (hf/object-array-list))
+                     (fn [l [document-idx row-indices]]
+                       (let [terms
+                             (ds/select-rows (:term text) row-indices)
+                             freqs (hf/frequencies terms)]
+
+                         (-> l
+                             (hf/conj! (hf/repeat (hf/constant-count freqs) document-idx))
+                             (hf/conj! (hf/keys freqs))
+                             (hf/conj! (hf/vals freqs)))
+
+
+                         ))
+                     (fn [list-1 list-2]
+                       (hf/add-all! list-1 list-2)
+                       )
+                     (ds/group-by-column->indexes text :document)))
+(time
+ (def tf
+   (->tf (ds/->dataset
+          text
+       ;{:document   [0     0      0    0  0   1   1     1      1   1     1     1]
+       ; :term       ["I" "like" "fish" "fish" "fish"      "fish" "is" "fish" "and" "I" "like" "it"]}
+          ))))
+  ;;=> [[0 0 0] (I like fish) (1 1 3) [1 1 1 1 1 1] (like and fish I is it) (1 1 2 1 1 1)]
+  
+(class
+ (nth tf 2))
