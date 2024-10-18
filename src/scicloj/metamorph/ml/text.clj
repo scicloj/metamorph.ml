@@ -53,18 +53,19 @@
   )
 
 
-(defn- make-col-container [map-fn res-dataype  container-size datas]
-  (let [container (dt/make-container res-dataype container-size)
+(defn- make-col-container [map-fn container-type res-dataype  container-size datas]
+  (let [container (dt/make-container container-type res-dataype container-size)
         metas
         (apply dt/emap map-fn res-dataype datas)]
     
     (dt/coalesce-blocks! container metas))
   )
 
-(defn- make-metas-col-container [index-and-lable-lists col-size datatype]
+(defn- make-metas-col-container [index-and-lable-lists col-size datatype ]
   (make-col-container
    (fn [index meta]
      (dt/const-reader meta index))
+   :jvm-heap
    datatype
    col-size
    [(:index-list index-and-lable-lists)
@@ -73,19 +74,21 @@
    ))
 
 
-(defn- make-document-col-container [index-and-lable-lists col-size datatype]
+(defn- make-document-col-container [index-and-lable-lists col-size datatype container-type]
   (make-col-container
    (fn [idx count]
      (dt/const-reader idx count))
+   container-type
    datatype
    col-size
    [(range)
     (:index-list index-and-lable-lists)]))
 
 
-(defn- make-term-pos-col-container [index-and-lable-lists col-size datatype]
+(defn- make-term-pos-col-container [index-and-lable-lists col-size datatype container-type]
   (make-col-container
    range
+   container-type
    datatype
    col-size
    [(:index-list index-and-lable-lists)]))
@@ -114,11 +117,13 @@
    & {:keys [skip-lines max-lines
              datatype-document 
              datatype-term-pos
-             datatype-metas]
+             datatype-metas
+             container-type]
       :or {skip-lines  0
            datatype-document :int32
            datatype-term-pos :int16
            datatype-metas    :int8
+           container-type    :jvm-heap
            max-lines Integer/MAX_VALUE}}]
 
   (let [
@@ -138,16 +143,15 @@
         col-size (func/reduce-+ (:index-list index-and-lable-lists))
         _ (debug :count-index-aad-label-lists (count (:index-list index-and-lable-lists)))
         _ (debug :make-document-col-container)
-        document-index (make-document-col-container index-and-lable-lists col-size datatype-document)
+        document-index (make-document-col-container index-and-lable-lists col-size datatype-document container-type)
 
 
         _ (debug :make-term-pos-col-container)
-        term-pos (make-term-pos-col-container index-and-lable-lists col-size datatype-term-pos)
+        term-pos (make-term-pos-col-container index-and-lable-lists col-size datatype-term-pos container-type)
 
 
         _ (debug :make-metas-col-container)
         metas (make-metas-col-container index-and-lable-lists col-size datatype-metas)
-
 
         _ (debug :measure-term-index-st (mm/measure (.data term-index-string-table)))
         _ (debug :measure-term-pos (mm/measure term-pos))
