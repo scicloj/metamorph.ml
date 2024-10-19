@@ -1,15 +1,16 @@
 (ns scicloj.metamorph.ml.text
   (:require [clj-memory-meter.core :as mm]
+            [criterium.core :as criterium]
             [ham-fisted.api :as hf]
             [ham-fisted.reduce :as hf-reduce]
             [tablecloth.api :as tc]
             [tech.v3.dataset :as ds]
-            [tech.v3.dataset.base :as ds-base]
             [tech.v3.dataset.dynamic-int-list :as dyn-int-list]
             [tech.v3.dataset.string-table :as st]
             [tech.v3.datatype :as dt]
+            [tech.v3.datatype.argops :as argops]
             [tech.v3.datatype.functional :as func]
-            [tech.v3.datatype.functional :as fun])
+            [tech.v3.parallel.for :as for])
   (:import [java.io BufferedReader]))
 
 
@@ -93,6 +94,7 @@
    datatype
    col-size
    [(:index-list index-and-lable-lists)]))
+
 
 (defn ->tidy-text
   "Reads, parses and tokenizes a text file into a tech.v3.dataset in the tidy-text format,
@@ -183,56 +185,128 @@
      :int->str (st/int->string term-index-string-table)})
   )
 
-
-(defn ->term-frequency [tidy-text-ds]
+(defn create-term->idf-map-4 [df]
   (let [N
-        (tc/row-count
-         (tc/unique-by tidy-text-ds :document))
+        (float
+         (tc/row-count
+          (tc/unique-by df :document)))
+        rows-by-term-index
+        (ds/group-by-column->indexes df :term-idx)
+        term-indices (hf/->random-access (keys rows-by-term-index))]
 
-        n-tokens-per-document
-        (-> tidy-text-ds
-            (tc/group-by :document)
-            (tc/aggregate {:n-terms-per-document ds/row-count})
-            (tc/rename-columns {:$group-name :document}))
-        idf
-        (-> tidy-text-ds
-            (tc/unique-by [:term-idx :document])
-            (tc/group-by  [:term-idx])
-            (tc/aggregate #(Math/log10 (/ N (tc/row-count %))))
-            (tc/rename-columns {"summary" :idf}))]
+    (for/indexed-map-reduce
+     (count term-indices)
 
-    (-> tidy-text-ds
-        (tc/left-join n-tokens-per-document [:document])
-        (tc/left-join idf [:term-idx])
-        (tc/group-by  [:term-idx :document :label])
-        (tc/aggregate
-         (fn [ds-per-token]
-           (let [term-count (ds/row-count ds-per-token)
-                 tf (float (/ term-count (first (:n-terms-per-document ds-per-token))))
-                 idf (first (:idf ds-per-token))
-                 tf-idf (* tf idf)]
-             (hash-map
-              :term-count term-count
-              :tf tf
-              :idf idf
-              :tfidf tf-idf))))
-        (tc/rename-columns {:summary-term-count :term-count
-                            :summary-tf :tf
-                            :summary-idf :idf
-                            :summary-tfidf :tfidf})
-        )))
+     (fn [start-idx group-len]
+
+       (let [idf-container  (dt/->writer (dt/make-container :float32 group-len))
+             termindex-container (dt/->writer (dt/make-container :int32 group-len))]
+         (run!
+          (fn [idx]
+            (let [term-index (nth term-indices idx)
+                  row-indices (get  rows-by-term-index term-index)
+                  documents (distinct (ds/select-rows (:document df) row-indices))
+                  idf (Math/log10 (/ N (count documents)))
+                  ]
+              (dt/set-value! idf-container (- idx start-idx) idf)
+              (dt/set-value! termindex-container (- idx start-idx) term-index)
+              )
+              )
+          (range  start-idx (+ start-idx group-len)))
+         [termindex-container idf-container]))
+     (fn [seq]
+       (println :n-seq (count seq))
+       (let [dst-termindex (dt/make-container :int32 (count rows-by-term-index))
+             dst-idf (dt/make-container :float (count rows-by-term-index))]
+
+         (dt/concat-buffers
+          dst-termindex
+          (map first seq))
+         (dt/coalesce-blocks!
+          dst-idf
+          (map second seq))
+         [dst-termindex dst-idf])
+       (let [dst-termindex (dt/concat-buffers (map first seq))
+             dst-idf (dt/concat-buffers (map second seq))]
+         [dst-termindex dst-idf])))))
 
 
-(defn create-term->idf-map [df]
-  (let [N 
-        (double
+
+
+(defn create-term->idf-map-3 [df]
+  (hf/persistent!
+   (let [N
+         (float
+          (tc/row-count
+           (tc/unique-by df :document)))
+         rows-by-term-idx
+         (ds/group-by-column->indexes df :term-idx)]
+     (hf-reduce/preduce
+      (fn []  (hf/mut-long-hashtable-map))
+      (fn [m [term-idx row-indices]]
+        ;;(println :reduce term-idx)
+        (let [documents
+              (distinct (ds/select-rows (:document df) row-indices))
+              idf (Math/log10 (/ N (count documents)))]
+          (hf/assoc!  m  term-idx idf)
+          )
+        )
+      (fn [m-1 m-2]
+        (hf/map-union + m-1 m-2)
+        )
+      {;:cat-parallelism :elem-wise
+       ;:min-n 1
+       }
+      
+      rows-by-term-idx))))
+
+
+
+(defn create-term->idf-map-2 [df]
+  
+  (let [keys-values
+        (let [N
+              (float
+               (tc/row-count
+                (tc/unique-by df :document)))
+              rows-by-term-idx
+              (ds/group-by-column->indexes df :term-idx)]
+          (hf-reduce/preduce
+           (fn [] {:term-idx (dt/make-list :int32)
+                   :idf        (dt/make-list :float32)})
+           (fn [m [term-idx row-indices]]
+             (let [documents
+                   (distinct (ds/select-rows (:document df) row-indices))
+                   idf (Math/log10 (/ N (count documents)))]
+               (.add (:term-idx m) term-idx)
+               (.add (:idf m) idf))
+             m)
+           (fn [m-1 m-2]
+             (.addAllReducible
+              (:term-idx m-1)
+              (:term-idx m-2))
+             (.addAllReducible
+              (:idf m-1)
+              (:idf m-2))
+             m-1
+             )
+           rows-by-term-idx))]
+    
+    (zipmap (:term-idx keys-values)
+            (:idf keys-values)))
+           )
+
+  (defn create-term->idf-map-1 [df]
+
+  (let [N
+        (float
          (tc/row-count
           (tc/unique-by df :document)))]
     (hf-reduce/preduce
      (fn [] (hf/mut-map))
      (fn [m [term-idx row-indices]]
-       (let [documents 
-             (hf/double-array-list
+       (let [documents
+             (hf/float-array-list
               (distinct (ds/select-rows (:document df) row-indices)))]
          (hf/assoc! m term-idx (Math/log10 (/ N (hf/constant-count documents))))))
      (fn [m-1 m-2]
@@ -242,8 +316,29 @@
 
 
 (defn ->tfidf [text]
-  (let [term->idf-map
-        (create-term->idf-map text)]
+  (let [term->idf (create-term->idf-map-4 text)
+        term-index (hf/->random-access (first term->idf))
+        idf  (hf/->random-access (second term->idf))
+        container
+        (dt/make-container :int32  (repeat
+                                    (inc (apply max term-index))
+                                    -1))
+        _ (run!
+           (fn [[i v]]
+             (dt/set-value! container v i))
+           (map vector (range) term-index))
+        
+        idf-reader
+        (-> container
+            dt/as-reader)
+        
+        term-idx->idf
+        (fn [term-index]
+          (->> term-index
+               (nth idf-reader)
+               (nth idf))) 
+        ]
+
     (->>
      (hf-reduce/preduce (fn [] (hf/object-array-list))
                         (fn [l [document-idx row-indices]]
@@ -251,30 +346,31 @@
                                 (ds/select-rows (:term-idx text) row-indices)
                                 freqs (hf/frequencies term-idxs)
                                 n-terms (hf/constant-count row-indices)
-                                term-count (hf/int-array-list (hf/vals freqs))
-                                tfs (hf/double-array-list (fun// term-count (float n-terms)))
+                                term-count (hf/int-array-list  (hf/vals freqs))
+                                tfs (hf/float-array-list (func// term-count (float n-terms)))
                                 terms (hf/int-array-list (hf/keys freqs))
-                                idfs (hf/double-array-list (map term->idf-map terms))]
+                                idfs (hf/float-array-list (hf/mapv term-idx->idf terms))
+                                document (hf/int-array-list (hf/repeat (hf/constant-count freqs) document-idx))]
 
                             ;; (def row-indices row-indices)
                             ;; (def n-terms n-terms)
-                            ;; (def term-idxs term-idxs)
+                            ;(def term-idxs term-idxs)
                             ;; (def freqs freqs)
                             ;; (def term-count term-count)
-                            ;; (def terms terms)
-                            ;; (def idfs idfs)
+                            ;(def terms terms)
+                            ;(def idfs idfs)
                             ;; (def tfs tfs)
 
                             (-> l
                                 (hf/conj!
                                  (hf/hash-map
-                                  :document (hf/int-array-list (hf/repeat (hf/constant-count freqs) document-idx))
+                                  :document document 
                                   :term-idx terms
                                   :tf tfs
                                   :term-count term-count
-                                  :n-terms (hf/int-array-list (hf/repeat (hf/constant-count freqs) n-terms))
-                                  :idfs idfs
-                                  :tfidf (hf/double-array-list (map * tfs idfs)))))))
+                                  ;:n-terms (hf/int-array-list (hf/repeat (hf/constant-count freqs) n-terms))
+                                  ;:idfs idfs
+                                  :tfidf (hf/float-array-list (map * tfs idfs)))))))
                         (fn [list-1 list-2]
                           (hf/add-all! list-1 list-2))
                         (ds/group-by-column->indexes text :document))
@@ -284,52 +380,150 @@
      (ds/->>dataset))))
 
 
-
-
 (comment
-
-  (require '[tech.v3.dataset.impl.column :as col-impl])
-  (def col
-    (tech.v3.dataset/new-column :text
-                                (tech.v3.dataset.string-table/string-table-from-strings ["hello" "world" "hello"])
-                                {}
-                                []))
-
-  (-> col .data class)
-   ;;=> tech.v3.dataset.string_table.StringTable
-;;OK
-
-  (-> col dt/clone .data class)
-
-;;=> ham_fisted.ArrayLists$ObjectArraySubList
-;; not OK
-
-  (-> col dt/clone ds-base/column->string-table)
-
-;;=> Execution error at tech.v3.dataset.base/column->string-table (base.clj:847).
-;;   Column :text does not contain a string table
-;;   
-
-  (-> col dt/clone ds-base/ensure-column-string-table .data)
-  ;;=> [1 2 1]
-;;OK, but reparses the data
-
-;;=> [1 2 1]
-
-  (->
-   (ds/new-dataset [col])
-   :text
-   .data
-   .data))
+  (require '[criterium.core :as criterium])
+  (def ds
+    (ds/->dataset
+     [{:term-idx 1, :term-pos 0, :document 0, :label 0} {:term-idx 2, :term-pos 1, :document 0, :label 0} {:term-idx 3, :term-pos 2, :document 0, :label 0} {:term-idx 3, :term-pos 3, :document 0, :label 0} {:term-idx 4, :term-pos 4, :document 0, :label 0} {:term-idx 1, :term-pos 0, :document 1, :label 1} {:term-idx 2, :term-pos 1, :document 1, :label 1} {:term-idx 5, :term-pos 2, :document 1, :label 1} {:term-idx 5, :term-pos 3, :document 1, :label 1} {:term-idx 6, :term-pos 4, :document 1, :label 1} {:term-idx 6, :term-pos 5, :document 1, :label 1} {:term-idx 6, :term-pos 6, :document 1, :label 1}]))
 
 
+  (ds/group-by-column->indexes ds :term-idx)
+
+  
 
 
+  
+  (def m-1 (create-term->idf-map-1 ds))
+  (def m-2 (create-term->idf-map-2 ds))
+  (def m-3 (create-term->idf-map-3 ds))
+  (def m-4 (create-term->idf-map-4 ds))
+
+  (class m-1)
+  (class m-2)
+  (class m-3)
+
+  ;;Execution time mean : 25.098424 ns
+  (criterium/quick-bench
+   (get m-1 3))
+  
+  ;;Execution time mean : 52.328324 ns
+  (criterium/quick-bench
+   (get m-2 3))
+
+  ;;Execution time mean : 7.326608 ns
+  (criterium/quick-bench
+   (get m-3 3))
+  
+  ;execution time mean : 59.036666 µs
+  (criterium/quick-bench
+   (create-term->idf-map-1 ds))
+
+  ;Execution time mean : 132.785200 µs
+  (criterium/quick-bench
+   (create-term->idf-map-2 ds))
+
+  ;;Execution time mean : 55.492165 µs
+  (criterium/quick-bench
+   (create-term->idf-map-3 ds))
+
+  ;;Execution time mean : 82.837948 µs
+  (criterium/quick-bench
+   (create-term->idf-map-4 ds))
 
 
+  (mm/measure m-1)
+  ;;=> "608 B"
+  (mm/measure m-2)
+  ;;=> "288 B"
+  (mm/measure m-3 :debug true)
+  ;;=> "560 B"
+  (mm/measure m-4 :debug true)
+  ;;=> "1.1 KiB"
+
+ 
+
+)
+  
 (comment
-  (require '[criterium.core :as criterim])
+  (require '[clojure.java.io :as io]
+           '[clojure.string :as str]
+           '[criterium.core :as criterium])
+  (def df
+    (:dataset
+     (-> (->tidy-text
+          (io/reader "bigdata/repeatedAbstrcats_3.7m_.txt")
+          (fn [line] [line
+                      (rand-int 6)])
+          #(str/split % #" ")
+          :max-lines 10000
+          :skip-lines 1
+          :datatype-document :int32
+          :datatype-term-pos :int32
+          :datatype-metas    :int8))))
+
+   
+
+  (time (def m-1 (create-term->idf-map-1 df)))
+  (time (def m-2 (create-term->idf-map-2 df)))
+  (time (def m-3 (create-term->idf-map-3 df)))
+  (time (def m-4 (create-term->idf-map-4 df)))
+
+  (mm/measure m-1)
+  ;;=> "10.4 MiB"
+
+  (mm/measure m-2)
+  ;;=> "7.8 MiB"
+
+  (mm/measure m-3)
+  ;;=> "8.5 MiB"
+
+  (mm/measure m-4)
+  ;;=> "959.6 KiB"
 
 
-  )
+  (criterium/quick-bench (get m-1 5))
+; Execution time mean : 44.493164 ns
 
+  (criterium/quick-bench (get m-2 5))
+  ;execution time mean : 54.264319 ns
+
+  (criterium/quick-bench (get m-3 5))
+  ;Execution time mean : 25.109670 ns
+
+  (def term-index (hf/->random-access (first m-4)))
+  (def idf  (hf/->random-access (second m-4)))
+
+  (criterium/quick-bench
+   (->> 5
+        (hf/binary-search term-index)
+        (nth idf)))
+  ;; 326 ns
+
+  (def container 
+    (dt/make-container :int32  (repeat
+                                (inc (apply max term-index))
+                                -1)))
+  (run!
+   (fn [[i v]]
+     (dt/set-value! container v i))
+   (map vector (range) (first m-4)))
+
+  
+  (def reader
+    (-> container
+          dt/as-reader))
+
+
+
+  (criterium/quick-bench
+ (->> 5
+      (nth reader)
+      (nth idf)
+      )) 
+ ;122 ns
+  
+)
+  
+
+  
+ 
