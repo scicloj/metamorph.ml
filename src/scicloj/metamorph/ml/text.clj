@@ -194,7 +194,11 @@
      :int->str (st/int->string term-index-string-table)}))
 
 (defn create-term->idf-map [tidy-text]
-  (let [N
+  (println :create-term->idf-map)
+  (let [
+        
+        _ (println :calculate-N)
+        N
         (float
          (tc/row-count
           (tc/unique-by tidy-text :document)))
@@ -205,8 +209,9 @@
     (for/indexed-map-reduce
      (count term-indices)
      (fn [start-idx group-len]
-       (let [idf-container  (dt/->writer (dt/make-container :float32 group-len))
-             termindex-container (dt/->writer (dt/make-container :int32 group-len))]
+       (println :indexed-map-reduce :group-len group-len)
+       (let [idf-container  (dt/->writer (dt/make-container :native-heap :float32 group-len))
+             termindex-container (dt/->writer (dt/make-container :native-heap :int32 group-len))]
          (run!
           (fn [idx]
             (let [term-index (nth term-indices idx)
@@ -219,27 +224,28 @@
          [termindex-container idf-container]))
      (fn [seq]
        (println :n-seq (count seq))
-       (let [dst-termindex (dt/make-container :int32 (count rows-by-term-index))
-             dst-idf (dt/make-container :float (count rows-by-term-index))]
+       ;(let [;;dst-termindex (dt/make-container :int32 (count rows-by-term-index))
+             ;;dst-idf (dt/make-container :float (count rows-by-term-index))
+        ;     ]
 
-         (dt/concat-buffers
-          dst-termindex
-          (map first seq))
-         (dt/coalesce-blocks!
-          dst-idf
-          (map second seq))
-         [dst-termindex dst-idf])
-       (let [dst-termindex (dt/concat-buffers (map first seq))
-             dst-idf (dt/concat-buffers (map second seq))]
+         ;(dt/concat-buffers
+          ;dst-termindex
+          ;(map first seq))
+         ;(dt/concat-buffers
+          ;dst-idf
+          ;(map second seq))
+         ;[dst-termindex dst-idf])
+       (let [dst-termindex (dt/concat-buffers (mapv first seq))
+             dst-idf (dt/concat-buffers (mapv second seq))]
          [dst-termindex dst-idf])))))
 
 
 (defn ->tfidf [tidy-text]
   (let [term->idf (create-term->idf-map tidy-text)
-        term-index (hf/->random-access (first term->idf))
-        idf  (hf/->random-access (second term->idf))
+        term-index (first term->idf)
+        idf  (second term->idf)
         container
-        (dt/make-container :int32  (repeat
+        (dt/make-container :native-heap :int32  (repeat
                                     (inc (apply max term-index))
                                     -1))
         _ (run!
@@ -256,6 +262,8 @@
           (->> term-index
                (nth idf-reader)
                (nth idf)))]
+
+    (println :start-tfidf)
 
     (->>
      (hf-reduce/preduce (fn [] (hf/object-array-list))
@@ -279,7 +287,9 @@
                                   :term-count term-count
                                   :tfidf (hf/float-array-list (map * tfs idfs)))))))
                         (fn [list-1 list-2]
+                          (println :reduce (count list-1) (count list-2))
                           (hf/add-all! list-1 list-2))
+                        {:max-batch-size 10000}
                         (ds/group-by-column->indexes tidy-text :document))
      (hf/union-reduce-maps
       (fn [l-1 l-2]

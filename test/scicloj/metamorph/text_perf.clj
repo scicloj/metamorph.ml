@@ -7,7 +7,9 @@
              [tablecloth.api :as tc]
              [tech.v3.dataset.string-table :as st]
              [tech.v3.datatype.argops :as argops]
-             [tech.v3.datatype.argops :as argops]))
+             [tech.v3.datatype.argops :as argops]
+             [tech.v3.datatype :as dt]
+             [tech.v3.dataset :as ds]))
 
 
 
@@ -28,21 +30,13 @@
 
 
  (def df
-   (:dataset (load-reviews)))
+   (->
+    (:dataset (load-reviews))
+    (tc/drop-columns [:term-pos])))
 
  
- (def term->idf-map
-   (text/create-term->idf-map-3 df))
- 
- 
- 
- 
- (->> 5
-      (argops/binary-search (first result) 5)
-      (nth (second result))
-      )
- 
- 
+ (println :df-measures
+          (mm/measure df))
  
 
  (println)
@@ -56,15 +50,24 @@
            (tc/column-names df)
            (tc/columns df)))
 
- (println :->tfidf)
+ (println :->created-idf-map)
  (time
-  (def tfidf
-    (text/->tfidf df)))
+  (def term-idf-map
+    (text/create-term->idf-map df)))
 
+ (println :count-first-term-idf-map
+          (count  (first term-idf-map)))
+ 
+ (println :count-second-term-idf-map
+          (count  (second term-idf-map)))
+ 
+ 
+ (println :measure-term-idf-map
+          (mm/measure term-idf-map))
+ 
 
- tfidf
-
- (println :meausre-fidf-ds (mm/measure tfidf))
+ (def tfidf {})
+ (println :measure-tfidf-ds (mm/measure tfidf))
  (println :measure-tfidf-tfidf (mm/measure (:tfidf tfidf)))
  (println :measure-tfidf-termcount (mm/measure (:term-count tfidf)))
  (println :measure-tfidf-document (mm/measure (:document tfidf)))
