@@ -24,6 +24,7 @@
   :dev
   {:extra-deps {io.github.nextjournal/clerk {:mvn/version "0.15.957"}
                 scicloj/scicloj.ml.smile {:mvn/version "7.4.1"}
+                org.mapdb/mapdb {:mvn/version "3.1.0"}
                 
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
                 ch.qos.logback/logback-classic {:mvn/version "1.5.6"}

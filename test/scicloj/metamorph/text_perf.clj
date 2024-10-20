@@ -5,11 +5,8 @@
              [clojure.string :as str]
              [scicloj.metamorph.ml.text :as text]
              [tablecloth.api :as tc]
-             [tech.v3.dataset :as ds]
-             [tech.v3.parallel.for :as for]
-             [tech.v3.datatype :as dt]
+             [tech.v3.dataset.string-table :as st]
              [tech.v3.datatype.argops :as argops]
-             [ham-fisted.api :as hf]
              [tech.v3.datatype.argops :as argops]))
 
 
@@ -20,6 +17,7 @@
         (fn [line] [line
                     (rand-int 6)])
         #(str/split % #" ")
+        (st/make-string-table)
         :max-lines 10000
         :skip-lines 1
         :datatype-document :int32

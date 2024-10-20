@@ -5,7 +5,8 @@
              [clojure.test :refer [deftest is]]
              [scicloj.metamorph.ml.text :as text]
              [tablecloth.api :as tc]
-             [tech.v3.dataset :as ds])
+             [tech.v3.dataset :as ds]
+             [tech.v3.dataset.string-table :as st])
    (:import [tech.v3.datatype.native_buffer NativeBuffer]))
 
 
@@ -28,6 +29,7 @@
          (text/->tidy-text (io/reader "test/data/reviews.csv")
                            parse-review-line
                            #(str/split % #" ")
+                           (st/make-string-table)
                            :max-lines 5
                            :skip-lines 1
                            :container-type :native-heap
@@ -45,6 +47,7 @@
          (text/->tidy-text (io/reader "test/data/reviews.csv")
                            parse-review-line-as-maps
                            #(str/split % #" ")
+                           (st/make-string-table)
                            :max-lines 5
                            :skip-lines 1
                            :container-type :jvm-heap
@@ -59,6 +62,7 @@
          (-> (text/->tidy-text (io/reader "test/data/reviews.csv")
                                parse-review-line
                                #(str/split % #" ")
+                               (st/make-string-table)
                                :max-lines 5
                                :skip-lines 1))
 
@@ -111,6 +115,7 @@
       ;(io/reader "test/data/reviews.csv")
           parse-review-line
           #(str/split % #" ")
+          (st/make-string-table)
           :max-lines 5
           :skip-lines 0)
 

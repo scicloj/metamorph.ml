@@ -1,5 +1,7 @@
 (ns scicloj.metamorph.ml.text
   (:require [clj-memory-meter.core :as mm]
+            [clojure.java.io :as io]
+            [clojure.string :as str]
             [ham-fisted.api :as hf]
             [ham-fisted.reduce :as hf-reduce]
             [tablecloth.api :as tc]
@@ -22,8 +24,7 @@
                   (drop skip-lines
                         (line-seq rdr))))))
 
-
-(defn- process-line [string-table line-split-fn text-tokenizer-fn acc line]
+(defn process-line [string-table line-split-fn text-tokenizer-fn acc line]
   (let [[text meta] (line-split-fn line)
         tokens (text-tokenizer-fn text)
 
@@ -36,6 +37,22 @@
       (when (zero? (rem (dt/ecount index-list) 10000))
         (println (dt/ecount index-list)))
       acc)))
+
+
+(defn- fill-string-table-from-line [string-table line-split-fn text-tokenizer-fn acc line]
+  (let [[text _] (line-split-fn line)
+        tokens (text-tokenizer-fn text)
+        ]
+    (.addAllReducible string-table tokens)
+    (when (zero? (rem acc 1000))
+      (println 
+        acc " : "
+        :num-tokens (dt/ecount string-table) " - "
+               :num-unique-tokens (dt/ecount (st/int->string string-table)))
+      )
+    (inc acc)))
+
+
 
 (def time-format (java.text.SimpleDateFormat. "HH:mm:ss.SSSS"))
 (def prevoius-debug-time (atom (java.time.LocalTime/now)))
@@ -109,6 +126,7 @@
    "
   [reader line-split-fn
    text-tokenizer-fn
+   term-index-string-table
 
    & {:keys [skip-lines max-lines
              datatype-document
@@ -122,8 +140,7 @@
            container-type    :jvm-heap
            max-lines Integer/MAX_VALUE}}]
 
-  (let [term-index-string-table (st/string-table-from-strings [])
-        _ (debug :parse)
+  (let [ _ (debug :parse)
         index-and-lable-lists
         (process-file reader
                       (partial process-line term-index-string-table line-split-fn text-tokenizer-fn)
@@ -270,8 +287,49 @@
      (ds/->>dataset))))
 
 
+(comment 
+  (import '[org.mapdb DBMaker])
+  
+  (def db
+    (.. DBMaker 
+      ;(tempFileDB) 
+      ;memoryDB
+      ;heapDB
+        (fileDB "/tmp/mapdb.bin")
+        fileMmapEnable
+        make))
+  
+
+  (def db-map (.. db ( hashMap "map") createOrOpen))
+  
+
+
+  (def term-index-string-table
+    (st/->StringTable 
+     (hf/object-array-list)
+     db-map
+     (dyn-int-list/dynamic-int-list)
+     ))
+  
+
+
+
+  (process-file (io/reader "bigdata/repeatedAbstrcats_3.7m_.txt")
+                (partial fill-string-table-from-line term-index-string-table
+                         (fn [line] [line
+                                     (rand-int 6)])
+                         #(str/split % #" ")
+                         )
+
+                0
+                100000 1)
+  
+  
 
   
 
+
+  (-> term-index-string-table st/int->string (get 641057))
+  )
   
  
