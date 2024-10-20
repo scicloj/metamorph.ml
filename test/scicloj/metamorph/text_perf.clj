@@ -3,13 +3,12 @@
              [clojure.data.csv :as csv]
              [clojure.java.io :as io]
              [clojure.string :as str]
+             [ham-fisted.api :as hf]
              [scicloj.metamorph.ml.text :as text]
              [tablecloth.api :as tc]
+             [tech.v3.dataset.reductions :as reductions]
              [tech.v3.dataset.string-table :as st]
-             [tech.v3.datatype.argops :as argops]
-             [tech.v3.datatype.argops :as argops]
-             [tech.v3.datatype :as dt]
-             [tech.v3.dataset :as ds]))
+             [tech.v3.datatype.functional :as func]))
 
 
 
@@ -51,15 +50,66 @@
            (tc/columns df)))
 
  (println :->created-idf-map)
- (time
-  (def term-idf-map
-    (text/create-term->idf-map df)))
 
- (println :count-first-term-idf-map
-          (count  (first term-idf-map)))
- 
- (println :count-second-term-idf-map
-          (count  (second term-idf-map)))
+(require '[tech.v3.dataset.reductions :as reductions])
+
+
+ (comment
+   (def N
+     (->
+      (reductions/aggregate
+       {:count (reductions/count-distinct :document)}
+       df)
+      :count
+      first))
+   
+
+   df
+   
+
+
+   (def term-idf-map 
+     (reductions/group-by-column-agg
+      :term-idx 
+      {:idf 
+       (reductions/reducer :document
+                           (fn [] (hf/mut-set))
+                           (fn [acc ^long document]
+                             (.add acc document)
+                             acc)
+                           (fn [uniq-documents-1 uniq-documents-2]
+                             (hf/add-all! uniq-documents-1 uniq-documents-2))
+                           (fn [uniq-documents] (Math/log10 (/ N (count uniq-documents)))))
+}
+      df))
+   
+   (reductions/group-by-column-agg
+    :document
+    {:tf
+     (reductions/reducer :term-idx
+                         (fn [] (hf/mut-list))
+                         (fn [acc ^long term-idx]
+                           (.add acc term-idx)
+                           acc)
+                         (fn [term-idx-1 term-idx-2]
+                           (hf/add-all! term-idx-1 term-idx-2))
+                         (fn [term-idx] 
+                           (let [ freqs (hf/frequencies term-idx)
+                                 n-term (count term-idx)
+                                 term-counts (hf/vals freqs)]
+                             {:term-idx term-idx
+                              :term-count term-counts
+                              :tf (seq (func// term-counts (float n-term)))}
+                             )
+                           ))}
+    df)
+
+   )
+
+()
+
+(println term-idf-map)
+
  
  
  (println :measure-term-idf-map
@@ -80,6 +130,11 @@
              [name (-> col meta :datatype)])
            (tc/column-names tfidf)
            (tc/columns tfidf)))
+
+
+
+
+
 
 ;; 14G of RAM needed
 ;; 23:42:33.0046  -  :parse10000
