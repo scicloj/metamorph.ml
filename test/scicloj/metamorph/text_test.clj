@@ -118,10 +118,6 @@
          (-> (:dataset ds-and-st)
              (tc/rename-columns {:meta :label}))
 
-
-         
-         _ (def int->str (:int->str ds-and-st))
-         _ (def text text)
          tfidfs 
          (->
           (text/->tfidf text)
@@ -133,7 +129,6 @@
     (ds/rows text)   
     ;;=> [{:term-idx 1, :term-pos 0, :document 0, :label 0} {:term-idx 2, :term-pos 1, :document 0, :label 0} {:term-idx 3, :term-pos 2, :document 0, :label 0} {:term-idx 3, :term-pos 3, :document 0, :label 0} {:term-idx 4, :term-pos 4, :document 0, :label 0} {:term-idx 1, :term-pos 0, :document 1, :label 1} {:term-idx 2, :term-pos 1, :document 1, :label 1} {:term-idx 5, :term-pos 2, :document 1, :label 1} {:term-idx 5, :term-pos 3, :document 1, :label 1} {:term-idx 6, :term-pos 4, :document 1, :label 1} {:term-idx 6, :term-pos 5, :document 1, :label 1} {:term-idx 6, :term-pos 6, :document 1, :label 1}]
 
-     (def tfidfs tfidfs)
      (is (= ;;'("this" "this" "is" "is" "a" "sample" "another" "example")
           '(1 1 2 2 3 4 5 6)
 
