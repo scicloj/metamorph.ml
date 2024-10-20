@@ -8,6 +8,7 @@
             [tech.v3.dataset.dynamic-int-list :as dyn-int-list]
             [tech.v3.dataset.string-table :as st]
             [tech.v3.datatype :as dt]
+            [ tech.v3.dataset.reductions :as ds-reduce]
             [tech.v3.datatype.argops :as argops]
             [tech.v3.datatype.functional :as func]
             [tech.v3.parallel.for :as for])
@@ -15,8 +16,8 @@
 
 
 
-(defn- process-file [reader line-func 
-                     line-acc 
+(defn- process-file [reader line-func
+                     line-acc
                      max-lines skip-lines]
   (with-open [rdr (BufferedReader. reader)]
     (reduce line-func line-acc
@@ -34,8 +35,7 @@
     (let [meta-list (:meta-list acc)
           index-list (:index-list acc)
           _ (.add meta-list meta)
-          _ (.add index-list index-count)
-]
+          _ (.add index-list index-count)]
       (when (zero? (rem (dt/ecount index-list) 10000))
         (println (dt/ecount index-list)))
       acc)))
@@ -48,22 +48,20 @@
          (java.time.Duration/between
           @prevoius-debug-time
           (java.time.LocalTime/now)))]
-    
+
     (reset! prevoius-debug-time (java.time.LocalTime/now))
     (println (format "  (%s) " duration))
-    (apply print (.format time-format (java.util.Date.)) " - " s))
-  )
+    (apply print (.format time-format (java.util.Date.)) " - " s)))
 
 
 (defn- make-col-container [map-fn container-type res-dataype  container-size datas]
   (let [container (dt/make-container container-type res-dataype container-size)
         metas
         (apply dt/emap map-fn res-dataype datas)]
-    
-    (dt/coalesce-blocks! container metas))
-  )
 
-(defn- make-metas-col-container [index-and-lable-lists col-size datatype ]
+    (dt/coalesce-blocks! container metas)))
+
+(defn- make-metas-col-container [index-and-lable-lists col-size datatype]
   (make-col-container
    (fn [index meta]
      (dt/const-reader meta index))
@@ -71,9 +69,7 @@
    datatype
    col-size
    [(:index-list index-and-lable-lists)
-    (:meta-list index-and-lable-lists)
-    ]
-   ))
+    (:meta-list index-and-lable-lists)]))
 
 
 (defn- make-document-col-container [index-and-lable-lists col-size datatype container-type]
@@ -118,7 +114,7 @@
    text-tokenizer-fn
 
    & {:keys [skip-lines max-lines
-             datatype-document 
+             datatype-document
              datatype-term-pos
              datatype-metas
              container-type]
@@ -129,8 +125,7 @@
            container-type    :jvm-heap
            max-lines Integer/MAX_VALUE}}]
 
-  (let [
-        term-index-string-table (st/string-table-from-strings [])
+  (let [term-index-string-table (st/string-table-from-strings [])
         _ (debug :parse)
         index-and-lable-lists
         (process-file reader
@@ -172,7 +167,7 @@
     (debug :string-table-count (count term-index-string-table))
     (debug :string-table-vocab-size (count (st/int->string term-index-string-table)))
     (debug :measure-term-index-string-table (mm/measure term-index-string-table))
- 
+
 
     (debug :measure-col-term-index (mm/measure col-term-index))
     (debug :measure-col-term-pos (mm/measure col-term-pos))
@@ -182,8 +177,26 @@
 
 
     {:dataset ds
-     :int->str (st/int->string term-index-string-table)})
-  )
+     :int->str (st/int->string term-index-string-table)}))
+
+(defn create-term->idf-map-5  [df]
+  (let [N 
+        (float
+         (tc/row-count
+          (tc/unique-by df :document)))]
+    (-> df
+        (ds/unique-by #(vector (% :term-idx) (% :document)))
+        (#(ds-reduce/group-by-column-agg
+           :term-idx
+           {:idf
+            (ds-reduce/reducer :document
+                               (constantly 0)
+                               (fn [acc ^long v]
+                                 (+ (long acc) 1))
+                               +
+                               (fn [^double v] (Math/log10 (/ N v))))}
+           %)))))
+
 
 (defn create-term->idf-map-4 [df]
   (let [N
@@ -206,12 +219,9 @@
             (let [term-index (nth term-indices idx)
                   row-indices (get  rows-by-term-index term-index)
                   documents (distinct (ds/select-rows (:document df) row-indices))
-                  idf (Math/log10 (/ N (count documents)))
-                  ]
+                  idf (Math/log10 (/ N (count documents)))]
               (dt/set-value! idf-container (- idx start-idx) idf)
-              (dt/set-value! termindex-container (- idx start-idx) term-index)
-              )
-              )
+              (dt/set-value! termindex-container (- idx start-idx) term-index)))
           (range  start-idx (+ start-idx group-len)))
          [termindex-container idf-container]))
      (fn [seq]
@@ -248,22 +258,19 @@
         (let [documents
               (distinct (ds/select-rows (:document df) row-indices))
               idf (Math/log10 (/ N (count documents)))]
-          (hf/assoc!  m  term-idx idf)
-          )
-        )
+          (hf/assoc!  m  term-idx idf)))
       (fn [m-1 m-2]
-        (hf/map-union + m-1 m-2)
-        )
+        (hf/map-union + m-1 m-2))
       {;:cat-parallelism :elem-wise
        ;:min-n 1
        }
-      
+
       rows-by-term-idx))))
 
 
 
 (defn create-term->idf-map-2 [df]
-  
+
   (let [keys-values
         (let [N
               (float
@@ -288,15 +295,13 @@
              (.addAllReducible
               (:idf m-1)
               (:idf m-2))
-             m-1
-             )
+             m-1)
            rows-by-term-idx))]
-    
-    (zipmap (:term-idx keys-values)
-            (:idf keys-values)))
-           )
 
-  (defn create-term->idf-map-1 [df]
+    (zipmap (:term-idx keys-values)
+            (:idf keys-values))))
+
+(defn create-term->idf-map-1 [df]
 
   (let [N
         (float
@@ -327,17 +332,16 @@
            (fn [[i v]]
              (dt/set-value! container v i))
            (map vector (range) term-index))
-        
+
         idf-reader
         (-> container
             dt/as-reader)
-        
+
         term-idx->idf
         (fn [term-index]
           (->> term-index
                (nth idf-reader)
-               (nth idf))) 
-        ]
+               (nth idf)))]
 
     (->>
      (hf-reduce/preduce (fn [] (hf/object-array-list))
@@ -364,7 +368,7 @@
                             (-> l
                                 (hf/conj!
                                  (hf/hash-map
-                                  :document document 
+                                  :document document
                                   :term-idx terms
                                   :tf tfs
                                   :term-count term-count
@@ -389,10 +393,10 @@
 
   (ds/group-by-column->indexes ds :term-idx)
 
-  
 
 
-  
+
+
   (def m-1 (create-term->idf-map-1 ds))
   (def m-2 (create-term->idf-map-2 ds))
   (def m-3 (create-term->idf-map-3 ds))
@@ -405,7 +409,7 @@
   ;;Execution time mean : 25.098424 ns
   (criterium/quick-bench
    (get m-1 3))
-  
+
   ;;Execution time mean : 52.328324 ns
   (criterium/quick-bench
    (get m-2 3))
@@ -413,7 +417,7 @@
   ;;Execution time mean : 7.326608 ns
   (criterium/quick-bench
    (get m-3 3))
-  
+
   ;execution time mean : 59.036666 µs
   (criterium/quick-bench
    (create-term->idf-map-1 ds))
@@ -439,11 +443,8 @@
   ;;=> "560 B"
   (mm/measure m-4 :debug true)
   ;;=> "1.1 KiB"
+  )
 
- 
-
-)
-  
 (comment
   (require '[clojure.java.io :as io]
            '[clojure.string :as str]
@@ -461,13 +462,16 @@
           :datatype-term-pos :int32
           :datatype-metas    :int8))))
 
-   
+
 
   (time (def m-1 (create-term->idf-map-1 df)))
   (time (def m-2 (create-term->idf-map-2 df)))
   (time (def m-3 (create-term->idf-map-3 df)))
   (time (def m-4 (create-term->idf-map-4 df)))
+  (time (def m-5 (create-term->idf-map-5 df)))
 
+  
+  (tc/order-by m-5 :term-idx)
   (mm/measure m-1)
   ;;=> "10.4 MiB"
 
@@ -480,6 +484,9 @@
   (mm/measure m-4)
   ;;=> "959.6 KiB"
 
+
+  (mm/measure m-5)
+  ;;=> "2 MB""
 
   (criterium/quick-bench (get m-1 5))
 ; Execution time mean : 44.493164 ns
@@ -499,7 +506,7 @@
         (nth idf)))
   ;; 326 ns
 
-  (def container 
+  (def container
     (dt/make-container :int32  (repeat
                                 (inc (apply max term-index))
                                 -1)))
@@ -508,21 +515,19 @@
      (dt/set-value! container v i))
    (map vector (range) (first m-4)))
 
-  
+
   (def reader
     (-> container
-          dt/as-reader))
+        dt/as-reader))
 
 
 
   (criterium/quick-bench
- (->> 5
-      (nth reader)
-      (nth idf)
-      )) 
+   (->> 5
+        (nth reader)
+        (nth idf)))
  ;122 ns
-  
-)
+  )
   
 
   
