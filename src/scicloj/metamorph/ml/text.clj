@@ -4,9 +4,9 @@
             [clojure.string :as str]
             [ham-fisted.api :as hf]
             [ham-fisted.reduce :as hf-reduce]
-            [tablecloth.api :as tc]
             [tech.v3.dataset :as ds]
             [tech.v3.dataset.dynamic-int-list :as dyn-int-list]
+            [tech.v3.dataset.reductions :as reductions]
             [tech.v3.dataset.string-table :as st]
             [tech.v3.datatype :as dt]
             [tech.v3.datatype.functional :as func]
@@ -194,56 +194,34 @@
      :int->str (st/int->string term-index-string-table)}))
 
 (defn create-term->idf-map [tidy-text]
-  (println :create-term->idf-map)
-  (let [
-        
-        _ (println :calculate-N)
-        N
-        (float
-         (tc/row-count
-          (tc/unique-by tidy-text :document)))
-        rows-by-term-index
-        (ds/group-by-column->indexes tidy-text :term-idx)
-        term-indices (hf/->random-access (keys rows-by-term-index))]
 
-    (for/indexed-map-reduce
-     (count term-indices)
-     (fn [start-idx group-len]
-       (println :indexed-map-reduce :group-len group-len)
-       (let [idf-container  (dt/->writer (dt/make-container :native-heap :float32 group-len))
-             termindex-container (dt/->writer (dt/make-container :native-heap :int32 group-len))]
-         (run!
-          (fn [idx]
-            (let [term-index (nth term-indices idx)
-                  row-indices (get  rows-by-term-index term-index)
-                  documents (distinct (ds/select-rows (:document tidy-text) row-indices))
-                  idf (Math/log10 (/ N (count documents)))]
-              (dt/set-value! idf-container (- idx start-idx) idf)
-              (dt/set-value! termindex-container (- idx start-idx) term-index)))
-          (range  start-idx (+ start-idx group-len)))
-         [termindex-container idf-container]))
-     (fn [seq]
-       (println :n-seq (count seq))
-       ;(let [;;dst-termindex (dt/make-container :int32 (count rows-by-term-index))
-             ;;dst-idf (dt/make-container :float (count rows-by-term-index))
-        ;     ]
+  (let [ N
+        (->
+         (reductions/aggregate
+          {:count (reductions/count-distinct :document)}
+          tidy-text)
+         :count
+         first)]
 
-         ;(dt/concat-buffers
-          ;dst-termindex
-          ;(map first seq))
-         ;(dt/concat-buffers
-          ;dst-idf
-          ;(map second seq))
-         ;[dst-termindex dst-idf])
-       (let [dst-termindex (dt/concat-buffers (mapv first seq))
-             dst-idf (dt/concat-buffers (mapv second seq))]
-         [dst-termindex dst-idf])))))
+
+    (reductions/group-by-column-agg
+     :term-idx
+     {:idf (reductions/reducer :document
+                               (fn [] (hf/mut-set))
+                               (fn [acc ^long document]
+                                 (.add acc document  )
+                                 acc)
+                               (fn [uniq-documents-1 uniq-documents-2]
+                                 (hf/add-all! uniq-documents-1 uniq-documents-2))
+                               (fn [uniq-documents] (Math/log10 (/ N (count uniq-documents)))))}
+     tidy-text)))
+
 
 
 (defn ->tfidf [tidy-text]
   (let [term->idf (create-term->idf-map tidy-text)
-        term-index (first term->idf)
-        idf  (second term->idf)
+        term-index (:term-idx term->idf)
+        idf  (:idf term->idf)
         container
         (dt/make-container :native-heap :int32  (repeat
                                     (inc (apply max term-index))
@@ -289,12 +267,62 @@
                         (fn [list-1 list-2]
                           (println :reduce (count list-1) (count list-2))
                           (hf/add-all! list-1 list-2))
-                        {:max-batch-size 10000}
+                        {:max-batch-size 10000
+                         :parallelism 6263}
                         (ds/group-by-column->indexes tidy-text :document))
      (hf/union-reduce-maps
       (fn [l-1 l-2]
         (hf/add-all! l-1 l-2)))
      (ds/->>dataset))))
+
+
+
+(comment
+  (defn create-term->idf-map [tidy-text]
+
+
+    (println :create-term->idf-map)
+    (let [_ (println :calculate-N)
+          N
+          (float
+           (count
+            (distinct (tidy-text :document))))
+
+          _ (println :rows-by-term-index)
+          rows-by-term-index
+          (ds/group-by-column->indexes tidy-text :term-idx
+                                       {:max-batch-size 1 :cat-parallelism :elem-wise :parallelism 1})
+
+          _ (println :measure-rows-by-terms-index
+                     (mm/measure rows-by-term-index))
+        ;_ (def rows-by-term-index rows-by-term-index)
+
+
+          _ (debug :term-indices)
+          term-indices (hf/int-array (keys rows-by-term-index))]
+
+      (for/indexed-map-reduce
+       (count term-indices)
+       (fn [start-idx group-len]
+         (println :group-len group-len)
+         (let [idf-container  (dt/->writer (dt/make-container :native-heap :float32 group-len))
+               termindex-container (dt/->writer (dt/make-container :native-heap :int32 group-len))]
+           (run!
+            (fn [idx]
+              (let [term-index (nth term-indices idx)
+                    row-indices (get  rows-by-term-index term-index)
+                    documents (distinct (ds/select-rows (:document tidy-text) row-indices))
+                    idf (Math/log10 (/ N (count documents)))]
+                (dt/set-value! idf-container (- idx start-idx) idf)
+                (dt/set-value! termindex-container (- idx start-idx) term-index)))
+            (range  start-idx (+ start-idx group-len)))
+           [termindex-container idf-container]))
+       (fn [seq]
+         (println :n-seq (count seq))
+         (let [dst-termindex (dt/concat-buffers (mapv first seq))
+               dst-idf (dt/concat-buffers (mapv second seq))]
+           [dst-termindex dst-idf]))))))
+
 
 
 (comment 
