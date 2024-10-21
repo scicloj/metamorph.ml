@@ -5,6 +5,7 @@
         metosin/malli               {:mvn/version "0.16.0"}
         generateme/fastmath         {:mvn/version "3.0.0-alpha2"}
         aerial.hanami/aerial.hanami {:mvn/version "0.20.0"}
+        it.unimi.dsi/fastutil       {:mvn/version "8.5.15"}
         }
 
  :paths ["src" "resources"]

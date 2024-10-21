@@ -3,15 +3,17 @@
             [clojure.java.io :as io]
             [clojure.string :as str]
             [ham-fisted.api :as hf]
+            [ham-fisted.lazy-noncaching :as lznc]
             [ham-fisted.reduce :as hf-reduce]
+            [tablecloth.api :as tc]
             [tech.v3.dataset :as ds]
             [tech.v3.dataset.dynamic-int-list :as dyn-int-list]
             [tech.v3.dataset.reductions :as reductions]
             [tech.v3.dataset.string-table :as st]
             [tech.v3.datatype :as dt]
-            [tech.v3.datatype.functional :as func]
-            [tech.v3.parallel.for :as for])
-  (:import [java.io BufferedReader]))
+            [tech.v3.datatype.functional :as func])
+  (:import [java.io BufferedReader]
+           [java.util ArrayList]))
 
 
 
@@ -213,10 +215,19 @@
                                  acc)
                                (fn [uniq-documents-1 uniq-documents-2]
                                  (hf/add-all! uniq-documents-1 uniq-documents-2))
-                               (fn [uniq-documents] (Math/log10 (/ N (count uniq-documents)))))}
+                               (fn [uniq-documents] (float (Math/log10 (/ N (count uniq-documents))))))}
      tidy-text)))
 
 
+
+(defn ->tfidf-2 [tidy-text]
+  (let [term->idf (create-term->idf-map tidy-text)]
+     term-idx->idf-map
+    (Long2FloatLinkedOpenHashMap. (-> term->idf :term-idx dt/->long-array)
+                                  (-> term->idf :idf dt/->float-array))
+
+    )
+  )
 
 (defn ->tfidf [tidy-text]
   (let [term->idf (create-term->idf-map tidy-text)
@@ -277,53 +288,6 @@
 
 
 
-(comment
-  (defn create-term->idf-map [tidy-text]
-
-
-    (println :create-term->idf-map)
-    (let [_ (println :calculate-N)
-          N
-          (float
-           (count
-            (distinct (tidy-text :document))))
-
-          _ (println :rows-by-term-index)
-          rows-by-term-index
-          (ds/group-by-column->indexes tidy-text :term-idx
-                                       {:max-batch-size 1 :cat-parallelism :elem-wise :parallelism 1})
-
-          _ (println :measure-rows-by-terms-index
-                     (mm/measure rows-by-term-index))
-        ;_ (def rows-by-term-index rows-by-term-index)
-
-
-          _ (debug :term-indices)
-          term-indices (hf/int-array (keys rows-by-term-index))]
-
-      (for/indexed-map-reduce
-       (count term-indices)
-       (fn [start-idx group-len]
-         (println :group-len group-len)
-         (let [idf-container  (dt/->writer (dt/make-container :native-heap :float32 group-len))
-               termindex-container (dt/->writer (dt/make-container :native-heap :int32 group-len))]
-           (run!
-            (fn [idx]
-              (let [term-index (nth term-indices idx)
-                    row-indices (get  rows-by-term-index term-index)
-                    documents (distinct (ds/select-rows (:document tidy-text) row-indices))
-                    idf (Math/log10 (/ N (count documents)))]
-                (dt/set-value! idf-container (- idx start-idx) idf)
-                (dt/set-value! termindex-container (- idx start-idx) term-index)))
-            (range  start-idx (+ start-idx group-len)))
-           [termindex-container idf-container]))
-       (fn [seq]
-         (println :n-seq (count seq))
-         (let [dst-termindex (dt/concat-buffers (mapv first seq))
-               dst-idf (dt/concat-buffers (mapv second seq))]
-           [dst-termindex dst-idf]))))))
-
-
 
 (comment 
   (import '[org.mapdb DBMaker])
@@ -371,3 +335,134 @@
   )
   
  
+(comment
+  (require '[clojure.data.csv :as csv]
+           '[tablecloth.api :as tc]
+           '[ham-fisted.lazy-noncaching :as lznc]
+           '[ham-fisted.mut-map :as mut-map]
+           '[criterium.core :as criterium])
+  (set! *warn-on-reflection* true)
+  (import '[it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap]
+          [java.util List])
+
+  (defn- parse-review-line [line]
+    (let [splitted (first
+                    (csv/read-csv line))]
+      [(first splitted)
+       (dec (Integer/parseInt (second splitted)))]))
+
+  (def df
+    (-> (->tidy-text (io/reader "test/data/reviews.csv")
+                     parse-review-line
+                     #(str/split % #" ")
+                     (st/make-string-table)
+                     :max-lines 5
+                     :skip-lines 1)
+
+        :dataset
+        (tc/drop-columns [:term-pos :meta])))
+
+
+  (def df
+    (tc/dataset [{:term-idx 1, :term-pos 0, :document 0, :label 0} {:term-idx 2, :term-pos 1, :document 0, :label 0} {:term-idx 3, :term-pos 2, :document 0, :label 0} {:term-idx 3, :term-pos 3, :document 0, :label 0} {:term-idx 4, :term-pos 4, :document 0, :label 0} {:term-idx 1, :term-pos 0, :document 1, :label 1} {:term-idx 2, :term-pos 1, :document 1, :label 1} {:term-idx 5, :term-pos 2, :document 1, :label 1} {:term-idx 5, :term-pos 3, :document 1, :label 1} {:term-idx 6, :term-pos 4, :document 1, :label 1} {:term-idx 6, :term-pos 5, :document 1, :label 1} {:term-idx 6, :term-pos 6, :document 1, :label 1}]))
+
+  (def idfs
+    (create-term->idf-map df))
+
+
+
+
+  
+  
+  (def term-idx->idf-map
+    (Long2FloatLinkedOpenHashMap. (-> idfs :term-idx dt/->long-array)
+                                  (-> idfs :idf dt/->float-array)))
+
+  
+  (def tfidf-data
+
+    (reductions/group-by-column-agg
+     :document
+     {:tfidf-cols (reductions/reducer
+                   [:term-idx :document]
+                   (fn [] {:term-counts (hf/mut-map)
+                           :term-counter 0
+                           :document -1})
+                   (fn [acc ^long term-idx ^long document]
+                     (println  :rfn :document  document)
+                     (mut-map/compute! (:term-counts acc)
+                                       term-idx
+                                       (fn [_ v] (if (nil? v)  1 (inc v))))
+                     {:term-counts (:term-counts acc)
+
+                      :term-counter (inc (:term-counter acc))
+                      :document document})
+                   (fn [acc-1 acc-2]
+                     (println :combine)
+                     {:term-counts (hf/merge-with + (:term-counts acc-1) (:term-counts acc-2))
+
+                      :term-counter (+ (:term-counter acc-1) (:term-counter acc-2))
+                      :document (or (:document acc-1) (:document acc-2))})
+
+                   (fn [{:keys [term-counts term-counter document]}]
+                     (let [tf-idfs
+                           (apply hf/merge
+                                  (lznc/map
+                                   (fn [[term-index count]]
+                                     (let [tf (float (/ count term-counter))]
+                                       (hash-map term-index
+                                                 (hash-map :tf tf
+                                                           :tfidf (* tf (get term-idx->idf-map term-index))))))
+
+                                   term-counts))]
+
+                       {:term-idx (dt/make-container  :int64 (hf/keys tf-idfs))
+                        :tf (dt/make-container :float32 (hf/mapv :tf (hf/vals tf-idfs)))
+                        :tfidf (dt/make-container :float32  (hf/mapv :tfidf (hf/vals tf-idfs)))
+                        :document (dt/const-reader document (count tf-idfs))})))}
+     df))
+
+
+  
+  (ds/new-dataset
+   [
+    (ds/new-column :document
+                   (dt/concat-buffers
+                    (lznc/map
+                     :document
+                     (-> tfidf-data :tfidf-cols)))
+                   {} [])
+    
+    (ds/new-column :tfidf 
+                   (dt/concat-buffers
+                    (lznc/map
+                     :tfidf
+                     (-> tfidf-data :tfidf-cols)))
+                   {} [])
+    (ds/new-column :tf
+                   (dt/concat-buffers
+                    (lznc/map
+                     :tf
+                     (-> tfidf-data :tfidf-cols)))
+                   {} [])
+    (ds/new-column :term-idx
+                   (dt/concat-buffers
+                    (lznc/map
+                     :term-idx
+                     (-> tfidf-data :tfidf-cols)))
+                   {} [])])
+
+
+  (mapv
+   (fn [document len]
+     (dt/const-reader document len)
+     )
+   (:document df)
+   (map 
+    #(-> % :tfidf count)
+    (-> tfidf-data :tfidf-cols)
+    ))
+    
+
+  )
+
