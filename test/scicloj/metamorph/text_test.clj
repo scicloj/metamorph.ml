@@ -68,7 +68,9 @@
 
          text (:dataset tidy)
          int->str (:int->str tidy)
-         tf (text/->tfidf text)]
+         tf (-> 
+             (text/->tfidf text)
+             (tc/order-by [:document :term-idx]))]
      
      (is (= 596
             (tc/row-count text)))
@@ -95,6 +97,7 @@
                     [(int->str term-index) a b c])))))
 
 
+     (def tf tf)
      (is (=
           {0 68, 3 136, 4 64, 2 137, 1 24}
           (-> tf :document frequencies)))
