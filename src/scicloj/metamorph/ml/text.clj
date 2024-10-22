@@ -219,9 +219,9 @@
      {:idf (reductions/reducer :document
                                (fn [] (hf/mut-set))
                                (fn [^Set acc ^long document]
-                                            (when (zero? (rem document 100000))
-                                              (println :reduce-idf document))
-                                 (.add acc document  )
+                                 (when (zero? (rem document 100000))
+                                   (println :reduce-idf document))
+                                 (.add acc document)
                                  acc)
                                (fn [uniq-documents-1 uniq-documents-2]
                                  (hf/add-all! uniq-documents-1 uniq-documents-2))
@@ -257,67 +257,57 @@
         (reductions/group-by-column-agg
          :document
 
-         {:tfidf-cols (reductions/reducer [:term-idx]
-                                          (fn [] {:term-counts (hf/mut-map)
-                                                  :term-counter 0
-                                                  :document -1})
-                                          (fn [acc ^long term-idx]
-                                            (mut-map/compute! (:term-counts acc)
-                                                              term-idx
-                                                              (fn [_ v] (if (nil? v)  1 (inc v))))
-                                            {:term-counts (:term-counts acc)
-                                             :term-counter (inc (:term-counter acc))})
-                                          (fn [acc-1 acc-2]
-                                            (println :combine)
-                                            {:term-counts (hf/merge-with + (:term-counts acc-1) (:term-counts acc-2))
-                                             :term-counter (+ (:term-counter acc-1) (:term-counter acc-2))})
+         {:tfidf-cols (reductions/reducer
+                       [:document :term-idx]
+                       (fn [] {:term-counts (hf/mut-map)
+                               :term-counter 0
+                               :document nil})
+                       (fn [acc ^long document ^long term-idx]
+                         (println :rfn :document document :term-idx term-idx)
+                         (mut-map/compute! (:term-counts acc)
+                                           term-idx
+                                           (fn [_ v] (if (nil? v)  1 (inc v))))
+                         {:term-counts (:term-counts acc)
+                          :term-counter (inc (:term-counter acc))
+                          :document document})
+                       (fn [acc-1 acc-2]
+                         (throw (Exception. "merge should not get called"))
+                         )
 
-                                          (fn [{:keys [term-counts term-counter]}]
-                                            (println :finalize)
-                                            (let [tf-idfs
-                                                  (apply hf/merge
-                                                         (lznc/map
-                                                          (fn [[term-index count]]
-                                                            (let [tf (float (/ count term-counter))]
-                                                              (hash-map term-index
-                                                                        (hash-map :tf tf
-                                                                                  :tfidf (* tf
-                                                                                            ;1
-                                                                                            (get term-idx->idf-map term-index))))))
+                       (fn [{:keys [term-counts term-counter document]}]
+                         (println :finalize :term-counts term-counts 
+                                  :term-counter term-counter
+                                  :document document)
+                         (let [tf-idfs
+                               (apply hf/merge
+                                      (lznc/map
+                                       (fn [[term-index count]]
+                                         (let [tf (float (/ count term-counter))]
+                                           (hash-map term-index
+                                                     (hash-map :tf tf
+                                                               :tfidf (* tf
+                                                                         (get term-idx->idf-map term-index))))))
 
-                                                          term-counts))
-
-                                                  c (dt/make-container :float32  (count (hf/vals tf-idfs)))]
-
-
-
-
-                                              {:term-idx (dt/->int-array  (hf/keys tf-idfs))
-                                               :term-count (dt/->int-array  (hf/vals term-counts))
-                                               :tf (dt/->double-array (hf/mapv :tf (hf/vals tf-idfs)))
-                                               :tfidf (dt/->double-array (hf/mapv :tfidf (hf/vals tf-idfs)))})))}
-         [tidy-text tidy-text])]
+                                       term-counts))]
 
 
+                           {:document (dt/->int-array (hf/repeat document (count term-counts)))
+                            :term-idx (dt/->int-array  (hf/keys tf-idfs))
+                            :term-count (dt/->int-array  (hf/vals term-counts))
+                            :tf (dt/->double-array (hf/mapv :tf (hf/vals tf-idfs)))
+                            :tfidf (dt/->double-array (hf/mapv :tfidf (hf/vals tf-idfs)))})))}
+         tidy-text)]
 
 
-    (mm/measure
-     (dt/concat-buffers
-      (lznc/map
-       :tfidf
-       (-> tfidf-data :tfidf-cols))) :debug true)
-
-    
   
     (ds/new-dataset
-     [(->column :tfidf :float32 tfidf-data :tfidf)
+     [(->column :document :int32 tfidf-data :document)
+      (->column :tfidf :float32 tfidf-data :tfidf)
       (->column :tf :float32 tfidf-data :tf)
       (->column :term-idx :int32 tfidf-data :term-idx)
       (->column :term-count :int32 tfidf-data :term-count)
       
 ])))
-
-
 
 (comment 
   (import '[org.mapdb DBMaker])
