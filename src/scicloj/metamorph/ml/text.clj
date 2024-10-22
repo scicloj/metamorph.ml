@@ -202,7 +202,7 @@
      :int->str (st/int->string term-index-string-table)}))
 
 (defn create-term->idf-map [tidy-text]
-
+  (debug :create-term->idf-map)
   (let [ N
         (->
          (reductions/aggregate
@@ -217,6 +217,8 @@
      {:idf (reductions/reducer :document
                                (fn [] (hf/mut-set))
                                (fn [^Set acc ^long document]
+                                            (when (zero? (rem document 100000))
+                                              (println :reduce-idf document))
                                  (.add acc document  )
                                  acc)
                                (fn [uniq-documents-1 uniq-documents-2]
@@ -230,17 +232,24 @@
 
   (let [idfs (create-term->idf-map tidy-text)
 
+        _ (debug :term-idx->idf-map)
         term-idx->idf-map
         (Long2FloatLinkedOpenHashMap. (-> idfs :term-idx dt/->long-array)
                                       (-> idfs :idf dt/->float-array))
+
+        
+        _ (debug :tfidf-data)
         tfidf-data
         (reductions/group-by-column-agg
          :document
+         
          {:tfidf-cols (reductions/reducer [:term-idx :document]
                                           (fn [] {:term-counts (hf/mut-map)
                                                   :term-counter 0
                                                   :document -1})
                                           (fn [acc ^long term-idx ^long document]
+                                            (when (zero? (rem document 100000))
+                                              (println :reduce-tfidf document))
                                             (mut-map/compute! (:term-counts acc)
                                                               term-idx
                                                               (fn [_ v] (if (nil? v)  1 (inc v))))
@@ -248,12 +257,14 @@
                                              :term-counter (inc (:term-counter acc))
                                              :document document})
                                           (fn [acc-1 acc-2]
+                                            (println :combine)
                                             {:term-counts (hf/merge-with + (:term-counts acc-1) (:term-counts acc-2))
                                              :term-counter (+ (:term-counter acc-1) (:term-counter acc-2))
                                              :document (or (:document acc-1) (:document acc-2))})
 
                                           (fn [{:keys [term-counts term-counter document]}]
-                                            (def term-counts term-counts)
+                                            (when (zero? (rem document 100000))
+                                              (println :finalize :document document :n-term-counts (count term-counts)))
                                             (let [tf-idfs
                                                   (apply hf/merge
                                                          (lznc/map
@@ -261,18 +272,21 @@
                                                             (let [tf (float (/ count term-counter))]
                                                               (hash-map term-index
                                                                         (hash-map :tf tf
-                                                                                  :tfidf (* tf (get term-idx->idf-map term-index))))))
+                                                                                  :tfidf (* tf
+                                                                                            ;1
+                                                                                            (get term-idx->idf-map term-index))))))
 
                                                           term-counts))]
-
                                               {:term-idx (dt/make-container  :int64 (hf/keys tf-idfs))
                                                :term-count (dt/make-container  :int64 (hf/vals term-counts))
                                                :tf (dt/make-container :float32 (hf/mapv :tf (hf/vals tf-idfs)))
                                                :tfidf (dt/make-container :float32  (hf/mapv :tfidf (hf/vals tf-idfs)))
                                                :document (dt/const-reader document (count tf-idfs))})))}
+         {:map-initial-capacity 100000000}
          tidy-text)]
 
 
+    (debug :new-dataset)
     (ds/new-dataset
      [(ds/new-column :document
                      (dt/concat-buffers

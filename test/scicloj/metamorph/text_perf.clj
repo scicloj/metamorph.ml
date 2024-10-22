@@ -19,7 +19,7 @@
                     (rand-int 6)])
         #(str/split % #" ")
         (st/make-string-table)
-        :max-lines 10000
+        :max-lines 1000000
         :skip-lines 1
         :datatype-document :int32
         :datatype-term-pos :int32
@@ -34,6 +34,7 @@
     (tc/drop-columns [:term-pos])))
 
  
+
  (println :df-measures
           (mm/measure df))
  
@@ -49,9 +50,26 @@
            (tc/column-names df)
            (tc/columns df)))
 
- (println :->created-idf-map)
 
-(require '[tech.v3.dataset.reductions :as reductions])
+(def tfidf (text/->tfidf df))
+(println)
+
+(println :measure-tfidf-ds (mm/measure tfidf))
+(println :measure-tfidf-tfidf (mm/measure (:tfidf tfidf)))
+(println :measure-tfidf-termcount (mm/measure (:term-count tfidf)))
+(println :measure-tfidf-document (mm/measure (:document tfidf)))
+(println :measure-tfidf-term-idx (mm/measure (:term-idx tfidf)))
+
+
+(println :col-datatypes-tfidf
+         (map
+          (fn [name col]
+            [name (-> col meta :datatype)])
+          (tc/column-names tfidf)
+          (tc/columns tfidf)))
+
+ 
+
 
 
  (comment
@@ -106,30 +124,12 @@
 
    )
 
-()
 
-(println term-idf-map)
 
  
  
- (println :measure-term-idf-map
-          (mm/measure term-idf-map))
  
 
- (def tfidf {})
- (println :measure-tfidf-ds (mm/measure tfidf))
- (println :measure-tfidf-tfidf (mm/measure (:tfidf tfidf)))
- (println :measure-tfidf-termcount (mm/measure (:term-count tfidf)))
- (println :measure-tfidf-document (mm/measure (:document tfidf)))
- (println :measure-tfidf-term-idx (mm/measure (:term-idx tfidf)))
- 
- 
- (println :col-datatypes-tfidf
-          (map
-           (fn [name col]
-             [name (-> col meta :datatype)])
-           (tc/column-names tfidf)
-           (tc/columns tfidf)))
 
 
 
