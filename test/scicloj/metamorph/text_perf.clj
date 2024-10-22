@@ -19,7 +19,7 @@
                     (rand-int 6)])
         #(str/split % #" ")
         (st/make-string-table)
-        :max-lines 10000
+        :max-lines 2000000
         :skip-lines 1
         :datatype-document :int32
         :datatype-term-pos :int32

@@ -106,7 +106,9 @@
           (-> tf :term-count frequencies)))
 
      (is (= [1 2 3 4 5 6 7 8 9 10]
-            (-> tf (tc/head 10) :term-idx)))))
+            (-> tf
+                (tc/order-by :term-idx)
+                (tc/head 10) :term-idx)))))
 
  (deftest tfidf
    (let [ds-and-st
@@ -134,6 +136,8 @@
 
          ]
 
+    (def text text)
+    (def tfidfs tfidfs)
     (ds/rows text)   
     ;;=> [{:term-idx 1, :term-pos 0, :document 0, :label 0} {:term-idx 2, :term-pos 1, :document 0, :label 0} {:term-idx 3, :term-pos 2, :document 0, :label 0} {:term-idx 3, :term-pos 3, :document 0, :label 0} {:term-idx 4, :term-pos 4, :document 0, :label 0} {:term-idx 1, :term-pos 0, :document 1, :label 1} {:term-idx 2, :term-pos 1, :document 1, :label 1} {:term-idx 5, :term-pos 2, :document 1, :label 1} {:term-idx 5, :term-pos 3, :document 1, :label 1} {:term-idx 6, :term-pos 4, :document 1, :label 1} {:term-idx 6, :term-pos 5, :document 1, :label 1} {:term-idx 6, :term-pos 6, :document 1, :label 1}]
 

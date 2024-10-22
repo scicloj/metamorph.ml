@@ -162,9 +162,6 @@
                       max-lines skip-lines)
 
 
-
-
-
         col-size (func/reduce-+ (:index-list index-and-lable-lists))
         _ (debug :count-index-aad-label-lists (count (:index-list index-and-lable-lists)))
         _ (debug :make-document-col-container)
@@ -247,6 +244,59 @@
     (col-impl/construct-column [] data meta-data)))
 
 
+(defn- tf-idf-reducer [term-idx->idf-map]
+  (reductions/reducer
+   [:document :term-idx]
+   (fn [] {:term-counts  (Long2IntOpenHashMap.)
+           :term-counter 0
+           :document nil})
+   (fn [acc ^long document ^long term-idx]
+     (when (zero? (rem document 30000))
+       (println :reduce-tfidf document))
+  
+     (.addTo ^Long2IntOpenHashMap  (:term-counts acc) term-idx 1)
+     {:term-counts (:term-counts acc)
+      :term-counter (inc (:term-counter acc))
+      :document document})
+   (fn [acc-1 acc-2]
+     (throw (Exception. "merge should not get called")))
+  
+   (fn [{:keys [term-counts term-counter document]}]
+     (when (zero? (rem  document 10000))
+       (println :finalize-tfidf document))
+     (let [term->tfidf-fn
+           (fn [[term-index count]]
+             (let [tf (float (/ count term-counter))]
+               {term-index
+                {:tf tf
+                 :tfidf (* tf (get term-idx->idf-map term-index))}}))
+  
+           tf-idfs
+           (apply hf/merge (lznc/map term->tfidf-fn term-counts))]
+  
+  
+       {:term-idx (dt/->int-array  (hf/keys tf-idfs))
+        :term-count (dt/->int-array  (hf/vals term-counts))
+        :tf (dt/->double-array (hf/mapv :tf (hf/vals tf-idfs)))
+        :tfidf (dt/->double-array (hf/mapv :tfidf (hf/vals tf-idfs)))})))
+  )
+
+(defn- >document-col [tfidf-data]
+  (let [tfids-lengths 
+        (map #(-> % :tfidf count)
+             (-> tfidf-data :tfidf-cols))]
+    
+    (col-impl/construct-column
+     []
+     (dt/concat-buffers
+      (lznc/map
+       (fn [doc-id len] (dt/->long-array (dt/const-reader doc-id len)))
+       (-> tfidf-data :document)
+       tfids-lengths
+       ))
+
+     {:name :document :datatype :int32})))
+
 (defn ->tfidf [tidy-text]
 
   (let [idfs (create-term->idf-map tidy-text)
@@ -258,62 +308,19 @@
 
 
         _ (debug :tfidf-data)
+
+        
+
         tfidf-data
         (reductions/group-by-column-agg
          :document
 
-         {:tfidf-cols (reductions/reducer
-                       [:document :term-idx]
-                       (fn [] {:term-counts  (Long2IntOpenHashMap.)
-                               :term-counter 0
-                               :document nil})
-                       (fn [acc ^long document ^long term-idx]
-                         (when (zero? (rem document 10000))
-                           (println :reduce-tfidf document))
+         {:tfidf-cols (tf-idf-reducer term-idx->idf-map)}
+         tidy-text)]
 
-                         (.addTo ^Long2IntOpenHashMap  (:term-counts acc) term-idx 1)
-                         {:term-counts (:term-counts acc)
-                          :term-counter (inc (:term-counter acc))
-                          :document document})
-                       (fn [acc-1 acc-2]
-                         (throw (Exception. "merge should not get called")))
-
-                       (fn [{:keys [term-counts term-counter document]}]
-                         (when (zero? (rem  document 10000))
-                           (println :finalize-tfidf document))
-                         (let [tf-idfs
-                               (apply hf/merge
-                                      (lznc/map
-                                       (fn [[term-index count]]
-                                         (let [tf (float (/ count term-counter))]
-                                           { term-index
-                                            {:tf tf
-                                             :tfidf (* tf
-                                                       (get term-idx->idf-map term-index))}}))
-
-                                       term-counts))]
-
-
-                           {:term-idx (dt/->int-array  (hf/keys tf-idfs))
-                            :term-count (dt/->int-array  (hf/vals term-counts))
-                            :tf (dt/->double-array (hf/mapv :tf (hf/vals tf-idfs)))
-                            :tfidf (dt/->double-array (hf/mapv :tfidf (hf/vals tf-idfs)))})))}
-         tidy-text)
-
-        document-col-data
-        (dt/concat-buffers
-         :int32
-         (map
-          (fn [doc-id len]
-            (dt/->int-array (dt/const-reader doc-id len)))
-          (-> tfidf-data :document)
-          (map #(-> % :tfidf count)
-               (-> tfidf-data :tfidf-cols))))]
-
+     (def tfidf-data tfidf-data)
     (ds/new-dataset
-     [(col-impl/construct-column [] document-col-data
-                                 {:name :document
-                                  :datatype :int32})
+     [(>document-col tfidf-data)
       (->column :tfidf :float32 tfidf-data :tfidf)
       (->column :tf :float32 tfidf-data :tf)
       (->column :term-idx :int32 tfidf-data :term-idx)
