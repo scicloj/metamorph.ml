@@ -19,12 +19,11 @@
                     (rand-int 6)])
         #(str/split % #" ")
         (st/make-string-table)
-        :max-lines 1000000
+        :max-lines 10000
         :skip-lines 1
         :datatype-document :int32
         :datatype-term-pos :int32
         :datatype-metas    :int8)))
-
 
 
 
@@ -68,8 +67,7 @@
           (tc/column-names tfidf)
           (tc/columns tfidf)))
 
- 
-
+(println tfidf)
 
 
  (comment
@@ -89,7 +87,7 @@
    (def term-idf-map 
      (reductions/group-by-column-agg
       :term-idx 
-      {:idf 
+      {:idf
        (reductions/reducer :document
                            (fn [] (hf/mut-set))
                            (fn [acc ^long document]
@@ -97,8 +95,7 @@
                              acc)
                            (fn [uniq-documents-1 uniq-documents-2]
                              (hf/add-all! uniq-documents-1 uniq-documents-2))
-                           (fn [uniq-documents] (Math/log10 (/ N (count uniq-documents)))))
-}
+                           (fn [uniq-documents] (Math/log10 (/ N (count uniq-documents)))))}
       df))
    
    (reductions/group-by-column-agg

@@ -1,23 +1,28 @@
 (ns scicloj.metamorph.ml.text
-  (:require [clj-memory-meter.core :as mm]
-            [clojure.java.io :as io]
-            [clojure.string :as str]
-            [ham-fisted.api :as hf]
-            [ham-fisted.lazy-noncaching :as lznc]
-            [ham-fisted.mut-map :as mut-map]
-            [tablecloth.api :as tc]
-            [tech.v3.dataset :as ds]
-            [tech.v3.dataset.impl.column :as col-impl]
-            [tech.v3.dataset.dynamic-int-list :as dyn-int-list]
-            [tech.v3.dataset.reductions :as reductions]
-            [tech.v3.dataset.string-table :as st]
-            [tech.v3.datatype :as dt]
-            [tech.v3.datatype.functional :as func]
-            [scicloj.metamorph.ml.toydata :as data])
-  (:import [ham_fisted IMutList]
-           [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2LongRBTreeMap Long2LongArrayMap]
-           [java.io BufferedReader]
-           [java.util List Set]))
+  (:require
+   [clj-memory-meter.core :as mm]
+   [clojure.java.io :as io]
+   [clojure.string :as str]
+   [ham-fisted.api :as hf]
+   [ham-fisted.set :as hf-set]
+   [ham-fisted.lazy-noncaching :as lznc]
+   [tablecloth.api :as tc]
+   [tech.v3.dataset :as ds]
+   [tech.v3.dataset.dynamic-int-list :as dyn-int-list]
+   [tech.v3.dataset.impl.column :as col-impl]
+   [tech.v3.dataset.reductions :as reductions]
+   [tech.v3.dataset.string-table :as st]
+   [tech.v3.datatype :as dt]
+   [tech.v3.datatype.functional :as func])
+  (:import
+   [ham_fisted IMutList]
+   [it.unimi.dsi.fastutil.longs
+    Long2IntOpenHashMap
+    Long2FloatLinkedOpenHashMap
+    Long2LongArrayMap
+    Long2LongRBTreeMap]
+   [java.io BufferedReader]
+   [java.util List]))
 
 (set! *warn-on-reflection* true)
 
@@ -51,15 +56,13 @@
 
 (defn- fill-string-table-from-line [^IMutList string-table line-split-fn text-tokenizer-fn acc line]
   (let [[text _] (line-split-fn line)
-        tokens (text-tokenizer-fn text)
-        ]
+        tokens (text-tokenizer-fn text)]
     (.addAllReducible string-table tokens)
     (when (zero? (rem acc 1000))
-      (println 
-        acc " : "
-        :num-tokens (dt/ecount string-table) " - "
-               :num-unique-tokens (dt/ecount (st/int->string string-table)))
-      )
+      (println
+       acc " : "
+       :num-tokens (dt/ecount string-table) " - "
+       :num-unique-tokens (dt/ecount (st/int->string string-table))))
     (inc acc)))
 
 
@@ -150,7 +153,7 @@
            container-type    :jvm-heap
            max-lines Integer/MAX_VALUE}}]
 
-  (let [ _ (debug :parse)
+  (let [_ (debug :parse)
         index-and-lable-lists
         (process-file reader
                       (partial process-line term-index-string-table line-split-fn text-tokenizer-fn)
@@ -205,7 +208,7 @@
 
 (defn create-term->idf-map [tidy-text]
   (debug :create-term->idf-map)
-  (let [ N
+  (let [N
         (->
          (reductions/aggregate
           {:count (reductions/count-distinct :document)}
@@ -217,15 +220,17 @@
     (reductions/group-by-column-agg
      :term-idx
      {:idf (reductions/reducer :document
-                               (fn [] (hf/mut-set))
-                               (fn [^Set acc ^long document]
-                                 (when (zero? (rem document 100000))
+                               (fn [] (hf/long-array-list))
+                               (fn [ acc ^long document]
+                                 (when (zero? (rem document 10000))
                                    (println :reduce-idf document))
-                                 (.add acc document)
-                                 acc)
-                               (fn [uniq-documents-1 uniq-documents-2]
-                                 (hf/add-all! uniq-documents-1 uniq-documents-2))
-                               (fn [uniq-documents] (float (Math/log10 (/ N (count uniq-documents))))))}
+                                 (conj acc document)
+                                 )
+                               (fn [documents-1 documents-2]
+                                 (hf/add-all! documents-1 documents-2))
+                               (fn [documents] 
+                                 (let [n-uniq-docs (count (hf-set/unique documents))]
+                                   (float (Math/log10 (/ N n-uniq-docs))))))}
      tidy-text)))
 
 
@@ -236,7 +241,7 @@
                    (get tfidf-data :tfidf-cols))
          (hf/apply-concat)
          (dt/make-container data-type))
-       
+
         meta-data {:datatype data-type
                    :name col-name}]
     (col-impl/construct-column [] data meta-data)))
@@ -259,80 +264,92 @@
 
          {:tfidf-cols (reductions/reducer
                        [:document :term-idx]
-                       (fn [] {:term-counts (hf/mut-map)
+                       (fn [] {:term-counts  (Long2IntOpenHashMap.)
                                :term-counter 0
                                :document nil})
                        (fn [acc ^long document ^long term-idx]
-                         (println :rfn :document document :term-idx term-idx)
-                         (mut-map/compute! (:term-counts acc)
-                                           term-idx
-                                           (fn [_ v] (if (nil? v)  1 (inc v))))
+                         (when (zero? (rem document 10000))
+                           (println :reduce-tfidf document))
+
+                         (.addTo ^Long2IntOpenHashMap  (:term-counts acc) term-idx 1)
                          {:term-counts (:term-counts acc)
                           :term-counter (inc (:term-counter acc))
                           :document document})
                        (fn [acc-1 acc-2]
-                         (throw (Exception. "merge should not get called"))
-                         )
+                         (throw (Exception. "merge should not get called")))
 
                        (fn [{:keys [term-counts term-counter document]}]
-                         (println :finalize :term-counts term-counts 
-                                  :term-counter term-counter
-                                  :document document)
+                         (when (zero? (rem  document 10000))
+                           (println :finalize-tfidf document))
                          (let [tf-idfs
                                (apply hf/merge
                                       (lznc/map
                                        (fn [[term-index count]]
                                          (let [tf (float (/ count term-counter))]
-                                           (hash-map term-index
-                                                     (hash-map :tf tf
-                                                               :tfidf (* tf
-                                                                         (get term-idx->idf-map term-index))))))
+                                           { term-index
+                                            {:tf tf
+                                             :tfidf (* tf
+                                                       (get term-idx->idf-map term-index))}}))
 
                                        term-counts))]
 
 
-                           {:document (dt/->int-array (hf/repeat document (count term-counts)))
-                            :term-idx (dt/->int-array  (hf/keys tf-idfs))
+                           {:term-idx (dt/->int-array  (hf/keys tf-idfs))
                             :term-count (dt/->int-array  (hf/vals term-counts))
                             :tf (dt/->double-array (hf/mapv :tf (hf/vals tf-idfs)))
                             :tfidf (dt/->double-array (hf/mapv :tfidf (hf/vals tf-idfs)))})))}
-         tidy-text)]
+         tidy-text)
 
+        document-col-data
+        (dt/concat-buffers
+         :int32
+         (map
+          (fn [doc-id len]
+            (dt/->int-array (dt/const-reader doc-id len)))
+          (-> tfidf-data :document)
+          (map #(-> % :tfidf count)
+               (-> tfidf-data :tfidf-cols))))]
 
-  
     (ds/new-dataset
-     [(->column :document :int32 tfidf-data :document)
+     [(col-impl/construct-column [] document-col-data
+                                 {:name :document
+                                  :datatype :int32})
       (->column :tfidf :float32 tfidf-data :tfidf)
       (->column :tf :float32 tfidf-data :tf)
       (->column :term-idx :int32 tfidf-data :term-idx)
-      (->column :term-count :int32 tfidf-data :term-count)
-      
-])))
+      (->column :term-count :int32 tfidf-data :term-count)])))
 
-(comment 
+
+
+
+
+
+
+
+
+(comment
   (import '[org.mapdb DBMaker])
-  
+
   (def db
-    (.. DBMaker 
+    (.. DBMaker
       ;(tempFileDB) 
       ;memoryDB
       ;heapDB
         (fileDB "/tmp/mapdb.bin")
         fileMmapEnable
         make))
-  
 
-  (def db-map (.. db ( hashMap "map") createOrOpen))
-  
+
+  (def db-map (.. db (hashMap "map") createOrOpen))
+
 
 
   (def term-index-string-table
-    (st/->StringTable 
+    (st/->StringTable
      (hf/object-array-list)
      db-map
-     (dyn-int-list/dynamic-int-list)
-     ))
-  
+     (dyn-int-list/dynamic-int-list)))
+
 
 
 
@@ -340,21 +357,19 @@
                 (partial fill-string-table-from-line term-index-string-table
                          (fn [line] [line
                                      (rand-int 6)])
-                         #(str/split % #" ")
-                         )
+                         #(str/split % #" "))
 
                 0
                 100000 1)
-  
-  
-
-  
 
 
-  (-> term-index-string-table st/int->string (get 641057))
-  )
-  
- 
+
+
+
+
+  (-> term-index-string-table st/int->string (get 641057)))
+
+
 (comment
   (require '[clojure.data.csv :as csv]
            '[tablecloth.api :as tc]
@@ -389,25 +404,17 @@
   (def tfidf
     (-> df
         ->tfidf))
-  
+
 
   (-> tfidf :tfidf-cols first)
   ; :term-idx #array-buffer<int64>[68]
   ; :term-count #array-buffer<int64>[68]
   ; :tf #array-buffer<float32>[68]
   ;:tfidf #array-buffer<object>[68]
-  
+
   (mm/measure (-> tfidf :tfidf-cols first) :debug true)
-  
-  
-  ( count
-   )
-  (-> tfidf :tfidf )
-  (mm/measure
-   (-> tfidf :tfidf .data ) :debug true)
-  )
-  
-(* 68 4)
+
+
 
 
 (def m-1 (Long2LongRBTreeMap.))
@@ -415,28 +422,20 @@
 
 (defn fill! [m]
   (run!
-   (fn [[ k v]] 
-     (.put m k v)
-     )
+   (fn [[k v]]
+     (.put m k v))
    (map vector (range 1000) (reverse (range 1000)))))
 
 (fill! m-1)
 (fill! m-2)
 
-(mm/measure m-1) 
+(mm/measure m-1)
 
-(mm/measure m-2) 
+(mm/measure m-2)
 (def it
   (.fastIterator
    (.long2LongEntrySet  m-2)))
 
-(class (.getLongKey (.next it)))
+)
 
 
-(mm/measure
- (long-array [1 2 3 4])
- :debug true)
-
-(mm/measure
- (object-array [1 2 3 4])
- :debug true)
