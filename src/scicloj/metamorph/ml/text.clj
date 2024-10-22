@@ -7,13 +7,15 @@
             [ham-fisted.mut-map :as mut-map]
             [tablecloth.api :as tc]
             [tech.v3.dataset :as ds]
+            [tech.v3.dataset.impl.column :as col-impl]
             [tech.v3.dataset.dynamic-int-list :as dyn-int-list]
             [tech.v3.dataset.reductions :as reductions]
             [tech.v3.dataset.string-table :as st]
             [tech.v3.datatype :as dt]
-            [tech.v3.datatype.functional :as func])
+            [tech.v3.datatype.functional :as func]
+            [scicloj.metamorph.ml.toydata :as data])
   (:import [ham_fisted IMutList]
-           [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap]
+           [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2LongRBTreeMap Long2LongArrayMap]
            [java.io BufferedReader]
            [java.util List Set]))
 
@@ -227,6 +229,18 @@
      tidy-text)))
 
 
+(defn ->column [col-name data-type tfidf-data key]
+  (let [data
+        (->>
+         (lznc/map key
+                   (get tfidf-data :tfidf-cols))
+         (hf/apply-concat)
+         (dt/make-container data-type))
+       
+        meta-data {:datatype data-type
+                   :name col-name}]
+    (col-impl/construct-column [] data meta-data)))
+
 
 (defn ->tfidf [tidy-text]
 
@@ -237,34 +251,29 @@
         (Long2FloatLinkedOpenHashMap. (-> idfs :term-idx dt/->long-array)
                                       (-> idfs :idf dt/->float-array))
 
-        
+
         _ (debug :tfidf-data)
         tfidf-data
         (reductions/group-by-column-agg
          :document
-         
-         {:tfidf-cols (reductions/reducer [:term-idx :document]
+
+         {:tfidf-cols (reductions/reducer [:term-idx]
                                           (fn [] {:term-counts (hf/mut-map)
                                                   :term-counter 0
                                                   :document -1})
-                                          (fn [acc ^long term-idx ^long document]
-                                            (when (zero? (rem document 100000))
-                                              (println :reduce-tfidf document))
+                                          (fn [acc ^long term-idx]
                                             (mut-map/compute! (:term-counts acc)
                                                               term-idx
                                                               (fn [_ v] (if (nil? v)  1 (inc v))))
                                             {:term-counts (:term-counts acc)
-                                             :term-counter (inc (:term-counter acc))
-                                             :document document})
+                                             :term-counter (inc (:term-counter acc))})
                                           (fn [acc-1 acc-2]
                                             (println :combine)
                                             {:term-counts (hf/merge-with + (:term-counts acc-1) (:term-counts acc-2))
-                                             :term-counter (+ (:term-counter acc-1) (:term-counter acc-2))
-                                             :document (or (:document acc-1) (:document acc-2))})
+                                             :term-counter (+ (:term-counter acc-1) (:term-counter acc-2))})
 
-                                          (fn [{:keys [term-counts term-counter document]}]
-                                            (when (zero? (rem document 100000))
-                                              (println :finalize :document document :n-term-counts (count term-counts)))
+                                          (fn [{:keys [term-counts term-counter]}]
+                                            (println :finalize)
                                             (let [tf-idfs
                                                   (apply hf/merge
                                                          (lznc/map
@@ -276,50 +285,38 @@
                                                                                             ;1
                                                                                             (get term-idx->idf-map term-index))))))
 
-                                                          term-counts))]
-                                              {:term-idx (dt/make-container  :int64 (hf/keys tf-idfs))
-                                               :term-count (dt/make-container  :int64 (hf/vals term-counts))
-                                               :tf (dt/make-container :float32 (hf/mapv :tf (hf/vals tf-idfs)))
-                                               :tfidf (dt/make-container :float32  (hf/mapv :tfidf (hf/vals tf-idfs)))
-                                               :document (dt/const-reader document (count tf-idfs))})))}
-         {:map-initial-capacity 100000000}
-         tidy-text)]
+                                                          term-counts))
+
+                                                  c (dt/make-container :float32  (count (hf/vals tf-idfs)))]
 
 
-    (debug :new-dataset)
+
+
+                                              {:term-idx (dt/->int-array  (hf/keys tf-idfs))
+                                               :term-count (dt/->int-array  (hf/vals term-counts))
+                                               :tf (dt/->double-array (hf/mapv :tf (hf/vals tf-idfs)))
+                                               :tfidf (dt/->double-array (hf/mapv :tfidf (hf/vals tf-idfs)))})))}
+         [tidy-text tidy-text])]
+
+
+
+
+    (mm/measure
+     (dt/concat-buffers
+      (lznc/map
+       :tfidf
+       (-> tfidf-data :tfidf-cols))) :debug true)
+
+    
+  
     (ds/new-dataset
-     [(ds/new-column :document
-                     (dt/concat-buffers
-                      (lznc/map
-                       :document
-                       (-> tfidf-data :tfidf-cols)))
-                     {} [])
+     [(->column :tfidf :float32 tfidf-data :tfidf)
+      (->column :tf :float32 tfidf-data :tf)
+      (->column :term-idx :int32 tfidf-data :term-idx)
+      (->column :term-count :int32 tfidf-data :term-count)
+      
+])))
 
-      (ds/new-column :tfidf
-                     (dt/concat-buffers
-                      (lznc/map
-                       :tfidf
-                       (-> tfidf-data :tfidf-cols)))
-                     {} [])
-      (ds/new-column :tf
-                     (dt/concat-buffers
-                      (lznc/map
-                       :tf
-                       (-> tfidf-data :tfidf-cols)))
-                     {} [])
-      (ds/new-column :term-idx
-                     (dt/concat-buffers
-                      (lznc/map
-                       :term-idx
-                       (-> tfidf-data :tfidf-cols)))
-                     {} [])
-      (ds/new-column :term-count
-                     (dt/concat-buffers
-                      (lznc/map
-                       :term-count
-                       (-> tfidf-data :tfidf-cols)))
-                     {} [])
-      ])))
 
 
 (comment 
@@ -399,8 +396,57 @@
   (def df
     (tc/dataset [{:term-idx 1, :term-pos 0, :document 0, :label 0} {:term-idx 2, :term-pos 1, :document 0, :label 0} {:term-idx 3, :term-pos 2, :document 0, :label 0} {:term-idx 3, :term-pos 3, :document 0, :label 0} {:term-idx 4, :term-pos 4, :document 0, :label 0} {:term-idx 1, :term-pos 0, :document 1, :label 1} {:term-idx 2, :term-pos 1, :document 1, :label 1} {:term-idx 5, :term-pos 2, :document 1, :label 1} {:term-idx 5, :term-pos 3, :document 1, :label 1} {:term-idx 6, :term-pos 4, :document 1, :label 1} {:term-idx 6, :term-pos 5, :document 1, :label 1} {:term-idx 6, :term-pos 6, :document 1, :label 1}]))
 
-  (-> df
-      ->tfidf-2)
+  (def tfidf
+    (-> df
+        ->tfidf))
+  
 
+  (-> tfidf :tfidf-cols first)
+  ; :term-idx #array-buffer<int64>[68]
+  ; :term-count #array-buffer<int64>[68]
+  ; :tf #array-buffer<float32>[68]
+  ;:tfidf #array-buffer<object>[68]
+  
+  (mm/measure (-> tfidf :tfidf-cols first) :debug true)
+  
+  
+  ( count
+   )
+  (-> tfidf :tfidf )
+  (mm/measure
+   (-> tfidf :tfidf .data ) :debug true)
   )
+  
+(* 68 4)
 
+
+(def m-1 (Long2LongRBTreeMap.))
+(def m-2 (Long2LongArrayMap.))
+
+(defn fill! [m]
+  (run!
+   (fn [[ k v]] 
+     (.put m k v)
+     )
+   (map vector (range 1000) (reverse (range 1000)))))
+
+(fill! m-1)
+(fill! m-2)
+
+(mm/measure m-1) 
+
+(mm/measure m-2) 
+(def it
+  (.fastIterator
+   (.long2LongEntrySet  m-2)))
+
+(class (.getLongKey (.next it)))
+
+
+(mm/measure
+ (long-array [1 2 3 4])
+ :debug true)
+
+(mm/measure
+ (object-array [1 2 3 4])
+ :debug true)
