@@ -67,7 +67,7 @@
 
 
 
-(def time-format (java.text.SimpleDateFormat. "HH:mm:ss.SSSS"))
+(def time-format  (java.text.SimpleDateFormat. "HH:mm:ss.SSSS"))
 (def prevoius-debug-time (atom (java.time.LocalTime/now)))
 (defn debug [& s]
   (let [duration
@@ -78,7 +78,8 @@
 
     (reset! prevoius-debug-time (java.time.LocalTime/now))
     (println (format "  (%s) " duration))
-    (apply print (.format time-format (java.util.Date.)) " - " s)))
+    (apply print (.format ^java.text.SimpleDateFormat time-format 
+                          (java.util.Date.)) " - " s)))
 
 
 (defn- make-col-container [map-fn container-type res-dataype  container-size datas]
@@ -231,20 +232,20 @@
      tidy-text)))
 
 
-(defn ->column [col-name data-type tfidf-data key]
+(defn ->column [col-name container-type data-type tfidf-data key ]
   (let [data
         (->>
          (lznc/map key
                    (get tfidf-data :tfidf-cols))
          (hf/apply-concat)
-         (dt/make-container data-type))
+         (dt/make-container container-type data-type))
 
         meta-data {:datatype data-type
                    :name col-name}]
     (col-impl/construct-column [] data meta-data)))
 
 
-(defn- tf-idf-reducer [term-idx->idf-map]
+(defn- tf-idf-reducer [term-idx->idf-map container-type]
   (reductions/reducer
    [:document :term-idx]
    (fn [] {:term-counts  (Long2IntOpenHashMap.)
@@ -275,10 +276,10 @@
            (apply hf/merge (lznc/map term->tfidf-fn term-counts))]
   
   
-       {:term-idx (dt/->int-array  (hf/keys tf-idfs))
-        :term-count (dt/->int-array  (hf/vals term-counts))
-        :tf (dt/->double-array (hf/mapv :tf (hf/vals tf-idfs)))
-        :tfidf (dt/->double-array (hf/mapv :tfidf (hf/vals tf-idfs)))})))
+       {:term-idx (dt/make-container container-type :int32  (hf/keys tf-idfs))
+        :term-count (dt/make-container container-type :int32  (hf/vals term-counts))
+        :tf (dt/make-container container-type :float32 (hf/mapv :tf (hf/vals tf-idfs)))
+        :tfidf (dt/make-container container-type :float32 (hf/mapv :tfidf (hf/vals tf-idfs)))})))
   )
 
 (defn- >document-col [tfidf-data]
@@ -290,14 +291,15 @@
      []
      (dt/concat-buffers
       (lznc/map
-       (fn [doc-id len] (dt/->long-array (dt/const-reader doc-id len)))
+       (fn [doc-id len] (dt/make-container :int32 (dt/const-reader doc-id len)))
        (-> tfidf-data :document)
        tfids-lengths
        ))
 
      {:name :document :datatype :int32})))
 
-(defn ->tfidf [tidy-text]
+(defn ->tfidf [tidy-text &  {:keys [container-type] 
+                             :or {container-type :jvm-heap}}]
 
   (let [idfs (create-term->idf-map tidy-text)
 
@@ -315,16 +317,15 @@
         (reductions/group-by-column-agg
          :document
 
-         {:tfidf-cols (tf-idf-reducer term-idx->idf-map)}
+         {:tfidf-cols (tf-idf-reducer term-idx->idf-map container-type)}
          tidy-text)]
 
-     (def tfidf-data tfidf-data)
     (ds/new-dataset
      [(>document-col tfidf-data)
-      (->column :tfidf :float32 tfidf-data :tfidf)
-      (->column :tf :float32 tfidf-data :tf)
-      (->column :term-idx :int32 tfidf-data :term-idx)
-      (->column :term-count :int32 tfidf-data :term-count)])))
+      (->column :tfidf container-type :float32 tfidf-data :tfidf)
+      (->column :tf container-type :float32 tfidf-data :tf)
+      (->column :term-idx container-type :int32 tfidf-data :term-idx)
+      (->column :term-count container-type :int32 tfidf-data :term-count)])))
 
 
 

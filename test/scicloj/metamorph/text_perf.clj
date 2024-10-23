@@ -19,7 +19,7 @@
                     (rand-int 6)])
         #(str/split % #" ")
         (st/make-string-table)
-        :max-lines 2000000
+        :max-lines 10000
         :skip-lines 1
         :datatype-document :int32
         :datatype-term-pos :int32
@@ -50,7 +50,7 @@
            (tc/columns df)))
 
 
-(def tfidf (text/->tfidf df))
+(def tfidf (text/->tfidf df :container-type :jvm-heap))
 (println)
 
 (println :measure-tfidf-ds (mm/measure tfidf))
