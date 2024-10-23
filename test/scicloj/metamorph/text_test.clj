@@ -105,10 +105,15 @@
           {7 4, 1 356, 4 7, 13 1, 6 4, 3 18, 2 36, 11 1, 5 2}
           (-> tf :term-count frequencies)))
 
-     (is (= [1 2 3 4 5 6 7 8 9 10]
-            (-> tf
-                (tc/order-by :term-idx)
-                (tc/head 10) :term-idx)))))
+     (is (= '("50-60" "Did" "Don't" "Is" "It" "Just" "No." "So," "Yes." "a" "and" "anyway?" "around" "box" "could" "difficult" "do" "gift" "gifts." "girlfriend's" "go" "goodies." "great" "has" "how" "if" "is." "it" "it's" "it." "know" "like" "list" "love" "make" "my" "of" "offending" "old" "on" "or" "parents" "people" "person" "product" "receiving" "recipient" "seems" "since" "someone" "specific" "sure" "sweet" "than" "that's" "the" "there's" "this" "thoughtful" "to" "tooth," "value?" "want" "with" "worse" "years" "you" "your")
+            (->>
+             (map int->str
+                  (-> tf
+                      (tc/select-rows (fn [row] (= 0 (:document row))))
+                      :term-idx))
+             sort)))
+
+     ))
 
  (deftest tfidf
    (let [ds-and-st
