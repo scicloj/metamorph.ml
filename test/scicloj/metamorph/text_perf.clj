@@ -21,6 +21,7 @@
         (st/make-string-table)
         :max-lines 10000
         :skip-lines 1
+        :container-type :native-heap
         :datatype-document :int32
         :datatype-term-pos :int32
         :datatype-metas    :int8)))

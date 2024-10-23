@@ -136,13 +136,35 @@
          tfidfs 
          (->
           (text/->tfidf text)
-          (tc/order-by [:term-idx :document :label :term-count :tf :idf :tfidf]))
+          (tc/order-by [:term-idx :document :label :term-count :tf :idf :tfidf])
+          )
 
          tfidfs-native-heap
          (->
-          (text/->tfidf text)
-          (tc/order-by [:term-idx :document :label :term-count :tf :idf :tfidf]))]
+          (text/->tfidf text :container-type :native-heap)
+          (tc/order-by [:term-idx :document :label :term-count :tf :idf :tfidf])
+          )
+         
+         tfidfs-native-buffer
+         (->
+          (text/->tfidf text :container-type :native-buffer)
+          (tc/order-by [:term-idx :document :label :term-count :tf :idf :tfidf])
+          )
+         ]
 
+
+     
+     
+     (-> tfidfs :tfidf .data)
+     ;;=> tech.v3.datatype.io_indexed_buffer$indexed_buffer$reify__16993
+     
+
+     (-> tfidfs-native-buffer :tfidf .data class)
+     ;;=> tech.v3.datatype.io_indexed_buffer$indexed_buffer$reify__16993
+
+     (-> tfidfs-native-heap
+         :tf .data
+         class)
 
      (is (= ;;'("this" "this" "is" "is" "a" "sample" "another" "example")
           '(1 1 2 2 3 4 5 6)
@@ -163,14 +185,14 @@
           (map str (-> tfidfs :tf))))
 
      (is (=
-          ["0.2"
-           "0.14285715"
-           "0.2"
-           "0.14285715"
-           "0.4"
-           "0.2"
-           "0.2857143"
-           "0.42857143"]
+          ["0.20000000298023224"
+           "0.1428571492433548"
+           "0.20000000298023224"
+           "0.1428571492433548"
+           "0.4000000059604645"
+           "0.20000000298023224"
+           "0.2857142984867096"
+           "0.4285714328289032"]
           (map str (-> tfidfs-native-heap :tf))))
 
      (is (= '("0.0" "0.0" "0.0" "0.0"
@@ -179,5 +201,7 @@
                     "0.08600858"
                     "0.12901287")
             (map str (-> tfidfs :tfidf))))))
+ ;;=> #'scicloj.metamorph.text-test/tfidf
+
 
 

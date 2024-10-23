@@ -282,7 +282,7 @@
         :tfidf (dt/make-container container-type :float32 (hf/mapv :tfidf (hf/vals tf-idfs)))})))
   )
 
-(defn- >document-col [tfidf-data]
+(defn- >document-col [tfidf-data container-type]
   (let [tfids-lengths 
         (map #(-> % :tfidf count)
              (-> tfidf-data :tfidf-cols))]
@@ -291,7 +291,7 @@
      []
      (dt/concat-buffers
       (lznc/map
-       (fn [doc-id len] (dt/make-container :int32 (dt/const-reader doc-id len)))
+       (fn [doc-id len] (dt/make-container container-type :int32 (dt/const-reader doc-id len)))
        (-> tfidf-data :document)
        tfids-lengths
        ))
@@ -301,6 +301,7 @@
 (defn ->tfidf [tidy-text &  {:keys [container-type] 
                              :or {container-type :jvm-heap}}]
 
+  (println :container-type container-type)
   (let [idfs (create-term->idf-map tidy-text)
 
         _ (debug :term-idx->idf-map)
@@ -321,7 +322,7 @@
          tidy-text)]
 
     (ds/new-dataset
-     [(>document-col tfidf-data)
+     [(>document-col tfidf-data container-type)
       (->column :tfidf container-type :float32 tfidf-data :tfidf)
       (->column :tf container-type :float32 tfidf-data :tf)
       (->column :term-idx container-type :int32 tfidf-data :term-idx)
