@@ -1,14 +1,19 @@
 (ns scicloj.metamorph.text-perf
-   (:require [clj-memory-meter.core :as mm]
-             [clojure.data.csv :as csv]
-             [clojure.java.io :as io]
-             [clojure.string :as str]
-             [ham-fisted.api :as hf]
-             [scicloj.metamorph.ml.text :as text]
-             [tablecloth.api :as tc]
-             [tech.v3.dataset.reductions :as reductions]
-             [tech.v3.dataset.string-table :as st]
-             [tech.v3.datatype.functional :as func]))
+   (:require
+    [clj-memory-meter.core :as mm]
+    [clojure.data.csv :as csv]
+    [clojure.java.io :as io]
+    [clojure.string :as str]
+    [ham-fisted.api :as hf]
+    [scicloj.metamorph.ml.text :as text]
+    [tablecloth.api :as tc]
+    [tech.v3.dataset.reductions :as reductions]
+    [tech.v3.dataset.string-table :as st]
+    [tech.v3.datatype :as dt]
+    [tech.v3.datatype.functional :as func]
+    [tech.v3.datatype.mmap :as mmap] 
+    ;[tech.v3.datatype.mmap-writer :as mmap-writer]
+    [tech.v3.datatype.mmap-writer :as mmap-writer]))
 
 
 
@@ -19,12 +24,13 @@
                     (rand-int 6)])
         #(str/split % #" ")
         (st/make-string-table)
-        :max-lines 10000
+        :max-lines 10000000
         :skip-lines 1
         :container-type :native-heap
         :datatype-document :int32
-        :datatype-term-pos :int32
-        :datatype-metas    :int8)))
+        :datatype-term-pos :int16
+        :datatype-term-idx :int32
+        :datatype-metas    :byte)))
 
 
 
@@ -33,16 +39,30 @@
     (:dataset (load-reviews))
     (tc/drop-columns [:term-pos])))
 
- 
 
+
+; (mm/measure (-> df :document .data))
+; (mm/measure (-> df :meta .data))
+; (mm/measure (-> df :term-idx .data))
+
+(println)
  (println :df-measures
           (mm/measure df))
  
 
  (println)
- (println :meta
-          (-> df :meta .data class))
  (println :shape (tc/shape df))
+
+ (println :col-classes
+          (map
+           
+           #(hash-map
+             :name %1
+             :class (-> %2 .data class))
+           (tc/column-names df)
+           (tc/columns df))
+          )
+ 
  (println :col-datatypes
           (map
            (fn [name col]
@@ -50,6 +70,7 @@
            (tc/column-names df)
            (tc/columns df)))
 
+(System/exit 0)
 
 (def tfidf (text/->tfidf df :container-type :jvm-heap))
 (println)
@@ -60,7 +81,14 @@
 (println :measure-tfidf-document (mm/measure (:document tfidf)))
 (println :measure-tfidf-term-idx (mm/measure (:term-idx tfidf)))
 
-
+;; (println 
+;;  (-> tfidf :tfidf .data) "\n"
+;;  (-> tfidf :term-count .data) "\n"
+;;  (-> tfidf :document .data) "\n"
+;;  (-> tfidf :term-idx .data) "\n")
+ 
+ 
+ 
 (println :col-datatypes-tfidf
          (map
           (fn [name col]
@@ -159,10 +187,6 @@
 
 
 
-
-
-
-
  ; --------------------------
  (comment
 
@@ -188,11 +212,48 @@
 
    (def text
      (-> (:dataset ds-and-st)
-         (tc/rename-columns {:meta :label}))))
+         (tc/rename-columns {:meta :label})))
+   )
          
-         
 
 
 
+
+
+(require '[tech.v3.datatype.mmap.larray])
+(mmap/set-mmap-impl! tech.v3.datatype.mmap.larray/mmap-file)
+
+
+(var-get #'mmap/mmap-fn*)
+
+;;dd if=/dev/zero of=zeros_10G.bin bs=100000 count=100000
+
+;;dd if=/dev/zero of=zeros_3G.bin bs=100000 count=30000
+
+(def mm
+  (-> 
+   (mmap/mmap-file 
+                   "xxx"
+                   {:mmap-mode :read-write})
+   (tech.v3.datatype.native-buffer/set-native-datatype  
+    :float32
+    ;int8 -> quite some things fail now, alreday printing. others give wrong results, (take 10 x) gives empty list
+    )
+   ))
+
+
+(dt/get-value mm 100)
+(dt/set-value! mm 100 20)
+
+
+(count mm)
+
+(take 100 mm)
+
+
+
+
+;;=> #array-buffer<float32>[1000]
+;;   [30.00, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50...]
 
 

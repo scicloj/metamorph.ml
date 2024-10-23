@@ -83,17 +83,36 @@
 
 
 (defn- make-col-container [map-fn container-type res-dataype  container-size datas]
-  (let [container (dt/make-container container-type res-dataype container-size)
-        metas
-        (apply dt/emap map-fn res-dataype datas)]
+  (println :container-type container-type)
+  (println :n-datas (count datas))
+  (println :container-size container-size)
+  (let [;container (dt/make-container container-type res-dataype container-size)
+        col-datas
+        (->>
+         (apply dt/emap map-fn nil datas)
+         (remove empty?) ; prevennts 'buffer type class clojure.lang.PersistentList$EmptyList is not convertible to buffer'
+         )]
 
-    (dt/coalesce-blocks! container metas)))
+    
 
-(defn- make-metas-col-container [index-and-lable-lists col-size datatype]
+    (println :n-col-datas (count col-datas))
+    ;(def container-size container-size)
+    (def res-dataype res-dataype)
+    (def map-fn map-fn )
+    (def datas datas)
+    (def container container )
+    (def col-datas col-datas)
+    (dt/concat-buffers res-dataype col-datas)))
+
+(map count col-datas)
+
+(defn- make-metas-col-container [index-and-lable-lists col-size datatype container-type]
   (make-col-container
    (fn [index meta]
      (dt/const-reader meta index))
-   :jvm-heap
+   (if (= :object datatype)
+     :jvm-heap
+     container-type)
    datatype
    col-size
    [(:index-list index-and-lable-lists)
@@ -107,8 +126,9 @@
    container-type
    datatype
    col-size
-   [(range)
+   [(range (count (:index-list index-and-lable-lists)))
     (:index-list index-and-lable-lists)]))
+
 
 
 (defn- make-term-pos-col-container [index-and-lable-lists col-size datatype container-type]
@@ -146,11 +166,13 @@
              datatype-document
              datatype-term-pos
              datatype-metas
+             datatype-term-idx
              container-type]
       :or {skip-lines  0
            datatype-document :int32
            datatype-term-pos :int16
            datatype-metas    :int8
+           datatype-term-idx :int32
            container-type    :jvm-heap
            max-lines Integer/MAX_VALUE}}]
 
@@ -158,7 +180,7 @@
         index-and-lable-lists
         (process-file reader
                       (partial process-line term-index-string-table line-split-fn text-tokenizer-fn)
-                      {:meta-list (dt/make-list :object)
+                      {:meta-list (dt/make-list datatype-metas)
                        :index-list (dyn-int-list/dynamic-int-list)}
                       max-lines skip-lines)
 
@@ -174,14 +196,24 @@
 
 
         _ (debug :make-metas-col-container)
-        metas (make-metas-col-container index-and-lable-lists col-size datatype-metas)
+        metas (make-metas-col-container index-and-lable-lists col-size datatype-metas container-type)
+
+        _ (debug :make-term-indx-container)
+        term-idx 
+        (if (= :native-heap container-type )
+            ;; if native, copy string-table and enforce native
+            ;; else re-use string table
+            (dt/make-container container-type datatype-term-idx
+                               (st/indices term-index-string-table))
+            (st/indices term-index-string-table))
 
         _ (debug :measure-term-index-st (mm/measure (.data term-index-string-table)))
+        _ (debug :measure-term-index (mm/measure term-idx))
         _ (debug :measure-term-pos (mm/measure term-pos))
         _ (debug :measure-document-idx (mm/measure document-index))
         _ (debug :measure-metas (mm/measure metas))
 
-        col-term-index (ds/new-column :term-idx  (st/indices term-index-string-table) {} [])
+        col-term-index (ds/new-column :term-idx term-idx  {} [])
         col-term-pos (ds/new-column :term-pos  term-pos {} [])
         col-document (ds/new-column :document document-index {} [])
         col-meta (ds/new-column :meta metas {} [])
@@ -232,16 +264,34 @@
      tidy-text)))
 
 
-(defn ->column [col-name container-type data-type tfidf-data key ]
+(defn ->column [col-name data-type tfidf-data key ]
+
+ (debug :->-col col-name)
   (let [data
         (->>
          (lznc/map key
                    (get tfidf-data :tfidf-cols))
-         (hf/apply-concat)
-         (dt/make-container container-type data-type))
+         
+         (dt/concat-buffers))
 
         meta-data {:datatype data-type
                    :name col-name}]
+    (col-impl/construct-column [] data meta-data)))
+
+(defn- >document-col [tfidf-data data-type]
+ (debug :->document-col)
+  (let [tfids-lengths
+        (map #(-> % :tfidf count)
+             (-> tfidf-data :tfidf-cols))
+        data
+        (->>
+         (lznc/map
+          (fn [doc-id len] (dt/const-reader doc-id len))
+          (-> tfidf-data :document)
+          tfids-lengths)
+         (dt/concat-buffers))
+        meta-data{:name :document :datatype data-type}]
+
     (col-impl/construct-column [] data meta-data)))
 
 
@@ -252,7 +302,7 @@
            :term-counter 0
            :document nil})
    (fn [acc ^long document ^long term-idx]
-     (when (zero? (rem document 30000))
+     (when (zero? (rem document 10000))
        (println :reduce-tfidf document))
   
      (.addTo ^Long2IntOpenHashMap  (:term-counts acc) term-idx 1)
@@ -263,7 +313,7 @@
      (throw (Exception. "merge should not get called")))
   
    (fn [{:keys [term-counts term-counter document]}]
-     (when (zero? (rem  document 10000))
+     (when (zero? (rem  document 1000))
        (println :finalize-tfidf document))
      (let [term->tfidf-fn
            (fn [[term-index count]]
@@ -276,27 +326,12 @@
            (apply hf/merge (lznc/map term->tfidf-fn term-counts))]
   
   
-       {:term-idx (dt/make-container container-type :int32  (hf/keys tf-idfs))
-        :term-count (dt/make-container container-type :int32  (hf/vals term-counts))
-        :tf (dt/make-container container-type :float32 (hf/mapv :tf (hf/vals tf-idfs)))
-        :tfidf (dt/make-container container-type :float32 (hf/mapv :tfidf (hf/vals tf-idfs)))})))
+       {:term-idx (dt/make-container container-type   (hf/keys tf-idfs))
+        :term-count (dt/make-container container-type   (hf/vals term-counts))
+        :tf (dt/make-container container-type  (hf/mapv :tf (hf/vals tf-idfs)))
+        :tfidf (dt/make-container container-type  (hf/mapv :tfidf (hf/vals tf-idfs)))})))
   )
 
-(defn- >document-col [tfidf-data container-type]
-  (let [tfids-lengths 
-        (map #(-> % :tfidf count)
-             (-> tfidf-data :tfidf-cols))]
-    
-    (col-impl/construct-column
-     []
-     (dt/concat-buffers
-      (lznc/map
-       (fn [doc-id len] (dt/make-container container-type :int32 (dt/const-reader doc-id len)))
-       (-> tfidf-data :document)
-       tfids-lengths
-       ))
-
-     {:name :document :datatype :int32})))
 
 (defn ->tfidf [tidy-text &  {:keys [container-type] 
                              :or {container-type :jvm-heap}}]
@@ -321,8 +356,9 @@
          {:tfidf-cols (tf-idf-reducer term-idx->idf-map container-type)}
          tidy-text)]
 
+    (println :new-dataset)
     (ds/new-dataset
-     [(>document-col tfidf-data container-type)
+     [(>document-col tfidf-data container-type :int32)
       (->column :tfidf container-type :float32 tfidf-data :tfidf)
       (->column :tf container-type :float32 tfidf-data :tf)
       (->column :term-idx container-type :int32 tfidf-data :term-idx)
