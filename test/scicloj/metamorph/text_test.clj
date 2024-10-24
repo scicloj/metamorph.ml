@@ -26,7 +26,7 @@
 
  (deftest containertype
 
-   (let [{:keys [dataset]}
+   (let [{:keys [datasets]}
          (text/->tidy-text (io/reader "test/data/reviews.csv")
                            parse-review-line
                            #(str/split % #" ")
@@ -34,7 +34,8 @@
                            :max-lines 5
                            :skip-lines 1
                            :container-type :native-heap
-                           :datatype-metas :int16)]
+                           :datatype-metas :int16)
+         dataset (first datasets)]
 
      
      (is (str/includes? 
@@ -46,7 +47,7 @@
 
  (deftest ->tidy-text-with-object
 
-   (let [{:keys [dataset]}
+   (let [{:keys [datasets]}
          (text/->tidy-text (io/reader "test/data/reviews.csv")
                            parse-review-line-as-maps
                            #(str/split % #" ")
@@ -54,7 +55,8 @@
                            :max-lines 5
                            :skip-lines 1
                            :container-type :jvm-heap
-                           :datatype-metas :object)]
+                           :datatype-metas :object)
+         dataset (first datasets)]
      (is (not (instance? NativeBuffer (-> dataset :document .data))))
 
      (is (= {:label 3}
@@ -69,7 +71,7 @@
                                :max-lines 5
                                :skip-lines 1))
 
-         text (:dataset tidy)
+         text (first (:datasets tidy))
          int->str (:int->str tidy)
          tf (-> 
              (text/->tfidf text)
@@ -133,7 +135,7 @@
           :skip-lines 0)
 
          text
-         (-> (:dataset ds-and-st)
+         (-> (first (:datasets ds-and-st))
              (tc/rename-columns {:meta :label}))
 
          tfidfs 

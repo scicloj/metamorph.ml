@@ -121,12 +121,12 @@
 
 
 (defn ->tidy-text
-  "Reads, parses and tokenizes a text file into a tech.v3.dataset in the tidy-text format,
+  "Reads, parses and tokenizes a text file into a seq of tech.v3.dataset in the tidy-text format,
    so one word per row. 
    It does the parsing and conversion strictly line based, so it should work for large documents.
 
    Initial tests show that each byte of text size need one byte of heap.
-   So a 8 GB text fil, can be sucessfully loaded when having at least 8 GB of heap for the JVM
+   So a 8 GB text file can be sucessfully loaded when having at least 8 GB of heap for the JVM
 
 
    `line-split-fn` A fn which should seperate a single line of input in text and `other`
@@ -179,13 +179,13 @@
         metas (make-metas-col-container index-and-lable-lists col-size datatype-metas container-type)
 
         _ (debug :make-term-indx-container)
-        term-idx 
-        (if (= :native-heap container-type )
+        term-idx
+        (if (= :native-heap container-type)
             ;; if native, copy string-table and enforce native
             ;; else re-use string table
-            (dt/make-container container-type datatype-term-idx
-                               (st/indices term-index-string-table))
-            (st/indices term-index-string-table))
+          (dt/make-container container-type datatype-term-idx
+                             (st/indices term-index-string-table))
+          (st/indices term-index-string-table))
 
         _ (debug :measure-term-index-st (mm/measure (.data term-index-string-table)))
         _ (debug :measure-term-index (mm/measure term-idx))
@@ -213,7 +213,7 @@
     (debug :measure-ds (mm/measure ds))
 
 
-    {:dataset ds
+    {:datasets [ds]
      :int->str (st/int->string term-index-string-table)}))
 
 (defn create-term->idf-map [tidy-text]

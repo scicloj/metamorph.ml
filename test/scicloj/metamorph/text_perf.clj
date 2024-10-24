@@ -56,7 +56,7 @@
 
  (def df
    (->
-    (:dataset (load-reviews))
+    (first (:datasets (load-reviews)))
     (tc/drop-columns [:term-pos])))
 
 
@@ -90,7 +90,6 @@
            (tc/column-names df)
            (tc/columns df)))
 
-(System/exit 0)
 
 (def tfidf (text/->tfidf df :container-type :jvm-heap))
 (println)
@@ -160,52 +159,62 @@
 
 (comment
   
-  ) 
+   
 
-(require '[tech.v3.datatype.mmap.larray]
-         '[tech.v3.dataset :as ds])
-(mmap/set-mmap-impl! tech.v3.datatype.mmap.larray/mmap-file)
+  (require '[tech.v3.datatype.mmap.larray]
+           '[tech.v3.dataset :as ds])
+  
+  (mmap/set-mmap-impl! tech.v3.datatype.mmap.larray/mmap-file)
+  
 
 
-(var-get #'mmap/mmap-fn*)
+  (var-get #'mmap/mmap-fn*)
+  
 
 ;;dd if=/dev/zero of=zeros_10G.bin bs=100000 count=100000
-
+  
 ;;dd if=/dev/zero of=zeros_3G.bin bs=100000 count=30000
-
-(def mm
-  (-> 
-   (mmap/mmap-file 
-                   "zeros1G.bin"
-                   {:mmap-mode :read-write})
-   (tech.v3.datatype.native-buffer/set-native-datatype  
-    :float32
+  
+  (def mm
+    (-> 
+     (mmap/mmap-file 
+      "zeros1G.bin"
+      {:mmap-mode :read-write})
+     (tech.v3.datatype.native-buffer/set-native-datatype  
+      :float32
     ;int8 -> quite some things fail now, alreday printing. others give wrong results, (take 10 x) gives empty list
-    )
-   ))
+      )
+     ))
+  
 
 
-(def c
-  (ds/new-column :test mm {} []))
+  (def c
+    (ds/new-column :test mm {} []))
+  
 
-(-> c .data)
-(mm/measure mm)
+  (-> c .data)
+  
+  (mm/measure mm)
+  
 
-(dt/copy! 
- (dt/const-reader)
- c)
-(dt/get-value mm 100)
-(dt/set-value! mm 100 20)
-
-
-(count mm)
-
-(take 100 mm)
-
-
+  (dt/copy! 
+   (dt/const-reader 10 268435456)
+   c)
+  
+  (dt/get-value mm 100)
+  
+  (dt/set-value! mm 100 20)
+  
 
 
-;;=> #array-buffer<float32>[1000]
-;;   [30.00, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50, 20.50...]
+  (count mm)
+  
+
+  (take 100 mm)
+  )
+
+
+
+
 
 
