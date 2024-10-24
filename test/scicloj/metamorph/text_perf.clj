@@ -7,15 +7,38 @@
     [ham-fisted.api :as hf]
     [scicloj.metamorph.ml.text :as text]
     [tablecloth.api :as tc]
+    [tech.v3.dataset.dynamic-int-list :as dyn-int-list]
     [tech.v3.dataset.reductions :as reductions]
     [tech.v3.dataset.string-table :as st]
     [tech.v3.datatype :as dt]
     [tech.v3.datatype.functional :as func]
-    [tech.v3.datatype.mmap :as mmap] 
-    ;[tech.v3.datatype.mmap-writer :as mmap-writer]
-    [tech.v3.datatype.mmap-writer :as mmap-writer]))
+    [tech.v3.datatype.mmap :as mmap] ;[tech.v3.datatype.mmap-writer :as mmap-writer]
+))
 
 
+(import '[org.mapdb DBMaker])
+ 
+ (def db
+   (.. DBMaker
+       ;(tempFileDB) 
+       memoryDB
+       ;heapDB
+       ;(fileDB "/tmp/mapdb.bin")
+       ;fileMmapEnable
+       make))
+ 
+ 
+ (def db-map (.. db (hashMap "map") createOrOpen))
+ 
+ 
+ 
+ (def db-backed-term-index-string-table
+   (st/->StringTable
+    (hf/object-array-list)
+    db-map
+    (dyn-int-list/dynamic-int-list)))
+
+ (def heap-string-table (st/make-string-table))
 
  (defn load-reviews []
    (-> (text/->tidy-text
@@ -23,7 +46,7 @@
         (fn [line] [line
                     (rand-int 6)])
         #(str/split % #" ")
-        (st/make-string-table)
+        db-backed-term-index-string-table
         :max-lines 10000000
         :skip-lines 1
         :container-type :native-heap
