@@ -15,7 +15,8 @@
    [ham_fisted IMutList]
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap]
    [java.io BufferedReader]
-   [java.util List]))
+   [java.util List]
+   [org.mapdb DBMaker]))
 
 (set! *warn-on-reflection* true)
 ;;(set! *unchecked-math* :warn-on-boxed)
@@ -45,7 +46,7 @@
       acc)))
 
 
-(defn- fill-string-table-from-line [^IMutList string-table line-split-fn text-tokenizer-fn acc line]
+(defn- fill-string-table-from-line! [^IMutList string-table line-split-fn text-tokenizer-fn acc line]
   (let [[text _] (line-split-fn line)
         tokens (text-tokenizer-fn text)]
     (.addAllReducible string-table tokens)
@@ -56,6 +57,29 @@
        :num-unique-tokens (dt/ecount (st/int->string string-table))))
     (inc acc)))
 
+
+
+
+
+(defn heap-string-table []
+  (st/make-string-table [])
+  )
+
+(defn mapdb-string-table [^org.mapdb.DB db]
+  (st/->StringTable
+   (hf/object-array-list)
+   (.. db (hashMap "map") createOrOpen)
+   (dyn-int-list/dynamic-int-list)))
+
+
+(defn fill-string-table! [reader term-index-string-table
+                           line-split-fn text-tokenizer-fn
+                           max-lines skip-lines]
+
+  (process-file reader
+                (partial fill-string-table-from-line! term-index-string-table line-split-fn text-tokenizer-fn)
+                0
+                max-lines skip-lines))
 
 
 (def time-format  (java.text.SimpleDateFormat. "HH:mm:ss.SSSS"))
@@ -118,6 +142,8 @@
    datatype
    col-size
    [(:index-list index-and-lable-lists)]))
+
+
 
 
 (defn ->tidy-text

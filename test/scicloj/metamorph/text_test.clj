@@ -8,6 +8,7 @@
     [tablecloth.api :as tc]
     [tech.v3.dataset.string-table :as st])
    (:import
+    [org.mapdb DBMaker]
     [tech.v3.datatype.native_buffer NativeBuffer]))
 
 
@@ -206,6 +207,41 @@
                     "0.08600858"
                     "0.12901287")
             (map str (-> tfidfs :tfidf))))))
+
+(defn- text->string-table [db]
+  (let [string-table (text/mapdb-string-table db)]
+    (text/fill-string-table!
+     (io/reader "test/data/reviews.csv")
+     string-table
+     parse-review-line
+     #(str/split % #" ")
+     10
+     1)
+    string-table))
+
+
+
+(deftest fill-string-table-memory-db!
+  (let [ memory-db
+        (.. DBMaker
+            memoryDB
+            make)
+        ]
+    (is (= [ "Is" "it" "a" "great" "product" "or" "great" "value?"]
+           (take 8 (text->string-table memory-db))))))
+
+
+(deftest fill-string-table--temp-file!
+  (let [temp-file-db
+        (.. DBMaker
+            (tempFileDB)
+            fileMmapEnable
+            make)]
+    (is (= ["Is" "it" "a" "great" "product" "or" "great" "value?"]
+           (take 8 (text->string-table temp-file-db))))))
+
+
+
 
 
 
