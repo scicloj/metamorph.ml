@@ -1,12 +1,9 @@
 (ns scicloj.metamorph.ml.text
   (:require
    [clj-memory-meter.core :as mm]
-   [clojure.java.io :as io]
-   [clojure.string :as str]
    [ham-fisted.api :as hf]
-   [ham-fisted.set :as hf-set]
    [ham-fisted.lazy-noncaching :as lznc]
-   [tablecloth.api :as tc]
+   [ham-fisted.set :as hf-set]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.dynamic-int-list :as dyn-int-list]
    [tech.v3.dataset.impl.column :as col-impl]
@@ -16,18 +13,12 @@
    [tech.v3.datatype.functional :as func])
   (:import
    [ham_fisted IMutList]
-   [it.unimi.dsi.fastutil.longs
-    Long2IntOpenHashMap
-    Long2FloatLinkedOpenHashMap
-    Long2LongArrayMap
-    Long2LongRBTreeMap]
+   [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap]
    [java.io BufferedReader]
    [java.util List]))
 
 (set! *warn-on-reflection* true)
-
-
-
+;;(set! *unchecked-math* :warn-on-boxed)
 
 
 (defn- process-file [reader line-func
@@ -92,19 +83,8 @@
          (apply dt/emap map-fn nil datas)
          (remove empty?) ; prevennts 'buffer type class clojure.lang.PersistentList$EmptyList is not convertible to buffer'
          )]
-
-    
-
-    (println :n-col-datas (count col-datas))
-    ;(def container-size container-size)
-    (def res-dataype res-dataype)
-    (def map-fn map-fn )
-    (def datas datas)
-    (def container container )
-    (def col-datas col-datas)
     (dt/concat-buffers res-dataype col-datas)))
 
-(map count col-datas)
 
 (defn- make-metas-col-container [index-and-lable-lists col-size datatype container-type]
   (make-col-container
@@ -326,10 +306,10 @@
            (apply hf/merge (lznc/map term->tfidf-fn term-counts))]
   
   
-       {:term-idx (dt/make-container container-type   (hf/keys tf-idfs))
-        :term-count (dt/make-container container-type   (hf/vals term-counts))
-        :tf (dt/make-container container-type  (hf/mapv :tf (hf/vals tf-idfs)))
-        :tfidf (dt/make-container container-type  (hf/mapv :tfidf (hf/vals tf-idfs)))})))
+       {:term-idx (dt/make-container container-type :int32  (hf/keys tf-idfs))
+        :term-count (dt/make-container container-type  :int32 (hf/vals term-counts))
+        :tf (dt/make-container container-type :float32 (hf/mapv :tf (hf/vals tf-idfs)))
+        :tfidf (dt/make-container container-type :float32 (hf/mapv :tfidf (hf/vals tf-idfs)))})))
   )
 
 
@@ -347,8 +327,6 @@
 
         _ (debug :tfidf-data)
 
-        
-
         tfidf-data
         (reductions/group-by-column-agg
          :document
@@ -358,11 +336,11 @@
 
     (println :new-dataset)
     (ds/new-dataset
-     [(>document-col tfidf-data container-type :int32)
-      (->column :tfidf container-type :float32 tfidf-data :tfidf)
-      (->column :tf container-type :float32 tfidf-data :tf)
-      (->column :term-idx container-type :int32 tfidf-data :term-idx)
-      (->column :term-count container-type :int32 tfidf-data :term-count)])))
+     [(>document-col tfidf-data container-type)
+      (->column :tfidf container-type tfidf-data :tfidf)
+      (->column :tf container-type tfidf-data :tf)
+      (->column :term-idx container-type tfidf-data :term-idx)
+      (->column :term-count container-type tfidf-data :term-count)])))
 
 
 
@@ -370,117 +348,5 @@
 
 
 
-
-
-(comment
-  (import '[org.mapdb DBMaker])
-
-  (def db
-    (.. DBMaker
-      ;(tempFileDB) 
-      ;memoryDB
-      ;heapDB
-        (fileDB "/tmp/mapdb.bin")
-        fileMmapEnable
-        make))
-
-
-  (def db-map (.. db (hashMap "map") createOrOpen))
-
-
-
-  (def term-index-string-table
-    (st/->StringTable
-     (hf/object-array-list)
-     db-map
-     (dyn-int-list/dynamic-int-list)))
-
-
-
-
-  (process-file (io/reader "bigdata/repeatedAbstrcats_3.7m_.txt")
-                (partial fill-string-table-from-line term-index-string-table
-                         (fn [line] [line
-                                     (rand-int 6)])
-                         #(str/split % #" "))
-
-                0
-                100000 1)
-
-
-
-
-
-
-  (-> term-index-string-table st/int->string (get 641057)))
-
-
-(comment
-  (require '[clojure.data.csv :as csv]
-           '[tablecloth.api :as tc]
-           '[ham-fisted.lazy-noncaching :as lznc]
-           '[ham-fisted.mut-map :as mut-map]
-           '[criterium.core :as criterium])
-  (set! *warn-on-reflection* true)
-  (import '[it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap]
-          [java.util List])
-
-  (defn- parse-review-line [line]
-    (let [splitted (first
-                    (csv/read-csv line))]
-      [(first splitted)
-       (dec (Integer/parseInt (second splitted)))]))
-
-  (def df
-    (-> (->tidy-text (io/reader "test/data/reviews.csv")
-                     parse-review-line
-                     #(str/split % #" ")
-                     (st/make-string-table)
-                     :max-lines 5
-                     :skip-lines 1)
-
-        :dataset
-        (tc/drop-columns [:term-pos :meta])))
-
-
-  (def df
-    (tc/dataset [{:term-idx 1, :term-pos 0, :document 0, :label 0} {:term-idx 2, :term-pos 1, :document 0, :label 0} {:term-idx 3, :term-pos 2, :document 0, :label 0} {:term-idx 3, :term-pos 3, :document 0, :label 0} {:term-idx 4, :term-pos 4, :document 0, :label 0} {:term-idx 1, :term-pos 0, :document 1, :label 1} {:term-idx 2, :term-pos 1, :document 1, :label 1} {:term-idx 5, :term-pos 2, :document 1, :label 1} {:term-idx 5, :term-pos 3, :document 1, :label 1} {:term-idx 6, :term-pos 4, :document 1, :label 1} {:term-idx 6, :term-pos 5, :document 1, :label 1} {:term-idx 6, :term-pos 6, :document 1, :label 1}]))
-
-  (def tfidf
-    (-> df
-        ->tfidf))
-
-
-  (-> tfidf :tfidf-cols first)
-  ; :term-idx #array-buffer<int64>[68]
-  ; :term-count #array-buffer<int64>[68]
-  ; :tf #array-buffer<float32>[68]
-  ;:tfidf #array-buffer<object>[68]
-
-  (mm/measure (-> tfidf :tfidf-cols first) :debug true)
-
-
-
-
-(def m-1 (Long2LongRBTreeMap.))
-(def m-2 (Long2LongArrayMap.))
-
-(defn fill! [m]
-  (run!
-   (fn [[k v]]
-     (.put m k v))
-   (map vector (range 1000) (reverse (range 1000)))))
-
-(fill! m-1)
-(fill! m-2)
-
-(mm/measure m-1)
-
-(mm/measure m-2)
-(def it
-  (.fastIterator
-   (.long2LongEntrySet  m-2)))
-
-)
 
 

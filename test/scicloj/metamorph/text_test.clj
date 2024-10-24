@@ -1,13 +1,14 @@
 (ns scicloj.metamorph.text-test
-   (:require [clojure.data.csv :as csv]
-             [clojure.java.io :as io]
-             [clojure.string :as str]
-             [clojure.test :refer [deftest is]]
-             [scicloj.metamorph.ml.text :as text]
-             [tablecloth.api :as tc]
-             [tech.v3.dataset :as ds]
-             [tech.v3.dataset.string-table :as st])
-   (:import [tech.v3.datatype.native_buffer NativeBuffer]))
+   (:require
+    [clojure.data.csv :as csv]
+    [clojure.java.io :as io]
+    [clojure.string :as str]
+    [clojure.test :refer [deftest is]]
+    [scicloj.metamorph.ml.text :as text]
+    [tablecloth.api :as tc]
+    [tech.v3.dataset.string-table :as st])
+   (:import
+    [tech.v3.datatype.native_buffer NativeBuffer]))
 
 
  (defn- parse-review-line [line]
@@ -35,8 +36,10 @@
                            :container-type :native-heap
                            :datatype-metas :int16)]
 
-     (is  (instance? NativeBuffer
-                     (-> dataset :document .data)))
+     
+     (is (str/includes? 
+                        (-> dataset :document .data class .getName)
+          "concat"))
      (is (= 3
             (-> dataset :meta first)))))
 
@@ -201,7 +204,6 @@
                     "0.08600858"
                     "0.12901287")
             (map str (-> tfidfs :tfidf))))))
- ;;=> #'scicloj.metamorph.text-test/tfidf
 
 
 

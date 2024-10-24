@@ -1,19 +1,16 @@
 (ns scicloj.metamorph.text-perf
    (:require
     [clj-memory-meter.core :as mm]
-    [clojure.data.csv :as csv]
     [clojure.java.io :as io]
     [clojure.string :as str]
     [ham-fisted.api :as hf]
     [scicloj.metamorph.ml.text :as text]
     [tablecloth.api :as tc]
+    [tech.v3.dataset :as ds]
     [tech.v3.dataset.dynamic-int-list :as dyn-int-list]
-    [tech.v3.dataset.reductions :as reductions]
     [tech.v3.dataset.string-table :as st]
     [tech.v3.datatype :as dt]
-    [tech.v3.datatype.functional :as func]
-    [tech.v3.datatype.mmap :as mmap] ;[tech.v3.datatype.mmap-writer :as mmap-writer]
-))
+    [tech.v3.datatype.mmap :as mmap]))
 
 
 (import '[org.mapdb DBMaker])
@@ -47,7 +44,7 @@
                     (rand-int 6)])
         #(str/split % #" ")
         db-backed-term-index-string-table
-        :max-lines 10000000
+        :max-lines 10000
         :skip-lines 1
         :container-type :native-heap
         :datatype-document :int32
@@ -122,56 +119,7 @@
 (println tfidf)
 
 
- (comment
-   (def N
-     (->
-      (reductions/aggregate
-       {:count (reductions/count-distinct :document)}
-       df)
-      :count
-      first))
-   
-
-   df
-   
-
-
-   (def term-idf-map 
-     (reductions/group-by-column-agg
-      :term-idx 
-      {:idf
-       (reductions/reducer :document
-                           (fn [] (hf/mut-set))
-                           (fn [acc ^long document]
-                             (.add acc document)
-                             acc)
-                           (fn [uniq-documents-1 uniq-documents-2]
-                             (hf/add-all! uniq-documents-1 uniq-documents-2))
-                           (fn [uniq-documents] (Math/log10 (/ N (count uniq-documents)))))}
-      df))
-   
-   (reductions/group-by-column-agg
-    :document
-    {:tf
-     (reductions/reducer :term-idx
-                         (fn [] (hf/mut-list))
-                         (fn [acc ^long term-idx]
-                           (.add acc term-idx)
-                           acc)
-                         (fn [term-idx-1 term-idx-2]
-                           (hf/add-all! term-idx-1 term-idx-2))
-                         (fn [term-idx] 
-                           (let [ freqs (hf/frequencies term-idx)
-                                 n-term (count term-idx)
-                                 term-counts (hf/vals freqs)]
-                             {:term-idx term-idx
-                              :term-count term-counts
-                              :tf (seq (func// term-counts (float n-term)))}
-                             )
-                           ))}
-    df)
-
-   )
+ 
 
 
 
@@ -210,40 +158,12 @@
 
 
 
- ; --------------------------
- (comment
+(comment
+  
+  ) 
 
-   (defn- parse-review-line [line]
-     (let [splitted (first
-                     (csv/read-csv line))]
-       [(first splitted)
-        (dec (Integer/parseInt (second splitted)))]))
-
-   (def ds-and-st
-
-     (text/->tidy-text
-      (io/reader
-       ;;https://en.wikipedia.org/wiki/Tf%E2%80%93idf
-       (java.io.StringReader. "this is a a sample,1\nthis is another another example example example,2"))
-       ;(io/reader "test/data/reviews.csv")
-      parse-review-line
-      #(str/split % #" ")
-      :max-lines 5
-      :skip-lines 0))
-
-
-
-   (def text
-     (-> (:dataset ds-and-st)
-         (tc/rename-columns {:meta :label})))
-   )
-         
-
-
-
-
-
-(require '[tech.v3.datatype.mmap.larray])
+(require '[tech.v3.datatype.mmap.larray]
+         '[tech.v3.dataset :as ds])
 (mmap/set-mmap-impl! tech.v3.datatype.mmap.larray/mmap-file)
 
 
@@ -256,7 +176,7 @@
 (def mm
   (-> 
    (mmap/mmap-file 
-                   "xxx"
+                   "zeros1G.bin"
                    {:mmap-mode :read-write})
    (tech.v3.datatype.native-buffer/set-native-datatype  
     :float32
@@ -265,6 +185,15 @@
    ))
 
 
+(def c
+  (ds/new-column :test mm {} []))
+
+(-> c .data)
+(mm/measure mm)
+
+(dt/copy! 
+ (dt/const-reader)
+ c)
 (dt/get-value mm 100)
 (dt/set-value! mm 100 20)
 
