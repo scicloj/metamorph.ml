@@ -31,19 +31,33 @@
                   (drop skip-lines
                         (line-seq rdr))))))
 
-(defn process-line [^IMutList string-table line-split-fn text-tokenizer-fn acc line]
+(defn- put-retrieve-token! [token->long token]
+  (if (contains? token->long token)
+    (get token->long token)
+    (let [next-token (hf/constant-count token->long)]
+      (hf/assoc! token->long token next-token)
+      next-token)))
+
+
+(defn process-line [token->long line-split-fn text-tokenizer-fn acc line]
   (let [[text meta] (line-split-fn line)
         tokens (text-tokenizer-fn text)
 
-        index-count (count tokens)]
-    (.addAllReducible  string-table tokens)
-    (let [meta-list (:meta-list acc)
-          index-list (:index-list acc)
-          _ (.add ^List meta-list meta)
-          _ (.add ^List index-list index-count)]
-      (when (zero? (rem (dt/ecount index-list) 10000))
-        (println (dt/ecount index-list)))
-      acc)))
+        token-indices (map (partial put-retrieve-token! token->long) tokens)
+        index-count (count tokens)
+        meta-list (:meta-list acc)
+        index-list (:index-list acc)
+        term-list (:term-list acc)]
+    
+    (.add ^List meta-list meta)
+    (.add ^List index-list index-count)
+    (.addAll ^List term-list token-indices)
+
+    (when (zero? (rem (dt/ecount index-list) 10000))
+      (println (dt/ecount index-list)))
+    acc))
+
+
 
 
 (defn- fill-string-table-from-line! [^IMutList string-table line-split-fn text-tokenizer-fn acc line]
@@ -72,9 +86,15 @@
    (dyn-int-list/dynamic-int-list)))
 
 
+
+
+
+
+
 (defn fill-string-table! [reader term-index-string-table
                            line-split-fn text-tokenizer-fn
                            max-lines skip-lines]
+
 
   (process-file reader
                 (partial fill-string-table-from-line! term-index-string-table line-split-fn text-tokenizer-fn)
@@ -98,10 +118,7 @@
 
 
 (defn- make-col-container [map-fn container-type res-dataype  container-size datas]
-  (println :container-type container-type)
-  (println :n-datas (count datas))
-  (println :container-size container-size)
-  (let [;container (dt/make-container container-type res-dataype container-size)
+  (let [
         col-datas
         (->>
          (apply dt/emap map-fn nil datas)
@@ -166,7 +183,7 @@
    "
   [reader line-split-fn
    text-tokenizer-fn
-   term-index-string-table
+   
 
    & {:keys [skip-lines max-lines
              datatype-document
@@ -183,10 +200,12 @@
            max-lines Integer/MAX_VALUE}}]
 
   (let [_ (debug :parse)
+        token->long (hf/mut-map [ ["" 0]])
         index-and-lable-lists
         (process-file reader
-                      (partial process-line term-index-string-table line-split-fn text-tokenizer-fn)
+                      (partial process-line  token->long line-split-fn text-tokenizer-fn)
                       {:meta-list (dt/make-list datatype-metas)
+                       :term-list (dt/make-list datatype-term-idx)
                        :index-list (dyn-int-list/dynamic-int-list)}
                       max-lines skip-lines)
 
@@ -205,15 +224,9 @@
         metas (make-metas-col-container index-and-lable-lists col-size datatype-metas container-type)
 
         _ (debug :make-term-indx-container)
-        term-idx
-        (if (= :native-heap container-type)
-            ;; if native, copy string-table and enforce native
-            ;; else re-use string table
-          (dt/make-container container-type datatype-term-idx
-                             (st/indices term-index-string-table))
-          (st/indices term-index-string-table))
 
-        _ (debug :measure-term-index-st (mm/measure (.data term-index-string-table)))
+        term-idx (dt/make-container container-type datatype-term-idx (:term-list index-and-lable-lists))
+
         _ (debug :measure-term-index (mm/measure term-idx))
         _ (debug :measure-term-pos (mm/measure term-pos))
         _ (debug :measure-document-idx (mm/measure document-index))
@@ -227,9 +240,8 @@
         (ds/new-dataset
          [col-term-index col-term-pos col-document col-meta])]
 
-    (debug :string-table-count (count term-index-string-table))
-    (debug :string-table-vocab-size (count (st/int->string term-index-string-table)))
-    (debug :measure-term-index-string-table (mm/measure term-index-string-table))
+    (debug :token->long-count (count token->long))
+    (debug :measure-token->long (mm/measure token->long))
 
 
     (debug :measure-col-term-index (mm/measure col-term-index))
@@ -240,7 +252,7 @@
 
 
     {:datasets [ds]
-     :int->str (st/int->string term-index-string-table)}))
+     :token->long token->long}))
 
 (defn create-term->idf-map [tidy-text]
   (debug :create-term->idf-map)
@@ -370,9 +382,19 @@
 
 
 
+(def c
+  (dt/make-container :native-heap :int16 10))
+
+(def l
+  (tech.v3.datatype.list/make-list c 0))
 
 
+(get! l .capacity)
 
+(def l (dt/make-list :int))
+(.ptr l)
+(map :name
+     (:members
+      (clojure.reflect/map->Field l)))
 
-
-
+(class l)

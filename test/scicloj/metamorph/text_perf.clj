@@ -43,8 +43,7 @@
         (fn [line] [line
                     (rand-int 6)])
         #(str/split % #" ")
-        db-backed-term-index-string-table
-        :max-lines 10000
+        :max-lines 10000000
         :skip-lines 1
         :container-type :native-heap
         :datatype-document :int32
@@ -90,6 +89,7 @@
            (tc/column-names df)
            (tc/columns df)))
 
+(System/exit 0) 
 
 (def tfidf (text/->tfidf df :container-type :jvm-heap))
 (println)

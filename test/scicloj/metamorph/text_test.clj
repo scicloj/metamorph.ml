@@ -2,6 +2,7 @@
    (:require
     [clojure.data.csv :as csv]
     [clojure.java.io :as io]
+    [clojure.set :as c-set]
     [clojure.string :as str]
     [clojure.test :refer [deftest is]]
     [scicloj.metamorph.ml.text :as text]
@@ -31,7 +32,6 @@
          (text/->tidy-text (io/reader "test/data/reviews.csv")
                            parse-review-line
                            #(str/split % #" ")
-                           (st/make-string-table)
                            :max-lines 5
                            :skip-lines 1
                            :container-type :native-heap
@@ -52,7 +52,6 @@
          (text/->tidy-text (io/reader "test/data/reviews.csv")
                            parse-review-line-as-maps
                            #(str/split % #" ")
-                           (st/make-string-table)
                            :max-lines 5
                            :skip-lines 1
                            :container-type :jvm-heap
@@ -68,12 +67,12 @@
          (-> (text/->tidy-text (io/reader "test/data/reviews.csv")
                                parse-review-line
                                #(str/split % #" ")
-                               (st/make-string-table)
                                :max-lines 5
                                :skip-lines 1))
 
          text (first (:datasets tidy))
-         int->str (:int->str tidy)
+         token->long (:token->long tidy)
+         int->str (c-set/map-invert token->long)
          tf (-> 
              (text/->tfidf text)
              (tc/order-by [:document :term-idx]))]
@@ -89,7 +88,7 @@
      (is (not (instance? NativeBuffer (-> text :document .data))))
      (is (not (instance? NativeBuffer (-> text :meta .data))))
 
-     (is (= :int16 (-> text :term-idx meta :datatype)))
+     (is (= :int32 (-> text :term-idx meta :datatype)))
      (is (= :int16 (-> text :term-pos meta :datatype)))
      (is (= :int32 (-> text :document meta :datatype)))
      (is (= :int8 (-> text :meta meta :datatype)))
@@ -131,7 +130,6 @@
       ;(io/reader "test/data/reviews.csv")
           parse-review-line
           #(str/split % #" ")
-          (st/make-string-table)
           :max-lines 5
           :skip-lines 0)
 
