@@ -10,23 +10,38 @@
    [tech.v3.dataset.reductions :as reductions]
    [tech.v3.dataset.string-table :as st]
    [tech.v3.datatype :as dt]
-   [tech.v3.datatype.functional :as func])
+   [tech.v3.datatype.functional :as func]
+   [parallel.core :as p])
   (:import
    [ham_fisted IMutList]
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap]
    [java.io BufferedReader]
    [java.util List]
+   
    [org.mapdb DBMaker]))
 
 (set! *warn-on-reflection* true)
 ;;(set! *unchecked-math* :warn-on-boxed)
 
+(def time-format  (java.text.SimpleDateFormat. "HH:mm:ss.SSSS"))
+(def prevoius-debug-time (atom (java.time.LocalTime/now)))
+(defn debug [& s]
+  (let [duration
+        (.toSeconds
+         (java.time.Duration/between
+          @prevoius-debug-time
+          (java.time.LocalTime/now)))]
+
+    (reset! prevoius-debug-time (java.time.LocalTime/now))
+    (println (format "  (%s) " duration))
+    (apply print (.format ^java.text.SimpleDateFormat time-format
+                          (java.util.Date.)) " - " s)))
+
+
+
+
 
 (defn- make-col-container [map-fn  container-type res-dataype  datas]
-  (def map-fn map-fn)
-  (def res-dataype res-dataype)
-  (def container-type container-type)
-  (def datas datas)
   
   (let [col-datas
         (->>
@@ -35,7 +50,6 @@
          )
         col-size (or (func/reduce-+ (map count col-datas)) 0)
         container (dt/make-container container-type res-dataype col-size)]
-
 
     (when (not-empty col-datas)
       (dt/coalesce-blocks! container col-datas))
@@ -92,14 +106,18 @@
       next-token)))
 
 (defn- update-acc! [acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx]
+  ;(debug "before copy")
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
   (let [term-pos-container (make-term-pos-col-container acc container-type datatype-term-pos)
-            metas-container (make-metas-col-container acc container-type datatype-metas)
-            document-container (make-document-col-container acc container-type datatype-document)
-            term-index-container (dt/make-container container-type datatype-term-idx (:term-list acc))]
-        (.add (:term-pos-containers acc) term-pos-container)
-        (.add (:metas-containers acc) metas-container)
-        (.add (:document-containers acc) document-container)
-        (.add (:term-index-containers acc) term-index-container)))
+        metas-container (make-metas-col-container acc container-type datatype-metas)
+        document-container (make-document-col-container acc container-type datatype-document)
+        term-index-container (dt/make-container container-type datatype-term-idx (:term-list acc))]
+        (.add ^List (:term-pos-containers acc) term-pos-container)
+        (.add ^List (:metas-containers acc) metas-container)
+        (.add ^List (:document-containers acc) document-container)
+        (.add ^List (:term-index-containers acc) term-index-container))
+  ;(debug "after copy")
+  )
 
 
 (defn process-line [token->long line-split-fn text-tokenizer-fn
@@ -122,13 +140,19 @@
     (.add ^List index-list index-count)
     (.addAll ^List term-list token-indices)
 
-    (when (zero? (rem (dt/ecount index-list) 10000))
+    ;
+    ;  (println :count (* 10000 (dt/ecount (:term-pos-containers acc)))))
+    ;(when (zero? (rem (count index-list) 10000))
+    ;  (println :count (count index-list)))
+
+    (when (zero? (rem (dt/ecount index-list) 1000))
+      (debug :compact (* 1000 (dt/ecount (:term-pos-containers acc))))
       (update-acc! acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)
       (hf/clear! meta-list)
       (hf/clear! index-list)
-      (hf/clear! term-list))
+      (hf/clear! term-list)))
 
-      acc))
+  acc)
 
   
 
@@ -173,22 +197,6 @@
                 (partial fill-string-table-from-line! term-index-string-table line-split-fn text-tokenizer-fn)
                 0
                 max-lines skip-lines))
-
-
-(def time-format  (java.text.SimpleDateFormat. "HH:mm:ss.SSSS"))
-(def prevoius-debug-time (atom (java.time.LocalTime/now)))
-(defn debug [& s]
-  (let [duration
-        (.toSeconds
-         (java.time.Duration/between
-          @prevoius-debug-time
-          (java.time.LocalTime/now)))]
-
-    (reset! prevoius-debug-time (java.time.LocalTime/now))
-    (println (format "  (%s) " duration))
-    (apply print (.format ^java.text.SimpleDateFormat time-format 
-                          (java.util.Date.)) " - " s)))
-
 
 
 
@@ -415,7 +423,7 @@
   
 
   (def l
-    (tech.v3.datatype.list/make-list c 0))
+    (tech.v3.datatype.list/make-list ))
   
 
 
