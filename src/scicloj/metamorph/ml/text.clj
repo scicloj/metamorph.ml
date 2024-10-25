@@ -105,28 +105,8 @@
       (hf/assoc! token->long token next-token)
       next-token)))
 
-(defn- update-acc! [acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx]
-  ;(debug "before copy")
-  #_{:clj-kondo/ignore [:unresolved-symbol]}
-  (let [
-        term-pos-container (make-term-pos-col-container acc container-type datatype-term-pos)
-        metas-container (make-metas-col-container acc container-type datatype-metas)
-        document-container (make-document-col-container acc container-type datatype-document)
-        term-index-container (dt/make-container container-type datatype-term-idx (:term-list acc))]
-        (.add ^List (:term-pos-containers acc) term-pos-container)
-        (.add ^List (:metas-containers acc) metas-container)
-        (.add ^List (:document-containers acc) document-container)
-        (.add ^List (:term-index-containers acc) term-index-container))
-  ;(debug "after copy")
-  )
-
 
 (defn process-line [token->long line-split-fn text-tokenizer-fn
-                    datatype-document
-                    datatype-term-pos
-                    datatype-metas
-                    datatype-term-idx
-                    container-type
                     acc line]
   (let [[text meta] (line-split-fn line)
         tokens (text-tokenizer-fn text)
@@ -141,23 +121,10 @@
     (.add ^List index-list index-count)
     (.addAll ^List term-list token-indices)
 
-    ;
-    ;  (println :count (* 10000 (dt/ecount (:term-pos-containers acc)))))
-    ;(when (zero? (rem (count index-list) 10000))
-    ;(println :count (count index-list))
-    
+
     (when (zero? (rem (count index-list) 10000))
-      (debug :count (count index-list)))
-
-    ;(update-acc! acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)
-    ;(hf/clear! meta-list)
-    ;(hf/clear! index-list)
-    ;(hf/clear! term-list)
-    )
-
-  acc)
-
-  
+      (debug :count (count index-list))))
+    acc)
 
 
 (defn- fill-string-table-from-line! [^IMutList string-table line-split-fn text-tokenizer-fn acc line]
@@ -170,8 +137,6 @@
        :num-tokens (dt/ecount string-table) " - "
        :num-unique-tokens (dt/ecount (st/int->string string-table))))
     (inc acc)))
-
-
 
 
 
@@ -245,19 +210,12 @@
         token->long (hf/mut-map [["" 0]])
         acc
         (process-file reader
-                      (partial process-line  token->long line-split-fn text-tokenizer-fn
-                               datatype-document
-                               datatype-term-pos
-                               datatype-metas
-                               datatype-term-idx
-                               container-type)
+                      (partial process-line  token->long line-split-fn text-tokenizer-fn)
                       {:meta-list (dt/make-list datatype-metas)
                        :term-list (dt/make-list datatype-term-idx)
                        :index-list (dt/make-list datatype-document)}
                       max-lines skip-lines)
 
-
-        ;_ (update-acc!  acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)
 
         term-pos-container (make-term-pos-col-container acc container-type datatype-term-pos)
         metas-container (make-metas-col-container acc container-type datatype-metas)
