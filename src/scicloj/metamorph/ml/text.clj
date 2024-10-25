@@ -11,7 +11,7 @@
    [tech.v3.dataset.string-table :as st]
    [tech.v3.datatype :as dt]
    [tech.v3.datatype.functional :as func]
-   [parallel.core :as p])
+   )
   (:import
    [ham_fisted IMutList]
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap]
@@ -108,7 +108,8 @@
 (defn- update-acc! [acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx]
   ;(debug "before copy")
   #_{:clj-kondo/ignore [:unresolved-symbol]}
-  (let [term-pos-container (make-term-pos-col-container acc container-type datatype-term-pos)
+  (let [
+        term-pos-container (make-term-pos-col-container acc container-type datatype-term-pos)
         metas-container (make-metas-col-container acc container-type datatype-metas)
         document-container (make-document-col-container acc container-type datatype-document)
         term-index-container (dt/make-container container-type datatype-term-idx (:term-list acc))]
@@ -143,14 +144,16 @@
     ;
     ;  (println :count (* 10000 (dt/ecount (:term-pos-containers acc)))))
     ;(when (zero? (rem (count index-list) 10000))
-    ;  (println :count (count index-list)))
+    ;(println :count (count index-list))
+    
+    (when (zero? (rem (count index-list) 10000))
+      (debug :count (count index-list)))
 
-    (when (zero? (rem (dt/ecount index-list) 1000))
-      (debug :compact (* 1000 (dt/ecount (:term-pos-containers acc))))
-      (update-acc! acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)
-      (hf/clear! meta-list)
-      (hf/clear! index-list)
-      (hf/clear! term-list)))
+    ;(update-acc! acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)
+    ;(hf/clear! meta-list)
+    ;(hf/clear! index-list)
+    ;(hf/clear! term-list)
+    )
 
   acc)
 
@@ -248,23 +251,24 @@
                                datatype-metas
                                datatype-term-idx
                                container-type)
-                      {:meta-list (hf/mut-list)
-                       :term-list (hf/mut-list)
-                       :index-list (hf/mut-list)
-                       :term-pos-containers (hf/mut-list)
-                       :metas-containers (hf/mut-list)
-                       :document-containers (hf/mut-list)
-                       :term-index-containers (hf/mut-list)}
+                      {:meta-list (dt/make-list datatype-metas)
+                       :term-list (dt/make-list datatype-term-idx)
+                       :index-list (dt/make-list datatype-document)}
                       max-lines skip-lines)
 
 
-        _ (update-acc!  acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)
+        ;_ (update-acc!  acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)
+
+        term-pos-container (make-term-pos-col-container acc container-type datatype-term-pos)
+        metas-container (make-metas-col-container acc container-type datatype-metas)
+        document-container (make-document-col-container acc container-type datatype-document)
+        term-index-container (dt/make-container container-type datatype-term-idx (:term-list acc))
 
 
-        col-term-index (ds/new-column :term-idx (dt/concat-buffers (:term-index-containers acc))  {} [])
-        col-term-pos (ds/new-column :term-pos  (dt/concat-buffers (:term-pos-containers acc)) {} [])
-        col-document (ds/new-column :document  (dt/concat-buffers (:document-containers acc)) {} [])
-        col-meta (ds/new-column :meta (dt/concat-buffers (:metas-containers acc)) {} [])
+        col-term-index (ds/new-column :term-idx term-index-container  {} [])
+        col-term-pos (ds/new-column :term-pos  term-pos-container {} [])
+        col-document (ds/new-column :document  document-container {} [])
+        col-meta (ds/new-column :meta metas-container {} [])
 
         _ (debug :measure-term-index (mm/measure col-term-index))
         _ (debug :measure-term-pos (mm/measure col-term-pos))

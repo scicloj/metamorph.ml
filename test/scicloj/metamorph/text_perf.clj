@@ -43,7 +43,7 @@
        (fn [line] [line
                    (rand-int 6)])
        #(str/split % #" ")
-       :max-lines 10000000
+       :max-lines 4000000
        :skip-lines 1
        :container-type :native-heap
        :datatype-document :int32
