@@ -36,6 +36,7 @@
   {:jvm-opts ["-Djdk.attach.allowAttachSelf","-Xmx14G" "--add-opens=java.base/java.io=ALL-UNNAMED" ]
    :extra-paths ["test"]
    :extra-deps {
+                com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.3.0"}
                 lambdaisland/kaocha {:mvn/version "1.88.1376"}
                 scicloj/scicloj.ml.smile {:mvn/version "7.4.1"}
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}

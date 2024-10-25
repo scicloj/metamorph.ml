@@ -22,6 +22,59 @@
 ;;(set! *unchecked-math* :warn-on-boxed)
 
 
+(defn- make-col-container [map-fn  container-type res-dataype  datas]
+  (def map-fn map-fn)
+  (def res-dataype res-dataype)
+  (def container-type container-type)
+  (def datas datas)
+  
+  (let [col-datas
+        (->>
+         (apply dt/emap map-fn nil datas)
+         (remove empty?) ; prevennts 'buffer type class clojure.lang.PersistentList$EmptyList is not convertible to buffer'
+         )
+        col-size (or (func/reduce-+ (map count col-datas)) 0)
+        container (dt/make-container container-type res-dataype col-size)]
+
+
+    (when (not-empty col-datas)
+      (dt/coalesce-blocks! container col-datas))
+    container))
+
+
+(defn- make-metas-col-container [index-and-lable-lists container-type datatype]
+  (make-col-container
+   (fn [index meta]
+     (dt/const-reader meta index))
+   (if (= :object datatype)
+     :jvm-heap
+     container-type)
+   datatype
+   [(:index-list index-and-lable-lists)
+    (:meta-list index-and-lable-lists)]))
+
+
+(defn- make-document-col-container [index-and-lable-lists container-type datatype]
+  (make-col-container
+   (fn [idx count]
+     (dt/const-reader idx count))
+   container-type
+   datatype
+
+   [(range (count (:index-list index-and-lable-lists)))
+    (:index-list index-and-lable-lists)]))
+
+
+
+(defn- make-term-pos-col-container [index-and-lable-lists container-type datatype]
+  (make-col-container
+   range
+   container-type
+   datatype
+
+   [(:index-list index-and-lable-lists)]))
+
+
 (defn- process-file [reader line-func
                      line-acc
                      max-lines skip-lines]
@@ -38,8 +91,24 @@
       (hf/assoc! token->long token next-token)
       next-token)))
 
+(defn- update-acc! [acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx]
+  (let [term-pos-container (make-term-pos-col-container acc container-type datatype-term-pos)
+            metas-container (make-metas-col-container acc container-type datatype-metas)
+            document-container (make-document-col-container acc container-type datatype-document)
+            term-index-container (dt/make-container container-type datatype-term-idx (:term-list acc))]
+        (.add (:term-pos-containers acc) term-pos-container)
+        (.add (:metas-containers acc) metas-container)
+        (.add (:document-containers acc) document-container)
+        (.add (:term-index-containers acc) term-index-container)))
 
-(defn process-line [token->long line-split-fn text-tokenizer-fn acc line]
+
+(defn process-line [token->long line-split-fn text-tokenizer-fn
+                    datatype-document
+                    datatype-term-pos
+                    datatype-metas
+                    datatype-term-idx
+                    container-type
+                    acc line]
   (let [[text meta] (line-split-fn line)
         tokens (text-tokenizer-fn text)
 
@@ -48,16 +117,20 @@
         meta-list (:meta-list acc)
         index-list (:index-list acc)
         term-list (:term-list acc)]
-    
+
     (.add ^List meta-list meta)
     (.add ^List index-list index-count)
     (.addAll ^List term-list token-indices)
 
     (when (zero? (rem (dt/ecount index-list) 10000))
-      (println (dt/ecount index-list)))
-    acc))
+      (update-acc! acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)
+      (hf/clear! meta-list)
+      (hf/clear! index-list)
+      (hf/clear! term-list))
 
+      acc))
 
+  
 
 
 (defn- fill-string-table-from-line! [^IMutList string-table line-split-fn text-tokenizer-fn acc line]
@@ -117,48 +190,6 @@
                           (java.util.Date.)) " - " s)))
 
 
-(defn- make-col-container [map-fn container-type res-dataype  container-size datas]
-  (let [
-        col-datas
-        (->>
-         (apply dt/emap map-fn nil datas)
-         (remove empty?) ; prevennts 'buffer type class clojure.lang.PersistentList$EmptyList is not convertible to buffer'
-         )]
-    (dt/concat-buffers res-dataype col-datas)))
-
-
-(defn- make-metas-col-container [index-and-lable-lists col-size datatype container-type]
-  (make-col-container
-   (fn [index meta]
-     (dt/const-reader meta index))
-   (if (= :object datatype)
-     :jvm-heap
-     container-type)
-   datatype
-   col-size
-   [(:index-list index-and-lable-lists)
-    (:meta-list index-and-lable-lists)]))
-
-
-(defn- make-document-col-container [index-and-lable-lists col-size datatype container-type]
-  (make-col-container
-   (fn [idx count]
-     (dt/const-reader idx count))
-   container-type
-   datatype
-   col-size
-   [(range (count (:index-list index-and-lable-lists)))
-    (:index-list index-and-lable-lists)]))
-
-
-
-(defn- make-term-pos-col-container [index-and-lable-lists col-size datatype container-type]
-  (make-col-container
-   range
-   container-type
-   datatype
-   col-size
-   [(:index-list index-and-lable-lists)]))
 
 
 
@@ -200,42 +231,38 @@
            max-lines Integer/MAX_VALUE}}]
 
   (let [_ (debug :parse)
-        token->long (hf/mut-map [ ["" 0]])
-        index-and-lable-lists
+        token->long (hf/mut-map [["" 0]])
+        acc
         (process-file reader
-                      (partial process-line  token->long line-split-fn text-tokenizer-fn)
-                      {:meta-list (dt/make-list datatype-metas)
-                       :term-list (dt/make-list datatype-term-idx)
-                       :index-list (dyn-int-list/dynamic-int-list)}
+                      (partial process-line  token->long line-split-fn text-tokenizer-fn
+                               datatype-document
+                               datatype-term-pos
+                               datatype-metas
+                               datatype-term-idx
+                               container-type)
+                      {:meta-list (hf/mut-list)
+                       :term-list (hf/mut-list)
+                       :index-list (hf/mut-list)
+                       :term-pos-containers (hf/mut-list)
+                       :metas-containers (hf/mut-list)
+                       :document-containers (hf/mut-list)
+                       :term-index-containers (hf/mut-list)}
                       max-lines skip-lines)
 
 
-        col-size (func/reduce-+ (:index-list index-and-lable-lists))
-        _ (debug :count-index-aad-label-lists (count (:index-list index-and-lable-lists)))
-        _ (debug :make-document-col-container)
-        document-index (make-document-col-container index-and-lable-lists col-size datatype-document container-type)
+        _ (update-acc!  acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)
 
 
-        _ (debug :make-term-pos-col-container)
-        term-pos (make-term-pos-col-container index-and-lable-lists col-size datatype-term-pos container-type)
+        col-term-index (ds/new-column :term-idx (dt/concat-buffers (:term-index-containers acc))  {} [])
+        col-term-pos (ds/new-column :term-pos  (dt/concat-buffers (:term-pos-containers acc)) {} [])
+        col-document (ds/new-column :document  (dt/concat-buffers (:document-containers acc)) {} [])
+        col-meta (ds/new-column :meta (dt/concat-buffers (:metas-containers acc)) {} [])
 
+        _ (debug :measure-term-index (mm/measure col-term-index))
+        _ (debug :measure-term-pos (mm/measure col-term-pos))
+        _ (debug :measure-document-idx (mm/measure col-document))
+        _ (debug :measure-metas (mm/measure col-meta))
 
-        _ (debug :make-metas-col-container)
-        metas (make-metas-col-container index-and-lable-lists col-size datatype-metas container-type)
-
-        _ (debug :make-term-indx-container)
-
-        term-idx (dt/make-container container-type datatype-term-idx (:term-list index-and-lable-lists))
-
-        _ (debug :measure-term-index (mm/measure term-idx))
-        _ (debug :measure-term-pos (mm/measure term-pos))
-        _ (debug :measure-document-idx (mm/measure document-index))
-        _ (debug :measure-metas (mm/measure metas))
-
-        col-term-index (ds/new-column :term-idx term-idx  {} [])
-        col-term-pos (ds/new-column :term-pos  term-pos {} [])
-        col-document (ds/new-column :document document-index {} [])
-        col-meta (ds/new-column :meta metas {} [])
         ds
         (ds/new-dataset
          [col-term-index col-term-pos col-document col-meta])]
@@ -382,19 +409,27 @@
 
 
 
-(def c
-  (dt/make-container :native-heap :int16 10))
+(comment
+  (def c
+    (dt/make-container :native-heap :int16 10))
+  
 
-(def l
-  (tech.v3.datatype.list/make-list c 0))
+  (def l
+    (tech.v3.datatype.list/make-list c 0))
+  
 
 
-(get! l .capacity)
+  (get! l .capacity)
+  
 
-(def l (dt/make-list :int))
-(.ptr l)
-(map :name
-     (:members
-      (clojure.reflect/map->Field l)))
+  (def l (dt/make-list :int))
+  
+  (.ptr l)
+  
+  (map :name
+       (:members
+        (clojure.reflect/map->Field l)))
+  
 
-(class l)
+  (class l)
+  )

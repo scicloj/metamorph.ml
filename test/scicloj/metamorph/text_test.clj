@@ -41,7 +41,7 @@
      
      (is (str/includes? 
                         (-> dataset :document .data class .getName)
-          "concat"))
+          "native_buffer"))
      (is (= 3
             (-> dataset :meta first)))))
 
@@ -71,6 +71,7 @@
                                :skip-lines 1))
 
          text (first (:datasets tidy))
+         _ (def text text)
          token->long (:token->long tidy)
          int->str (c-set/map-invert token->long)
          tf (-> 
