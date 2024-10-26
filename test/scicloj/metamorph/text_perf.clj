@@ -5,6 +5,7 @@
    [clojure.string :as str]
    [ham-fisted.api :as hf]
    [scicloj.metamorph.ml.text :as text]
+   [scicloj.metamorph.ml.text2 :as text2]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.dynamic-int-list :as dyn-int-list]
@@ -38,12 +39,14 @@
 (def heap-string-table (st/make-string-table))
 
 (defn load-reviews []
-  (-> (text/->tidy-text
+  (-> (
+       ;text/->tidy-text ;real	2m16.031s
+       text2/->tidy-text ;real	2m17.185s
        (io/reader "bigdata/repeatedAbstrcats_3.7m_.txt")
        (fn [line] [line
                    (rand-int 6)])
        #(str/split % #" ")
-       :max-lines 4000000
+       :max-lines 1000000
        :skip-lines 1
        :container-type :native-heap
        :datatype-document :int32
