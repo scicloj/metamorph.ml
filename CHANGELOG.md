@@ -1,5 +1,7 @@
 unreleased
 
+* exclude most hanami deps as we don't need them
+
 0.9.0
 
 - added linear models from fastmath 

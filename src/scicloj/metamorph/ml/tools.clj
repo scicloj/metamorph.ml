@@ -1,6 +1,9 @@
 (ns scicloj.metamorph.ml.tools
   (:require
-   [clojure.pprint :as pprint]))
+   [clojure.pprint :as pprint]
+   [ham-fisted.api :as hf]) 
+  (:import
+   [java.io BufferedReader]))
 
 (defn- maybe-dissoc [x k]
   (if (associative? x)
@@ -34,3 +37,37 @@
 
 (defn pp-str [x]
   (with-out-str (pprint/pprint x)))
+
+
+
+(def time-format  (java.text.SimpleDateFormat. "HH:mm:ss.SSSS"))
+(def prevoius-debug-time (atom (java.time.LocalTime/now)))
+(defn debug [& s]
+  (let [duration
+        (.toSeconds
+         (java.time.Duration/between
+          @prevoius-debug-time
+          (java.time.LocalTime/now)))]
+
+    (reset! prevoius-debug-time (java.time.LocalTime/now))
+    (println (format "  (%s) " duration))
+    (apply print (.format ^java.text.SimpleDateFormat time-format
+                          (java.util.Date.)) " - " s)))
+
+
+
+(defn process-file [reader line-func
+                     line-acc
+                     max-lines skip-lines]
+  (with-open [rdr (BufferedReader. reader)]
+    (reduce line-func line-acc
+            (take max-lines
+                  (drop skip-lines
+                        (line-seq rdr))))))
+
+(defn put-retrieve-token! [token->long token]
+  (if (contains? token->long token)
+    (get token->long token)
+    (let [next-token (hf/constant-count token->long)]
+      (hf/assoc! token->long token next-token)
+      next-token)))

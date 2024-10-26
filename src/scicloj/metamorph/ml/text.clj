@@ -4,40 +4,22 @@
    [ham-fisted.api :as hf]
    [ham-fisted.lazy-noncaching :as lznc]
    [ham-fisted.set :as hf-set]
+   [scicloj.metamorph.ml.tools :as tools]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.dynamic-int-list :as dyn-int-list]
    [tech.v3.dataset.impl.column :as col-impl]
    [tech.v3.dataset.reductions :as reductions]
    [tech.v3.dataset.string-table :as st]
    [tech.v3.datatype :as dt]
-   [tech.v3.datatype.functional :as func]
-   )
+   [tech.v3.datatype.functional :as func])
   (:import
    [ham_fisted IMutList]
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap]
    [java.io BufferedReader]
-   [java.util List]
-   
-   [org.mapdb DBMaker]))
+   [java.util List]))
 
 (set! *warn-on-reflection* true)
 ;;(set! *unchecked-math* :warn-on-boxed)
-
-(def time-format  (java.text.SimpleDateFormat. "HH:mm:ss.SSSS"))
-(def prevoius-debug-time (atom (java.time.LocalTime/now)))
-(defn debug [& s]
-  (let [duration
-        (.toSeconds
-         (java.time.Duration/between
-          @prevoius-debug-time
-          (java.time.LocalTime/now)))]
-
-    (reset! prevoius-debug-time (java.time.LocalTime/now))
-    (println (format "  (%s) " duration))
-    (apply print (.format ^java.text.SimpleDateFormat time-format
-                          (java.util.Date.)) " - " s)))
-
-
 
 
 
@@ -123,7 +105,7 @@
 
 
     (when (zero? (rem (count index-list) 10000))
-      (debug :count (count index-list))))
+      (tools/debug :count (count index-list))))
     acc)
 
 
@@ -206,7 +188,7 @@
            container-type    :jvm-heap
            max-lines Integer/MAX_VALUE}}]
 
-  (let [_ (debug :parse)
+  (let [_ (tools/debug :parse)
         token->long (hf/mut-map [["" 0]])
         acc
         (process-file reader
@@ -228,31 +210,31 @@
         col-document (ds/new-column :document  document-container {} [])
         col-meta (ds/new-column :meta metas-container {} [])
 
-        _ (debug :measure-term-index (mm/measure col-term-index))
-        _ (debug :measure-term-pos (mm/measure col-term-pos))
-        _ (debug :measure-document-idx (mm/measure col-document))
-        _ (debug :measure-metas (mm/measure col-meta))
+        _ (tools/debug :measure-term-index (mm/measure col-term-index))
+        _ (tools/debug :measure-term-pos (mm/measure col-term-pos))
+        _ (tools/debug :measure-document-idx (mm/measure col-document))
+        _ (tools/debug :measure-metas (mm/measure col-meta))
 
         ds
         (ds/new-dataset
          [col-term-index col-term-pos col-document col-meta])]
 
-    (debug :token->long-count (count token->long))
-    (debug :measure-token->long (mm/measure token->long))
+    (tools/debug :token->long-count (count token->long))
+    (tools/debug :measure-token->long (mm/measure token->long))
 
 
-    (debug :measure-col-term-index (mm/measure col-term-index))
-    (debug :measure-col-term-pos (mm/measure col-term-pos))
-    (debug :measure-col-document-idx (mm/measure col-document))
-    (debug :measure-col-metas (mm/measure col-meta))
-    (debug :measure-ds (mm/measure ds))
+    (tools/debug :measure-col-term-index (mm/measure col-term-index))
+    (tools/debug :measure-col-term-pos (mm/measure col-term-pos))
+    (tools/debug :measure-col-document-idx (mm/measure col-document))
+    (tools/debug :measure-col-metas (mm/measure col-meta))
+    (tools/debug :measure-ds (mm/measure ds))
 
 
     {:datasets [ds]
      :token->long token->long}))
 
 (defn create-term->idf-map [tidy-text]
-  (debug :create-term->idf-map)
+  (tools/debug :create-term->idf-map)
   (let [N
         (->
          (reductions/aggregate
@@ -281,7 +263,7 @@
 
 (defn ->column [col-name data-type tfidf-data key ]
 
- (debug :->-col col-name)
+ (tools/debug :->-col col-name)
   (let [data
         (->>
          (lznc/map key
@@ -294,7 +276,7 @@
     (col-impl/construct-column [] data meta-data)))
 
 (defn- >document-col [tfidf-data data-type]
- (debug :->document-col)
+ (tools/debug :->document-col)
   (let [tfids-lengths
         (map #(-> % :tfidf count)
              (-> tfidf-data :tfidf-cols))
@@ -354,13 +336,13 @@
   (println :container-type container-type)
   (let [idfs (create-term->idf-map tidy-text)
 
-        _ (debug :term-idx->idf-map)
+        _ (tools/debug :term-idx->idf-map)
         term-idx->idf-map
         (Long2FloatLinkedOpenHashMap. (-> idfs :term-idx dt/->long-array)
                                       (-> idfs :idf dt/->float-array))
 
 
-        _ (debug :tfidf-data)
+        _ (tools/debug :tfidf-data)
 
         tfidf-data
         (reductions/group-by-column-agg
@@ -377,29 +359,3 @@
       (->column :term-idx container-type tfidf-data :term-idx)
       (->column :term-count container-type tfidf-data :term-count)])))
 
-
-
-(comment
-  (def c
-    (dt/make-container :native-heap :int16 10))
-  
-
-  (def l
-    (tech.v3.datatype.list/make-list ))
-  
-
-
-  (get! l .capacity)
-  
-
-  (def l (dt/make-list :int))
-  
-  (.ptr l)
-  
-  (map :name
-       (:members
-        (clojure.reflect/map->Field l)))
-  
-
-  (class l)
-  )
