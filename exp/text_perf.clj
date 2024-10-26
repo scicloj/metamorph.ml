@@ -3,13 +3,9 @@
    [clj-memory-meter.core :as mm]
    [clojure.java.io :as io]
    [clojure.string :as str]
-   [ham-fisted.api :as hf]
    [scicloj.metamorph.ml.text :as text]
    [scicloj.metamorph.ml.text2 :as text2]
-   [tablecloth.api :as tc]
-   [tech.v3.dataset :as ds]
-   [tech.v3.datatype :as dt]
-   [tech.v3.datatype.mmap :as mmap]))
+   [tablecloth.api :as tc]))
 
 
 
@@ -39,7 +35,7 @@
          (first (:datasets (load-reviews 
                             tidy-text-fn
                             (or (:max-lines opts) Integer/MAX_VALUE))))
-         (tc/drop-columns [:term-pos]))]
+         )]
 
     (println)
     (println :df-measures
