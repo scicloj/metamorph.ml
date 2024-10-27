@@ -14,7 +14,7 @@
    [tech.v3.datatype.functional :as func])
   (:import
    [ham_fisted IMutList]
-   [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap]
+   [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap LongOpenHashSet]
    [java.io BufferedReader]
    [java.util List Set]))
 
@@ -248,22 +248,20 @@
     (reductions/group-by-column-agg
      :term-idx
      {:idf (reductions/reducer :document
-                               (fn [] (hf/mut-set))
+                               (fn [] (LongOpenHashSet.))
                                (fn [ acc ^long document]
-                                 ;(when (zero? (rem document 100))
-                                 ;  (println :reduce-idf document))
-                                 (.add ^Set acc document)
+                                 (when (zero? (rem document 10000))
+                                   (println :reduce-idf document))
+                                 (.add ^LongOpenHashSet acc document)
                                  acc
                                  )
-                               (fn [documents-1 documents-2]
+                               (fn [^LongOpenHashSet documents-1 ^LongOpenHashSet documents-2]
                                  (println :merge-idf)
-                                 (hf/add-all! documents-1 documents-2))
+                                 (.addAll documents-1 documents-2))
                                (fn [documents]
-
-                                 ;(println :finalize-idf) 
-
-                                 (let [n-uniq-docs (hf/constant-count  documents)]
-                                   (func/log10 ^float (/  ^float N ^float n-uniq-docs)))))}
+                                 (println :finalize-idf) 
+                                 (let [n-uniq-docs ^int  (.size ^LongOpenHashSet documents)]
+                                   (func/log10 ^float (/  ^float N ^int n-uniq-docs)))))}
      tidy-text)))
 
 
@@ -315,7 +313,7 @@
            :term-counter 0
            :document nil})
    (fn [acc ^long document ^long term-idx]
-
+     ;(tools/debug :reduce-tfidf document)
      (when (and (zero? (rem document 10000)) (zero? ^long (:term-counter acc ) ))
        (tools/debug :reduce-tfidf document ) )
   
@@ -363,7 +361,10 @@
                                       (-> idfs :idf dt/->float-array))
 
 
-        _ (tools/debug :tfidf-data)
+       _ (println :measure-term-idx->idf-map 
+             (mm/measure term-idx->idf-map))
+
+       _ (tools/debug :tfidf-data)
         tfidf-data
         (reductions/group-by-column-agg
          :document
@@ -371,9 +372,6 @@
          tidy-text)]
 
     (println :new-dataset)
-    (println :measure-term-idx->idf-map 
-             (mm/measure term-idx->idf-map))
-    (mm/measure term-idx->idf-map)
     (ds/new-dataset
      [(>document-col container-type :int32 tfidf-data)
       (->column :tfidf container-type :float32 tfidf-data :tfidf)
