@@ -63,6 +63,7 @@
 
 (defn tfidf [& opts]
 
+  ;(def opts [{:max-lines 1000 :tidy-algo 2}])
   (println :opts opts)
   (let [opts (first opts)
         tidy-text-fn
@@ -103,8 +104,8 @@
                       (tc/columns df)))
             (println df))
 
-        tfidf (text/->tfidf df :container-type :jvm-heap)
-        
+        tfidf (text/->tfidf df :container-type :native-heap)
+
         _ (do
             (println)
 

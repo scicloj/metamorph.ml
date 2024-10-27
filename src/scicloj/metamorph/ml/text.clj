@@ -11,7 +11,8 @@
    [tech.v3.dataset.reductions :as reductions]
    [tech.v3.dataset.string-table :as st]
    [tech.v3.datatype :as dt]
-   [tech.v3.datatype.functional :as func])
+   [tech.v3.datatype.functional :as func]
+   [tech.v3.datatype.native-buffer :as nb])
   (:import
    [ham_fisted IMutList]
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap]
@@ -249,45 +250,57 @@
      {:idf (reductions/reducer :document
                                (fn [] (hf/long-array-list))
                                (fn [ acc ^long document]
-                                 (when (zero? (rem document 10000))
-                                   (println :reduce-idf document))
-                                 (conj acc document)
+                                 ;(when (zero? (rem document 100))
+                                 ;  (println :reduce-idf document))
+                                 (hf/conj! acc document)
                                  )
                                (fn [documents-1 documents-2]
+                                 (println :merge-idf)
                                  (hf/add-all! documents-1 documents-2))
-                               (fn [documents] 
+                               (fn [documents]
+                                 
+                                 ;(println :finalize-idf) 
                                  (let [n-uniq-docs (count (hf-set/unique documents))]
                                    (float (Math/log10 (/ N n-uniq-docs))))))}
      tidy-text)))
 
 
-(defn ->column [col-name data-type tfidf-data key ]
+(defn ->column [col-name container-type data-type tfidf-data key]
+  (tools/debug :->-col col-name)
+  
+  (let [cont-size
+        (func/sum-fast
+         (lznc/map #(dt/ecount (get % key))
+                   (get tfidf-data :tfidf-cols)))
 
- (tools/debug :->-col col-name)
-  (let [data
-        (->>
-         (lznc/map key
-                   (get tfidf-data :tfidf-cols))
-         
-         (dt/concat-buffers))
+        container (dt/make-container container-type data-type cont-size)
 
+        data (dt/coalesce-blocks!
+              container
+              (lznc/map key
+                        (get tfidf-data :tfidf-cols)))
         meta-data {:datatype data-type
                    :name col-name}]
-    (col-impl/construct-column [] data meta-data)))
+    (col-impl/construct-column [] data meta-data))
 
-(defn- >document-col [tfidf-data data-type]
+  )
+
+(defn- >document-col [container-type data-type  tfidf-data]
  (tools/debug :->document-col)
-  (let [tfids-lengths
+  (let [tfidfs-lengths
         (map #(-> % :tfidf count)
              (-> tfidf-data :tfidf-cols))
+        cont-size (func/sum-fast tfidfs-lengths)
+        container (dt/make-container container-type data-type cont-size)
         data
         (->>
          (lznc/map
           (fn [doc-id len] (dt/const-reader doc-id len))
           (-> tfidf-data :document)
-          tfids-lengths)
-         (dt/concat-buffers))
-        meta-data{:name :document :datatype data-type}]
+          tfidfs-lengths)
+         (dt/coalesce-blocks! container))
+        meta-data {:name :document
+                   :datatype data-type}]
 
     (col-impl/construct-column [] data meta-data)))
 
@@ -299,8 +312,8 @@
            :term-counter 0
            :document nil})
    (fn [acc ^long document ^long term-idx]
-     (when (zero? (rem document 10000))
-       (println :reduce-tfidf document))
+     ;(when (zero? (rem document 100))
+     ;  (tools/debug :reduce-tfidf document :term-idx term-idx) )
   
      (.addTo ^Long2IntOpenHashMap  (:term-counts acc) term-idx 1)
      {:term-counts (:term-counts acc)
@@ -311,7 +324,8 @@
   
    (fn [{:keys [term-counts term-counter document]}]
      (when (zero? (rem  document 1000))
-       (println :finalize-tfidf document))
+       (tools/debug :finalize-tfidf document))
+     
      (let [term->tfidf-fn
            (fn [[term-index count]]
              (let [tf (float (/ count term-counter))]
@@ -352,10 +366,13 @@
          tidy-text)]
 
     (println :new-dataset)
+    (println :measure-term-idx->idf-map 
+             (mm/measure term-idx->idf-map))
+    (mm/measure term-idx->idf-map)
     (ds/new-dataset
-     [(>document-col tfidf-data container-type)
-      (->column :tfidf container-type tfidf-data :tfidf)
-      (->column :tf container-type tfidf-data :tf)
-      (->column :term-idx container-type tfidf-data :term-idx)
-      (->column :term-count container-type tfidf-data :term-count)])))
+     [(>document-col container-type :int32 tfidf-data)
+      (->column :tfidf container-type :float32 tfidf-data :tfidf)
+      (->column :tf container-type :float32 tfidf-data :tf)
+      (->column :term-idx container-type :int32 tfidf-data :term-idx)
+      (->column :term-count container-type :int16 tfidf-data :term-count)])))
 
