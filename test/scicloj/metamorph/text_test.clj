@@ -206,7 +206,7 @@
     (is (= '("0.0" "0.0" "0.0" "0.0"
                    "0.12041201"
                    "0.060206003"
-                   "0.08600858"
+                   "0.08600857"
                    "0.12901287")
            (map str (-> tfidfs :tfidf))))))
 
@@ -245,13 +245,24 @@
 (comment
   (require '[criterium.core :as criterium])
 
-  (time
-   (def _
-     (reviews->tidy text/->tidy-text)))
+  (def tidy
 
-  (time
-   (reviews->tidy text2/->tidy-text))
- 
+    (text/->tidy-text (io/reader "test/data/reviews.csv")
+                      parse-review-line
+                      #(str/split % #" ")
+                      :max-lines 10000
+                      :skip-lines 1))
+  
+  (def
+    text (first (:datasets tidy)))
+
+  ;; with type hints: Execution time mean : 27.145971 ms
+
+  (criterium/quick-bench
+   (text/create-term->idf-map text))
+  
+
+
   )
 
 

@@ -63,7 +63,7 @@
 
 (defn tfidf [& opts]
 
-  ;(def opts [{:max-lines 1000 :tidy-algo 2}])
+  (def opts [{:max-lines 1000 :tidy-algo 2}])
   (println :opts opts)
   (let [opts (first opts)
         tidy-text-fn

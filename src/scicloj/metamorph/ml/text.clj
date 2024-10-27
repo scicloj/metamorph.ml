@@ -20,7 +20,7 @@
    [java.util List]))
 
 (set! *warn-on-reflection* true)
-;;(set! *unchecked-math* :warn-on-boxed)
+(set! *unchecked-math* :warn-on-boxed)
 
 
 
@@ -114,12 +114,12 @@
   (let [[text _] (line-split-fn line)
         tokens (text-tokenizer-fn text)]
     (.addAllReducible string-table tokens)
-    (when (zero? (rem acc 1000))
+    (when (zero? ^long (rem ^long acc 1000))
       (println
        acc " : "
        :num-tokens (dt/ecount string-table) " - "
        :num-unique-tokens (dt/ecount (st/int->string string-table))))
-    (inc acc)))
+    (inc ^long acc)))
 
 
 
@@ -235,7 +235,7 @@
      :token->long token->long}))
 
 (defn create-term->idf-map [tidy-text]
-  (tools/debug :create-term->idf-map)
+  ;(tools/debug :create-term->idf-map)
   (let [N
         (->
          (reductions/aggregate
@@ -245,6 +245,7 @@
          first)]
 
 
+    ;(tools/debug :N N)
     (reductions/group-by-column-agg
      :term-idx
      {:idf (reductions/reducer :document
@@ -258,11 +259,13 @@
                                  (println :merge-idf)
                                  (hf/add-all! documents-1 documents-2))
                                (fn [documents]
-                                 
+
                                  ;(println :finalize-idf) 
-                                 (let [n-uniq-docs (count (hf-set/unique documents))]
-                                   (float (Math/log10 (/ N n-uniq-docs))))))}
+
+                                 (let [^float n-uniq-docs (hf/constant-count (hf-set/unique documents))]
+                                   (func/log10 ^float (/  ^float N n-uniq-docs)))))}
      tidy-text)))
+
 
 
 (defn ->column [col-name container-type data-type tfidf-data key]
@@ -317,21 +320,21 @@
   
      (.addTo ^Long2IntOpenHashMap  (:term-counts acc) term-idx 1)
      {:term-counts (:term-counts acc)
-      :term-counter (inc (:term-counter acc))
+      :term-counter (inc ^long (:term-counter acc))
       :document document})
    (fn [acc-1 acc-2]
      (throw (Exception. "merge should not get called")))
   
-   (fn [{:keys [term-counts term-counter document]}]
+   (fn [{:keys [term-counts ^long term-counter ^long document]}]
      (when (zero? (rem  document 1000))
        (tools/debug :finalize-tfidf document))
      
      (let [term->tfidf-fn
-           (fn [[term-index count]]
-             (let [tf (float (/ count term-counter))]
+           (fn [[^long term-index ^long count]]
+             (let [tf ^float (/ count term-counter)]
                {term-index
                 {:tf tf
-                 :tfidf (* tf (get term-idx->idf-map term-index))}}))
+                 :tfidf ^float (* ^float tf ^float (get term-idx->idf-map term-index))}}))
   
            tf-idfs
            (apply hf/merge (lznc/map term->tfidf-fn term-counts))]
@@ -347,7 +350,6 @@
 (defn ->tfidf [tidy-text &  {:keys [container-type] 
                              :or {container-type :jvm-heap}}]
 
-  (println :container-type container-type)
   (let [idfs (create-term->idf-map tidy-text)
 
         _ (tools/debug :term-idx->idf-map)
@@ -357,11 +359,9 @@
 
 
         _ (tools/debug :tfidf-data)
-
         tfidf-data
         (reductions/group-by-column-agg
          :document
-
          {:tfidf-cols (tf-idf-reducer term-idx->idf-map container-type)}
          tidy-text)]
 
