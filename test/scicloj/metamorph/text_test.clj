@@ -53,17 +53,35 @@
         (text2/->tidy-text (io/reader "test/data/reviews.csv")
                           parse-review-line-as-maps
                           #(str/split % #" ")
-                          :max-lines 27
+                          :max-lines 7
                           :skip-lines 1
                           :container-type :jvm-heap
                           :datatype-metas :object
                           :compacting-document-intervall 10)
         df (first datasets)]
     
-    (is (= (range 27)
+    (is (= (range 7)
            (-> df :document distinct)))
 
     ))
+
+(deftest ->tidy-text2--document-distinct-2
+
+  (let [{:keys [datasets]}
+        (text2/->tidy-text (io/reader "test/data/reviews.csv")
+                           parse-review-line-as-maps
+                           #(str/split % #" ")
+                           :max-lines 7
+                           :skip-lines 1
+                           :container-type :jvm-heap
+                           :datatype-metas :object
+                           :compacting-document-intervall 3)
+        df (first datasets)]
+
+    (def df df)
+    (is (= (range 7)
+           (-> df :document distinct)))))
+
 
 
 (deftest ->tidy-text-with-object
@@ -87,8 +105,7 @@
                     parse-review-line
                     #(str/split % #" ")
                     :max-lines 5
-                    :skip-lines 1))
-  )
+                    :skip-lines 1)))
 
 (defn tidy-text-test [tidy-text-fn]
   (let [tidy (reviews->tidy tidy-text-fn)
