@@ -256,7 +256,7 @@
   (def
     text (first (:datasets tidy)))
 
-  ;; with type hints: Execution time mean : 27.145971 ms
+  ;; best: Execution time mean : 21.752604 ms
 
   (criterium/quick-bench
    (text/create-term->idf-map text))

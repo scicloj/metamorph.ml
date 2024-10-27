@@ -11,13 +11,12 @@
    [tech.v3.dataset.reductions :as reductions]
    [tech.v3.dataset.string-table :as st]
    [tech.v3.datatype :as dt]
-   [tech.v3.datatype.functional :as func]
-   [tech.v3.datatype.native-buffer :as nb])
+   [tech.v3.datatype.functional :as func])
   (:import
    [ham_fisted IMutList]
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap]
    [java.io BufferedReader]
-   [java.util List]))
+   [java.util List Set]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -249,11 +248,12 @@
     (reductions/group-by-column-agg
      :term-idx
      {:idf (reductions/reducer :document
-                               (fn [] (hf/long-array-list))
+                               (fn [] (hf/mut-set))
                                (fn [ acc ^long document]
                                  ;(when (zero? (rem document 100))
                                  ;  (println :reduce-idf document))
-                                 (hf/conj! acc document)
+                                 (.add ^Set acc document)
+                                 acc
                                  )
                                (fn [documents-1 documents-2]
                                  (println :merge-idf)
@@ -262,7 +262,7 @@
 
                                  ;(println :finalize-idf) 
 
-                                 (let [^float n-uniq-docs (hf/constant-count (hf-set/unique documents))]
+                                 (let [n-uniq-docs (hf/constant-count  documents)]
                                    (func/log10 ^float (/  ^float N n-uniq-docs)))))}
      tidy-text)))
 
