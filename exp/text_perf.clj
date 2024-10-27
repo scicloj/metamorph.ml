@@ -21,7 +21,8 @@
        :datatype-document :int32
        :datatype-term-pos :int16
        :datatype-term-idx :int32
-       :datatype-metas    :byte)))
+       :datatype-metas    :byte
+       :compacting-document-intervall 100)))
 
 
 (defn tidy [& opts]
@@ -63,7 +64,7 @@
 
 (defn tfidf [& opts]
 
-  (def opts [{:max-lines 1000 :tidy-algo 2}])
+  (def opts [{:max-lines 25 :tidy-algo 2}])
   (println :opts opts)
   (let [opts (first opts)
         tidy-text-fn
@@ -72,12 +73,15 @@
           2 text2/->tidy-text)
         df
         (->
-         (first (:datasets (load-reviews 
+         (first (:datasets (load-reviews
                             tidy-text-fn
                             (or (:max-lines opts) Integer/MAX_VALUE))))
          (tc/drop-columns [:term-pos]))
-        
-        
+
+
+        _ (-> df :document distinct count)
+        _ (def df df)
+        _ (-> df :document distinct)
         _ (do
             (println)
             (println :df-measures

@@ -234,7 +234,7 @@
      :token->long token->long}))
 
 (defn create-term->idf-map [tidy-text]
-  ;(tools/debug :create-term->idf-map)
+  (tools/debug :create-term->idf-map)
   (let [N
         (->
          (reductions/aggregate
@@ -244,7 +244,7 @@
          first)]
 
 
-    ;(tools/debug :N N)
+    (tools/debug :N N)
     (reductions/group-by-column-agg
      :term-idx
      {:idf (reductions/reducer :document
@@ -263,7 +263,7 @@
                                  ;(println :finalize-idf) 
 
                                  (let [n-uniq-docs (hf/constant-count  documents)]
-                                   (func/log10 ^float (/  ^float N n-uniq-docs)))))}
+                                   (func/log10 ^float (/  ^float N ^float n-uniq-docs)))))}
      tidy-text)))
 
 
@@ -315,8 +315,9 @@
            :term-counter 0
            :document nil})
    (fn [acc ^long document ^long term-idx]
-     ;(when (zero? (rem document 100))
-     ;  (tools/debug :reduce-tfidf document :term-idx term-idx) )
+
+     (when (and (zero? (rem document 10000)) (zero? ^long (:term-counter acc ) ))
+       (tools/debug :reduce-tfidf document ) )
   
      (.addTo ^Long2IntOpenHashMap  (:term-counts acc) term-idx 1)
      {:term-counts (:term-counts acc)
@@ -326,8 +327,12 @@
      (throw (Exception. "merge should not get called")))
   
    (fn [{:keys [term-counts ^long term-counter ^long document]}]
-     (when (zero? (rem  document 1000))
+
+     ;(tools/debug :finalize-tfidf document)
+     (when (zero? (rem  document 10000))
        (tools/debug :finalize-tfidf document))
+     
+     
      
      (let [term->tfidf-fn
            (fn [[^long term-index ^long count]]

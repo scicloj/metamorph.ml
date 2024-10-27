@@ -47,6 +47,24 @@
     (is (= 3
            (-> dataset :meta first)))))
 
+(deftest ->tidy-text2--document-distinct
+
+  (let [{:keys [datasets]}
+        (text2/->tidy-text (io/reader "test/data/reviews.csv")
+                          parse-review-line-as-maps
+                          #(str/split % #" ")
+                          :max-lines 27
+                          :skip-lines 1
+                          :container-type :jvm-heap
+                          :datatype-metas :object
+                          :compacting-document-intervall 10)
+        df (first datasets)]
+    
+    (is (= (range 27)
+           (-> df :document distinct)))
+
+    ))
+
 
 (deftest ->tidy-text-with-object
 

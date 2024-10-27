@@ -5,7 +5,10 @@
    [tech.v3.dataset :as ds]
    [tech.v3.datatype :as dt]
    [tech.v3.datatype.functional :as func]
-   [scicloj.metamorph.ml.tools :as tools])
+   [scicloj.metamorph.ml.tools :as tools]
+   [ham-fisted.set :as hf-set]
+   [tech.v3.dataset.reductions :as reductions]
+   [tech.v3.datatype.functional :as fun])
   (:import
    [java.util List]))
 
@@ -38,14 +41,25 @@
 
 
 (defn- make-document-col-container [index-and-lable-lists container-type datatype]
-  (make-col-container
-   (fn [idx count]
-     (dt/const-reader idx count))
-   container-type
-   datatype
-
-   [(range (count (:index-list index-and-lable-lists)))
-    (:index-list index-and-lable-lists)]))
+  
+  (func/reduce-max [])
+  (let [max-document
+        (or
+         (func/reduce-max
+          (distinct
+           (dt/concat-buffers
+            (-> index-and-lable-lists :document-containers))))
+         -1)]
+    ;(def max-document max-document)
+    (make-col-container
+     (fn [idx count]
+       (dt/const-reader (+ max-document idx 1) count))
+     container-type
+     datatype
+     [(range (count (:index-list index-and-lable-lists)))
+      (:index-list index-and-lable-lists)])
+    
+    ))
 
 
 
@@ -80,6 +94,7 @@
                     datatype-metas
                     datatype-term-idx
                     container-type
+                    compacting-document-intervall
                     acc line]
   (let [[text meta] (line-split-fn line)
         tokens (text-tokenizer-fn text)
@@ -95,9 +110,9 @@
     (.addAll ^List term-list token-indices)
 
 
-    (if (zero? (rem (dt/ecount index-list) 10000))
+    (if (zero? (rem (dt/ecount index-list) compacting-document-intervall))
       (do
-        (tools/debug :compact (* 10000 (dt/ecount (:term-pos-containers acc))))
+        (tools/debug :compact (* compacting-document-intervall (dt/ecount (:term-pos-containers acc))))
         (update-acc! acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)
         (assoc acc
                :meta-list (dt/make-list datatype-metas)
@@ -135,14 +150,16 @@
              datatype-term-pos
              datatype-metas
              datatype-term-idx
-             container-type]
+             container-type
+             compacting-document-intervall]
       :or {skip-lines  0
            datatype-document :int32
            datatype-term-pos :int16
            datatype-metas    :int8
            datatype-term-idx :int32
            container-type    :jvm-heap
-           max-lines Integer/MAX_VALUE}}]
+           max-lines Integer/MAX_VALUE
+           compacting-document-intervall 10000}}]
 
   (let [_ (tools/debug :parse)
         token->long (hf/mut-map [["" 0]])
@@ -153,7 +170,8 @@
                                datatype-term-pos
                                datatype-metas
                                datatype-term-idx
-                               container-type)
+                               container-type
+                               compacting-document-intervall)
                       {:meta-list (dt/make-list datatype-metas)
                        :term-list (dt/make-list datatype-term-idx)
                        :index-list (dt/make-list datatype-document)
@@ -165,6 +183,20 @@
 
 
         _ (update-acc!  acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)
+
+        acc (assoc acc
+               :meta-list (dt/make-list datatype-metas)
+               :term-list (dt/make-list datatype-term-idx)
+               :index-list (dt/make-list datatype-document))
+        ;_ (def acc acc)
+
+        
+       ;;(-> acc :meta-list count)
+       ;;=> 2345
+      ;;  (func/sum-fast 
+      ;;   (map 
+      ;;    count
+      ;;    (-> acc :document-containers))) 
 
 
         col-term-index (ds/new-column :term-idx (dt/concat-buffers (:term-index-containers acc))  {} [])
