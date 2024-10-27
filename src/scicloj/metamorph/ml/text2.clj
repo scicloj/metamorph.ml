@@ -39,28 +39,24 @@
    [(:index-list index-and-lable-lists)
     (:meta-list index-and-lable-lists)]))
 
+(defn range-2 [a b]
+  (range a (+ a b)))
+
 
 (defn- make-document-col-container [index-and-lable-lists container-type datatype]
-  
-  (func/reduce-max [])
-  (let [max-document
-        (or
-         (func/reduce-max
-          (distinct
-           (dt/concat-buffers
-            (-> index-and-lable-lists :document-containers))))
-         -1)]
-    ;(def max-document max-document)
+  (let [n-docs-parsed (:n-docs-parsed index-and-lable-lists)]
     (make-col-container
      (fn [idx count]
-       (dt/const-reader (+ max-document idx 1) count))
+       (dt/const-reader idx count))
      container-type
      datatype
-     [(range (count (:index-list index-and-lable-lists)))
-      (:index-list index-and-lable-lists)])
-    
-    ))
+     [(range-2 (- n-docs-parsed (count (:index-list index-and-lable-lists)))
+               (count (:index-list index-and-lable-lists)))
 
+      (:index-list index-and-lable-lists)])))
+
+(defn- range-2 [a b]
+  (range a (+ a b)))
 
 
 (defn- make-term-pos-col-container [index-and-lable-lists container-type datatype]
@@ -103,7 +99,9 @@
         index-count (count tokens)
         meta-list (:meta-list acc)
         index-list (:index-list acc)
-        term-list (:term-list acc)]
+        term-list (:term-list acc)
+        acc (update acc :n-docs-parsed inc)]
+
 
     (.add ^List meta-list meta)
     (.add ^List index-list index-count)
@@ -172,7 +170,8 @@
                                datatype-term-idx
                                container-type
                                compacting-document-intervall)
-                      {:meta-list (dt/make-list datatype-metas)
+                      {:n-docs-parsed 0
+                       :meta-list (dt/make-list datatype-metas)
                        :term-list (dt/make-list datatype-term-idx)
                        :index-list (dt/make-list datatype-document)
                        :term-pos-containers (hf/mut-list)
@@ -188,17 +187,9 @@
                :meta-list (dt/make-list datatype-metas)
                :term-list (dt/make-list datatype-term-idx)
                :index-list (dt/make-list datatype-document))
-        ;_ (def acc acc)
+
 
         
-       ;;(-> acc :meta-list count)
-       ;;=> 2345
-      ;;  (func/sum-fast 
-      ;;   (map 
-      ;;    count
-      ;;    (-> acc :document-containers))) 
-
-
         col-term-index (ds/new-column :term-idx (dt/concat-buffers (:term-index-containers acc))  {} [])
         col-term-pos (ds/new-column :term-pos  (dt/concat-buffers (:term-pos-containers acc)) {} [])
         col-document (ds/new-column :document  (dt/concat-buffers (:document-containers acc)) {} [])
@@ -226,4 +217,5 @@
 
     {:datasets [ds]
      :token->long token->long}))
+
 

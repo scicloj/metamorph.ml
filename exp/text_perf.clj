@@ -5,7 +5,8 @@
    [clojure.string :as str]
    [scicloj.metamorph.ml.text :as text]
    [scicloj.metamorph.ml.text2 :as text2]
-   [tablecloth.api :as tc]))
+   [tablecloth.api :as tc]
+   [ham-fisted.set :as hf-set]))
 
 
 
@@ -22,7 +23,7 @@
        :datatype-term-pos :int16
        :datatype-term-idx :int32
        :datatype-metas    :byte
-       :compacting-document-intervall 100)))
+       :compacting-document-intervall 10000)))
 
 
 (defn tidy [& opts]
@@ -64,7 +65,7 @@
 
 (defn tfidf [& opts]
 
-  (def opts [{:max-lines 25 :tidy-algo 2}])
+  (def opts [{:max-lines 16325 :tidy-algo 2}])
   (println :opts opts)
   (let [opts (first opts)
         tidy-text-fn
@@ -79,9 +80,8 @@
          (tc/drop-columns [:term-pos]))
 
 
-        _ (-> df :document distinct count)
-        _ (def df df)
-        _ (-> df :document distinct)
+        _ (println :tidy-document-unique (-> df :document hf-set/unique count))
+         
         _ (do
             (println)
             (println :df-measures
@@ -126,6 +126,7 @@
                       (tc/column-names tfidf)
                       (tc/columns tfidf)))
 
+            (println :tfidf-document-unique (-> tfidf :document hf-set/unique count))
             (println tfidf))]
 
   )
