@@ -3,10 +3,16 @@
    [clj-memory-meter.core :as mm]
    [clojure.java.io :as io]
    [clojure.string :as str]
+   [ham-fisted.api :as hf]
+   [ham-fisted.set :as hf-set]
    [scicloj.metamorph.ml.text :as text]
    [scicloj.metamorph.ml.text2 :as text2]
    [tablecloth.api :as tc]
-   [ham-fisted.set :as hf-set]))
+   [tech.v3.dataset :as ds]
+   [tech.v3.datatype :as dt]))
+
+
+
 
 
 
@@ -24,6 +30,35 @@
        :datatype-term-idx :int32
        :datatype-metas    :byte
        :compacting-document-intervall 10000)))
+
+(defn df->tidy [& opts]
+
+
+  (let [df
+        (ds/->dataset "bigdata/repeatedAbstrcats_3.7m_.txt"
+                      {:text-temp-dir "/tmp/xxx"
+                       :file-type :tsv
+                       ;:num-rows 1000
+                       :header-row? false})
+
+        tidy-df
+        (first (:datasets
+                (-> (text2/->tidy-text
+                     df
+                     (fn [line] [line
+                                 (rand-int 6)])
+                     #(str/split % #" ")
+                     ;:max-lines 100000
+                     :skip-lines 1
+                     :container-type :native-heap
+                     :datatype-document :int32
+                     :datatype-term-pos :int16
+                     :datatype-term-idx :int32
+                     :datatype-metas    :byte
+                     :compacting-document-intervall 10000
+                     :line-seq-fn (fn [df] (map str (-> df (get "column-0"))))))))]
+    (println)
+    (println :shape (tc/shape tidy-df))))
 
 
 (defn tidy [& opts]

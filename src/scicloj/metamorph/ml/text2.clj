@@ -85,6 +85,8 @@
    datatype
    [(:index-list index-and-lable-lists)]))
 
+
+;; TODO : try using this
 (defn- make-term-index-col-container [index-and-lable-lists combine-method container-type datatype]
   (make-col-container
    combine-method
@@ -176,7 +178,8 @@
              datatype-term-idx
              container-type
              compacting-document-intervall 
-             combine-method]
+             combine-method
+             line-seq-fn]
       :or {skip-lines  0
            datatype-document :int32
            datatype-term-pos :int16
@@ -185,30 +188,32 @@
            container-type    :jvm-heap
            max-lines Integer/MAX_VALUE
            compacting-document-intervall 10000
-           combine-method :coalesce-blocks!}}]
+           combine-method :coalesce-blocks!
+           line-seq-fn line-seq}}]
 
   (let [_ (tools/debug :parse)
         token->long (hf/mut-map [["" 0]])
         acc
-        (tools/process-file reader
-                      (partial process-line  token->long line-split-fn text-tokenizer-fn
-                               datatype-document
-                               datatype-term-pos
-                               datatype-metas
-                               datatype-term-idx
-                               container-type
-                               compacting-document-intervall
-                               combine-method
-                               )
-                      {:n-docs-parsed 0
-                       :meta-list (dt/make-list datatype-metas)
-                       :term-list (dt/make-list datatype-term-idx)
-                       :index-list (dt/make-list datatype-document)
-                       :term-pos-containers (hf/mut-list)
-                       :metas-containers (hf/mut-list)
-                       :document-containers (hf/mut-list)
-                       :term-index-containers (hf/mut-list)}
-                      max-lines skip-lines)
+        (tools/process-file
+         reader
+         line-seq-fn
+         (partial process-line  token->long line-split-fn text-tokenizer-fn
+                  datatype-document
+                  datatype-term-pos
+                  datatype-metas
+                  datatype-term-idx
+                  container-type
+                  compacting-document-intervall
+                  combine-method)
+         {:n-docs-parsed 0
+          :meta-list (dt/make-list datatype-metas)
+          :term-list (dt/make-list datatype-term-idx)
+          :index-list (dt/make-list datatype-document)
+          :term-pos-containers (hf/mut-list)
+          :metas-containers (hf/mut-list)
+          :document-containers (hf/mut-list)
+          :term-index-containers (hf/mut-list)}
+         max-lines skip-lines)
 
 
         _ (update-acc!  acc combine-method container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)

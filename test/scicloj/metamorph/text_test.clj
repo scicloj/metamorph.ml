@@ -8,7 +8,8 @@
    [scicloj.metamorph.ml.text :as text]
    [scicloj.metamorph.ml.text2 :as text2]
    [tablecloth.api :as tc]
-   [criterium.core :as criterium])
+   [criterium.core :as criterium]
+   [tech.v3.dataset :as ds])
   (:import
    [org.mapdb DBMaker]
    [tech.v3.datatype.native_buffer NativeBuffer]))
@@ -108,8 +109,8 @@
                     :skip-lines 1
                     :combine-method combine-method)))
 
-(defn tidy-text-test [tidy-text-fn combine-method]
-  (let [tidy (reviews->tidy tidy-text-fn combine-method)
+(defn- validate-tidy-and-tf [tidy]
+  (let [
         text (first (:datasets tidy))
         token->long (:token->long tidy)
         int->str (c-set/map-invert token->long)
@@ -158,6 +159,28 @@
                      :term-idx))
             sort)))))
 
+(defn tidy-text-test [tidy-text-fn combine-method]
+  (let [tidy (reviews->tidy tidy-text-fn combine-method)]
+    (validate-tidy-and-tf tidy)))
+
+
+
+
+(deftest tidy-text-test--from-df
+  (let [tidy
+        (text2/->tidy-text
+         (tc/dataset "test/data/reviews.csv")
+         (fn [line] [line 3])
+         #(str/split % #" ")
+                              ;:max-lines 100000
+         :skip-lines 0
+         :max-lines 5
+         :line-seq-fn (fn [df] (map str (-> df (get "Text")))))]
+    (validate-tidy-and-tf tidy)))
+        
+
+
+
 (deftest tidy-text-1
   (tidy-text-test text/->tidy-text nil))
 
@@ -167,6 +190,9 @@
 (deftest tidy-text-2--concat-buffers
   (tidy-text-test text2/->tidy-text :concat-buffers))
 
+
+
+
 (deftest tfidf
   (let [ds-and-st
 
@@ -174,7 +200,6 @@
          (io/reader
       ;;https://en.wikipedia.org/wiki/Tf%E2%80%93idf
           (java.io.StringReader. "this is a a sample,1\nthis is another another example example example,2"))
-      ;(io/reader "test/data/reviews.csv")
          parse-review-line
          #(str/split % #" ")
          :max-lines 5
@@ -192,27 +217,9 @@
         tfidfs-native-heap
         (->
          (text/->tfidf text :container-type :native-heap)
-         (tc/order-by [:term-idx :document :label :term-count :tf :idf :tfidf]))
-
-        tfidfs-native-buffer
-        (->
-         (text/->tfidf text :container-type :native-buffer)
          (tc/order-by [:term-idx :document :label :term-count :tf :idf :tfidf]))]
 
-
-
-
-    (-> tfidfs :tfidf .data)
-     ;;=> tech.v3.datatype.io_indexed_buffer$indexed_buffer$reify__16993
-
-
-    (-> tfidfs-native-buffer :tfidf .data class)
-     ;;=> tech.v3.datatype.io_indexed_buffer$indexed_buffer$reify__16993
-
-    (-> tfidfs-native-heap
-        :tf .data
-        class)
-
+    
     (is (= ;;'("this" "this" "is" "is" "a" "sample" "another" "example")
          '(1 1 2 2 3 4 5 6)
 

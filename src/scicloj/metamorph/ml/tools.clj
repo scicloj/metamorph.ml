@@ -56,14 +56,25 @@
 
 
 
-(defn process-file [reader line-func
-                     line-acc
+(defn process-file [source 
+                    lines-seq-fn
+                    line-func
+                    line-acc
                      max-lines skip-lines]
-  (with-open [rdr (BufferedReader. reader)]
-    (reduce line-func line-acc
-            (take max-lines
-                  (drop skip-lines
-                        (line-seq rdr))))))
+  (if (instance? java.io.Reader source)
+    (with-open [rdr source]
+      (->> rdr
+           lines-seq-fn
+           (drop skip-lines)
+           (take max-lines)
+           (reduce line-func line-acc)))
+    
+    (->> source
+         lines-seq-fn
+         (drop skip-lines)
+         (take max-lines)
+         (reduce line-func line-acc)))
+  )
 
 (defn put-retrieve-token! [token->long token]
   (if (contains? token->long token)

@@ -71,29 +71,13 @@
    [(:index-list index-and-lable-lists)]))
 
 
-(defn- process-file [reader line-func
-                     line-acc
-                     max-lines skip-lines]
-  (with-open [rdr (BufferedReader. reader)]
-    (reduce line-func line-acc
-            (take max-lines
-                  (drop skip-lines
-                        (line-seq rdr))))))
-
-(defn- put-retrieve-token! [token->long token]
-  (if (contains? token->long token)
-    (get token->long token)
-    (let [next-token (hf/constant-count token->long)]
-      (hf/assoc! token->long token next-token)
-      next-token)))
-
 
 (defn process-line [token->long line-split-fn text-tokenizer-fn
                     acc line]
   (let [[text meta] (line-split-fn line)
         tokens (text-tokenizer-fn text)
 
-        token-indices (map (partial put-retrieve-token! token->long) tokens)
+        token-indices (map (partial tools/put-retrieve-token! token->long) tokens)
         index-count (count tokens)
         meta-list (:meta-list acc)
         index-list (:index-list acc)
@@ -143,8 +127,12 @@
                            max-lines skip-lines]
 
 
-  (process-file reader
-                (partial fill-string-table-from-line! term-index-string-table line-split-fn text-tokenizer-fn)
+  (tools/process-file reader
+                      line-seq
+                (partial fill-string-table-from-line! 
+                         term-index-string-table 
+                         line-split-fn 
+                         text-tokenizer-fn)
                 0
                 max-lines skip-lines))
 
@@ -191,7 +179,8 @@
   (let [_ (tools/debug :parse)
         token->long (hf/mut-map [["" 0]])
         acc
-        (process-file reader
+        (tools/process-file reader
+                      line-seq
                       (partial process-line  token->long line-split-fn text-tokenizer-fn)
                       {:meta-list (dt/make-list datatype-metas)
                        :term-list (dt/make-list datatype-term-idx)
