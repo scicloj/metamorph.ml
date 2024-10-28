@@ -100,15 +100,16 @@
     (is (= {:label 3}
            (-> dataset :meta first)))))
 
-(defn reviews->tidy [tidy-text-fn]
+(defn reviews->tidy [tidy-text-fn combine-method]
   (-> (tidy-text-fn (io/reader "test/data/reviews.csv")
                     parse-review-line
                     #(str/split % #" ")
                     :max-lines 5
-                    :skip-lines 1)))
+                    :skip-lines 1
+                    :combine-method combine-method)))
 
-(defn tidy-text-test [tidy-text-fn]
-  (let [tidy (reviews->tidy tidy-text-fn)
+(defn tidy-text-test [tidy-text-fn combine-method]
+  (let [tidy (reviews->tidy tidy-text-fn combine-method)
         text (first (:datasets tidy))
         token->long (:token->long tidy)
         int->str (c-set/map-invert token->long)
@@ -158,10 +159,13 @@
             sort)))))
 
 (deftest tidy-text-1
-  (tidy-text-test text/->tidy-text))
+  (tidy-text-test text/->tidy-text nil))
 
-(deftest tidy-text-2
-  (tidy-text-test text2/->tidy-text))
+(deftest tidy-text-2--coalesce-blocks
+  (tidy-text-test text2/->tidy-text :coalesce-blocks!))
+
+(deftest tidy-text-2--concat-buffers
+  (tidy-text-test text2/->tidy-text :concat-buffers))
 
 (deftest tfidf
   (let [ds-and-st

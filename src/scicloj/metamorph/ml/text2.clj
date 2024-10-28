@@ -6,32 +6,52 @@
    [tech.v3.datatype :as dt]
    [tech.v3.datatype.functional :as func]
    [scicloj.metamorph.ml.tools :as tools]
-   [ham-fisted.set :as hf-set]
-   [tech.v3.dataset.reductions :as reductions]
-   [tech.v3.datatype.functional :as fun])
+   
+)
   (:import
    [java.util List]))
 
 
-(defn- make-col-container [map-fn  container-type res-dataype  datas]
-  
+(defn- make-col-container--concat-buffers [map-fn  container-type res-dataype  datas]
+  (let [col-datas
+        (->>
+         (apply dt/emap map-fn nil datas)
+         (remove empty?) ; prevents 'buffer type class clojure.lang.PersistentList$EmptyList is not convertible to buffer'
+         )
+        ]
+
+    (dt/concat-buffers res-dataype col-datas)
+    ))
+
+
+(defn- make-col-container--coalesce-blocks! [map-fn  container-type res-dataype  datas]
   (let [col-datas
         (->>
          (apply dt/emap map-fn nil datas)
          (remove empty?) ; prevents 'buffer type class clojure.lang.PersistentList$EmptyList is not convertible to buffer'
          )
         col-size (or (func/reduce-+ (map count col-datas)) 0)
-        container (dt/make-container container-type res-dataype col-size)]
+        container (dt/make-container container-type res-dataype col-size)
+        ]
 
     (when (not-empty col-datas)
-      (dt/coalesce-blocks! container col-datas))
-    container))
+      (dt/coalesce-blocks! container col-datas)
+      )
+    container
+    ))
 
+(defn- make-col-container [map-fn combine-method container-type res-dataype  datas]
+  (case combine-method
+    :coalesce-blocks! (make-col-container--coalesce-blocks! map-fn container-type res-dataype datas)
+    :concat-buffers (make-col-container--concat-buffers map-fn container-type res-dataype datas)
+    )
+  )
 
-(defn- make-metas-col-container [index-and-lable-lists container-type datatype]
+(defn- make-metas-col-container [index-and-lable-lists combine-method container-type datatype]
   (make-col-container
    (fn [index meta]
      (dt/const-reader meta index))
+   combine-method
    (if (= :object datatype)
      :jvm-heap
      container-type)
@@ -43,11 +63,12 @@
   (range a (+ a b)))
 
 
-(defn- make-document-col-container [index-and-lable-lists container-type datatype]
+(defn- make-document-col-container [index-and-lable-lists combine-method container-type datatype]
   (let [n-docs-parsed (:n-docs-parsed index-and-lable-lists)]
     (make-col-container
      (fn [idx count]
        (dt/const-reader idx count))
+     combine-method
      container-type
      datatype
      [(range-2 (- n-docs-parsed (count (:index-list index-and-lable-lists)))
@@ -55,26 +76,30 @@
 
       (:index-list index-and-lable-lists)])))
 
-(defn- range-2 [a b]
-  (range a (+ a b)))
 
-
-(defn- make-term-pos-col-container [index-and-lable-lists container-type datatype]
+(defn- make-term-pos-col-container [index-and-lable-lists combine-method container-type datatype]
   (make-col-container
    range
+   combine-method
    container-type
    datatype
-
    [(:index-list index-and-lable-lists)]))
 
+(defn- make-term-index-col-container [index-and-lable-lists combine-method container-type datatype]
+  (make-col-container
+   combine-method
+   identity
+   container-type
+   datatype
+   [(:term-list index-and-lable-lists)]))
 
 
-(defn- update-acc! [acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx]
+(defn- update-acc! [acc combine-method container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx]
   ;(debug "before copy")
   #_{:clj-kondo/ignore [:unresolved-symbol]}
-  (let [term-pos-container (make-term-pos-col-container acc container-type datatype-term-pos)
-        metas-container (make-metas-col-container acc container-type datatype-metas)
-        document-container (make-document-col-container acc container-type datatype-document)
+  (let [term-pos-container (make-term-pos-col-container acc combine-method container-type datatype-term-pos)
+        metas-container (make-metas-col-container acc combine-method container-type datatype-metas)
+        document-container (make-document-col-container acc combine-method container-type datatype-document)
         term-index-container (dt/make-container container-type datatype-term-idx (:term-list acc))]
         (.add ^List (:term-pos-containers acc) term-pos-container)
         (.add ^List (:metas-containers acc) metas-container)
@@ -91,6 +116,7 @@
                     datatype-term-idx
                     container-type
                     compacting-document-intervall
+                    combine-method
                     acc line]
   (let [[text meta] (line-split-fn line)
         tokens (text-tokenizer-fn text)
@@ -111,7 +137,7 @@
     (if (zero? (rem (dt/ecount index-list) compacting-document-intervall))
       (do
         (tools/debug :compact (* compacting-document-intervall (dt/ecount (:term-pos-containers acc))))
-        (update-acc! acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)
+        (update-acc! acc combine-method container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)
         (assoc acc
                :meta-list (dt/make-list datatype-metas)
                :term-list (dt/make-list datatype-term-idx)
@@ -149,7 +175,8 @@
              datatype-metas
              datatype-term-idx
              container-type
-             compacting-document-intervall]
+             compacting-document-intervall 
+             combine-method]
       :or {skip-lines  0
            datatype-document :int32
            datatype-term-pos :int16
@@ -157,7 +184,8 @@
            datatype-term-idx :int32
            container-type    :jvm-heap
            max-lines Integer/MAX_VALUE
-           compacting-document-intervall 10000}}]
+           compacting-document-intervall 10000
+           combine-method :coalesce-blocks!}}]
 
   (let [_ (tools/debug :parse)
         token->long (hf/mut-map [["" 0]])
@@ -169,7 +197,9 @@
                                datatype-metas
                                datatype-term-idx
                                container-type
-                               compacting-document-intervall)
+                               compacting-document-intervall
+                               combine-method
+                               )
                       {:n-docs-parsed 0
                        :meta-list (dt/make-list datatype-metas)
                        :term-list (dt/make-list datatype-term-idx)
@@ -181,7 +211,7 @@
                       max-lines skip-lines)
 
 
-        _ (update-acc!  acc container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)
+        _ (update-acc!  acc combine-method container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)
 
         acc (assoc acc
                :meta-list (dt/make-list datatype-metas)

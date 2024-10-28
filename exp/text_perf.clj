@@ -65,7 +65,6 @@
 
 (defn tfidf [& opts]
 
-  (def opts [{:max-lines 16325 :tidy-algo 2}])
   (println :opts opts)
   (let [opts (first opts)
         tidy-text-fn
@@ -80,7 +79,7 @@
          (tc/drop-columns [:term-pos]))
 
 
-        _ (println :tidy-document-unique (-> df :document hf-set/unique count))
+        #_ (println :tidy-document-unique (-> df :document hf-set/unique count))
          
         _ (do
             (println)
