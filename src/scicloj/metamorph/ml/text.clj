@@ -311,7 +311,7 @@
   (let [[text meta] (line-split-fn line)
         tokens (text-tokenizer-fn text)
 
-        token-indices (map (partial tools/put-retrieve-token! token-lookup-table) tokens)
+        token-indices (map (partial tools/get-put-token token-lookup-table) tokens)
         token-count (count tokens)
         meta-list (:meta-list acc)
         token-counts-list (:token-counts-list acc)
@@ -325,7 +325,8 @@
     (.addAll ^List token-indices-list token-indices)
 
 
-    (if (zero? (rem ^long (dt/ecount token-counts-list) ^long compacting-document-intervall))
+    ;(println :n-docs-parsed (:n-docs-parsed acc))
+    (if (zero? (rem ^long (:n-docs-parsed acc) ^long compacting-document-intervall))
       (do
         (tools/debug :compact (* ^long compacting-document-intervall ^long (dt/ecount (:token-pos-containers acc))))
         (update-acc! acc combine-method container-type datatype-token-pos datatype-meta datatype-document datatype-token-idx)
@@ -334,6 +335,28 @@
                :token-indices-list (dt/make-list datatype-token-idx)
                :token-counts-list (dt/make-list datatype-document)))
       acc)))
+
+(defn fill-lookup-from-line [token-lookup-table
+                             line-split-fn text-tokenizer-fn
+                             datatype-document
+                             datatype-token-pos
+                             datatype-meta
+                             datatype-token-idx
+                             container-type
+                             compacting-document-intervall
+                             combine-method
+                             acc line]
+
+  (let [[text _] (line-split-fn line)
+        tokens (text-tokenizer-fn text)]
+    (run! (partial tools/get-put-token token-lookup-table) tokens)
+
+    (println :n-docs-parsed (:n-docs-parsed acc))
+    (when (zero? (rem ^long (:n-docs-parsed acc) ^long compacting-document-intervall))
+      (tools/debug :fill-look-up (:n-docs-parsed acc)))
+    )
+  
+    (update acc :n-docs-parsed inc))
 
 
 (defn make-column [name container-list combine-method container-type datatype]
@@ -435,13 +458,20 @@
 
   (let [_ (tools/debug :parse)
         token-lookup-table (Object2LongLinkedOpenHashMap. 10000)
+
+
         _ (.put token-lookup-table "" 0)
+
+        process-line-fn process-line
+        ;fill-lookup-from-line
+
+        ;
 
         acc
         (tools/process-file
          lines-source
          line-seq-fn
-         (partial process-line token-lookup-table line-split-fn line-tokenizer-fn
+         (partial process-line-fn token-lookup-table line-split-fn line-tokenizer-fn
                   datatype-document
                   datatype-token-pos
                   datatype-meta
@@ -460,7 +490,11 @@
          max-lines skip-lines)
 
 
-        _ (update-acc!  acc combine-method container-type datatype-token-pos datatype-meta datatype-document datatype-token-idx)
+        _ (update-acc!  acc combine-method container-type
+                        datatype-token-pos
+                        datatype-meta
+                        datatype-document
+                        datatype-token-idx)
 
         acc (assoc acc
                    :meta-list (dt/make-list datatype-meta)
@@ -473,7 +507,7 @@
         col-token-index (make-column :token-idx (:token-index-containers acc) combine-method container-type datatype-token-idx)
         col-token-pos (make-column :token-pos (:token-pos-containers acc) combine-method container-type datatype-token-pos)
         col-document (make-column :document (:document-containers acc) combine-method container-type datatype-document)
-        
+
         col-meta (when (seq (:meta-containers acc))
                    (make-column :meta (:meta-containers acc) combine-method container-type datatype-meta))
 
