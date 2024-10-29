@@ -16,8 +16,8 @@
 
 
 
-(defn load-reviews [tidy-text-fn max-lines]
-  (-> (tidy-text-fn
+(defn load-reviews [max-lines]
+  (-> (text2/->tidy-text
        (io/reader "bigdata/repeatedAbstrcats_3.7m_.txt")
        (fn [line] [line
                    (rand-int 6)])
@@ -34,11 +34,13 @@
 (defn df->tidy [& opts]
 
 
-  (let [df
+  (let [opts (first opts)
+        
+        df
         (ds/->dataset "bigdata/repeatedAbstrcats_3.7m_.txt"
                       {:text-temp-dir "/tmp/xxx"
                        :file-type :tsv
-                       ;:num-rows 1000
+                       :num-rows (or (:num-rows opts) Integer/MAX_VALUE)
                        :header-row? false})
 
         tidy-df
@@ -63,14 +65,9 @@
 
 (defn tidy [& opts]
   (let [opts (first opts)
-        tidy-text-fn
-        (case (:tidy-algo opts)
-          1 text/->tidy-text
-          2 text2/->tidy-text)
         df
         (->
          (first (:datasets (load-reviews 
-                            tidy-text-fn
                             (or (:max-lines opts) Integer/MAX_VALUE))))
          )]
 
@@ -102,14 +99,9 @@
 
   (println :opts opts)
   (let [opts (first opts)
-        tidy-text-fn
-        (case (:tidy-algo opts)
-          1 text/->tidy-text
-          2 text2/->tidy-text)
         df
         (->
          (first (:datasets (load-reviews
-                            tidy-text-fn
                             (or (:max-lines opts) Integer/MAX_VALUE))))
          (tc/drop-columns [:term-pos]))
 

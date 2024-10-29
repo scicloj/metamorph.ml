@@ -32,7 +32,7 @@
 
 
   (let [{:keys [datasets]}
-        (text/->tidy-text (io/reader "test/data/reviews.csv")
+        (text2/->tidy-text (io/reader "test/data/reviews.csv")
                           parse-review-line
                           #(str/split % #" ")
                           :max-lines 5
@@ -84,22 +84,6 @@
            (-> df :document distinct)))))
 
 
-
-(deftest ->tidy-text-with-object
-
-  (let [{:keys [datasets]}
-        (text/->tidy-text (io/reader "test/data/reviews.csv")
-                          parse-review-line-as-maps
-                          #(str/split % #" ")
-                          :max-lines 5
-                          :skip-lines 1
-                          :container-type :jvm-heap
-                          :datatype-metas :object)
-        dataset (first datasets)]
-    (is (not (instance? NativeBuffer (-> dataset :document .data))))
-
-    (is (= {:label 3}
-           (-> dataset :meta first)))))
 
 (defn reviews->tidy [tidy-text-fn combine-method]
   (-> (tidy-text-fn (io/reader "test/data/reviews.csv")
@@ -181,13 +165,11 @@
 
 
 
-(deftest tidy-text-1
-  (tidy-text-test text/->tidy-text nil))
 
-(deftest tidy-text-2--coalesce-blocks
+(deftest tidy-text--coalesce-blocks
   (tidy-text-test text2/->tidy-text :coalesce-blocks!))
 
-(deftest tidy-text-2--concat-buffers
+(deftest tidy-text--concat-buffers
   (tidy-text-test text2/->tidy-text :concat-buffers))
 
 
@@ -268,10 +250,8 @@
     string-table))
 
 
-(deftest test-tidy-df--text1
-  (validate-tfidf text/->tidy-text))
 
-(deftest test-tidy-df--text2
+(deftest test-tidy-df2
   (validate-tfidf text2/->tidy-text))
 
 (deftest fill-string-table-memory-db!
@@ -293,27 +273,5 @@
            (take 8 (text->string-table temp-file-db))))))
 
 
-(comment
-  (require '[criterium.core :as criterium])
-
-  (def tidy
-
-    (text/->tidy-text (io/reader "test/data/reviews.csv")
-                      parse-review-line
-                      #(str/split % #" ")
-                      :max-lines 10000
-                      :skip-lines 1))
-  
-  (def
-    text (first (:datasets tidy)))
-
-  ;; best: Execution time mean : 21.752604 ms
-
-  (criterium/quick-bench
-   (text/create-term->idf-map text))
-  
-
-
-  )
 
 
