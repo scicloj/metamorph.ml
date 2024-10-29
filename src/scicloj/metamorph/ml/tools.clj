@@ -1,9 +1,7 @@
 (ns scicloj.metamorph.ml.tools
   (:require
-   [clojure.pprint :as pprint]
-   [ham-fisted.api :as hf]) 
+   [clojure.pprint :as pprint]) 
   (:import
-   [it.unimi.dsi.fastutil.ints Int2IntOpenHashMap]
    [it.unimi.dsi.fastutil.objects Object2IntLinkedOpenHashMap]
    [java.io BufferedReader]))
 
@@ -60,20 +58,20 @@
 
 
 
-(defn process-file [source 
+(defn process-file [lines-source 
                     lines-seq-fn
                     line-func
                     line-acc
                      max-lines skip-lines]
-  (if (instance? java.io.Reader source)
-    (with-open [rdr ^java.io.Reader source]
+  (if (instance? java.io.Reader lines-source)
+    (with-open [rdr ^java.io.Reader lines-source]
       (->> rdr
            lines-seq-fn
            (drop skip-lines)
            (take max-lines)
            (reduce line-func line-acc)))
     
-    (->> source
+    (->> lines-source
          lines-seq-fn
          (drop skip-lines)
          (take max-lines)

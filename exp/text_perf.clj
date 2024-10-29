@@ -18,6 +18,7 @@
 (defn load-reviews [max-lines]
   (-> (text/->tidy-text
        (io/reader "bigdata/repeatedAbstrcats_3.7m_.txt")
+       line-seq
        (fn [line] [line
                    (rand-int 6)])
        #(str/split % #" ")
@@ -46,6 +47,7 @@
         (first (:datasets
                 (-> (text/->tidy-text
                      df
+                     (fn [df] (map str (-> df (get "column-0"))))
                      (fn [line] [line
                                  (rand-int 6)])
                      #(str/split % #" ")
@@ -56,8 +58,7 @@
                      :datatype-term-pos :int16
                      :datatype-term-idx :int32
                      :datatype-metas    :byte
-                     :compacting-document-intervall 10000
-                     :line-seq-fn (fn [df] (map str (-> df (get "column-0"))))))))]
+                     :compacting-document-intervall 10000))))]
     (println)
     (println :shape (tc/shape tidy-df))))
 

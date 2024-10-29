@@ -32,6 +32,7 @@
 
   (let [{:keys [datasets]}
         (text/->tidy-text (io/reader "test/data/reviews.csv")
+                          line-seq
                           parse-review-line
                           #(str/split % #" ")
                           :max-lines 5
@@ -51,6 +52,7 @@
 
   (let [{:keys [datasets]}
         (text/->tidy-text (io/reader "test/data/reviews.csv")
+                          line-seq
                           parse-review-line-as-maps
                           #(str/split % #" ")
                           :max-lines 7
@@ -69,6 +71,7 @@
 
   (let [{:keys [datasets]}
         (text/->tidy-text (io/reader "test/data/reviews.csv")
+                          line-seq
                            parse-review-line-as-maps
                            #(str/split % #" ")
                            :max-lines 7
@@ -86,6 +89,7 @@
 
 (defn reviews->tidy [tidy-text-fn combine-method]
   (-> (tidy-text-fn (io/reader "test/data/reviews.csv")
+                    line-seq
                     parse-review-line
                     #(str/split % #" ")
                     :max-lines 5
@@ -153,12 +157,12 @@
   (let [tidy
         (text/->tidy-text
          (tc/dataset "test/data/reviews.csv")
+         (fn [df] (map str (-> df (get "Text"))))
          (fn [line] [line 3])
          #(str/split % #" ")
                               ;:max-lines 100000
          :skip-lines 0
-         :max-lines 5
-         :line-seq-fn (fn [df] (map str (-> df (get "Text")))))]
+         :max-lines 5)]
     (validate-tidy-and-tf tidy)))
         
 
@@ -181,6 +185,7 @@
          (io/reader
       ;;https://en.wikipedia.org/wiki/Tf%E2%80%93idf
           (java.io.StringReader. "this is a a sample,1\nthis is another another example example example,2"))
+         line-seq
          parse-review-line
          #(str/split % #" ")
          :max-lines 5

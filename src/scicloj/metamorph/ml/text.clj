@@ -86,15 +86,15 @@
                                (fn [] (LongOpenHashSet.))
                                (fn [ acc ^long document]
                                  (when (zero? (rem document 10000))
-                                   (println :reduce-idf document))
+                                   (tools/debug :reduce-idf document))
                                  (.add ^LongOpenHashSet acc document)
                                  acc
                                  )
                                (fn [^LongOpenHashSet documents-1 ^LongOpenHashSet documents-2]
-                                 (println :merge-idf)
+                                 (tools/debug :merge-idf)
                                  (.addAll documents-1 documents-2))
                                (fn [documents]
-                                 (println :finalize-idf) 
+                                 (tools/debug :finalize-idf) 
                                  (let [n-uniq-docs ^int  (.size ^LongOpenHashSet documents)]
                                    (func/log10 ^float (/  ^float N ^int n-uniq-docs)))))}
      tidy-text)))
@@ -196,7 +196,7 @@
                                       (-> idfs :idf dt/->float-array))
 
 
-       _ (println :measure-term-idx->idf-map 
+       _ (tools/debug :measure-term-idx->idf-map 
              (mm/measure term-idx->idf-map))
 
        _ (tools/debug :tfidf-data)
@@ -206,7 +206,6 @@
          {:tfidf-cols (tf-idf-reducer term-idx->idf-map container-type)}
          tidy-text)]
 
-    (println :new-dataset)
     (ds/new-dataset
      [(>document-col container-type :int32 tfidf-data)
       (->column :tfidf container-type :float32 tfidf-data :tfidf)
@@ -243,7 +242,7 @@
     :coalesce-blocks! (make-col-container--coalesce-blocks! map-fn container-type res-dataype datas)
     :concat-buffers (make-col-container--concat-buffers map-fn container-type res-dataype datas)))
 
-(defn- make-metas-col-container [index-and-lable-lists combine-method container-type datatype]
+(defn- make-metas-col-container [acc combine-method container-type datatype]
   (make-col-container
    (fn [index meta]
      (dt/const-reader meta index))
@@ -252,44 +251,44 @@
      :jvm-heap
      container-type)
    datatype
-   [(:index-list index-and-lable-lists)
-    (:meta-list index-and-lable-lists)]))
+   [(:index-list acc)
+    (:meta-list acc)]))
 
-(defn range-2 [ a b]
+(defn- range-2 [ a b]
   (range a (+ ^int a ^int b)))
 
 
-(defn- make-document-col-container [index-and-lable-lists combine-method container-type datatype]
-  (let [n-docs-parsed (:n-docs-parsed index-and-lable-lists)]
+(defn- make-document-col-container [acc combine-method container-type datatype]
+  (let [n-docs-parsed (:n-docs-parsed acc)]
     (make-col-container
      (fn [idx count]
        (dt/const-reader idx count))
      combine-method
      container-type
      datatype
-     [(range-2 (- ^int n-docs-parsed ^int (count (:index-list index-and-lable-lists)))
-               (count (:index-list index-and-lable-lists)))
+     [(range-2 (- ^int n-docs-parsed ^int (count (:index-list acc)))
+               (count (:index-list acc)))
 
-      (:index-list index-and-lable-lists)])))
+      (:index-list acc)])))
 
 
-(defn- make-term-pos-col-container [index-and-lable-lists combine-method container-type datatype]
+(defn- make-term-pos-col-container [acc combine-method container-type datatype]
   (make-col-container
    range
    combine-method
    container-type
    datatype
-   [(:index-list index-and-lable-lists)]))
+   [(:index-list acc)]))
 
 
 ;; TODO : try using this
-(defn- make-term-index-col-container [index-and-lable-lists combine-method container-type datatype]
+(defn- make-term-index-col-container [acc combine-method container-type datatype]
   (make-col-container
    combine-method
    identity
    container-type
    datatype
-   [(:term-list index-and-lable-lists)]))
+   [(:term-list acc)]))
 
 
 (defn- update-acc! [acc combine-method container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx]
@@ -345,25 +344,33 @@
 
 
 (defn ->tidy-text
-  "Reads, parses and tokenizes a text file into a seq of tech.v3.dataset in the tidy-text format,
+  "Reads, parses and tokenizes a text file or a TMD dataset 
+   into a seq of tech.v3.dataset in the tidy-text format,
    so one word per row. 
    It does the parsing and conversion strictly line based, so it should work for large documents.
 
-   Initial tests show that each byte of text size need one byte of heap.
-   So a 8 GB text file can be sucessfully loaded when having at least 8 GB of heap for the JVM
+   Initial tests show that each byte of text size need 1.3 byte of heap on average
+   So a 8 GB text file can be sucessfully loaded when having at least 12 GB of heap for the JVM
 
-
+   `lines-source` Either a buffered reader or a TMD dadaset
+   `line-seq-fn`  A function which return a lazy-list of lines , given the `lines-source`
+   `line-split-fn` Splits a line into 'text' and 'meta' (for example labels)
+   `line-tokenizer-fn Splits line into tokens
+   
    `line-split-fn` A fn which should seperate a single line of input in text and `other`
    Supposed to retrun a seq of size 2, where the first is teh 'text' of the line and `other` can be 
    anything (map, vector, scalar). It's value will be returned in column `meta` and is usppsoe dto be further processed
    `text-tokenizer-fn` A fuction which will be called for any `text` as obtained by `line-split-fn`
     It should split the text by word boundaries and return the obtained tokens as a seq of string.
     It can do text normalisation already.
+   
    `skip-lines` Lines to skip at egining of file
    `max-lines` max lines to return
    "
-  [reader line-split-fn
-   text-tokenizer-fn
+  [lines-source 
+   line-seq-fn
+   line-split-fn
+   line-tokenizer-fn
 
 
    & {:keys [skip-lines max-lines
@@ -374,7 +381,7 @@
              container-type
              compacting-document-intervall
              combine-method
-             line-seq-fn]
+             ]
       :or {skip-lines  0
            datatype-document :int32
            datatype-term-pos :int16
@@ -387,14 +394,14 @@
            line-seq-fn line-seq}}]
 
   (let [_ (tools/debug :parse)
-        token->long (Object2IntLinkedOpenHashMap. 10000)
-        _ (.put token->long "" 0)
+        token->int (Object2IntLinkedOpenHashMap. 10000)
+        _ (.put token->int "" 0)
 
         acc
         (tools/process-file
-         reader
+         lines-source
          line-seq-fn
-         (partial process-line  token->long line-split-fn text-tokenizer-fn
+         (partial process-line token->int line-split-fn line-tokenizer-fn
                   datatype-document
                   datatype-term-pos
                   datatype-metas
@@ -436,8 +443,8 @@
         (ds/new-dataset
          [col-term-index col-term-pos col-document col-meta])]
 
-    (tools/debug :token->long-count (count token->long))
-    (tools/debug :measure-token->long (mm/measure token->long))
+    (tools/debug :token->long-count (count token->int))
+    (tools/debug :measure-token->long (mm/measure token->int))
 
 
     (tools/debug :measure-col-term-index (mm/measure col-term-index))
@@ -448,7 +455,7 @@
 
 
     {:datasets [ds]
-     :token->long  (Object2IntMaps/unmodifiable token->long)}))
+     :token->long  (Object2IntMaps/unmodifiable token->int)}))
 
 
 
