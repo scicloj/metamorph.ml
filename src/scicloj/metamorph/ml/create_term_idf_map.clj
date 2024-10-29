@@ -16,9 +16,9 @@
          (tc/row-count
           (tc/unique-by df :document)))]
     (-> df
-        (ds/unique-by #(vector (% :term-idx) (% :document)))
+        (ds/unique-by #(vector (% :token-idx) (% :document)))
         (#(ds-reduce/group-by-column-agg
-           :term-idx
+           :token-idx
            {:idf
             (ds-reduce/reducer :document
                                (constantly 0)
@@ -37,7 +37,7 @@
           (tc/row-count
            (tc/unique-by df :document)))
          rows-by-term-idx
-         (ds/group-by-column->indexes df :term-idx)]
+         (ds/group-by-column->indexes df :token-idx)]
      (hf-reduce/preduce
       (fn []  (hf/mut-long-hashtable-map))
       (fn [m [term-idx row-indices]]
@@ -64,28 +64,28 @@
                (tc/row-count
                 (tc/unique-by df :document)))
               rows-by-term-idx
-              (ds/group-by-column->indexes df :term-idx)]
+              (ds/group-by-column->indexes df :token-idx)]
           (hf-reduce/preduce
-           (fn [] {:term-idx (dt/make-list :int32)
+           (fn [] {:token-idx (dt/make-list :int32)
                    :idf        (dt/make-list :float32)})
            (fn [m [term-idx row-indices]]
              (let [documents
                    (distinct (ds/select-rows (:document df) row-indices))
                    idf (Math/log10 (/ N (count documents)))]
-               (.add (:term-idx m) term-idx)
+               (.add (:token-idx m) term-idx)
                (.add (:idf m) idf))
              m)
            (fn [m-1 m-2]
              (.addAllReducible
-              (:term-idx m-1)
-              (:term-idx m-2))
+              (:token-idx m-1)
+              (:token-idx m-2))
              (.addAllReducible
               (:idf m-1)
               (:idf m-2))
              m-1)
            rows-by-term-idx))]
 
-    (zipmap (:term-idx keys-values)
+    (zipmap (:token-idx keys-values)
             (:idf keys-values))))
 
 (defn create-term->idf-map-1 [df]
@@ -104,7 +104,7 @@
      (fn [m-1 m-2]
        (hf/merge m-1 m-2))
 
-     (ds/group-by-column->indexes df :term-idx))))
+     (ds/group-by-column->indexes df :token-idx))))
 
 
 
@@ -114,10 +114,10 @@
   (require '[criterium.core :as criterium])
   (def ds
     (ds/->dataset
-     [{:term-idx 1, :term-pos 0, :document 0, :label 0} {:term-idx 2, :term-pos 1, :document 0, :label 0} {:term-idx 3, :term-pos 2, :document 0, :label 0} {:term-idx 3, :term-pos 3, :document 0, :label 0} {:term-idx 4, :term-pos 4, :document 0, :label 0} {:term-idx 1, :term-pos 0, :document 1, :label 1} {:term-idx 2, :term-pos 1, :document 1, :label 1} {:term-idx 5, :term-pos 2, :document 1, :label 1} {:term-idx 5, :term-pos 3, :document 1, :label 1} {:term-idx 6, :term-pos 4, :document 1, :label 1} {:term-idx 6, :term-pos 5, :document 1, :label 1} {:term-idx 6, :term-pos 6, :document 1, :label 1}]))
+     [{:token-idx 1, :token-pos 0, :document 0, :label 0} {:token-idx 2, :token-pos 1, :document 0, :label 0} {:token-idx 3, :token-pos 2, :document 0, :label 0} {:token-idx 3, :token-pos 3, :document 0, :label 0} {:token-idx 4, :token-pos 4, :document 0, :label 0} {:token-idx 1, :token-pos 0, :document 1, :label 1} {:token-idx 2, :token-pos 1, :document 1, :label 1} {:token-idx 5, :token-pos 2, :document 1, :label 1} {:token-idx 5, :token-pos 3, :document 1, :label 1} {:token-idx 6, :token-pos 4, :document 1, :label 1} {:token-idx 6, :token-pos 5, :document 1, :label 1} {:token-idx 6, :token-pos 6, :document 1, :label 1}]))
 
 
-  (ds/group-by-column->indexes ds :term-idx)
+  (ds/group-by-column->indexes ds :token-idx)
 
 
 
@@ -185,7 +185,7 @@
           :max-lines 10000
           :skip-lines 1
           :datatype-document :int32
-          :datatype-term-pos :int32
+          :datatype-token-pos :int32
           :datatype-meta    :int8))))
 
 
@@ -197,7 +197,7 @@
   (time (def m-5 (create-term->idf-map-5 df)))
 
 
-  (tc/order-by m-5 :term-idx)
+  (tc/order-by m-5 :token-idx)
   (mm/measure m-1)
   ;;=> "10.4 MiB"
 

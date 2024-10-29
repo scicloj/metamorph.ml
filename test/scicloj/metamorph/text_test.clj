@@ -99,36 +99,40 @@
                     :combine-method combine-method)))
 
 (defn- validate-tidy-and-tf [tidy expected-meta]
+  (def tidy tidy)
+  (def expected-meta expected-meta)
   (let [
         text (first (:datasets tidy))
         token-lookup-table (:token-lookup-table tidy)
         int->str (c-set/map-invert token-lookup-table)
+        _ (def text text)
         tf (->
             (text/->tfidf text)
-            (tc/order-by [:document :term-idx]))]
+            (tc/order-by [:document :token-idx]))]
 
     (is (= 596
            (tc/row-count text)))
 
     (is (= 
          (if  expected-meta
-           '(:term-idx :term-pos :document :meta)
-           '(:term-idx :term-pos :document))
+           '(:token-idx :token-pos :document :meta)
+           '(:token-idx :token-pos :document))
            (tc/column-names text)))
 
-    (is (not (instance? NativeBuffer (-> text :term-idx .data))))
-    (is (not (instance? NativeBuffer (-> text :term-pos .data))))
+    (is (not (instance? NativeBuffer (-> text :token-idx .data))))
+    (is (not (instance? NativeBuffer (-> text :token-pos .data))))
     (is (not (instance? NativeBuffer (-> text :document .data))))
     (is 
      (if expected-meta
        (not (instance? NativeBuffer (-> text :meta .data)))
        true))
 
-    (is (= :int16 (-> text :term-idx meta :datatype)))
-    (is (= :int16 (-> text :term-pos meta :datatype)))
+    (is (= :int16 (-> text :token-idx meta :datatype)))
+    (is (= :int16 (-> text :token-pos meta :datatype)))
     (is (= :int16 (-> text :document meta :datatype)))
     (def text text)
     (def expected-meta expected-meta)
+    (def tf tf)
 
     (is (= (if expected-meta 
              :int16
@@ -144,8 +148,8 @@
             (-> text
                 (tc/head)
                 (tc/rows :maps))
-            (map (fn [[term-index a b c]]
-                   [(int->str term-index) a b c])))))
+            (map (fn [[token-index a b c]]
+                   [(int->str token-index) a b c])))))
 
 
 
@@ -154,14 +158,14 @@
          (-> tf :document frequencies)))
     (is (=
          {7 4, 1 356, 4 7, 13 1, 6 4, 3 18, 2 36, 11 1, 5 2}
-         (-> tf :term-count frequencies)))
+         (-> tf :token-count frequencies)))
 
     (is (= '("50-60" "Did" "Don't" "Is" "It" "Just" "No." "So," "Yes." "a" "and" "anyway?" "around" "box" "could" "difficult" "do" "gift" "gifts." "girlfriend's" "go" "goodies." "great" "has" "how" "if" "is." "it" "it's" "it." "know" "like" "list" "love" "make" "my" "of" "offending" "old" "on" "or" "parents" "people" "person" "product" "receiving" "recipient" "seems" "since" "someone" "specific" "sure" "sweet" "than" "that's" "the" "there's" "this" "thoughtful" "to" "tooth," "value?" "want" "with" "worse" "years" "you" "your")
            (->>
             (map int->str
                  (-> tf
                      (tc/select-rows (fn [row] (= 0 (:document row))))
-                     :term-idx))
+                     :token-idx))
             sort)))))
 
 (defn tidy-text-test [combine-method compacting-document-intervall]
@@ -203,12 +207,6 @@
   )
 
 
-
-
-
-(deftest tidy-text--concat-buffers
-  )
-
 (defn validate-tfidf [tidy->text-fn]
   (let [ds-and-st
 
@@ -229,20 +227,20 @@
         tfidfs
         (->
          (text/->tfidf text)
-         (tc/order-by [:term-idx :document :label :term-count :tf :idf :tfidf]))
+         (tc/order-by [:token-idx :document :label :token-count :tf :idf :tfidf]))
 
         tfidfs-native-heap
         (->
          (text/->tfidf text :container-type :native-heap)
-         (tc/order-by [:term-idx :document :label :term-count :tf :idf :tfidf]))]
+         (tc/order-by [:token-idx :document :label :token-count :tf :idf :tfidf]))]
 
     
     (is (= ;;'("this" "this" "is" "is" "a" "sample" "another" "example")
          '(1 1 2 2 3 4 5 6)
 
          (-> tfidfs
-             (tc/order-by :term-idx)
-             :term-idx seq)))
+             (tc/order-by :token-idx)
+             :token-idx seq)))
 
     (is (=
          ["0.2"

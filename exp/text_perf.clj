@@ -26,13 +26,14 @@
        :skip-lines 1
        :container-type :native-heap
        :datatype-document :int32
-       :datatype-term-pos :int16
-       :datatype-term-idx :int32
+       :datatype-token-pos :int16
+       :datatype-token-idx :int32
        :datatype-meta    :byte
        :compacting-document-intervall 10000)))
 
 (defn df->tidy [& opts]
 
+  
 
   (let [opts (first opts)
         
@@ -55,8 +56,8 @@
                      :skip-lines 1
                      :container-type :native-heap
                      :datatype-document :int32
-                     :datatype-term-pos :int16
-                     :datatype-term-idx :int32
+                     :datatype-token-pos :int16
+                     :datatype-token-idx :int32
                      :datatype-meta    :byte
                      :compacting-document-intervall 10000))))]
     (println)
@@ -64,6 +65,8 @@
 
 
 (defn tidy [& opts]
+  (def opts [{:max-lines 59999}])
+
   (let [opts (first opts)
         df
         (->
@@ -103,7 +106,7 @@
         (->
          (first (:datasets (load-reviews
                             (or (:max-lines opts) Integer/MAX_VALUE))))
-         (tc/drop-columns [:term-pos]))
+         (tc/drop-columns [:token-pos]))
 
 
         #_ (println :tidy-document-unique (-> df :document hf-set/unique count))
@@ -141,9 +144,9 @@
 
             (println :measure-tfidf-ds (mm/measure tfidf))
             (println :measure-tfidf-tfidf (mm/measure (:tfidf tfidf)))
-            (println :measure-tfidf-termcount (mm/measure (:term-count tfidf)))
+            (println :measure-tfidf-termcount (mm/measure (:token-count tfidf)))
             (println :measure-tfidf-document (mm/measure (:document tfidf)))
-            (println :measure-tfidf-term-idx (mm/measure (:term-idx tfidf)))
+            (println :measure-tfidf-term-idx (mm/measure (:token-idx tfidf)))
 
             (println :col-datatypes-tfidf
                      (map
