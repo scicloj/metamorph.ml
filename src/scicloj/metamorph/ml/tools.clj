@@ -78,10 +78,10 @@
          (reduce line-func line-acc)))
   )
 
-(defn put-retrieve-token! [^Object2IntLinkedOpenHashMap token->long ^String token]
-  (if (.containsKey token->long token)
-    (.get token->long token)
-    (let [next-token (.size token->long)]
-      (.put token->long ^String
+(defn put-retrieve-token! [^Object2IntLinkedOpenHashMap token-lookup-table ^String token]
+  (if (.containsKey token-lookup-table token)
+    (.get token-lookup-table token)
+    (let [next-token (.size token-lookup-table)]
+      (.put token-lookup-table ^String
             token next-token)
       next-token)))

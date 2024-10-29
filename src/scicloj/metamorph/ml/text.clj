@@ -38,8 +38,8 @@
 
 
 (defn heap-string-table []
-  (st/make-string-table [])
-  )
+  (st/make-string-table []))
+  
 
 (defn mapdb-string-table [^org.mapdb.DB db]
   (st/->StringTable
@@ -88,8 +88,8 @@
                                  (when (zero? (rem document 10000))
                                    (tools/debug :reduce-idf document))
                                  (.add ^LongOpenHashSet acc document)
-                                 acc
-                                 )
+                                 acc)
+                                 
                                (fn [^LongOpenHashSet documents-1 ^LongOpenHashSet documents-2]
                                  (tools/debug :merge-idf)
                                  (.addAll documents-1 documents-2))
@@ -117,28 +117,28 @@
                         (get tfidf-data :tfidf-cols)))
         meta-data {:datatype data-type
                    :name col-name}]
-    (col-impl/construct-column [] data meta-data))
+    (col-impl/construct-column [] data meta-data)))
 
-  )
+  
 
 (defn- >document-col [container-type data-type  tfidf-data]
  (tools/debug :->document-col)
-  (let [tfidfs-lengths
-        (map #(-> % :tfidf count)
-             (-> tfidf-data :tfidf-cols))
-        cont-size (func/sum-fast tfidfs-lengths)
-        container (dt/make-container container-type data-type cont-size)
-        data
-        (->>
-         (lznc/map
-          (fn [doc-id len] (dt/const-reader doc-id len))
-          (-> tfidf-data :document)
-          tfidfs-lengths)
-         (dt/coalesce-blocks! container))
-        meta-data {:name :document
-                   :datatype data-type}]
+ (let [tfidfs-lengths
+       (map #(-> % :tfidf count)
+            (-> tfidf-data :tfidf-cols))
+       cont-size (func/sum-fast tfidfs-lengths)
+       container (dt/make-container container-type data-type cont-size)
+       data
+       (->>
+        (lznc/map
+         (fn [doc-id len] (dt/const-reader doc-id len))
+         (-> tfidf-data :document)
+         tfidfs-lengths)
+        (dt/coalesce-blocks! container))
+       meta-data {:name :document
+                  :datatype data-type}]
 
-    (col-impl/construct-column [] data meta-data)))
+   (col-impl/construct-column [] data meta-data)))
 
 
 (defn- tf-idf-reducer [term-idx->idf-map container-type]
@@ -149,8 +149,8 @@
            :document nil})
    (fn [acc ^long document ^long term-idx]
      ;(tools/debug :reduce-tfidf document)
-     (when (and (zero? (rem document 10000)) (zero? ^long (:term-counter acc ) ))
-       (tools/debug :reduce-tfidf document ) )
+     (when (and (zero? (rem document 10000)) (zero? ^long (:term-counter acc)))
+       (tools/debug :reduce-tfidf document))
   
      (.addTo ^Long2IntOpenHashMap  (:term-counts acc) term-idx 1)
      {:term-counts (:term-counts acc)
@@ -181,8 +181,8 @@
        {:term-idx (dt/make-container container-type :int32  (hf/keys tf-idfs))
         :term-count (dt/make-container container-type  :int32 (hf/vals term-counts))
         :tf (dt/make-container container-type :float32 (hf/mapv :tf (hf/vals tf-idfs)))
-        :tfidf (dt/make-container container-type :float32 (hf/mapv :tfidf (hf/vals tf-idfs)))})))
-  )
+        :tfidf (dt/make-container container-type :float32 (hf/mapv :tfidf (hf/vals tf-idfs)))}))))
+  
 
 
 (defn ->tfidf [tidy-text &  {:keys [container-type] 
@@ -196,10 +196,10 @@
                                       (-> idfs :idf dt/->float-array))
 
 
-       _ (tools/debug :measure-term-idx->idf-map 
-             (mm/measure term-idx->idf-map))
+        _ (tools/debug :measure-term-idx->idf-map 
+              (mm/measure term-idx->idf-map))
 
-       _ (tools/debug :tfidf-data)
+        _ (tools/debug :tfidf-data)
         tfidf-data
         (reductions/group-by-column-agg
          :document
@@ -218,8 +218,8 @@
   (let [col-datas
         (->>
          (apply dt/emap map-fn nil datas)
-         (remove empty?) ; prevents 'buffer type class clojure.lang.PersistentList$EmptyList is not convertible to buffer'
-         )]
+         (remove empty?))] ; prevents 'buffer type class clojure.lang.PersistentList$EmptyList is not convertible to buffer'
+         
 
     (dt/concat-buffers res-dataype col-datas)))
 
@@ -228,8 +228,8 @@
   (let [col-datas
         (->>
          (apply dt/emap map-fn nil datas)
-         (remove empty?) ; prevents 'buffer type class clojure.lang.PersistentList$EmptyList is not convertible to buffer'
-         )
+         (remove empty?)) ; prevents 'buffer type class clojure.lang.PersistentList$EmptyList is not convertible to buffer'
+         
         col-size (or (func/reduce-+ (map count col-datas)) 0)
         container (dt/make-container container-type res-dataype col-size)]
 
@@ -243,16 +243,17 @@
     :concat-buffers (make-col-container--concat-buffers map-fn container-type res-dataype datas)))
 
 (defn- make-metas-col-container [acc combine-method container-type datatype]
-  (make-col-container
-   (fn [index meta]
-     (dt/const-reader meta index))
-   combine-method
-   (if (= :object datatype)
-     :jvm-heap
-     container-type)
-   datatype
-   [(:index-list acc)
-    (:meta-list acc)]))
+  (when (seq (:meta-list acc))
+    (make-col-container
+     (fn [index meta]
+       (dt/const-reader meta index))
+     combine-method
+     (if (= :object datatype)
+       :jvm-heap
+       container-type)
+     datatype
+     [(:index-list acc)
+      (:meta-list acc)])))
 
 (defn- range-2 [ a b]
   (range a (+ ^int a ^int b)))
@@ -299,14 +300,15 @@
         document-container (make-document-col-container acc combine-method container-type datatype-document)
         term-index-container (dt/make-container container-type datatype-term-idx (:term-list acc))]
     (.add ^List (:term-pos-containers acc) term-pos-container)
-    (.add ^List (:metas-containers acc) metas-container)
+    (when metas-container
+      (.add ^List (:metas-containers acc) metas-container))
     (.add ^List (:document-containers acc) document-container)
-    (.add ^List (:term-index-containers acc) term-index-container))
+    (.add ^List (:term-index-containers acc) term-index-container)))
   ;(debug "after copy")
-  )
+  
 
 
-(defn process-line [token->long line-split-fn text-tokenizer-fn
+(defn process-line [token-lookup-table line-split-fn text-tokenizer-fn
                     datatype-document
                     datatype-term-pos
                     datatype-metas
@@ -318,7 +320,7 @@
   (let [[text meta] (line-split-fn line)
         tokens (text-tokenizer-fn text)
 
-        token-indices (map (partial tools/put-retrieve-token! token->long) tokens)
+        token-indices (map (partial tools/put-retrieve-token! token-lookup-table) tokens)
         index-count (count tokens)
         meta-list (:meta-list acc)
         index-list (:index-list acc)
@@ -326,7 +328,8 @@
         acc (update acc :n-docs-parsed inc)]
 
 
-    (.add ^List meta-list meta)
+    (when meta
+      (.add ^List meta-list meta))
     (.add ^List index-list index-count)
     (.addAll ^List term-list token-indices)
 
@@ -349,23 +352,41 @@
    so one word per row. 
    It does the parsing and conversion strictly line based, so it should work for large documents.
 
-   Initial tests show that each byte of text size need 1.3 byte of heap on average
-   So a 8 GB text file can be sucessfully loaded when having at least 12 GB of heap for the JVM
+   Initial tests show that each byte of text size need 1.5 byte on average
+   So a 8 GB text file can be sucessfully loaded when having at least 12 GB.
 
    `lines-source` Either a buffered reader or a TMD dadaset
    `line-seq-fn`  A function which return a lazy-list of lines , given the `lines-source`
-   `line-split-fn` Splits a line into 'text' and 'meta' (for example labels)
-   `line-tokenizer-fn Splits line into tokens
-   
    `line-split-fn` A fn which should seperate a single line of input in text and `other`
-   Supposed to retrun a seq of size 2, where the first is teh 'text' of the line and `other` can be 
-   anything (map, vector, scalar). It's value will be returned in column `meta` and is usppsoe dto be further processed
-   `text-tokenizer-fn` A fuction which will be called for any `text` as obtained by `line-split-fn`
-    It should split the text by word boundaries and return the obtained tokens as a seq of string.
-    It can do text normalisation already.
+                   Supposed to return a seq of size 2, where the first is the 'text' of the line and `meta` can be 
+                   anything non-nil (map, vector, scalar). It's value will be returned in column `meta` and is supposed 
+                   to be further processed later. `meta` can be nil always,  so no column `meta` will be created 
+
+   `text-tokenizer-fn` A function which will be called for any `text` as obtained by `line-split-fn`
+                       It should split the text by word boundaries and return the obtained tokens as a seq of strings.
+                       It can do any text normalisation desired.
    
-   `skip-lines` Lines to skip at egining of file
+   Optional `options` are: 
+   `skip-lines` Lines to skip at beginning
    `max-lines` max lines to return
+
+
+   Function returns a map of :datasets and :token-lookup-table
+   
+   :datasets is a seq of TMD datasets each having 4 columns which represent
+   the input text in the tidy-text format.
+
+   :document    The 'document/line' a token is comming from
+   :term-idx    The token/word (as int) , which is present as well in the token->int look up table returned
+   :term-pos    The position of the token in the document
+   :meta        The meta values if return by `line-split-fn`
+                   
+   Assuming that the `text-tokenizer-fn` does no text normalisation, the table is a exact representation of the input text-
+
+                  
+                   
+
+
    "
   [lines-source 
    line-seq-fn
@@ -380,8 +401,8 @@
              datatype-term-idx
              container-type
              compacting-document-intervall
-             combine-method
-             ]
+             combine-method]
+             
       :or {skip-lines  0
            datatype-document :int32
            datatype-term-pos :int16
@@ -390,18 +411,17 @@
            container-type    :jvm-heap
            max-lines Integer/MAX_VALUE
            compacting-document-intervall 10000
-           combine-method :coalesce-blocks!
-           line-seq-fn line-seq}}]
+           combine-method :coalesce-blocks!}}]
 
   (let [_ (tools/debug :parse)
-        token->int (Object2IntLinkedOpenHashMap. 10000)
-        _ (.put token->int "" 0)
+        token-lookup-table (Object2IntLinkedOpenHashMap. 10000)
+        _ (.put token-lookup-table "" 0)
 
         acc
         (tools/process-file
          lines-source
          line-seq-fn
-         (partial process-line token->int line-split-fn line-tokenizer-fn
+         (partial process-line token-lookup-table line-split-fn line-tokenizer-fn
                   datatype-document
                   datatype-term-pos
                   datatype-metas
@@ -432,7 +452,8 @@
         col-term-index (ds/new-column :term-idx (dt/concat-buffers (:term-index-containers acc))  {} [])
         col-term-pos (ds/new-column :term-pos  (dt/concat-buffers (:term-pos-containers acc)) {} [])
         col-document (ds/new-column :document  (dt/concat-buffers (:document-containers acc)) {} [])
-        col-meta (ds/new-column :meta (dt/concat-buffers (:metas-containers acc)) {} [])
+        col-meta (when (seq (:metas-containers acc))
+                   (ds/new-column :meta (dt/concat-buffers (:metas-containers acc)) {} []))
 
         _ (tools/debug :measure-term-index (mm/measure col-term-index))
         _ (tools/debug :measure-term-pos (mm/measure col-term-pos))
@@ -441,21 +462,26 @@
 
         ds
         (ds/new-dataset
-         [col-term-index col-term-pos col-document col-meta])]
+         [col-term-index col-term-pos col-document])
 
-    (tools/debug :token->long-count (count token->int))
-    (tools/debug :measure-token->long (mm/measure token->int))
+        ds-withmetas
+        (if col-meta
+          (ds/add-column ds col-meta)
+          ds)]
+
+    (tools/debug :token-lookup-table (count token-lookup-table))
+    (tools/debug :measure-token-lookup-table (mm/measure token-lookup-table))
 
 
     (tools/debug :measure-col-term-index (mm/measure col-term-index))
     (tools/debug :measure-col-term-pos (mm/measure col-term-pos))
     (tools/debug :measure-col-document-idx (mm/measure col-document))
     (tools/debug :measure-col-metas (mm/measure col-meta))
-    (tools/debug :measure-ds (mm/measure ds))
+    (tools/debug :measure-ds (mm/measure ds-withmetas))
 
 
-    {:datasets [ds]
-     :token->long  (Object2IntMaps/unmodifiable token->int)}))
+    {:datasets [ds-withmetas]
+     :token-lookup-table  (Object2IntMaps/unmodifiable token-lookup-table)}))
 
 
 

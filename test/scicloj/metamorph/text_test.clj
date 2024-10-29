@@ -48,7 +48,7 @@
     (is (= 3
            (-> dataset :meta first)))))
 
-(deftest ->tidy-text2--document-distinct
+(deftest ->tidy-text--document-distinct
 
   (let [{:keys [datasets]}
         (text/->tidy-text (io/reader "test/data/reviews.csv")
@@ -67,7 +67,7 @@
 
     ))
 
-(deftest ->tidy-text2--document-distinct-2
+(deftest ->tidy-text-document-distinct-2
 
   (let [{:keys [datasets]}
         (text/->tidy-text (io/reader "test/data/reviews.csv")
@@ -87,8 +87,8 @@
 
 
 
-(defn reviews->tidy [tidy-text-fn combine-method]
-  (-> (tidy-text-fn (io/reader "test/data/reviews.csv")
+(defn reviews->tidy [combine-method]
+  (-> (text/->tidy-text (io/reader "test/data/reviews.csv")
                     line-seq
                     parse-review-line
                     #(str/split % #" ")
@@ -96,11 +96,11 @@
                     :skip-lines 1
                     :combine-method combine-method)))
 
-(defn- validate-tidy-and-tf [tidy]
+(defn- validate-tidy-and-tf [tidy expected-meta]
   (let [
         text (first (:datasets tidy))
-        token->long (:token->long tidy)
-        int->str (c-set/map-invert token->long)
+        token-lookup-table (:token-lookup-table tidy)
+        int->str (c-set/map-invert token-lookup-table)
         tf (->
             (text/->tfidf text)
             (tc/order-by [:document :term-idx]))]
@@ -108,20 +108,31 @@
     (is (= 596
            (tc/row-count text)))
 
-    (is (= '(:term-idx :term-pos :document :meta)
+    (is (= 
+         (if  expected-meta
+           '(:term-idx :term-pos :document :meta)
+           '(:term-idx :term-pos :document))
            (tc/column-names text)))
 
     (is (not (instance? NativeBuffer (-> text :term-idx .data))))
     (is (not (instance? NativeBuffer (-> text :term-pos .data))))
     (is (not (instance? NativeBuffer (-> text :document .data))))
-    (is (not (instance? NativeBuffer (-> text :meta .data))))
+    (is 
+     (if expected-meta
+       (not (instance? NativeBuffer (-> text :meta .data)))
+       true))
 
     (is (= :int32 (-> text :term-idx meta :datatype)))
     (is (= :int16 (-> text :term-pos meta :datatype)))
     (is (= :int32 (-> text :document meta :datatype)))
-    (is (= :int8 (-> text :meta meta :datatype)))
+    (is (= (if expected-meta :int8 nil) 
+           (-> text :meta meta :datatype)))
 
-    (is (= [["Is" 0 0 3] ["it" 1 0 3] ["a" 2 0 3] ["great" 3 0 3] ["product" 4 0 3]]
+    (is (= [["Is" 0 0 expected-meta] 
+            ["it" 1 0 expected-meta] 
+            ["a" 2 0 expected-meta] 
+            ["great" 3 0 expected-meta] 
+            ["product" 4 0 expected-meta]]
            (->>
             (-> text
                 (tc/head)
@@ -146,12 +157,9 @@
                      :term-idx))
             sort)))))
 
-(defn tidy-text-test [tidy-text-fn combine-method]
-  (let [tidy (reviews->tidy tidy-text-fn combine-method)]
-    (validate-tidy-and-tf tidy)))
-
-
-
+(defn tidy-text-test [combine-method]
+  (let [tidy (reviews->tidy combine-method)]
+    (validate-tidy-and-tf tidy 3)))
 
 (deftest tidy-text-test--from-df
   (let [tidy
@@ -163,20 +171,27 @@
                               ;:max-lines 100000
          :skip-lines 0
          :max-lines 5)]
-    (validate-tidy-and-tf tidy)))
+    (validate-tidy-and-tf tidy 3)))
         
 
-
+(deftest tidy-text-test--from-df-no-meta
+  (let [tidy
+        (text/->tidy-text
+         (tc/dataset "test/data/reviews.csv")
+         (fn [df] (map str (-> df (get "Text"))))
+         (fn [line] [line nil])
+         #(str/split % #" ")
+                              ;:max-lines 100000
+         :skip-lines 0
+         :max-lines 5)]
+    (validate-tidy-and-tf tidy nil)))
 
 
 (deftest tidy-text--coalesce-blocks
-  (tidy-text-test text/->tidy-text :coalesce-blocks!))
+  (tidy-text-test :coalesce-blocks!))
 
 (deftest tidy-text--concat-buffers
-  (tidy-text-test text/->tidy-text :concat-buffers))
-
-
-
+  (tidy-text-test :concat-buffers))
 
 (defn validate-tfidf [tidy->text-fn]
   (let [ds-and-st
