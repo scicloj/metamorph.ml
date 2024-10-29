@@ -6,7 +6,6 @@
    [ham-fisted.api :as hf]
    [ham-fisted.set :as hf-set]
    [scicloj.metamorph.ml.text :as text]
-   [scicloj.metamorph.ml.text2 :as text2]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
    [tech.v3.datatype :as dt]))
@@ -17,7 +16,7 @@
 
 
 (defn load-reviews [max-lines]
-  (-> (text2/->tidy-text
+  (-> (text/->tidy-text
        (io/reader "bigdata/repeatedAbstrcats_3.7m_.txt")
        (fn [line] [line
                    (rand-int 6)])
@@ -45,7 +44,7 @@
 
         tidy-df
         (first (:datasets
-                (-> (text2/->tidy-text
+                (-> (text/->tidy-text
                      df
                      (fn [line] [line
                                  (rand-int 6)])

@@ -6,7 +6,6 @@
    [clojure.string :as str]
    [clojure.test :refer [deftest is]]
    [scicloj.metamorph.ml.text :as text]
-   [scicloj.metamorph.ml.text2 :as text2]
    [tablecloth.api :as tc]
    [criterium.core :as criterium]
    [tech.v3.dataset :as ds])
@@ -32,7 +31,7 @@
 
 
   (let [{:keys [datasets]}
-        (text2/->tidy-text (io/reader "test/data/reviews.csv")
+        (text/->tidy-text (io/reader "test/data/reviews.csv")
                           parse-review-line
                           #(str/split % #" ")
                           :max-lines 5
@@ -51,7 +50,7 @@
 (deftest ->tidy-text2--document-distinct
 
   (let [{:keys [datasets]}
-        (text2/->tidy-text (io/reader "test/data/reviews.csv")
+        (text/->tidy-text (io/reader "test/data/reviews.csv")
                           parse-review-line-as-maps
                           #(str/split % #" ")
                           :max-lines 7
@@ -69,7 +68,7 @@
 (deftest ->tidy-text2--document-distinct-2
 
   (let [{:keys [datasets]}
-        (text2/->tidy-text (io/reader "test/data/reviews.csv")
+        (text/->tidy-text (io/reader "test/data/reviews.csv")
                            parse-review-line-as-maps
                            #(str/split % #" ")
                            :max-lines 7
@@ -152,7 +151,7 @@
 
 (deftest tidy-text-test--from-df
   (let [tidy
-        (text2/->tidy-text
+        (text/->tidy-text
          (tc/dataset "test/data/reviews.csv")
          (fn [line] [line 3])
          #(str/split % #" ")
@@ -167,10 +166,10 @@
 
 
 (deftest tidy-text--coalesce-blocks
-  (tidy-text-test text2/->tidy-text :coalesce-blocks!))
+  (tidy-text-test text/->tidy-text :coalesce-blocks!))
 
 (deftest tidy-text--concat-buffers
-  (tidy-text-test text2/->tidy-text :concat-buffers))
+  (tidy-text-test text/->tidy-text :concat-buffers))
 
 
 
@@ -252,7 +251,7 @@
 
 
 (deftest test-tidy-df2
-  (validate-tfidf text2/->tidy-text))
+  (validate-tfidf text/->tidy-text))
 
 (deftest fill-string-table-memory-db!
   (let [memory-db
