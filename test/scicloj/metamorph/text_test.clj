@@ -207,6 +207,28 @@
   )
 
 
+(deftest toke->index-map
+  (let [token->index-map
+        (.. DBMaker
+            memoryDB
+            make
+            (hashMap "map")
+            counterEnable
+            createOrOpen)]
+
+    (text/->tidy-text
+     (io/reader
+      (java.io.StringReader. "this is a a sample,1\nthis is another another example example example,2"))
+     line-seq
+     parse-review-line
+     #(str/split % #" ")
+     :token->index-map token->index-map)
+
+    (is (=
+         {"" 0, "a" 3, "another" 5, "is" 2, "this" 1, "sample" 4, "example" 6}
+         token->index-map))))
+
+
 (defn validate-tfidf [tidy->text-fn]
   (let [ds-and-st
 

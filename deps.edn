@@ -66,13 +66,15 @@
         :extra-paths ["exp"]
         :extra-deps {org.clojure/data.csv        {:mvn/version "1.1.0"}
                      com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.3.0"}
-                     ch.qos.logback/logback-classic {:mvn/version "1.5.6"}}}
+                     ch.qos.logback/logback-classic {:mvn/version "1.5.6"}
+                     criterium/criterium {:mvn/version  "0.4.6"}}}
 
   :smoke-test {:jvm-opts ["-Djdk.attach.allowAttachSelf" "-Xmx1G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
       :extra-paths ["exp"]
       :extra-deps {org.clojure/data.csv        {:mvn/version "1.1.0"}
                    com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.3.0"}
-                   ch.qos.logback/logback-classic {:mvn/version "1.5.6"}}}
+                   ch.qos.logback/logback-classic {:mvn/version "1.5.6"}
+                   criterium/criterium {:mvn/version  "0.4.6"}}}
 
   
   }}

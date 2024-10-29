@@ -1,6 +1,7 @@
 (ns scicloj.metamorph.ml.text
   (:require
    [clj-memory-meter.core :as mm]
+   [criterium.core :as crit]
    [ham-fisted.api :as hf]
    [ham-fisted.lazy-noncaching :as lznc]
    [scicloj.metamorph.ml.tools :as tools]
@@ -14,8 +15,9 @@
   (:import
    [ham_fisted IMutList]
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap LongOpenHashSet]
-   [it.unimi.dsi.fastutil.objects Object2LongLinkedOpenHashMap Object2LongMaps]
-   [java.util List]))
+   [it.unimi.dsi.fastutil.objects Object2IntMaps Object2IntOpenHashMap Object2LongOpenHashMap]
+   [java.util List]
+   [org.mapdb DBMaker]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -425,9 +427,6 @@
                    
    Assuming that the `text-tokenizer-fn` does no text normalisation, the table is a exact representation of the input text-
 
-                  
-                   
-
 
    "
   [lines-source 
@@ -442,9 +441,10 @@
              datatype-token-pos
              datatype-meta
              datatype-token-idx
-             
              compacting-document-intervall
-             combine-method]
+             combine-method
+             token->index-map 
+             ]
              
       :or {skip-lines  0
            max-lines Integer/MAX_VALUE
@@ -454,24 +454,25 @@
            datatype-meta    :object
            datatype-token-idx :int16 
            compacting-document-intervall 10000
-           combine-method :coalesce-blocks!}}]
+           combine-method :coalesce-blocks!
+           token->index-map  (Object2IntOpenHashMap. 10000)
+           }}]
 
   (let [_ (tools/debug :parse)
-        token-lookup-table (Object2LongLinkedOpenHashMap. 10000)
+        
 
+        
 
-        _ (.put token-lookup-table "" 0)
+        _ (.put token->index-map "" 0)
 
         process-line-fn process-line
         ;fill-lookup-from-line
-
-        ;
 
         acc
         (tools/process-file
          lines-source
          line-seq-fn
-         (partial process-line-fn token-lookup-table line-split-fn line-tokenizer-fn
+         (partial process-line-fn token->index-map line-split-fn line-tokenizer-fn
                   datatype-document
                   datatype-token-pos
                   datatype-meta
@@ -525,8 +526,8 @@
           (ds/add-column ds col-meta)
           ds)]
 
-    (tools/debug :token-lookup-table (count token-lookup-table))
-    (tools/debug :measure-token-lookup-table (mm/measure token-lookup-table))
+    (tools/debug :count--token->index-map (count token->index-map))
+    (tools/debug :measure--token->index-map (mm/measure  token->index-map))
 
 
     (tools/debug :measure-col-token-index (mm/measure col-token-index))
@@ -537,7 +538,105 @@
 
 
     {:datasets [ds-withmetas]
-     :token-lookup-table  (Object2LongMaps/unmodifiable token-lookup-table)}))
+     :token-lookup-table  token->index-map
+     ;(Object2IntMaps/unmodifiable token-lookup-table)
+     }))
+
+
+(comment
+  (require '[criterium.core :as crit])
+  (import [org.mapdb DBMaker]
+          [it.unimi.dsi.fastutil.objects Object2IntOpenHashMap
+           Object2LongOpenHashMap])
 
 
 
+  ;;  Execution time mean : 3.202750 ms
+  (let [heap-db
+        (.. DBMaker
+            heapDB
+            make)
+        heap-db-map (.. heap-db (hashMap "map") createOrOpen)]
+    (crit/quick-bench
+     (run!
+      #(.put heap-db-map (str "hello" %) 1)
+      (range 10000))))
+
+  ;;  Execution time mean :10.405044 ms 
+  (let [memory-db
+        (.. DBMaker
+            memoryDB
+            make)
+        heap-db-map (.. memory-db (hashMap "map") createOrOpen)]
+    (crit/quick-bench
+     (do
+       (run!
+        #(.put heap-db-map (str "hello" %) 1)
+        (range 10000))
+       (run! 
+        (fn [_] (.size heap-db-map))
+        (range 10000)
+        ))
+     ))
+
+  ;;Execution time mean : 722.928142 ms
+  (let [heap-db
+        (.. DBMaker
+            tempFileDB
+            make)
+        heap-db-map (.. heap-db (hashMap "map") createOrOpen)]
+    (crit/quick-bench
+     (run!
+      #(.put heap-db-map (str "hello" %) 1)
+      (range 10000))))
+
+
+
+  ;;Execution time mean : 1.449999 ms
+  (let [o2l-map (Object2LongOpenHashMap.)]
+    (crit/quick-bench
+     (run!
+      #(.put o2l-map (str "hello" %) 1)
+      (range 10000)))
+    (println
+     (mm/measure o2l-map))
+    )
+
+  ;;Execution time mean : 1.221315 ms
+  ;;; 667.2 KiB
+  (let [o2i-map (Object2IntOpenHashMap.)]
+    (crit/quick-bench
+     (run!
+      #(.put o2i-map (str "hello" %) 1)
+      (range 10000)))
+    (println
+     (mm/measure o2i-map))
+    )
+  ;;Execution time mean : 1.901854 ms
+  (let [hf-map (hf/mut-map)]
+    (crit/quick-bench
+     (run!
+      #(.put hf-map (str "hello" %) 1)
+      (range 10000)))
+    (println
+     (mm/measure hf-map)))
+  
+
+  (def heap-db-map
+    (.. DBMaker
+        heapDB
+        make
+        (hashMap "map") 
+        counterEnable
+        createOrOpen))
+  (run!
+   #(.put heap-db-map (str "hello" %) 1)
+   (range 10000))
+
+  ;;Execution time mean : 319.890385 ms
+  (crit/quick-bench
+   (run!
+    (fn [_] (.size heap-db-map))
+    (range 1000)))
+
+  )

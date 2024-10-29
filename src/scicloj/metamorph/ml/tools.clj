@@ -2,7 +2,7 @@
   (:require
    [clojure.pprint :as pprint]) 
   (:import
-   [it.unimi.dsi.fastutil.objects Object2LongLinkedOpenHashMap]))
+   [java.util Map]))
 
 (set! *warn-on-reflection* true)
 
@@ -77,10 +77,13 @@
          (reduce line-func line-acc)))
   )
 
-(defn get-put-token [^Object2LongLinkedOpenHashMap token-lookup-table ^String token]
-  (if (.containsKey token-lookup-table token)
-    (.get token-lookup-table token)
-    (let [next-token (.size token-lookup-table)]
-      (.put token-lookup-table ^String
-            token next-token)
-      next-token)))
+(defn get-put-token [^Map token-lookup-table ^String token]
+  ;;(println :table-size (.size token-lookup-table) :get-put-token token)
+  (let [v (.get token-lookup-table token)]
+    (if (some? v)
+      v
+      (let [next-token (.size token-lookup-table)]
+        (.put token-lookup-table ^String
+              token next-token)
+        next-token))
+  ))
