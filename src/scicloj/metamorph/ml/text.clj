@@ -14,6 +14,7 @@
    [tech.v3.datatype.functional :as func])
   (:import
    [ham_fisted IMutList]
+   [it.unimi.dsi.fastutil.objects Object2IntLinkedOpenHashMap Object2IntMaps]
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap LongOpenHashSet]
    [java.io BufferedReader]
    [java.util List Set]))
@@ -177,7 +178,8 @@
            max-lines Integer/MAX_VALUE}}]
 
   (let [_ (tools/debug :parse)
-        token->long (hf/mut-map [["" 0]])
+        ^Object2IntLinkedOpenHashMap token->long (Object2IntLinkedOpenHashMap.)
+        _ (.put token->long ""  0)
         acc
         (tools/process-file reader
                       line-seq
@@ -220,7 +222,7 @@
 
 
     {:datasets [ds]
-     :token->long token->long}))
+     :token->long (Object2IntMaps/unmodifiable token->long)}))
 
 (defn create-term->idf-map [tidy-text]
   (tools/debug :create-term->idf-map)

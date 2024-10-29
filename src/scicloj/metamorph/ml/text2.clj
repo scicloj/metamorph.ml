@@ -9,8 +9,10 @@
    
 )
   (:import
-   [java.util List]))
+   [java.util List]
+   [it.unimi.dsi.fastutil.objects Object2IntLinkedOpenHashMap Object2IntMaps]))
 
+(set! *warn-on-reflection* true)
 
 (defn- make-col-container--concat-buffers [map-fn  container-type res-dataype  datas]
   (let [col-datas
@@ -192,7 +194,9 @@
            line-seq-fn line-seq}}]
 
   (let [_ (tools/debug :parse)
-        token->long (hf/mut-map [["" 0]])
+        token->long (Object2IntLinkedOpenHashMap. 10000)
+        _ (.put token->long "" 0)
+        
         acc
         (tools/process-file
          reader
@@ -251,6 +255,6 @@
 
 
     {:datasets [ds]
-     :token->long token->long}))
+     :token->long  (Object2IntMaps/unmodifiable token->long)}))
 
 

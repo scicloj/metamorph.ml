@@ -193,10 +193,10 @@
 
 
 
-(deftest tfidf
+(defn validate-tfidf [tidy->text-fn]
   (let [ds-and-st
 
-        (text/->tidy-text
+        (tidy->text-fn
          (io/reader
       ;;https://en.wikipedia.org/wiki/Tf%E2%80%93idf
           (java.io.StringReader. "this is a a sample,1\nthis is another another example example example,2"))
@@ -268,6 +268,11 @@
     string-table))
 
 
+(deftest test-tidy-df--text1
+  (validate-tfidf text/->tidy-text))
+
+(deftest test-tidy-df--text2
+  (validate-tfidf text2/->tidy-text))
 
 (deftest fill-string-table-memory-db!
   (let [memory-db

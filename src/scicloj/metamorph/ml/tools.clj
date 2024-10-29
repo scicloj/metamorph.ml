@@ -3,7 +3,11 @@
    [clojure.pprint :as pprint]
    [ham-fisted.api :as hf]) 
   (:import
+   [it.unimi.dsi.fastutil.ints Int2IntOpenHashMap]
+   [it.unimi.dsi.fastutil.objects Object2IntLinkedOpenHashMap]
    [java.io BufferedReader]))
+
+(set! *warn-on-reflection* true)
 
 (defn- maybe-dissoc [x k]
   (if (associative? x)
@@ -62,7 +66,7 @@
                     line-acc
                      max-lines skip-lines]
   (if (instance? java.io.Reader source)
-    (with-open [rdr source]
+    (with-open [rdr ^java.io.Reader source]
       (->> rdr
            lines-seq-fn
            (drop skip-lines)
@@ -76,9 +80,10 @@
          (reduce line-func line-acc)))
   )
 
-(defn put-retrieve-token! [token->long token]
-  (if (contains? token->long token)
-    (get token->long token)
-    (let [next-token (hf/constant-count token->long)]
-      (hf/assoc! token->long token next-token)
+(defn put-retrieve-token! [^Object2IntLinkedOpenHashMap token->long ^String token]
+  (if (.containsKey token->long token)
+    (.get token->long token)
+    (let [next-token (.size token->long)]
+      (.put token->long ^String
+            token next-token)
       next-token)))
