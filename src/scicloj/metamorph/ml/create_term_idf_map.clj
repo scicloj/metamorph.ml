@@ -186,7 +186,7 @@
           :skip-lines 1
           :datatype-document :int32
           :datatype-term-pos :int32
-          :datatype-metas    :int8))))
+          :datatype-meta    :int8))))
 
 
 

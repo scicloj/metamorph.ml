@@ -28,7 +28,7 @@
        :datatype-document :int32
        :datatype-term-pos :int16
        :datatype-term-idx :int32
-       :datatype-metas    :byte
+       :datatype-meta    :byte
        :compacting-document-intervall 10000)))
 
 (defn df->tidy [& opts]
@@ -57,7 +57,7 @@
                      :datatype-document :int32
                      :datatype-term-pos :int16
                      :datatype-term-idx :int32
-                     :datatype-metas    :byte
+                     :datatype-meta    :byte
                      :compacting-document-intervall 10000))))]
     (println)
     (println :shape (tc/shape tidy-df))))

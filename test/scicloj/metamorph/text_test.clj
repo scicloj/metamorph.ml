@@ -38,7 +38,7 @@
                           :max-lines 5
                           :skip-lines 1
                           :container-type :native-heap
-                          :datatype-metas :int16)
+                          :datatype-meta :int16)
         dataset (first datasets)]
 
 
@@ -58,7 +58,7 @@
                           :max-lines 7
                           :skip-lines 1
                           :container-type :jvm-heap
-                          :datatype-metas :object
+                          :datatype-meta :object
                           :compacting-document-intervall 10)
         df (first datasets)]
     
@@ -77,7 +77,7 @@
                            :max-lines 7
                            :skip-lines 1
                            :container-type :jvm-heap
-                           :datatype-metas :object
+                           :datatype-meta :object
                            :compacting-document-intervall 3)
         df (first datasets)]
 
@@ -92,6 +92,7 @@
                     line-seq
                     parse-review-line
                     #(str/split % #" ")
+                    :datatype-meta :int16    
                     :max-lines 5
                     :skip-lines 1
                     :combine-method combine-method)))
@@ -122,10 +123,15 @@
        (not (instance? NativeBuffer (-> text :meta .data)))
        true))
 
-    (is (= :int32 (-> text :term-idx meta :datatype)))
+    (is (= :int16 (-> text :term-idx meta :datatype)))
     (is (= :int16 (-> text :term-pos meta :datatype)))
-    (is (= :int32 (-> text :document meta :datatype)))
-    (is (= (if expected-meta :int8 nil) 
+    (is (= :int16 (-> text :document meta :datatype)))
+    (def text text)
+    (def expected-meta expected-meta)
+
+    (is (= (if expected-meta 
+             :int16
+             nil) 
            (-> text :meta meta :datatype)))
 
     (is (= [["Is" 0 0 expected-meta] 
@@ -168,7 +174,8 @@
          (fn [df] (map str (-> df (get "Text"))))
          (fn [line] [line 3])
          #(str/split % #" ")
-                              ;:max-lines 100000
+                      
+         :datatype-meta :int16
          :skip-lines 0
          :max-lines 5)]
     (validate-tidy-and-tf tidy 3)))

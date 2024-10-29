@@ -10,10 +10,11 @@
    [tech.v3.dataset.reductions :as reductions]
    [tech.v3.dataset.string-table :as st]
    [tech.v3.datatype :as dt]
-   [tech.v3.datatype.functional :as func])
+   [tech.v3.datatype.functional :as func]
+   [tech.v3.dataset.impl.dataset :as ds-impl])
   (:import
    [ham_fisted IMutList]
-   [it.unimi.dsi.fastutil.objects Object2IntLinkedOpenHashMap Object2IntMaps]
+   [it.unimi.dsi.fastutil.objects Object2IntLinkedOpenHashMap Object2IntMaps Object2LongLinkedOpenHashMap]
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap LongOpenHashSet]
    [java.util List]))
 
@@ -292,16 +293,16 @@
    [(:term-list acc)]))
 
 
-(defn- update-acc! [acc combine-method container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx]
+(defn- update-acc! [acc combine-method container-type datatype-term-pos datatype-meta datatype-document datatype-term-idx]
   ;(debug "before copy")
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (let [term-pos-container (make-term-pos-col-container acc combine-method container-type datatype-term-pos)
-        metas-container (make-metas-col-container acc combine-method container-type datatype-metas)
+        metas-container (make-metas-col-container acc combine-method container-type datatype-meta)
         document-container (make-document-col-container acc combine-method container-type datatype-document)
         term-index-container (dt/make-container container-type datatype-term-idx (:term-list acc))]
     (.add ^List (:term-pos-containers acc) term-pos-container)
     (when metas-container
-      (.add ^List (:metas-containers acc) metas-container))
+      (.add ^List (:meta-containers acc) metas-container))
     (.add ^List (:document-containers acc) document-container)
     (.add ^List (:term-index-containers acc) term-index-container)))
   ;(debug "after copy")
@@ -311,7 +312,7 @@
 (defn process-line [token-lookup-table line-split-fn text-tokenizer-fn
                     datatype-document
                     datatype-term-pos
-                    datatype-metas
+                    datatype-meta
                     datatype-term-idx
                     container-type
                     compacting-document-intervall
@@ -337,13 +338,27 @@
     (if (zero? (rem ^long (dt/ecount index-list) ^long compacting-document-intervall))
       (do
         (tools/debug :compact (* ^long compacting-document-intervall ^long (dt/ecount (:term-pos-containers acc))))
-        (update-acc! acc combine-method container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)
+        (update-acc! acc combine-method container-type datatype-term-pos datatype-meta datatype-document datatype-term-idx)
         (assoc acc
-               :meta-list (dt/make-list datatype-metas)
+               :meta-list (dt/make-list datatype-meta)
                :term-list (dt/make-list datatype-term-idx)
                :index-list (dt/make-list datatype-document)))
       acc)))
 
+
+(defn make-column [name container-list combine-method container-type datatype]
+    (let [data
+        (case combine-method
+          :concat-buffers (dt/concat-buffers datatype container-list)
+          :coalesce-blocks! 
+          (let [col-size  (func/reduce-+ (map count container-list))
+                container (dt/make-container container-type datatype col-size)]
+            
+            (dt/coalesce-blocks! container container-list)) 
+          )
+        
+        ]
+    (col-impl/construct-column [] data  {:name name})))
 
 
 (defn ->tidy-text
@@ -367,9 +382,23 @@
                        It can do any text normalisation desired.
    
    Optional `options` are: 
-   `skip-lines` Lines to skip at beginning
-   `max-lines` max lines to return
+   `skip-lines`                      0           Lines to skip at beginning
+   `max-lines`                       MAX_INT     max lines to return
 
+   The following can be used to optimize the heap usage for larger texts.
+   Can be tune depensing on how may documents, howmnay words per documen and how many 
+   tokens overall are in te text corpus  
+   
+   `container-type`                 :jvm-heap          If the resulting table is created on heap (:jvm-heap ) of off heap (:native-heap)
+                                                       :native-heap works (much) better on large texts
+   `datatype-document`              :int16             Datatype of :document column (:int16 or :int32)
+   `datatype-term-pos`              :int16             Datatype of :term-pos column (:int16 or :int32)
+   `datatype-meta`                  :object            Datatype of :meta column (anything, need to match what `line-split-fn` returns as 'meta')
+   `datatype-term-idx`              :int16             Datatype of :term-idx column (:int16 or :int32)
+   `compacting-document-intervall`  10000              After how many lines the data is written into a contious block
+   `combine-method`                 :coalesce-blocks!  Which metghod to use to combine blocks (:coalesce-blocks! or :concat-buffers)
+
+   
 
    Function returns a map of :datasets and :token-lookup-table
    
@@ -395,21 +424,22 @@
 
 
    & {:keys [skip-lines max-lines
+             container-type
              datatype-document
              datatype-term-pos
-             datatype-metas
+             datatype-meta
              datatype-term-idx
-             container-type
+             
              compacting-document-intervall
              combine-method]
              
       :or {skip-lines  0
-           datatype-document :int32
-           datatype-term-pos :int16
-           datatype-metas    :int8
-           datatype-term-idx :int32
-           container-type    :jvm-heap
            max-lines Integer/MAX_VALUE
+           container-type    :jvm-heap
+           datatype-document :int16
+           datatype-term-pos :int16
+           datatype-meta    :object
+           datatype-term-idx :int16 
            compacting-document-intervall 10000
            combine-method :coalesce-blocks!}}]
 
@@ -424,36 +454,38 @@
          (partial process-line token-lookup-table line-split-fn line-tokenizer-fn
                   datatype-document
                   datatype-term-pos
-                  datatype-metas
+                  datatype-meta
                   datatype-term-idx
                   container-type
                   compacting-document-intervall
                   combine-method)
          {:n-docs-parsed 0
-          :meta-list (dt/make-list datatype-metas)
+          :meta-list (dt/make-list datatype-meta)
           :term-list (dt/make-list datatype-term-idx)
           :index-list (dt/make-list datatype-document)
           :term-pos-containers (hf/mut-list)
-          :metas-containers (hf/mut-list)
+          :meta-containers (hf/mut-list)
           :document-containers (hf/mut-list)
           :term-index-containers (hf/mut-list)}
          max-lines skip-lines)
 
 
-        _ (update-acc!  acc combine-method container-type datatype-term-pos datatype-metas datatype-document datatype-term-idx)
+        _ (update-acc!  acc combine-method container-type datatype-term-pos datatype-meta datatype-document datatype-term-idx)
 
         acc (assoc acc
-                   :meta-list (dt/make-list datatype-metas)
+                   :meta-list (dt/make-list datatype-meta)
                    :term-list (dt/make-list datatype-term-idx)
                    :index-list (dt/make-list datatype-document))
 
 
 
-        col-term-index (ds/new-column :term-idx (dt/concat-buffers (:term-index-containers acc))  {} [])
-        col-term-pos (ds/new-column :term-pos  (dt/concat-buffers (:term-pos-containers acc)) {} [])
-        col-document (ds/new-column :document  (dt/concat-buffers (:document-containers acc)) {} [])
-        col-meta (when (seq (:metas-containers acc))
-                   (ds/new-column :meta (dt/concat-buffers (:metas-containers acc)) {} []))
+
+        col-term-index (make-column :term-idx (:term-index-containers acc) combine-method container-type datatype-term-idx)
+        col-term-pos (make-column :term-pos (:term-pos-containers acc) combine-method container-type datatype-term-pos)
+        col-document (make-column :document (:document-containers acc) combine-method container-type datatype-document)
+        
+        col-meta (when (seq (:meta-containers acc))
+                   (make-column :meta (:meta-containers acc) combine-method container-type datatype-meta))
 
         _ (tools/debug :measure-term-index (mm/measure col-term-index))
         _ (tools/debug :measure-term-pos (mm/measure col-term-pos))
