@@ -13,8 +13,8 @@
    [tech.v3.datatype.functional :as func])
   (:import
    [ham_fisted IMutList]
-   [it.unimi.dsi.fastutil.objects Object2IntLinkedOpenHashMap Object2IntMaps Object2LongLinkedOpenHashMap]
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap LongOpenHashSet]
+   [it.unimi.dsi.fastutil.objects Object2LongLinkedOpenHashMap Object2LongMaps]
    [java.util List]))
 
 (set! *warn-on-reflection* true)
@@ -282,60 +282,11 @@
    [(:token-counts-list acc)]))
 
 
-
-(defn- make-token-index-col-container-slow [acc combine-method container-type datatype]
-  (make-col-container
-   (fn [x] [x])
-   combine-method
-   container-type
-   datatype
-   [(:token-indices-list acc)]))
-
 (defn- make-token-index-col-container-fast [acc combine-method container-type datatype]
   (dt/make-container container-type datatype (:token-indices-list acc)))
 
 
-(comment
-  (count (:token-indices-list acc))
-  
-;;=> 2086616
-  (count (:token-counts-list acc))
-  
-;;=> 9999
-  
-
-
-  (count t-fast)
-  
-;;=> 2086616
-  
-  (count t-slow)
-  
-;;=> 2086616
-  
-  (time
-   (def t-fast (make-token-index-col-container-fast acc combine-method container-type datatype-term-idx)))
-  
-
-
-  (time 
-   (def t-slow (make-token-index-col-container-slow acc combine-method container-type datatype-term-idx)))
-  
-  
-
-  (time
-   (def t-slow (make-token-index-col-container-slow acc :concat-buffers container-type datatype-term-idx)))
-  
-  )
-
-
 (defn- update-acc! [acc combine-method container-type datatype-token-pos datatype-meta datatype-document datatype-token-idx]
-
-  (def acc acc) 
-  (def combine-method combine-method) 
-  (def container-type container-type) 
-  (def datatype-token-idx datatype-token-idx)
-
   (let [token-pos-container (make-token-pos-col-container acc combine-method container-type datatype-token-pos)
         metas-container (make-meta-col-container acc combine-method container-type datatype-meta)
         document-container (make-document-col-container acc combine-method container-type datatype-document)
@@ -483,7 +434,7 @@
            combine-method :coalesce-blocks!}}]
 
   (let [_ (tools/debug :parse)
-        token-lookup-table (Object2IntLinkedOpenHashMap. 10000)
+        token-lookup-table (Object2LongLinkedOpenHashMap. 10000)
         _ (.put token-lookup-table "" 0)
 
         acc
@@ -552,7 +503,7 @@
 
 
     {:datasets [ds-withmetas]
-     :token-lookup-table  (Object2IntMaps/unmodifiable token-lookup-table)}))
+     :token-lookup-table  (Object2LongMaps/unmodifiable token-lookup-table)}))
 
 
 
