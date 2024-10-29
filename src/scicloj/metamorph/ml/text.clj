@@ -10,8 +10,7 @@
    [tech.v3.dataset.reductions :as reductions]
    [tech.v3.dataset.string-table :as st]
    [tech.v3.datatype :as dt]
-   [tech.v3.datatype.functional :as func]
-   [tech.v3.dataset.impl.dataset :as ds-impl])
+   [tech.v3.datatype.functional :as func])
   (:import
    [ham_fisted IMutList]
    [it.unimi.dsi.fastutil.objects Object2IntLinkedOpenHashMap Object2IntMaps Object2LongLinkedOpenHashMap]
@@ -243,7 +242,7 @@
     :coalesce-blocks! (make-col-container--coalesce-blocks! map-fn container-type res-dataype datas)
     :concat-buffers (make-col-container--concat-buffers map-fn container-type res-dataype datas)))
 
-(defn- make-metas-col-container [acc combine-method container-type datatype]
+(defn- make-meta-col-container [acc combine-method container-type datatype]
   (when (seq (:meta-list acc))
     (make-col-container
      (fn [index meta]
@@ -286,28 +285,27 @@
 ;; TODO : try using this
 (defn- make-term-index-col-container [acc combine-method container-type datatype]
   (make-col-container
+   (fn [x] [x])
    combine-method
-   identity
+   
    container-type
    datatype
    [(:term-list acc)]))
 
 
 (defn- update-acc! [acc combine-method container-type datatype-term-pos datatype-meta datatype-document datatype-term-idx]
-  ;(debug "before copy")
-  #_{:clj-kondo/ignore [:unresolved-symbol]}
+
   (let [term-pos-container (make-term-pos-col-container acc combine-method container-type datatype-term-pos)
-        metas-container (make-metas-col-container acc combine-method container-type datatype-meta)
+        metas-container (make-meta-col-container acc combine-method container-type datatype-meta)
         document-container (make-document-col-container acc combine-method container-type datatype-document)
-        term-index-container (dt/make-container container-type datatype-term-idx (:term-list acc))]
+        term-index-container (make-term-index-col-container acc combine-method container-type datatype-term-idx)
+        ]
     (.add ^List (:term-pos-containers acc) term-pos-container)
     (when metas-container
       (.add ^List (:meta-containers acc) metas-container))
     (.add ^List (:document-containers acc) document-container)
     (.add ^List (:term-index-containers acc) term-index-container)))
-  ;(debug "after copy")
   
-
 
 (defn process-line [token-lookup-table line-split-fn text-tokenizer-fn
                     datatype-document

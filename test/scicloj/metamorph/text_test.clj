@@ -1,18 +1,29 @@
 (ns scicloj.metamorph.text-test
   (:require
    [clojure.data.csv :as csv]
+   [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.set :as c-set]
    [clojure.string :as str]
    [clojure.test :refer [deftest is]]
    [scicloj.metamorph.ml.text :as text]
    [tablecloth.api :as tc]
-   [criterium.core :as criterium]
    [tech.v3.dataset :as ds])
   (:import
    [org.mapdb DBMaker]
    [tech.v3.datatype.native_buffer NativeBuffer]))
 
+(defonce reviews-7l
+  (edn/read-string
+   (slurp "test/data/reviews_7l.edn")
+  ))
+
+(defn pr-edn-str [& xs]
+  (binding [*print-length* nil
+            *print-dup* nil
+            *print-level* nil
+            *print-readably* true]
+    (apply pr-str xs)))
 
 (defn- parse-review-line [line]
   (let [splitted (first
@@ -48,8 +59,7 @@
     (is (= 3
            (-> dataset :meta first)))))
 
-(deftest ->tidy-text--document-distinct
-
+(defn- validate-df-when-compating [compacting-document-intervall]
   (let [{:keys [datasets]}
         (text/->tidy-text (io/reader "test/data/reviews.csv")
                           line-seq
@@ -59,35 +69,25 @@
                           :skip-lines 1
                           :container-type :jvm-heap
                           :datatype-meta :object
-                          :compacting-document-intervall 10)
+                          :compacting-document-intervall compacting-document-intervall)
         df (first datasets)]
+
     
-    (is (= (range 7)
-           (-> df :document distinct)))
-
-    ))
-
-(deftest ->tidy-text-document-distinct-2
-
-  (let [{:keys [datasets]}
-        (text/->tidy-text (io/reader "test/data/reviews.csv")
-                          line-seq
-                           parse-review-line-as-maps
-                           #(str/split % #" ")
-                           :max-lines 7
-                           :skip-lines 1
-                           :container-type :jvm-heap
-                           :datatype-meta :object
-                           :compacting-document-intervall 3)
-        df (first datasets)]
-
-    (def df df)
+    (is (= reviews-7l
+           (ds/rowvecs df)))
     (is (= (range 7)
            (-> df :document distinct)))))
 
 
+(deftest ->tidy-text--compact
+  (validate-df-when-compating 1)
+  (validate-df-when-compating 2)
+  (validate-df-when-compating 10)
+  (validate-df-when-compating 1000))
 
-(defn reviews->tidy [combine-method]
+
+
+(defn reviews->tidy [combine-method compacting-document-intervall]
   (-> (text/->tidy-text (io/reader "test/data/reviews.csv")
                     line-seq
                     parse-review-line
@@ -95,6 +95,7 @@
                     :datatype-meta :int16    
                     :max-lines 5
                     :skip-lines 1
+                    :compacting-document-intervall compacting-document-intervall    
                     :combine-method combine-method)))
 
 (defn- validate-tidy-and-tf [tidy expected-meta]
@@ -163,8 +164,8 @@
                      :term-idx))
             sort)))))
 
-(defn tidy-text-test [combine-method]
-  (let [tidy (reviews->tidy combine-method)]
+(defn tidy-text-test [combine-method compacting-document-intervall]
+  (let [tidy (reviews->tidy combine-method compacting-document-intervall)]
     (validate-tidy-and-tf tidy 3)))
 
 (deftest tidy-text-test--from-df
@@ -195,10 +196,18 @@
 
 
 (deftest tidy-text--coalesce-blocks
-  (tidy-text-test :coalesce-blocks!))
+  (tidy-text-test :coalesce-blocks! 10000)
+  (tidy-text-test :concat-buffers 10000)
+  (tidy-text-test :coalesce-blocks! 2)
+  (tidy-text-test :concat-buffers 2)
+  )
+
+
+
+
 
 (deftest tidy-text--concat-buffers
-  (tidy-text-test :concat-buffers))
+  )
 
 (defn validate-tfidf [tidy->text-fn]
   (let [ds-and-st
