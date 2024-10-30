@@ -65,7 +65,7 @@
 
 
 (defn tidy [& opts]
-  (def opts [{:max-lines 59999}])
+;  (def opts [{:max-lines 59999}])
 
   (let [opts (first opts)
         df
