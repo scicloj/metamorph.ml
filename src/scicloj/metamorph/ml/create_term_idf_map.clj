@@ -7,7 +7,7 @@
             [tech.v3.dataset :as ds]
             [scicloj.metamorph.ml.text]
             [tech.v3.datatype :as dt]
-            [tech.v3.dataset.reductions :as ds-reduce]
+            [tech.v3.dataset.reductions :as ds-reduce])
   (:import [java.io BufferedReader]))
 
 (defn create-term->idf-map-5  [df]

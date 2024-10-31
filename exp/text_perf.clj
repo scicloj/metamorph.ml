@@ -33,8 +33,6 @@
 
 (defn df->tidy [& opts]
 
-  
-
   (let [opts (first opts)
         
         df
@@ -99,7 +97,7 @@
 
 
 (defn tfidf [& opts]
-
+  (def opts [{:max-lines 1000}])
   (println :opts opts)
   (let [opts (first opts)
         df

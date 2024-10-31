@@ -1,19 +1,15 @@
 (ns scicloj.metamorph.ml.text
   (:require
    ;[clj-memory-meter.core :as mm]
-   [criterium.core :as crit]
    [ham-fisted.api :as hf]
    [ham-fisted.lazy-noncaching :as lznc]
    [scicloj.metamorph.ml.tools :as tools]
    [tech.v3.dataset :as ds]
-   [tech.v3.dataset.dynamic-int-list :as dyn-int-list]
    [tech.v3.dataset.impl.column :as col-impl]
    [tech.v3.dataset.reductions :as reductions]
-   [tech.v3.dataset.string-table :as st]
    [tech.v3.datatype :as dt]
    [tech.v3.datatype.functional :as func])
   (:import
-   [ham_fisted IMutList]
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap LongOpenHashSet]
    [it.unimi.dsi.fastutil.objects Object2IntOpenHashMap Object2LongOpenHashMap]
    [java.util List Map]
@@ -23,12 +19,8 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 
-
-
-
-
-(defn create-token->idf-map [tidy-text]
-  (tools/debug :create-token->idf-map)
+(defn- create-token->idf-map [tidy-text]
+  ;(tools/debug :create-token->idf-map)
   (let [N
         (->
          (reductions/aggregate
@@ -38,22 +30,22 @@
          first)]
 
 
-    (tools/debug :N N)
+    ;(tools/debug :N N)
     (reductions/group-by-column-agg
      :token-idx
      {:idf (reductions/reducer :document
                                (fn [] (LongOpenHashSet.))
                                (fn [ acc ^long document]
-                                 (when (zero? (rem document 10000))
-                                   (tools/debug :reduce-idf document))
+                                 ;(when (zero? (rem document 10000))
+                                 ;  (tools/debug :reduce-idf document))
                                  (.add ^LongOpenHashSet acc document)
                                  acc)
                                  
                                (fn [^LongOpenHashSet documents-1 ^LongOpenHashSet documents-2]
-                                 (tools/debug :merge-idf)
+                                 ;(tools/debug :merge-idf)
                                  (.addAll documents-1 documents-2))
                                (fn [documents]
-                                 (tools/debug :finalize-idf) 
+                                 ;(tools/debug :finalize-idf) 
                                  (let [n-uniq-docs ^int  (.size ^LongOpenHashSet documents)]
                                    (func/log10 ^float (/  ^float N ^int n-uniq-docs)))))}
      tidy-text)))
@@ -61,7 +53,7 @@
 
 
 (defn ->column [col-name container-type data-type tfidf-data key]
-  (tools/debug :->-col col-name)
+  ;(tools/debug :->-col col-name)
   
   (let [cont-size
         (func/sum-fast
@@ -81,7 +73,7 @@
   
 
 (defn- >document-col [container-type data-type  tfidf-data]
- (tools/debug :->document-col)
+ ;(tools/debug :->document-col)
  (let [tfidfs-lengths
        (map #(-> % :tfidf count)
             (-> tfidf-data :tfidf-cols))
@@ -108,8 +100,8 @@
            :document nil})
    (fn [acc ^long document ^long token-idx]
      ;(tools/debug :reduce-tfidf document)
-     (when (and (zero? (rem document 10000)) (zero? ^long (:token-counter acc)))
-       (tools/debug :reduce-tfidf document))
+     ;(when (and (zero? (rem document 10000)) (zero? ^long (:token-counter acc)))
+     ;  (tools/debug :reduce-tfidf document))
   
      (.addTo ^Long2IntOpenHashMap  (:token-counts acc) token-idx 1)
      {:token-counts (:token-counts acc)
@@ -121,8 +113,8 @@
    (fn [{:keys [token-counts ^long token-counter ^long document]}]
 
      ;(tools/debug :finalize-tfidf document)
-     (when (zero? (rem  document 10000))
-       (tools/debug :finalize-tfidf document))
+     ;(when (zero? (rem  document 10000))
+     ;  (tools/debug :finalize-tfidf document))
      
      
      
@@ -144,12 +136,33 @@
   
 
 
-(defn ->tfidf [tidy-text &  {:keys [container-type] 
-                             :or {container-type :jvm-heap}}]
+(defn ->tfidf 
+  "Transforms a dataset in tidy text format in the bag-of-words representation including
+   TFIDF calculation of the the tokens.
+  
+  `tidy-text` needs to be a dataset with columns
+      :document    
+      :token-idx   
+      :token-pos   
+   
+  `container-type` decides if the resulting dataset os store on-hep (:jvm-heap, the default)
+                   or off-heap (:native-heap) 
+   
+   Returns a dataset with columns:
+
+   :document      document id
+   :token-idx     The token as id
+   :token-count   How often the token appears in a 'document' 
+   :tf            :token-count divided by document length
+   :tfidf         tfidf value for token
+
+  "
+  [tidy-text &  {:keys [container-type]
+                 :or {container-type :jvm-heap}}]
 
   (let [idfs (create-token->idf-map tidy-text)
 
-        _ (tools/debug :token-idx->idf-map)
+        ;_ (tools/debug :token-idx->idf-map)
         token-idx->idf-map
         (Long2FloatLinkedOpenHashMap. (-> idfs :token-idx dt/->long-array)
                                       (-> idfs :idf dt/->float-array))
@@ -158,7 +171,7 @@
         ;_ (tools/debug :measure-token-idx->idf-map 
         ;      (mm/measure token-idx->idf-map))
 
-        _ (tools/debug :tfidf-data)
+        ;_ (tools/debug :tfidf-data)
         tfidf-data
         (reductions/group-by-column-agg
          :document
@@ -287,7 +300,7 @@
     ;(println :n-docs-parsed (:n-docs-parsed acc))
     (if (zero? (rem ^long (:n-docs-parsed acc) ^long compacting-document-intervall))
       (do
-        (tools/debug :compact (* ^long compacting-document-intervall ^long (dt/ecount (:token-pos-containers acc))))
+        ;(tools/debug :compact (* ^long compacting-document-intervall ^long (dt/ecount (:token-pos-containers acc))))
         (update-acc! acc combine-method container-type datatype-token-pos datatype-meta datatype-document datatype-token-idx)
         (assoc acc
                :meta-list (dt/make-list datatype-meta)
@@ -295,7 +308,7 @@
                :token-counts-list (dt/make-list datatype-document)))
       acc)))
 
-(defn fill-lookup-from-line [token-lookup-table
+(defn- fill-lookup-from-line [token-lookup-table
                              line-split-fn text-tokenizer-fn
                              datatype-document
                              datatype-token-pos
@@ -310,7 +323,7 @@
         tokens (text-tokenizer-fn text)]
     (run! (partial tools/get-put-token token-lookup-table) tokens)
 
-    (println :n-docs-parsed (:n-docs-parsed acc))
+    ;(println :n-docs-parsed (:n-docs-parsed acc))
     (when (zero? (rem ^long (:n-docs-parsed acc) ^long compacting-document-intervall))
       (tools/debug :fill-look-up (:n-docs-parsed acc)))
     )
@@ -318,7 +331,7 @@
     (update acc :n-docs-parsed inc))
 
 
-(defn make-column [name container-list combine-method container-type datatype]
+(defn- make-column [name container-list combine-method container-type datatype]
     (let [data
         (case combine-method
           :concat-buffers (dt/concat-buffers datatype container-list)
@@ -377,7 +390,7 @@
    Function returns a map of :datasets and :token-lookup-table
    
    :datasets is a seq of TMD datasets each having 4 columns which represent
-   the input text in the tidy-text format.
+   the input text in the tidy-text format:
 
    :document    The 'document/line' a token is comming from
    :token-idx   The token/word (as int) , which is present as well in the token->int look up table returned
