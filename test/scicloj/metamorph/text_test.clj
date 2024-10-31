@@ -99,13 +99,10 @@
                     :combine-method combine-method)))
 
 (defn- validate-tidy-and-tf [tidy expected-meta]
-  (def tidy tidy)
-  (def expected-meta expected-meta)
   (let [
         text (first (:datasets tidy))
         token-lookup-table (:token-lookup-table tidy)
         int->str (c-set/map-invert token-lookup-table)
-        _ (def text text)
         tf (->
             (text/->tfidf text)
             (tc/order-by [:document :token-idx]))]
@@ -130,10 +127,6 @@
     (is (= :int16 (-> text :token-idx meta :datatype)))
     (is (= :int16 (-> text :token-pos meta :datatype)))
     (is (= :int16 (-> text :document meta :datatype)))
-    (def text text)
-    (def expected-meta expected-meta)
-    (def tf tf)
-
     (is (= (if expected-meta 
              :int16
              nil) 
@@ -293,40 +286,9 @@
                    "0.12901287")
            (map str (-> tfidfs :tfidf))))))
 
-(defn- text->string-table [db]
-  (let [string-table (text/mapdb-string-table db)]
-    (text/fill-string-table!
-     (io/reader "test/data/reviews.csv")
-     string-table
-     parse-review-line
-     #(str/split % #" ")
-     10
-     1)
-    string-table))
 
 
 
 (deftest test-tidy-df2
   (validate-tfidf text/->tidy-text))
-
-(deftest fill-string-table-memory-db!
-  (let [memory-db
-        (.. DBMaker
-            memoryDB
-            make)]
-    (is (= ["Is" "it" "a" "great" "product" "or" "great" "value?"]
-           (take 8 (text->string-table memory-db))))))
-
-
-(deftest fill-string-table--temp-file!
-  (let [temp-file-db
-        (.. DBMaker
-            (tempFileDB)
-            fileMmapEnable
-            make)]
-    (is (= ["Is" "it" "a" "great" "product" "or" "great" "value?"]
-           (take 8 (text->string-table temp-file-db))))))
-
-
-
 

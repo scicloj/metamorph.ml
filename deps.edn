@@ -22,7 +22,7 @@
                                                   cljsjs/vega-lite
                                                   cljsjs/vega-embed
                                                   cljsjs/vega-tooltip]}
-        org.mapdb/mapdb {:mvn/version "3.1.0"}}
+        }
 
  :paths ["src" "resources"]
 
@@ -59,7 +59,9 @@
                 lambdaisland/kaocha {:mvn/version "1.88.1376"}
                 scicloj/scicloj.ml.smile {:mvn/version "7.4.1"}
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
-                ch.qos.logback/logback-classic {:mvn/version "1.5.6"}}}
+                ch.qos.logback/logback-classic {:mvn/version "1.5.6"}
+                org.mapdb/mapdb {:mvn/version "3.1.0"}
+                }}
   :runner {:main-opts ["-m" "kaocha.runner"]}
   
   :exp {:jvm-opts ["-Djdk.attach.allowAttachSelf" "-Xmx8G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
@@ -67,7 +69,9 @@
         :extra-deps {org.clojure/data.csv        {:mvn/version "1.1.0"}
                      com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.3.0"}
                      ch.qos.logback/logback-classic {:mvn/version "1.5.6"}
-                     criterium/criterium {:mvn/version  "0.4.6"}}}
+                     criterium/criterium {:mvn/version  "0.4.6"}
+                     
+                     }}
 
   :smoke-test {:jvm-opts ["-Djdk.attach.allowAttachSelf" "-Xmx1G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
       :extra-paths ["exp"]

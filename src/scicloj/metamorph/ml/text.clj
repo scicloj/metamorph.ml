@@ -1,6 +1,6 @@
 (ns scicloj.metamorph.ml.text
   (:require
-   [clj-memory-meter.core :as mm]
+   ;[clj-memory-meter.core :as mm]
    [criterium.core :as crit]
    [ham-fisted.api :as hf]
    [ham-fisted.lazy-noncaching :as lznc]
@@ -15,9 +15,9 @@
   (:import
    [ham_fisted IMutList]
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap LongOpenHashSet]
-   [it.unimi.dsi.fastutil.objects Object2IntMaps Object2IntOpenHashMap Object2LongOpenHashMap]
-   [java.util List]
-   [org.mapdb DBMaker]))
+   [it.unimi.dsi.fastutil.objects Object2IntOpenHashMap Object2LongOpenHashMap]
+   [java.util List Map]
+   ))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -25,49 +25,6 @@
 
 
 
-
-(defn- fill-string-table-from-line! [^IMutList string-table line-split-fn text-tokenizer-fn acc line]
-  (let [[text _] (line-split-fn line)
-        tokens (text-tokenizer-fn text)]
-    (.addAllReducible string-table tokens)
-    (when (zero? ^long (rem ^long acc 1000))
-      (println
-       acc " : "
-       :num-tokens (dt/ecount string-table) " - "
-       :num-unique-tokens (dt/ecount (st/int->string string-table))))
-    (inc ^long acc)))
-
-
-
-(defn heap-string-table []
-  (st/make-string-table []))
-  
-
-(defn mapdb-string-table [^org.mapdb.DB db]
-  (st/->StringTable
-   (hf/object-array-list)
-   (.. db (hashMap "map") createOrOpen)
-   (dyn-int-list/dynamic-int-list)))
-
-
-
-
-
-
-
-(defn fill-string-table! [reader term-index-string-table
-                           line-split-fn text-tokenizer-fn
-                           max-lines skip-lines]
-
-
-  (tools/process-file reader
-                      line-seq
-                (partial fill-string-table-from-line! 
-                         term-index-string-table 
-                         line-split-fn 
-                         text-tokenizer-fn)
-                0
-                max-lines skip-lines))
 
 
 (defn create-token->idf-map [tidy-text]
@@ -198,8 +155,8 @@
                                       (-> idfs :idf dt/->float-array))
 
 
-        _ (tools/debug :measure-token-idx->idf-map 
-              (mm/measure token-idx->idf-map))
+        ;_ (tools/debug :measure-token-idx->idf-map 
+        ;      (mm/measure token-idx->idf-map))
 
         _ (tools/debug :tfidf-data)
         tfidf-data
@@ -401,17 +358,19 @@
    `max-lines`                       MAX_INT     max lines to return
 
    The following can be used to optimize the heap usage for larger texts.
-   Can be tune depensing on how may documents, howmnay words per documen and how many 
-   tokens overall are in te text corpus  
+   It can be tune depending on how may documents, how many words per document, and how many 
+   tokens overall are in the text corpus.  
    
-   `container-type`                 :jvm-heap          If the resulting table is created on heap (:jvm-heap ) of off heap (:native-heap)
-                                                       :native-heap works (much) better on large texts
-   `datatype-document`              :int16             Datatype of :document column (:int16 or :int32)
-   `datatype-token-pos`              :int16             Datatype of :token-pos column (:int16 or :int32)
-   `datatype-meta`                  :object            Datatype of :meta column (anything, need to match what `line-split-fn` returns as 'meta')
-   `datatype-token-idx`              :int16             Datatype of :token-idx column (:int16 or :int32)
-   `compacting-document-intervall`  10000              After how many lines the data is written into a contious block
-   `combine-method`                 :coalesce-blocks!  Which metghod to use to combine blocks (:coalesce-blocks! or :concat-buffers)
+   `container-type`                 :jvm-heap             If the resulting table is created on heap (:jvm-heap ) of off heap (:native-heap)
+                                                          :native-heap works (much) better on large texts
+   `datatype-document`              :int16                Datatype of :document column (:int16 or :int32)
+   `datatype-token-pos`             :int16                Datatype of :token-pos column (:int16 or :int32)
+   `datatype-meta`                  :object               Datatype of :meta column (anything, need to match what `line-split-fn` returns as 'meta')
+   `datatype-token-idx`             :int16                Datatype of :token-idx column (:int16 or :int32)
+   `compacting-document-intervall`  10000                 After how many lines the data is written into a continous block
+   `combine-method`                 :coalesce-blocks!     Which method to use to combine blocks (:coalesce-blocks! or :concat-buffers)
+                                                          One or the other might need less RAM in ceratin scenarious.
+   `token->index-map`               Object2IntOpenHashMap Can be overriden with a own object->int map implementation, (maybe off-heap)                        
 
    
 
@@ -421,11 +380,13 @@
    the input text in the tidy-text format.
 
    :document    The 'document/line' a token is comming from
-   :token-idx    The token/word (as int) , which is present as well in the token->int look up table returned
-   :token-pos    The position of the token in the document
+   :token-idx   The token/word (as int) , which is present as well in the token->int look up table returned
+   :token-pos   The position of the token in the document
    :meta        The meta values if return by `line-split-fn`
                    
-   Assuming that the `text-tokenizer-fn` does no text normalisation, the table is a exact representation of the input text-
+   Assuming that the `text-tokenizer-fn` does no text normalisation, the table is a exact representation 
+   of the input text. I contains as well the word order in column :token-pos, 
+   so resorting the table keeps the original text.
 
 
    "
@@ -448,26 +409,22 @@
              
       :or {skip-lines  0
            max-lines Integer/MAX_VALUE
-           container-type    :jvm-heap
-           datatype-document :int16
+           container-type     :jvm-heap
+           datatype-document  :int16
            datatype-token-pos :int16
-           datatype-meta    :object
+           datatype-meta      :object
            datatype-token-idx :int16 
            compacting-document-intervall 10000
            combine-method :coalesce-blocks!
            token->index-map  (Object2IntOpenHashMap. 10000)
            }}]
 
-  (let [_ (tools/debug :parse)
-        
-
-        
-
-        _ (.put token->index-map "" 0)
+  (let [
+        _ (.put ^Map token->index-map "" (int 0))
 
         process-line-fn process-line
         ;fill-lookup-from-line
-
+        
         acc
         (tools/process-file
          lines-source
@@ -503,8 +460,6 @@
                    :token-counts-list (dt/make-list datatype-document))
 
 
-
-
         col-token-index (make-column :token-idx (:token-index-containers acc) combine-method container-type datatype-token-idx)
         col-token-pos (make-column :token-pos (:token-pos-containers acc) combine-method container-type datatype-token-pos)
         col-document (make-column :document (:document-containers acc) combine-method container-type datatype-document)
@@ -512,10 +467,6 @@
         col-meta (when (seq (:meta-containers acc))
                    (make-column :meta (:meta-containers acc) combine-method container-type datatype-meta))
 
-        _ (tools/debug :measure-token-index (mm/measure col-token-index))
-        _ (tools/debug :measure-token-pos (mm/measure col-token-pos))
-        _ (tools/debug :measure-document-idx (mm/measure col-document))
-        _ (tools/debug :measure-metas (mm/measure col-meta))
 
         ds
         (ds/new-dataset
@@ -526,21 +477,21 @@
           (ds/add-column ds col-meta)
           ds)]
 
-    (tools/debug :count--token->index-map (count token->index-map))
-    (tools/debug :measure--token->index-map (mm/measure  token->index-map))
-
-
-    (tools/debug :measure-col-token-index (mm/measure col-token-index))
-    (tools/debug :measure-col-token-pos (mm/measure col-token-pos))
-    (tools/debug :measure-col-document-idx (mm/measure col-document))
-    (tools/debug :measure-col-metas (mm/measure col-meta))
-    (tools/debug :measure-ds (mm/measure ds-withmetas))
+    ;; (tools/debug :count--token->index-map (count token->index-map))
+    ;; (tools/debug :measure--token->index-map (mm/measure  token->index-map))
+    ;; (tools/debug :measure-col-token-index (mm/measure col-token-index))
+    ;; (tools/debug :measure-col-token-pos (mm/measure col-token-pos))
+    ;; (tools/debug :measure-col-document-idx (mm/measure col-document))
+    ;; (tools/debug :measure-col-metas (mm/measure col-meta))
+    ;; (tools/debug :measure-ds (mm/measure ds-withmetas))
+    
 
 
     {:datasets [ds-withmetas]
-     :token-lookup-table  token->index-map
-     ;(Object2IntMaps/unmodifiable token-lookup-table)
-     }))
+     :token-lookup-table  (java.util.Collections/unmodifiableMap token->index-map)
+     
+     }
+    ))
 
 
 (comment
