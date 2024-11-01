@@ -8,7 +8,8 @@
    [clojure.test :refer [deftest is]]
    [scicloj.metamorph.ml.text :as text]
    [tablecloth.api :as tc]
-   [tech.v3.dataset :as ds])
+   [tech.v3.dataset :as ds]
+   [criterium.core :as crit])
   (:import
    [org.mapdb DBMaker]
    [tech.v3.datatype.native_buffer NativeBuffer]))
@@ -200,6 +201,7 @@
   )
 
 
+
 (deftest toke->index-map
   (let [token->index-map
         (.. DBMaker
@@ -282,7 +284,7 @@
     (is (= '("0.0" "0.0" "0.0" "0.0"
                    "0.12041201"
                    "0.060206003"
-                   "0.08600857"
+                   "0.08600858"
                    "0.12901287")
            (map str (-> tfidfs :tfidf))))))
 
@@ -291,4 +293,26 @@
 
 (deftest test-tidy-df2
   (validate-tfidf text/->tidy-text))
+
+(comment
+  (require '[criterium.core :as crit])
+  
+  (def tidy
+    (->
+     (text/->tidy-text (io/reader "test/data/reviews.csv")
+                       line-seq
+                       parse-review-line
+                       #(str/split % #" ")
+                       :max-lines 5
+                       :skip-lines 1)
+     :datasets
+     first
+     ))
+  
+
+
+;              Execution time mean : 1.718259 ms
+  
+  (crit/quick-bench (text/->tfidf tidy))
+  )
 

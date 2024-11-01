@@ -22,12 +22,13 @@
 (defn- create-token->idf-map [tidy-text]
   ;(tools/debug :create-token->idf-map)
   (let [N
-        (->
-         (reductions/aggregate
-          {:count (reductions/count-distinct :document)}
-          tidy-text)
-         :count
-         first)]
+        (float
+         (->
+          (reductions/aggregate
+           {:count (reductions/count-distinct :document)}
+           tidy-text)
+          :count
+          first))]
 
 
     ;(tools/debug :N N)
@@ -46,23 +47,34 @@
                                  (.addAll documents-1 documents-2))
                                (fn [documents]
                                  ;(tools/debug :finalize-idf) 
-                                 (let [n-uniq-docs ^int  (.size ^LongOpenHashSet documents)]
-                                   (func/log10 ^float (/  ^float N ^int n-uniq-docs)))))}
+                                 (let [n-uniq-docs (int (.size ^LongOpenHashSet documents))]
+                                   (func/log10  (/  N n-uniq-docs)))))}
      tidy-text)))
 
 
 
-(defn ->column [col-name container-type data-type tfidf-data key]
+
+
+(defn ->column--concat-buffers [col-name container-type data-type tfidf-data key]
+  (let [
+        data (dt/concat-buffers
+              (lznc/map key
+                        (get tfidf-data :tfidf-cols)))
+        meta-data {:datatype data-type
+                   :name col-name}]
+    (col-impl/construct-column [] data meta-data)))
+
+(defn ->column--coalesce-blocks [col-name container-type data-type tfidf-data key]
   ;(tools/debug :->-col col-name)
-  
-  (let [cont-size
+
+  (let [ cont-size
         (func/sum-fast
          (lznc/map #(dt/ecount (get % key))
                    (get tfidf-data :tfidf-cols)))
 
         container (dt/make-container container-type data-type cont-size)
 
-        data (dt/coalesce-blocks!
+        data (
               container
               (lznc/map key
                         (get tfidf-data :tfidf-cols)))
@@ -92,7 +104,7 @@
    (col-impl/construct-column [] data meta-data)))
 
 
-(defn- tf-idf-reducer [token-idx->idf-map container-type]
+(defn- tf-idf-reducer [^Long2FloatLinkedOpenHashMap token-idx->idf-map container-type]
   (reductions/reducer
    [:document :token-idx]
    (fn [] {:token-counts  (Long2IntOpenHashMap.)
@@ -120,10 +132,11 @@
      
      (let [token->tfidf-fn
            (fn [[^long token-index ^long count]]
-             (let [tf ^float (/ count token-counter)]
+             (let [tf (float (/ count token-counter))
+                   idf (float (.get token-idx->idf-map token-index))]
                {token-index
                 {:tf tf
-                 :tfidf ^float (* ^float tf ^float (get token-idx->idf-map token-index))}}))
+                 :tfidf  (* tf idf )}}))
   
            tf-idfs
            (apply hf/merge (lznc/map token->tfidf-fn token-counts))]
@@ -180,13 +193,13 @@
 
     (ds/new-dataset
      [(>document-col container-type :int32 tfidf-data)
-      (->column :tfidf container-type :float32 tfidf-data :tfidf)
-      (->column :tf container-type :float32 tfidf-data :tf)
-      (->column :token-idx container-type :int32 tfidf-data :token-idx)
-      (->column :token-count container-type :int16 tfidf-data :token-count)])))
+      (->column--concat-buffers :tfidf container-type :float32 tfidf-data :tfidf)
+      (->column--concat-buffers :tf container-type :float32 tfidf-data :tf)
+      (->column--concat-buffers :token-idx container-type :int32 tfidf-data :token-idx)
+      (->column--concat-buffers :token-count container-type :int16 tfidf-data :token-count)])))
 
 
-(defn- make-col-container--concat-buffers [map-fn  container-type res-dataype  datas]
+(defn- make-col-container--concat-buffers [map-fn container-type res-dataype  datas]
   (let [col-datas
         (->>
          (apply dt/emap map-fn nil datas)
