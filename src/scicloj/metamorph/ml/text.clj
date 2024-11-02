@@ -387,11 +387,14 @@
                     container-type
                     compacting-document-intervall
                     combine-method
+                    new-token-behaviour
                     acc line]
   (let [[text meta] (line-split-fn line)
         tokens (text-tokenizer-fn text)
 
-        token-indices (map (partial tools/get-put-token token-lookup-table) tokens)
+        token-indices (map (partial tools/get-put-token 
+                                    token-lookup-table 
+                                    new-token-behaviour) tokens)
         token-count (count tokens)
         meta-list (:meta-list acc)
         token-counts-list (:token-counts-list acc)
@@ -459,12 +462,7 @@
             (dt/coalesce-blocks! container container-list)))]
     (col-impl/construct-column [] data  {:name name})))
 
-(comment
 
-
-  (dt/coalesce-blocks! mmap-document container-list)
-
-  (dt/set-value!  mmap-document 0 20.0))
 
 (defn ->tidy-text
   "Reads, parses and tokenizes a text file or a TMD dataset 
@@ -511,7 +509,13 @@
    `compacting-document-intervall`  10000                 After how many lines the data is written into a continous block
    `combine-method`                 :coalesce-blocks!     Which method to use to combine blocks (:coalesce-blocks! or :concat-buffers)
                                                           One or the other might need less RAM in ceratin scenarious.
-   `token->index-map`               Object2IntOpenHashMap Can be overriden with a own object->int map implementation, (maybe off-heap)                        
+   `token->index-map`               Object2IntOpenHashMap Can be overriden with a own object->int map implementation, (maybe off-heap). 
+                                                          Can as well be a map obtained from a prevoius run in order to guranty same mappings.                        
+   `new-token-behaviour`            :store                How to react when new  tokens appear , which are no in `token->id-map`
+                                                          Either :store (default), :fail (throw exception) or :as-unknown (use specific token [UNKNOWN]) 
+   
+    
+                                     
 
                        
    The following three can be used to `move` data off heap during calculations.
@@ -557,7 +561,8 @@
              compacting-document-intervall
              combine-method
              token->index-map
-             column-container-type]
+             column-container-type
+             new-token-behaviour]
 
       :or {skip-lines  0
            max-lines Integer/MAX_VALUE
@@ -570,13 +575,18 @@
            datatype-token-idx :int16
            compacting-document-intervall 10000
            combine-method     :coalesce-blocks!
-           token->index-map  (Object2IntOpenHashMap. 10000)}}]
+           token->index-map  (Object2IntOpenHashMap. 10000)
+           new-token-behaviour :store}}]
 
-  (let [_ (.put ^Map token->index-map "" (int 0))
+  (let [_
+        (when (not (.containsKey ^Map token->index-map tools/token-of-unknown))
+          (.put ^Map token->index-map
+                tools/token-of-unknown
+                (int tools/token-idx-for-unknown)))
 
         process-line-fn process-line
         ;fill-lookup-from-line
-
+        
         acc
         (tools/process-file
          lines-source
@@ -588,7 +598,8 @@
                   datatype-token-idx
                   container-type
                   compacting-document-intervall
-                  combine-method)
+                  combine-method
+                  new-token-behaviour)
          {:n-docs-parsed 0
           :meta-list (dt/make-list datatype-meta)
           :token-indices-list (dt/make-list datatype-token-idx)

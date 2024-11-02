@@ -1,6 +1,7 @@
 (ns scicloj.metamorph.ml.tools
   (:require
-   [clojure.pprint :as pprint]) 
+   [clojure.pprint :as pprint]
+   ) 
   (:import
    [java.util Map]))
 
@@ -77,13 +78,49 @@
          (reduce line-func line-acc)))
   )
 
-(defn get-put-token [^Map token-lookup-table ^String token]
+(def token-of-unknown "[UNKNOWN]")
+(def token-idx-for-unknown (int 0))
+
+
+(defn- put-and-rethrow [^Map token-lookup-table
+                       ^String token
+                       next-token-id
+                       ]
+  (try
+    (.put token-lookup-table token (int next-token-id))
+    next-token-id
+    (catch UnsupportedOperationException e
+      (throw (Exception. "token->int-map is immutable. You can set :new-token-behaviour to :as-unknown to use specail token [UNKOWN] or to :store and provide a mutable map in :token->int-map" e)))))
+
+(defn- save-put [^Map token-lookup-table
+                 ^String token
+                 next-token-id
+                 new-token-behaviour]
+  
+  (case new-token-behaviour
+   :store (put-and-rethrow token-lookup-table token next-token-id)
+   :fail (throw ( Exception. (str "token not in token->int-map: " token "This exceptin can be avoided by setting `:new-token-behaviour` to :as-unknown")))
+   :as-unknown (int token-idx-for-unknown) 
+
+  )
+  )
+
+(defn get-put-token [^Map token-lookup-table new-token-behaviour ^String token ]
   ;;(println :table-size (.size token-lookup-table) :get-put-token token)
   (let [v (.get token-lookup-table token)]
     (if (some? v)
       v
-      (let [next-token (.size token-lookup-table)]
-        (.put token-lookup-table ^String
-              token next-token)
-        next-token))
+      (let [next-token-id (.size token-lookup-table)]
+
+        (save-put token-lookup-table ^String token next-token-id
+                  new-token-behaviour)))
   ))
+
+(comment
+  (def m (java.util.HashMap.))
+  
+  (def u (java.util.Collections/unmodifiableMap m))
+  
+  (save-put u "meme" 3 :assign-unknn)
+  )
+

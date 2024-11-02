@@ -18,7 +18,7 @@
 
 
 
-(defonce reviews-7l
+(def reviews-7l
   (edn/read-string
    (slurp "test/data/reviews_7l.edn")))
 
@@ -74,12 +74,12 @@
                           :compacting-document-intervall compacting-document-intervall)
         df (first datasets)]
 
+    (def df df)
 
     (is (= reviews-7l
            (ds/rowvecs df)))
     (is (= (range 7)
            (-> df :document distinct)))))
-
 
 (deftest ->tidy-text--compact
   (validate-df-when-compating 1)
@@ -219,7 +219,7 @@
      :token->index-map token->index-map)
 
     (is (=
-         {"" 0, "a" 3, "another" 5, "is" 2, "this" 1, "sample" 4, "example" 6}
+         {"[UNKNOWN]" 0, "a" 3, "another" 5, "is" 2, "this" 1, "sample" 4, "example" 6}
          token->index-map))))
 
 
@@ -324,6 +324,51 @@
            (frequencies (:meta tfidf))))
     (is (= '(:document  :tfidf :tf :token-idx :token-count :meta)
            (tc/column-names tfidf)))))
+(defn- tidy-wiki []
+  (text/->tidy-text
+   (io/reader
+      ;;https://en.wikipedia.org/wiki/Tf%E2%80%93idf
+    (java.io.StringReader. "this is a a sample,1\nthis is another another example example example,2"))
+   line-seq
+   parse-review-line
+   #(str/split % #" ")))
+
+
+(deftest unknow-maps-to-0
+  (let [first-tidy-result (tidy-wiki)
+        token-lookup-table (:token-lookup-table first-tidy-result)
+
+        second-tidy-result
+        (text/->tidy-text
+         (io/reader
+      ;;https://en.wikipedia.org/wiki/Tf%E2%80%93idf
+          (java.io.StringReader. "this is a a sample,1\nthis is another another example example example,2\nEXTRA,2"))
+         line-seq
+         parse-review-line
+         #(str/split % #" ")
+         :new-token-behaviour :as-unknown
+         :token->index-map token-lookup-table)]
+
+    (is (= 0 (last (-> second-tidy-result :datasets first :token-idx))))))
+
+
+
+(deftest new-index-on-:store
+  (let [first-tidy-result
+        (tidy-wiki)
+        mutable-token-lookup-table (java.util.HashMap. (:token-lookup-table first-tidy-result))
+        second-tidy-result
+        (text/->tidy-text
+         (io/reader
+      ;;https://en.wikipedia.org/wiki/Tf%E2%80%93idf
+          (java.io.StringReader. "this is a a sample,1\nthis is another another example example example,2\nEXTRA,2"))
+         line-seq
+         parse-review-line
+         #(str/split % #" ")
+         :new-token-behaviour :store
+         :token->index-map mutable-token-lookup-table)]
+
+    (is (= 7 (last (-> second-tidy-result :datasets first :token-idx))))))
 
 
 
