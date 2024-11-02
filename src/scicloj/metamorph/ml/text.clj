@@ -249,10 +249,14 @@
   "
   [tidy-text &  {:keys [container-type
                         column-container-type
-                        combine-method]
+                        combine-method
+                        datatype-meta
+                        ]
                  :or {combine-method :coalesce-blocks!
                       column-container-type :jvm-heap
-                      container-type :jvm-heap}}]
+                      container-type :jvm-heap
+                      datatype-meta   :object
+                      }}]
 
   (let [idfs (create-token->idf-map tidy-text)
 
@@ -287,7 +291,7 @@
           (->column :token-count column-container-type :int16 tfidf-data :token-count combine-method)])]
 
     (if (contains? tidy-text :meta)
-      (ds/add-column tfidf-dataset (expand-to-col column-container-type :int32 tfidf-data :meta combine-method))
+      (ds/add-column tfidf-dataset (expand-to-col column-container-type datatype-meta tfidf-data :meta combine-method))
       tfidf-dataset)))
 
 

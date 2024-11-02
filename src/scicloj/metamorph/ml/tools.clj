@@ -90,7 +90,9 @@
     (.put token-lookup-table token (int next-token-id))
     next-token-id
     (catch UnsupportedOperationException e
-      (throw (Exception. "token->int-map is immutable. You can set :new-token-behaviour to :as-unknown to use specail token [UNKOWN] or to :store and provide a mutable map in :token->int-map" e)))))
+      (throw (Exception. "token->int-map is immutable. You can set :new-token-behaviour to :as-unknown to 
+                          use the special token [UNKNOWN] for an new token or to :store and provide a mutable 
+                          map in :token->int-map" e)))))
 
 (defn- save-put [^Map token-lookup-table
                  ^String token
@@ -99,7 +101,7 @@
   
   (case new-token-behaviour
    :store (put-and-rethrow token-lookup-table token next-token-id)
-   :fail (throw ( Exception. (str "token not in token->int-map: " token "This exceptin can be avoided by setting `:new-token-behaviour` to :as-unknown")))
+   :fail (throw ( Exception. (str "token not in token->int-map: " token "This exception can be avoided by setting `:new-token-behaviour` to :as-unknown or :store" )))
    :as-unknown (int token-idx-for-unknown) 
 
   )
