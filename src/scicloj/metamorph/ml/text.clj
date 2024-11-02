@@ -1,6 +1,6 @@
 (ns scicloj.metamorph.ml.text
   (:require
-   ;[clj-memory-meter.core :as mm]
+   [clojure.java.shell :as shell]
    [ham-fisted.api :as hf]
    [ham-fisted.lazy-noncaching :as lznc]
    [scicloj.metamorph.ml.tools :as tools]
@@ -8,12 +8,12 @@
    [tech.v3.dataset.impl.column :as col-impl]
    [tech.v3.dataset.reductions :as reductions]
    [tech.v3.datatype :as dt]
-   [tech.v3.datatype.functional :as func])
+   [tech.v3.datatype.functional :as func]
+   [tech.v3.datatype.mmap :as mmap])
   (:import
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap LongOpenHashSet]
    [it.unimi.dsi.fastutil.objects Object2IntOpenHashMap Object2LongOpenHashMap]
-   [java.util List Map]
-   ))
+   [java.util List Map]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -36,12 +36,12 @@
      :token-idx
      {:idf (reductions/reducer :document
                                (fn [] (LongOpenHashSet.))
-                               (fn [ acc ^long document]
+                               (fn [acc ^long document]
                                  ;(when (zero? (rem document 10000))
                                  ;  (tools/debug :reduce-idf document))
                                  (.add ^LongOpenHashSet acc document)
                                  acc)
-                                 
+
                                (fn [^LongOpenHashSet documents-1 ^LongOpenHashSet documents-2]
                                  ;(tools/debug :merge-idf)
                                  (.addAll documents-1 documents-2))
@@ -53,11 +53,46 @@
 
 
 
+(defn make-mmap-container [datatype ^long col-size]
+  (let [byte-length-multiplier
+        (int
+         (case datatype
+           :byte 1
+           :int16 2
+           :int32 4
+           :float32 4))
+        byte-size (* byte-length-multiplier col-size)
+        file (java.io.File/createTempFile "metamorphml" ".mmap")
+        file-name (.getAbsolutePath file)
+        _ (.deleteOnExit file)
+
+;        _ (println :make-mmap-container :col-size col-size :byte-size byte-size)
+        result
+        (shell/sh "truncate"
+                  (format "-s %s" byte-size)
+                  file-name)
+        _ (when (not (zero? (int (:exit result))))
+            (throw (Exception. (str "Creation of mmap file failed: " result))))]
+    (->
+     (mmap/mmap-file file-name {:mmap-mode :read-write})
+     (dt/set-native-datatype datatype)
+     (dt/sub-buffer 0 col-size))))
+
+(defn make-container [container-type datatype col-size]
+
+  (if (= :object datatype)
+    (dt/make-container :jvm-heap :object col-size)
+
+    (case container-type
+      :native-heap (dt/make-container container-type datatype col-size)
+      :jvm-heap    (dt/make-container container-type datatype col-size)
+      :mmap   (make-mmap-container datatype col-size))))
 
 
-(defn ->column--concat-buffers [col-name container-type data-type tfidf-data key]
-  (let [
-        data (dt/concat-buffers
+
+(defn ->column--concat-buffers [col-name data-type tfidf-data key]
+  (let [data (dt/concat-buffers
+              data-type
               (lznc/map key
                         (get tfidf-data :tfidf-cols)))
         meta-data {:datatype data-type
@@ -67,14 +102,14 @@
 (defn ->column--coalesce-blocks [col-name container-type data-type tfidf-data key]
   ;(tools/debug :->-col col-name)
 
-  (let [ cont-size
+  (let [cont-size
         (func/sum-fast
          (lznc/map #(dt/ecount (get % key))
                    (get tfidf-data :tfidf-cols)))
 
-        container (dt/make-container container-type data-type cont-size)
+        container (make-container container-type data-type cont-size)
 
-        data (
+        data (dt/coalesce-blocks!
               container
               (lznc/map key
                         (get tfidf-data :tfidf-cols)))
@@ -82,27 +117,59 @@
                    :name col-name}]
     (col-impl/construct-column [] data meta-data)))
 
-  
 
-(defn- >document-col [container-type data-type  tfidf-data]
+(defn- ->column [col-name container-type data-type tfidf-data key combine-method]
+  (case combine-method
+    :coalesce-blocks! (->column--coalesce-blocks col-name container-type data-type tfidf-data key)
+    :concat-buffers (->column--concat-buffers col-name data-type tfidf-data key)))
+
+
+(defn- expand-to-col--coalesce-blocks [container-type data-type  tfidf-data col-name]
  ;(tools/debug :->document-col)
- (let [tfidfs-lengths
-       (map #(-> % :tfidf count)
-            (-> tfidf-data :tfidf-cols))
-       cont-size (func/sum-fast tfidfs-lengths)
-       container (dt/make-container container-type data-type cont-size)
-       data
-       (->>
-        (lznc/map
-         (fn [doc-id len] (dt/const-reader doc-id len))
-         (-> tfidf-data :document)
-         tfidfs-lengths)
-        (dt/coalesce-blocks! container))
-       meta-data {:name :document
-                  :datatype data-type}]
+  (let [tfidfs-lengths
+        (map #(-> % :tfidf count)
+             (-> tfidf-data :tfidf-cols))
+        cont-size (func/sum-fast tfidfs-lengths)
+        container (make-container container-type data-type cont-size)
+        data
+        (->>
+         (lznc/map
+          (fn [doc-id len] (dt/const-reader doc-id len))
+          (-> tfidf-data col-name)
+          tfidfs-lengths)
+         (dt/coalesce-blocks! container))
+        meta-data {:name col-name
+                   :datatype data-type}]
 
-   (col-impl/construct-column [] data meta-data)))
+    (col-impl/construct-column [] data meta-data)))
 
+(defn- expand-to-col--concat-buffers [data-type  tfidf-data col-name]
+ ;(tools/debug :->document-col)
+  (let [tfidfs-lengths
+        (map #(-> % :tfidf count)
+             (-> tfidf-data :tfidf-cols))
+        data
+        (->>
+         (lznc/map
+          (fn [doc-id len] (dt/const-reader doc-id len))
+          (-> tfidf-data col-name)
+          tfidfs-lengths)
+         (dt/concat-buffers))
+        meta-data {:name col-name
+                   :datatype data-type}]
+
+    (col-impl/construct-column [] data meta-data)))
+
+
+(defn- expand-to-col [container-type data-type  tfidf-data col-name combine-method]
+  (case combine-method
+    :coalesce-blocks! (expand-to-col--coalesce-blocks container-type data-type  tfidf-data col-name)
+    :concat-buffers (expand-to-col--concat-buffers data-type  tfidf-data col-name)))
+
+(defn- make-container-from-data [container-type data-type data]
+  (let [col-size (dt/ecount data)
+        container (make-container container-type data-type col-size)]
+    (dt/copy! data container)))
 
 (defn- tf-idf-reducer [^Long2FloatLinkedOpenHashMap token-idx->idf-map container-type]
   (reductions/reducer
@@ -114,42 +181,44 @@
      ;(tools/debug :reduce-tfidf document)
      ;(when (and (zero? (rem document 10000)) (zero? ^long (:token-counter acc)))
      ;  (tools/debug :reduce-tfidf document))
-  
+
      (.addTo ^Long2IntOpenHashMap  (:token-counts acc) token-idx 1)
      {:token-counts (:token-counts acc)
       :token-counter (inc ^long (:token-counter acc))
       :document document})
    (fn [acc-1 acc-2]
      (throw (Exception. "merge should not get called")))
-  
+
    (fn [{:keys [token-counts ^long token-counter ^long document]}]
 
      ;(tools/debug :finalize-tfidf document)
      ;(when (zero? (rem  document 10000))
      ;  (tools/debug :finalize-tfidf document))
-     
-     
-     
+
+
+
      (let [token->tfidf-fn
            (fn [[^long token-index ^long count]]
              (let [tf (float (/ count token-counter))
                    idf (float (.get token-idx->idf-map token-index))]
                {token-index
                 {:tf tf
-                 :tfidf  (* tf idf )}}))
-  
+                 :tfidf  (* tf idf)}}))
+
            tf-idfs
            (apply hf/merge (lznc/map token->tfidf-fn token-counts))]
-  
-  
-       {:token-idx (dt/make-container container-type :int32  (hf/keys tf-idfs))
-        :token-count (dt/make-container container-type  :int32 (hf/vals token-counts))
-        :tf (dt/make-container container-type :float32 (hf/mapv :tf (hf/vals tf-idfs)))
-        :tfidf (dt/make-container container-type :float32 (hf/mapv :tfidf (hf/vals tf-idfs)))}))))
-  
 
 
-(defn ->tfidf 
+       {:token-idx (make-container-from-data container-type :int32  (hf/keys tf-idfs))
+        :token-count (make-container-from-data container-type  :int32 (hf/vals token-counts))
+        :tf (make-container-from-data container-type :float32 (hf/mapv :tf (hf/vals tf-idfs)))
+        :tfidf (make-container-from-data container-type :float32 (hf/mapv :tfidf (hf/vals tf-idfs)))}))))
+
+
+
+
+
+(defn ->tfidf
   "Transforms a dataset in tidy text format in the bag-of-words representation including
    TFIDF calculation of the the tokens.
   
@@ -158,8 +227,16 @@
       :token-idx   
       :token-pos   
    
-  `container-type` decides if the resulting dataset os store on-hep (:jvm-heap, the default)
-                   or off-heap (:native-heap) 
+
+   The following three can be used to `move` data off heap during calculations.
+   They can make dramatic differences in performance (faster and slower) 
+   and memory usage.
+
+   `container-type` decides if the intermidiate results are stored on-heap (:jvm-heap, the default)
+                   or off-heap (:native-heap) or :mmap (as mmaped file)
+   `column-container-type` same decides if the resulting dataset os store on-hep (:jvm-heap, the default)
+                   or off-heap (:native-heap) or :mmap (as mmaped file)
+   `combine-method` How to combine the intermidiate containers, either :concat-bufders or :coalesce-buffers!
    
    Returns a dataset with columns:
 
@@ -170,8 +247,12 @@
    :tfidf         tfidf value for token
 
   "
-  [tidy-text &  {:keys [container-type]
-                 :or {container-type :jvm-heap}}]
+  [tidy-text &  {:keys [container-type
+                        column-container-type
+                        combine-method]
+                 :or {combine-method :coalesce-blocks!
+                      column-container-type :jvm-heap
+                      container-type :jvm-heap}}]
 
   (let [idfs (create-token->idf-map tidy-text)
 
@@ -185,18 +266,29 @@
         ;      (mm/measure token-idx->idf-map))
 
         ;_ (tools/debug :tfidf-data)
-        tfidf-data
-        (reductions/group-by-column-agg
-         :document
-         {:tfidf-cols (tf-idf-reducer token-idx->idf-map container-type)}
-         tidy-text)]
 
-    (ds/new-dataset
-     [(>document-col container-type :int32 tfidf-data)
-      (->column--concat-buffers :tfidf container-type :float32 tfidf-data :tfidf)
-      (->column--concat-buffers :tf container-type :float32 tfidf-data :tf)
-      (->column--concat-buffers :token-idx container-type :int32 tfidf-data :token-idx)
-      (->column--concat-buffers :token-count container-type :int16 tfidf-data :token-count)])))
+        agg-map
+        {:tfidf-cols (tf-idf-reducer token-idx->idf-map container-type)}
+
+        agg-map
+        (if (contains? tidy-text :meta)
+          (assoc agg-map :meta (reductions/first-value :meta))
+          agg-map)
+        tfidf-data
+        (reductions/group-by-column-agg :document agg-map tidy-text)
+
+        tfidf-dataset
+        (ds/new-dataset
+         [(expand-to-col container-type :int32 tfidf-data :document combine-method)
+
+          (->column :tfidf column-container-type :float32 tfidf-data :tfidf combine-method)
+          (->column :tf column-container-type :float32 tfidf-data :tf combine-method)
+          (->column :token-idx column-container-type :int32 tfidf-data :token-idx combine-method)
+          (->column :token-count column-container-type :int16 tfidf-data :token-count combine-method)])]
+
+    (if (contains? tidy-text :meta)
+      (ds/add-column tfidf-dataset (expand-to-col column-container-type :int32 tfidf-data :meta combine-method))
+      tfidf-dataset)))
 
 
 (defn- make-col-container--concat-buffers [map-fn container-type res-dataype  datas]
@@ -204,7 +296,7 @@
         (->>
          (apply dt/emap map-fn nil datas)
          (remove empty?))] ; prevents 'buffer type class clojure.lang.PersistentList$EmptyList is not convertible to buffer'
-         
+
 
     (dt/concat-buffers res-dataype col-datas)))
 
@@ -214,9 +306,9 @@
         (->>
          (apply dt/emap map-fn nil datas)
          (remove empty?)) ; prevents 'buffer type class clojure.lang.PersistentList$EmptyList is not convertible to buffer'
-         
+
         col-size (or (func/reduce-+ (map count col-datas)) 0)
-        container (dt/make-container container-type res-dataype col-size)]
+        container (make-container container-type res-dataype col-size)]
 
     (when (not-empty col-datas)
       (dt/coalesce-blocks! container col-datas))
@@ -240,7 +332,7 @@
      [(:token-counts-list acc)
       (:meta-list acc)])))
 
-(defn- range-2 [ a b]
+(defn- range-2 [a b]
   (range a (+ ^int a ^int b)))
 
 
@@ -270,19 +362,22 @@
 (defn- make-token-index-col-container-fast [acc combine-method container-type datatype]
   (dt/make-container container-type datatype (:token-indices-list acc)))
 
+(defn- make-token-index-col-container-slow [acc combine-method container-type datatype]
+  (let [container (make-container container-type datatype (dt/ecount (:token-indices-list acc)))]
+    (dt/copy! (:token-indices-list acc) container)))
+
 
 (defn- update-acc! [acc combine-method container-type datatype-token-pos datatype-meta datatype-document datatype-token-idx]
   (let [token-pos-container (make-token-pos-col-container acc combine-method container-type datatype-token-pos)
         metas-container (make-meta-col-container acc combine-method container-type datatype-meta)
         document-container (make-document-col-container acc combine-method container-type datatype-document)
-        token-index-container (make-token-index-col-container-fast acc combine-method container-type datatype-token-idx)
-        ]
+        token-index-container (make-token-index-col-container-slow acc combine-method container-type datatype-token-idx)]
     (.add ^List (:token-pos-containers acc) token-pos-container)
     (when metas-container
       (.add ^List (:meta-containers acc) metas-container))
     (.add ^List (:document-containers acc) document-container)
     (.add ^List (:token-index-containers acc) token-index-container)))
-  
+
 
 (defn process-line [token-lookup-table line-split-fn text-tokenizer-fn
                     datatype-document
@@ -322,15 +417,15 @@
       acc)))
 
 (defn- fill-lookup-from-line [token-lookup-table
-                             line-split-fn text-tokenizer-fn
-                             datatype-document
-                             datatype-token-pos
-                             datatype-meta
-                             datatype-token-idx
-                             container-type
-                             compacting-document-intervall
-                             combine-method
-                             acc line]
+                              line-split-fn text-tokenizer-fn
+                              datatype-document
+                              datatype-token-pos
+                              datatype-meta
+                              datatype-token-idx
+                              container-type
+                              compacting-document-intervall
+                              combine-method
+                              acc line]
 
   (let [[text _] (line-split-fn line)
         tokens (text-tokenizer-fn text)]
@@ -338,26 +433,38 @@
 
     ;(println :n-docs-parsed (:n-docs-parsed acc))
     (when (zero? (rem ^long (:n-docs-parsed acc) ^long compacting-document-intervall))
-      (tools/debug :fill-look-up (:n-docs-parsed acc)))
-    )
-  
-    (update acc :n-docs-parsed inc))
+      (tools/debug :fill-look-up (:n-docs-parsed acc))))
+
+  (update acc :n-docs-parsed inc))
+
+
+
+
 
 
 (defn- make-column [name container-list combine-method container-type datatype]
-    (let [data
+
+  ;; (def name name)
+  ;; (def container-list container-list)
+  ;; (def combine-method combine-method)
+  ;; (def container-type container-type)
+  ;; (def datatype datatype)
+  (let [data
         (case combine-method
           :concat-buffers (dt/concat-buffers datatype container-list)
-          :coalesce-blocks! 
+          :coalesce-blocks!
           (let [col-size  (func/reduce-+ (map count container-list))
-                container (dt/make-container container-type datatype col-size)]
-            
-            (dt/coalesce-blocks! container container-list)) 
-          )
-        
-        ]
+                container (make-container container-type datatype col-size)]
+
+            (dt/coalesce-blocks! container container-list)))]
     (col-impl/construct-column [] data  {:name name})))
 
+(comment
+
+
+  (dt/coalesce-blocks! mmap-document container-list)
+
+  (dt/set-value!  mmap-document 0 20.0))
 
 (defn ->tidy-text
   "Reads, parses and tokenizes a text file or a TMD dataset 
@@ -385,18 +492,37 @@
 
    The following can be used to optimize the heap usage for larger texts.
    It can be tune depending on how may documents, how many words per document, and how many 
-   tokens overall are in the text corpus.  
+   tokens overall are in the text corpus. 
+
    
-   `container-type`                 :jvm-heap             If the resulting table is created on heap (:jvm-heap ) of off heap (:native-heap)
-                                                          :native-heap works (much) better on large texts
    `datatype-document`              :int16                Datatype of :document column (:int16 or :int32)
    `datatype-token-pos`             :int16                Datatype of :token-pos column (:int16 or :int32)
    `datatype-meta`                  :object               Datatype of :meta column (anything, need to match what `line-split-fn` returns as 'meta')
    `datatype-token-idx`             :int16                Datatype of :token-idx column (:int16 or :int32)
+
+
+   The following options can be used to `move` data off heap during 
+   calculations.  They can make dramatic differences in performance (faster and slower) 
+   and memory usage.                   
+                   
+
+   `column-container-type`          :jvm-heap             If the resulting table is created on heap (:jvm-heap ) of off heap (:native-heap)
+   `container-type`                 :jvm-heap             as `column-container-type` but for intermidiate reuslts, per interval
    `compacting-document-intervall`  10000                 After how many lines the data is written into a continous block
    `combine-method`                 :coalesce-blocks!     Which method to use to combine blocks (:coalesce-blocks! or :concat-buffers)
                                                           One or the other might need less RAM in ceratin scenarious.
    `token->index-map`               Object2IntOpenHashMap Can be overriden with a own object->int map implementation, (maybe off-heap)                        
+
+                       
+   The following three can be used to `move` data off heap during calculations.
+   They can make dramatic differences in performance (faster and slower) 
+   and memory usage.
+
+   `container-type` decides if the intermidiate results are stored on-heap (:jvm-heap, the default)
+                   or off-heap (:native-heap) or :mmap (as mmaped file)
+   `column-container-type` same decides if the resulting dataset os store on-hep (:jvm-heap, the default)
+                   or off-heap (:native-heap) or :mmap (as mmaped file)
+   `combine-method` How to combine the intermidiate containers, either :concat-bufders or :coalesce-buffers!
 
    
 
@@ -416,7 +542,7 @@
 
 
    "
-  [lines-source 
+  [lines-source
    line-seq-fn
    line-split-fn
    line-tokenizer-fn
@@ -430,27 +556,27 @@
              datatype-token-idx
              compacting-document-intervall
              combine-method
-             token->index-map 
-             ]
-             
+             token->index-map
+             column-container-type]
+
       :or {skip-lines  0
            max-lines Integer/MAX_VALUE
+
            container-type     :jvm-heap
+           column-container-type :jvm-heap
            datatype-document  :int16
            datatype-token-pos :int16
            datatype-meta      :object
-           datatype-token-idx :int16 
+           datatype-token-idx :int16
            compacting-document-intervall 10000
-           combine-method :coalesce-blocks!
-           token->index-map  (Object2IntOpenHashMap. 10000)
-           }}]
+           combine-method     :coalesce-blocks!
+           token->index-map  (Object2IntOpenHashMap. 10000)}}]
 
-  (let [
-        _ (.put ^Map token->index-map "" (int 0))
+  (let [_ (.put ^Map token->index-map "" (int 0))
 
         process-line-fn process-line
         ;fill-lookup-from-line
-        
+
         acc
         (tools/process-file
          lines-source
@@ -486,12 +612,12 @@
                    :token-counts-list (dt/make-list datatype-document))
 
 
-        col-token-index (make-column :token-idx (:token-index-containers acc) combine-method container-type datatype-token-idx)
-        col-token-pos (make-column :token-pos (:token-pos-containers acc) combine-method container-type datatype-token-pos)
-        col-document (make-column :document (:document-containers acc) combine-method container-type datatype-document)
+        col-token-index (make-column :token-idx (:token-index-containers acc) combine-method column-container-type datatype-token-idx)
+        col-token-pos (make-column :token-pos (:token-pos-containers acc) combine-method column-container-type datatype-token-pos)
+        col-document (make-column :document (:document-containers acc) combine-method column-container-type datatype-document)
 
         col-meta (when (seq (:meta-containers acc))
-                   (make-column :meta (:meta-containers acc) combine-method container-type datatype-meta))
+                   (make-column :meta (:meta-containers acc) combine-method column-container-type datatype-meta))
 
 
         ds
@@ -510,14 +636,11 @@
     ;; (tools/debug :measure-col-document-idx (mm/measure col-document))
     ;; (tools/debug :measure-col-metas (mm/measure col-meta))
     ;; (tools/debug :measure-ds (mm/measure ds-withmetas))
-    
+
 
 
     {:datasets [ds-withmetas]
-     :token-lookup-table  (java.util.Collections/unmodifiableMap token->index-map)
-     
-     }
-    ))
+     :token-lookup-table  (java.util.Collections/unmodifiableMap token->index-map)}))
 
 
 (comment
@@ -550,11 +673,9 @@
        (run!
         #(.put heap-db-map (str "hello" %) 1)
         (range 10000))
-       (run! 
+       (run!
         (fn [_] (.size heap-db-map))
-        (range 10000)
-        ))
-     ))
+        (range 10000)))))
 
   ;;Execution time mean : 722.928142 ms
   (let [heap-db
@@ -576,8 +697,7 @@
       #(.put o2l-map (str "hello" %) 1)
       (range 10000)))
     (println
-     (mm/measure o2l-map))
-    )
+     (mm/measure o2l-map)))
 
   ;;Execution time mean : 1.221315 ms
   ;;; 667.2 KiB
@@ -587,8 +707,7 @@
       #(.put o2i-map (str "hello" %) 1)
       (range 10000)))
     (println
-     (mm/measure o2i-map))
-    )
+     (mm/measure o2i-map)))
   ;;Execution time mean : 1.901854 ms
   (let [hf-map (hf/mut-map)]
     (crit/quick-bench
@@ -597,13 +716,13 @@
       (range 10000)))
     (println
      (mm/measure hf-map)))
-  
+
 
   (def heap-db-map
     (.. DBMaker
         heapDB
         make
-        (hashMap "map") 
+        (hashMap "map")
         counterEnable
         createOrOpen))
   (run!
@@ -614,6 +733,4 @@
   (crit/quick-bench
    (run!
     (fn [_] (.size heap-db-map))
-    (range 1000)))
-
-  )
+    (range 1000))))

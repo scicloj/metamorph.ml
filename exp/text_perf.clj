@@ -24,12 +24,13 @@
        #(str/split % #" ")
        :max-lines max-lines
        :skip-lines 1
-       :container-type :native-heap
+
        :datatype-document :int32
        :datatype-token-pos :int16
        :datatype-token-idx :int32
        :datatype-meta    :byte
-       :compacting-document-intervall 10000)))
+       ;:compacting-document-intervall 100000
+       )))
 
 (defn df->tidy [& opts]
 
@@ -50,14 +51,11 @@
                      (fn [line] [line
                                  (rand-int 6)])
                      #(str/split % #" ")
-                     ;:max-lines 100000
                      :skip-lines 1
-                     :container-type :native-heap
                      :datatype-document :int32
                      :datatype-token-pos :int16
                      :datatype-token-idx :int32
-                     :datatype-meta    :byte
-                     :compacting-document-intervall 10000))))]
+                     :datatype-meta    :byte))))]
     (println)
     (println :shape (tc/shape tidy-df))))
 
@@ -97,7 +95,7 @@
 
 
 (defn tfidf [& opts]
-  (def opts [{:max-lines 1000}])
+  ;(def opts [{:max-lines 10000}])
   (println :opts opts)
   (let [opts (first opts)
         df
@@ -107,10 +105,16 @@
          (tc/drop-columns [:token-pos]))
 
 
-        #_ (println :tidy-document-unique (-> df :document hf-set/unique count))
-         
+        #_(println :tidy-document-unique (-> df :document hf-set/unique count))
+
         _ (do
             (println)
+            (println :measure-col-token-index (mm/measure (:token-idx df)))
+            (println :measure-col-token-pos (mm/measure (:token-pos df)))
+            (println :measure-col-document-idx (mm/measure (:document df)))
+            (println :measure-col-metas (mm/measure (:meta df)))
+
+
             (println :df-measures
                      (mm/measure df))
 
@@ -135,7 +139,7 @@
                       (tc/columns df)))
             (println df))
 
-        tfidf (text/->tfidf df :container-type :native-heap)
+        tfidf (text/->tfidf df)
 
         _ (do
             (println)
@@ -152,6 +156,15 @@
                         [name (-> col meta :datatype)])
                       (tc/column-names tfidf)
                       (tc/columns tfidf)))
+            (println :col-classes-tfidf
+                     (map
+
+                      #(hash-map
+                        :name %1
+                        :class (-> %2 .data class))
+                      (tc/column-names tfidf)
+                      (tc/columns tfidf)))
+
 
             (println :tfidf-document-unique (-> tfidf :document hf-set/unique count))
             (println tfidf))]

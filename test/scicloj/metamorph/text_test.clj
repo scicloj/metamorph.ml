@@ -9,15 +9,18 @@
    [scicloj.metamorph.ml.text :as text]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
+   [fastmath.core :as fm]
+   [fastmath.vector :as fmv]
    [criterium.core :as crit])
   (:import
    [org.mapdb DBMaker]
    [tech.v3.datatype.native_buffer NativeBuffer]))
 
+
+
 (defonce reviews-7l
   (edn/read-string
-   (slurp "test/data/reviews_7l.edn")
-  ))
+   (slurp "test/data/reviews_7l.edn")))
 
 (defn pr-edn-str [& xs]
   (binding [*print-length* nil
@@ -39,9 +42,7 @@
      {:label
       (dec (Integer. (second splitted)))}]))
 
-(deftest containertype
-
-
+(defn validate-containertype [column-container-type]
   (let [{:keys [datasets]}
         (text/->tidy-text (io/reader "test/data/reviews.csv")
                           line-seq
@@ -49,7 +50,7 @@
                           #(str/split % #" ")
                           :max-lines 5
                           :skip-lines 1
-                          :container-type :native-heap
+                          :column-container-type :native-heap
                           :datatype-meta :int16)
         dataset (first datasets)]
 
@@ -73,7 +74,7 @@
                           :compacting-document-intervall compacting-document-intervall)
         df (first datasets)]
 
-    
+
     (is (= reviews-7l
            (ds/rowvecs df)))
     (is (= (range 7)
@@ -90,18 +91,17 @@
 
 (defn reviews->tidy [combine-method compacting-document-intervall]
   (-> (text/->tidy-text (io/reader "test/data/reviews.csv")
-                    line-seq
-                    parse-review-line
-                    #(str/split % #" ")
-                    :datatype-meta :int16    
-                    :max-lines 5
-                    :skip-lines 1
-                    :compacting-document-intervall compacting-document-intervall    
-                    :combine-method combine-method)))
+                        line-seq
+                        parse-review-line
+                        #(str/split % #" ")
+                        :datatype-meta :int16
+                        :max-lines 5
+                        :skip-lines 1
+                        :compacting-document-intervall compacting-document-intervall
+                        :combine-method combine-method)))
 
 (defn- validate-tidy-and-tf [tidy expected-meta]
-  (let [
-        text (first (:datasets tidy))
+  (let [text (first (:datasets tidy))
         token-lookup-table (:token-lookup-table tidy)
         int->str (c-set/map-invert token-lookup-table)
         tf (->
@@ -111,16 +111,16 @@
     (is (= 596
            (tc/row-count text)))
 
-    (is (= 
+    (is (=
          (if  expected-meta
            '(:token-idx :token-pos :document :meta)
            '(:token-idx :token-pos :document))
-           (tc/column-names text)))
+         (tc/column-names text)))
 
     (is (not (instance? NativeBuffer (-> text :token-idx .data))))
     (is (not (instance? NativeBuffer (-> text :token-pos .data))))
     (is (not (instance? NativeBuffer (-> text :document .data))))
-    (is 
+    (is
      (if expected-meta
        (not (instance? NativeBuffer (-> text :meta .data)))
        true))
@@ -128,15 +128,15 @@
     (is (= :int16 (-> text :token-idx meta :datatype)))
     (is (= :int16 (-> text :token-pos meta :datatype)))
     (is (= :int16 (-> text :document meta :datatype)))
-    (is (= (if expected-meta 
+    (is (= (if expected-meta
              :int16
-             nil) 
+             nil)
            (-> text :meta meta :datatype)))
 
-    (is (= [["Is" 0 0 expected-meta] 
-            ["it" 1 0 expected-meta] 
-            ["a" 2 0 expected-meta] 
-            ["great" 3 0 expected-meta] 
+    (is (= [["Is" 0 0 expected-meta]
+            ["it" 1 0 expected-meta]
+            ["a" 2 0 expected-meta]
+            ["great" 3 0 expected-meta]
             ["product" 4 0 expected-meta]]
            (->>
             (-> text
@@ -173,12 +173,12 @@
          (fn [df] (map str (-> df (get "Text"))))
          (fn [line] [line 3])
          #(str/split % #" ")
-                      
+
          :datatype-meta :int16
          :skip-lines 0
          :max-lines 5)]
     (validate-tidy-and-tf tidy 3)))
-        
+
 
 (deftest tidy-text-test--from-df-no-meta
   (let [tidy
@@ -197,8 +197,7 @@
   (tidy-text-test :coalesce-blocks! 10000)
   (tidy-text-test :concat-buffers 10000)
   (tidy-text-test :coalesce-blocks! 2)
-  (tidy-text-test :concat-buffers 2)
-  )
+  (tidy-text-test :concat-buffers 2))
 
 
 
@@ -224,18 +223,26 @@
          token->index-map))))
 
 
-(defn validate-tfidf [tidy->text-fn]
+(defn validate-tfidf [tidy-column-container-type
+                      tfidf-column-container-type
+                      tidy-container-type
+                      tfidf-container-type
+                      tidy-combine-method
+                      tfidf-combine-method
+                      compacting-document-intervall]
   (let [ds-and-st
 
-        (tidy->text-fn
+        (text/->tidy-text
          (io/reader
       ;;https://en.wikipedia.org/wiki/Tf%E2%80%93idf
           (java.io.StringReader. "this is a a sample,1\nthis is another another example example example,2"))
          line-seq
          parse-review-line
          #(str/split % #" ")
-         :max-lines 5
-         :skip-lines 0)
+         :column-container-type tidy-column-container-type
+         :container-type tidy-container-type
+         :combine-method tidy-combine-method
+         :compacting-document-intervall compacting-document-intervall)
 
         text
         (-> (first (:datasets ds-and-st))
@@ -243,15 +250,13 @@
 
         tfidfs
         (->
-         (text/->tfidf text)
-         (tc/order-by [:token-idx :document :label :token-count :tf :idf :tfidf]))
-
-        tfidfs-native-heap
-        (->
-         (text/->tfidf text :container-type :native-heap)
+         (text/->tfidf text
+                       :column-container-type tfidf-column-container-type
+                       :container-type tfidf-container-type
+                       :combine-method tfidf-combine-method)
          (tc/order-by [:token-idx :document :label :token-count :tf :idf :tfidf]))]
 
-    
+
     (is (= ;;'("this" "this" "is" "is" "a" "sample" "another" "example")
          '(1 1 2 2 3 4 5 6)
 
@@ -259,60 +264,74 @@
              (tc/order-by :token-idx)
              :token-idx seq)))
 
-    (is (=
-         ["0.2"
-          "0.14285715"
-          "0.2"
-          "0.14285715"
-          "0.4"
-          "0.2"
-          "0.2857143"
-          "0.42857143"]
-         (map str (-> tfidfs :tf))))
-
-    (is (=
-         ["0.20000000298023224"
-          "0.1428571492433548"
-          "0.20000000298023224"
-          "0.1428571492433548"
-          "0.4000000059604645"
-          "0.20000000298023224"
-          "0.2857142984867096"
-          "0.4285714328289032"]
-         (map str (-> tfidfs-native-heap :tf))))
-
-    (is (= '("0.0" "0.0" "0.0" "0.0"
-                   "0.12041201"
-                   "0.060206003"
-                   "0.08600858"
-                   "0.12901287")
-           (map str (-> tfidfs :tfidf))))))
+    (is (fmv/edelta-eq
+         [0.2
+          0.1429
+          0.2
+          0.1429
+          0.4
+          0.2
+          0.2857
+          0.4286]
+         (-> tfidfs :tf)
+         0.001))
 
 
 
+    (is (fmv/edelta-eq
+         '(0.0  0.0  0.0  0.0
+                0.12041201
+                0.060206003
+                0.08600858
+                0.12901287)
+         (-> tfidfs :tfidf)
+         0.001))))
 
-(deftest test-tidy-df2
-  (validate-tfidf text/->tidy-text))
+
+(defmacro cart [& lists]
+  (let [syms (for [_ lists] (gensym))]
+    `(for [~@(mapcat list syms lists)]
+       (list ~@syms))))
+
+
+(deftest test-tidy-tfidf
+  (->>
+   (cart
+    [:jvm-heap :native-heap :mmap]
+    [:jvm-heap :native-heap :mmap]
+    [:jvm-heap :native-heap :mmap]
+    [:jvm-heap :native-heap :mmap]
+    [:coalesce-blocks! :concat-buffers]
+    [:coalesce-blocks! :concat-buffers]
+    [1 2 10])
+   (run! (partial apply validate-tfidf))))
+
+(deftest meta-is-present-in-tfidf
+  (let [tfidf
+        (->
+         (text/->tidy-text (io/reader "test/data/reviews.csv")
+                           line-seq
+                           parse-review-line
+                           #(str/split % #" ")
+                           :max-lines 5
+                           :skip-lines 1
+                           :container-type :native-heap
+                           :column-container-type :native-heap)
+         :datasets
+         first
+         (text/->tfidf))]
+    (is (= {3 68, 4 225, 2 136}
+           (frequencies (:meta tfidf))))
+    (is (= '(:document  :tfidf :tf :token-idx :token-count :meta)
+           (tc/column-names tfidf)))))
+
+
+
 
 (comment
   (require '[criterium.core :as crit])
-  
-  (def tidy
-    (->
-     (text/->tidy-text (io/reader "test/data/reviews.csv")
-                       line-seq
-                       parse-review-line
-                       #(str/split % #" ")
-                       :max-lines 5
-                       :skip-lines 1)
-     :datasets
-     first
-     ))
-  
 
 
-;              Execution time mean : 1.718259 ms
+  (crit/quick-bench nil))
   
-  (crit/quick-bench (text/->tfidf tidy))
-  )
 
