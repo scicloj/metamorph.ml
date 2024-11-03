@@ -7,3 +7,7 @@ target/
 .clerk
 .lsp
 .calva
+bigdata/
+zeros1G.bin
+
+measures.csv

@@ -56,7 +56,7 @@
 (defn ci "Run the CI pipeline of tests (and build the JAR)." [opts]
   (-> opts
       (assoc :lib lib :version version
-             :aliases [:runner])
+             :aliases [:runner :dev :test])
       (bb/run-tests)
       (bb/clean)
       (jar)))
