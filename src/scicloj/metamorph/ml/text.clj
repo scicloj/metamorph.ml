@@ -1,9 +1,11 @@
 (ns scicloj.metamorph.ml.text
   (:require
    [clojure.java.shell :as shell]
+   [clojure.string :as str]
    [ham-fisted.api :as hf]
    [ham-fisted.lazy-noncaching :as lznc]
    [scicloj.metamorph.ml.tools :as tools]
+   [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.impl.column :as col-impl]
    [tech.v3.dataset.reductions :as reductions]
@@ -13,6 +15,7 @@
   (:import
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap LongOpenHashSet]
    [it.unimi.dsi.fastutil.objects Object2IntOpenHashMap Object2LongOpenHashMap]
+   [java.io BufferedWriter]
    [java.util List Map]))
 
 (set! *warn-on-reflection* true)
@@ -656,6 +659,36 @@
 
     {:datasets [ds-withmetas]
      :token-lookup-table  (java.util.Collections/unmodifiableMap token->index-map)}))
+
+
+(defn ->line [document-ds column]
+  (str/join
+   " "
+   (-> document-ds
+       (tc/order-by :token-idx)
+       (tc/map-columns :pair [:token-idx column] 
+                       (fn [token-idx value] (str token-idx ":" value)))
+       :pair)))
+
+(defn- write-ds [^BufferedWriter w document-ds column]
+  (.write w ^String (->line document-ds column))
+  (.newLine w))
+
+(defn tfidf->svmlib! 
+  "Writes a tfidf dataset to a writer in the 
+   svmlib text format"
+  [tfidf-ds ^BufferedWriter writer column]
+  (let [grouped
+        (-> tfidf-ds
+            (tc/group-by :document))]
+    (with-open [w writer]
+      (run!
+       #(write-ds w % column)
+       (-> grouped :data)))))
+
+
+
+
 
 
 (comment

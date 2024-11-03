@@ -371,12 +371,15 @@
     (is (= 7 (last (-> second-tidy-result :datasets first :token-idx))))))
 
 
+(deftest ->svmlib 
+  (let [f (java.io.File/createTempFile "tfidf" ".txt")]
+    (.deleteOnExit f)
+    (-> (tidy-wiki)
+        :datasets
+        first
+        (text/->tfidf)
+        (text/tfidf->svmlib! (io/writer f) :tfidf))
+    (is (= "1:0.0 2:0.0 3:0.12041201 4:0.060206003\n1:0.0 2:0.0 5:0.08600858 6:0.12901287\n"
+           (slurp f)))))
 
-
-(comment
-  (require '[criterium.core :as crit])
-
-
-  (crit/quick-bench nil))
-  
 
