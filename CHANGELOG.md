@@ -1,6 +1,7 @@
 unreleased
 
 * exclude most hanami deps as we don't need them
+* added support for tidy-text and tfidf
 
 0.9.0
 
