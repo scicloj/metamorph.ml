@@ -662,13 +662,15 @@
 
 
 (defn ->line [document-ds column]
-  (str/join
-   " "
-   (-> document-ds
-       (tc/order-by :token-idx)
-       (tc/map-columns :pair [:token-idx column] 
-                       (fn [token-idx value] (str token-idx ":" value)))
-       :pair)))
+  (str (first (:meta document-ds))
+       " "
+       (str/join
+        " "
+        (-> document-ds
+            (tc/order-by :token-idx)
+            (tc/map-columns :pair [:token-idx column] 
+                            (fn [token-idx value] (str token-idx ":" value)))
+            :pair))))
 
 (defn- write-ds [^BufferedWriter w document-ds column]
   (.write w ^String (->line document-ds column))
