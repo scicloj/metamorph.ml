@@ -371,15 +371,23 @@
     (is (= 7 (last (-> second-tidy-result :datasets first :token-idx))))))
 
 
-(deftest ->svmlib 
+(deftest ->svmlib
   (let [f (java.io.File/createTempFile "tfidf" ".txt")]
     (.deleteOnExit f)
     (-> (tidy-wiki)
         :datasets
         first
         (text/->tfidf)
-        (text/tfidf->svmlib! (io/writer f) :tfidf))
+        (text/tidy->libsvm! (io/writer f) :tfidf))
     (is (= "0 1:0.0 2:0.0 3:0.12041201 4:0.060206003\n1 1:0.0 2:0.0 5:0.08600858 6:0.12901287\n"
            (slurp f)))))
 
 
+(deftest libsvm->tidy
+  (is (=
+       [{:instance 0, :index 1, :value -0.555556, :label 1} {:instance 0, :index 2, :value 0.25, :label 1}]
+       (->
+        (text/libsvm->tidy (io/reader "test/data/iris.libsvm.txt"))
+        (tc/head 2)
+        (tc/rows :as-maps)))))
+  

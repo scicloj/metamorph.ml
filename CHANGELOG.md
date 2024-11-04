@@ -2,7 +2,8 @@ unreleased
 
 * exclude most hanami deps as we don't need them
 * added support for tidy-text and 
-* added support for export of tfidf to libsvm text files
+* added read/write support for TMD<->libsvm files
+* 
 
 0.9.0
 

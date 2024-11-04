@@ -10,12 +10,13 @@
    [tech.v3.dataset.impl.column :as col-impl]
    [tech.v3.dataset.reductions :as reductions]
    [tech.v3.datatype :as dt]
+   [ clojure.java.io :as io]
    [tech.v3.datatype.functional :as func]
    [tech.v3.datatype.mmap :as mmap])
   (:import
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap LongOpenHashSet]
    [it.unimi.dsi.fastutil.objects Object2IntOpenHashMap Object2LongOpenHashMap]
-   [java.io BufferedWriter]
+   [java.io BufferedReader BufferedWriter FileReader]
    [java.util List Map]))
 
 (set! *warn-on-reflection* true)
@@ -676,7 +677,7 @@
   (.write w ^String (->line document-ds column))
   (.newLine w))
 
-(defn tfidf->svmlib! 
+(defn tidy->libsvm! 
   "Writes a tfidf dataset to a writer in the 
    svmlib text format"
   [tfidf-ds ^BufferedWriter writer column]
@@ -689,98 +690,135 @@
        (-> grouped :data)))))
 
 
+(defn- process-file [reader line-func line-acc]
+  (with-open [rdr (BufferedReader. reader)]
+    (reduce line-func line-acc (line-seq rdr))))
+
+
+(defn- handle-line [acc line]
+  (let [pieces (vec (str/split line #" "))
+        length (dec (int (hf/constant-count pieces)))]
+    (hf/add-all! (:instance acc) (hf/repeat length (hf/constant-count (:instance acc))))
+    (hf/add-all! (:label acc) (hf/repeat length (parse-long (first pieces))))
+    (run!
+     #(let [[index value] (str/split % #":")]
+        (hf/conj! (:index acc) (parse-long index))
+        (hf/conj! (:value acc) (parse-double value)))
+     (rest pieces))
+
+    acc))
+
+(defn libsvm->tidy
+  "Takes a reader (of a file usualy) and
+   reads it as libsvm formated data. 
+
+   Returns a dataset with columns
+   :instance
+   :label 
+   :index 
+   :value
+   
+   "
+  [reader]
+  (->
+   (process-file reader
+                 handle-line
+                 {:instance (hf/long-array-list)
+                  :index (hf/long-array-list)
+                  :value (hf/double-array-list)
+                  :label (hf/int-array-list)})
+   (tc/dataset)))
 
 
 
-
-(comment
-  (require '[criterium.core :as crit])
-  (import [org.mapdb DBMaker]
-          [it.unimi.dsi.fastutil.objects Object2IntOpenHashMap
-           Object2LongOpenHashMap])
+  (comment
+    (require '[criterium.core :as crit])
+    (import [org.mapdb DBMaker]
+            [it.unimi.dsi.fastutil.objects Object2IntOpenHashMap
+             Object2LongOpenHashMap])
 
 
 
   ;;  Execution time mean : 3.202750 ms
-  (let [heap-db
-        (.. DBMaker
-            heapDB
-            make)
-        heap-db-map (.. heap-db (hashMap "map") createOrOpen)]
-    (crit/quick-bench
-     (run!
-      #(.put heap-db-map (str "hello" %) 1)
-      (range 10000))))
-
-  ;;  Execution time mean :10.405044 ms 
-  (let [memory-db
-        (.. DBMaker
-            memoryDB
-            make)
-        heap-db-map (.. memory-db (hashMap "map") createOrOpen)]
-    (crit/quick-bench
-     (do
+    (let [heap-db
+          (.. DBMaker
+              heapDB
+              make)
+          heap-db-map (.. heap-db (hashMap "map") createOrOpen)]
+      (crit/quick-bench
        (run!
         #(.put heap-db-map (str "hello" %) 1)
-        (range 10000))
-       (run!
-        (fn [_] (.size heap-db-map))
-        (range 10000)))))
+        (range 10000))))
+
+  ;;  Execution time mean :10.405044 ms 
+    (let [memory-db
+          (.. DBMaker
+              memoryDB
+              make)
+          heap-db-map (.. memory-db (hashMap "map") createOrOpen)]
+      (crit/quick-bench
+       (do
+         (run!
+          #(.put heap-db-map (str "hello" %) 1)
+          (range 10000))
+         (run!
+          (fn [_] (.size heap-db-map))
+          (range 10000)))))
 
   ;;Execution time mean : 722.928142 ms
-  (let [heap-db
-        (.. DBMaker
-            tempFileDB
-            make)
-        heap-db-map (.. heap-db (hashMap "map") createOrOpen)]
-    (crit/quick-bench
-     (run!
-      #(.put heap-db-map (str "hello" %) 1)
-      (range 10000))))
+    (let [heap-db
+          (.. DBMaker
+              tempFileDB
+              make)
+          heap-db-map (.. heap-db (hashMap "map") createOrOpen)]
+      (crit/quick-bench
+       (run!
+        #(.put heap-db-map (str "hello" %) 1)
+        (range 10000))))
 
 
 
   ;;Execution time mean : 1.449999 ms
-  (let [o2l-map (Object2LongOpenHashMap.)]
-    (crit/quick-bench
-     (run!
-      #(.put o2l-map (str "hello" %) 1)
-      (range 10000)))
-    (println
-     (mm/measure o2l-map)))
+    (let [o2l-map (Object2LongOpenHashMap.)]
+      (crit/quick-bench
+       (run!
+        #(.put o2l-map (str "hello" %) 1)
+        (range 10000)))
+      (println
+       (mm/measure o2l-map)))
 
   ;;Execution time mean : 1.221315 ms
   ;;; 667.2 KiB
-  (let [o2i-map (Object2IntOpenHashMap.)]
-    (crit/quick-bench
-     (run!
-      #(.put o2i-map (str "hello" %) 1)
-      (range 10000)))
-    (println
-     (mm/measure o2i-map)))
+    (let [o2i-map (Object2IntOpenHashMap.)]
+      (crit/quick-bench
+       (run!
+        #(.put o2i-map (str "hello" %) 1)
+        (range 10000)))
+      (println
+       (mm/measure o2i-map)))
   ;;Execution time mean : 1.901854 ms
-  (let [hf-map (hf/mut-map)]
-    (crit/quick-bench
-     (run!
-      #(.put hf-map (str "hello" %) 1)
-      (range 10000)))
-    (println
-     (mm/measure hf-map)))
+    (let [hf-map (hf/mut-map)]
+      (crit/quick-bench
+       (run!
+        #(.put hf-map (str "hello" %) 1)
+        (range 10000)))
+      (println
+       (mm/measure hf-map)))
 
 
-  (def heap-db-map
-    (.. DBMaker
-        heapDB
-        make
-        (hashMap "map")
-        counterEnable
-        createOrOpen))
-  (run!
-   #(.put heap-db-map (str "hello" %) 1)
-   (range 10000))
+    (def heap-db-map
+      (.. DBMaker
+          heapDB
+          make
+          (hashMap "map")
+          counterEnable
+          createOrOpen))
+    (run!
+     #(.put heap-db-map (str "hello" %) 1)
+     (range 10000))
 
   ;;Execution time mean : 319.890385 ms
-  (crit/quick-bench
-   (run!
-    (fn [_] (.size heap-db-map))
-    (range 1000))))
+    (crit/quick-bench
+     (run!
+      (fn [_] (.size heap-db-map))
+      (range 1000))))
