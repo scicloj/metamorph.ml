@@ -1,9 +1,10 @@
-unreleased
+0.10.0
+
 
 * exclude most hanami deps as we don't need them
 * added support for tidy-text and 
 * added read/write support for TMD<->libsvm files
-* 
+ 
 
 0.9.0
 
