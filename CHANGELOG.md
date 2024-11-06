@@ -1,5 +1,7 @@
-0.10.0
+0.10.1
+ * fixed cljdoc build issue
 
+0.10.0
 
 * exclude most hanami deps as we don't need them
 * added support for tidy-text and 
