@@ -21,7 +21,8 @@
                                                   cljsjs/vega-lite
                                                   cljsjs/vega-embed
                                                   cljsjs/vega-tooltip]}
-        }
+        ;; needed by hanami
+        org.clojure/data.json {:mvn/version "0.2.6"}}
 
  :paths ["src" "resources"]
 

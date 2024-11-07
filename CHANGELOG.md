@@ -1,6 +1,9 @@
+0.10.3
+ * re-added data.json dependency
+
 0.10.2
  * re-added data.csv dependency
- 
+
 0.10.1
  * fixed cljdoc build issue
 
