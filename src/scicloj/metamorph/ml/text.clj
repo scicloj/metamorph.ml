@@ -10,13 +10,12 @@
    [tech.v3.dataset.impl.column :as col-impl]
    [tech.v3.dataset.reductions :as reductions]
    [tech.v3.datatype :as dt]
-   [ clojure.java.io :as io]
    [tech.v3.datatype.functional :as func]
    [tech.v3.datatype.mmap :as mmap])
   (:import
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap LongOpenHashSet]
    [it.unimi.dsi.fastutil.objects Object2IntOpenHashMap Object2LongOpenHashMap]
-   [java.io BufferedReader BufferedWriter FileReader]
+   [java.io BufferedReader BufferedWriter]
    [java.util List Map]))
 
 (set! *warn-on-reflection* true)
