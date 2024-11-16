@@ -127,9 +127,7 @@
 
 (def cleaned-usenet-words
   (-> usenet-words
-      (tc/anti-join stopword-table :token-idx)
-      
-      ))
+      (tc/anti-join stopword-table :token-idx)))
 
 (->
  (ds-reductions/group-by-column-agg
@@ -163,17 +161,14 @@
     (tc/select-columns [:id :line])
     (tc/left-join cleaned-usenet-words {:left :line  :right :document})
     (tc/drop-missing)
-      (tc/drop-columns [:line :document])
-      (tc/rename-columns {:id :document})
-      (tc/add-column :document #(map Integer/parseInt (:document %)))
+    (tc/drop-columns [:line :document])
+    (tc/rename-columns {:id :document})
+    (tc/add-column :document #(map Integer/parseInt (:document %)))
     (text/->tfidf)
     (tc/order-by :tfidf :desc)
     (tc/head 10)
     (tc/left-join token-word-table :token-idx)
-    (tc/order-by :tfidf :desc)
-
-
-    )
+    (tc/order-by :tfidf :desc))
 
 
 
