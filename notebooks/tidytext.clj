@@ -47,6 +47,7 @@
     (->>
      (file-seq (io/file "bigdata/20news-by-date"))
      (filter #(.isFile %))
+     (remove #(=  ".keep" (.getName %)))
      (map parse-f)))))
 
 
