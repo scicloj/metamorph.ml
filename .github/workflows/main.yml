@@ -42,3 +42,7 @@ jobs:
       - name: Run CI
         run: clojure -T:build ci
 
+      - name: render notebooks
+        run: clj -T:build render-notebooks
+                
+
