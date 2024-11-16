@@ -8,7 +8,10 @@
 
     "features": {
     	"ghcr.io/devcontainers-contrib/features/clojure-asdf:2": {},
-		"ghcr.io/devcontainers-contrib/features/bash-command:1": {"command": "apt-get update && apt-get install -y rlwrap"}
+		"ghcr.io/devcontainers-contrib/features/bash-command:1": {
+			"command": "apt-get update && apt-get install -y rlwrap"
+		},
+		"ghcr.io/rocker-org/devcontainer-features/quarto-cli:1": {}
 
 
 },

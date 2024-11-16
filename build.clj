@@ -6,7 +6,9 @@
    [clojure.java.io :as io]
    [clojure.pprint :as pp]
    [clojure.tools.build.api :as b] ; for b/git-count-revs
-   [org.corfield.build :as bb]))
+   [org.corfield.build :as bb]
+   [clojure.tools.deps :as t]
+   ))
 
 (def lib 'org.scicloj/metamorph.ml)
 ; alternatively, use MAJOR.MINOR.COMMITS:
@@ -93,3 +95,22 @@
         (yaml/parse-string
          :key-fn #(-> % :key  csk/->kebab-case-keyword))
         (pp/pprint w))))
+
+
+(defn render-notebooks [opts]
+  (let [opts (update opts :aliases conj :dev)
+        aliases    [:dev]  
+        basis      (b/create-basis opts) ; primarily using :aliases here
+        
+        alias-data (t/combine-aliases basis aliases)
+        cmd-opts   (merge {:basis     basis
+                           :main      'clojure.main
+                           :main-args ["notebooks/render.clj"]}
+                          opts
+                          alias-data)
+        cmd        (b/java-command cmd-opts)]
+    (when-not (zero? (:exit (b/process cmd)))
+      (throw (ex-info (str "run failed for " aliases) opts)))
+    opts))
+
+
