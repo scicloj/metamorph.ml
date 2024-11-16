@@ -43,6 +43,8 @@ jobs:
           # to always provision the latest version
           cli: 1.11.1.1224              # Clojure CLI based on tools.deps
 
+      - name: setup quarto          
+        uses: quarto-dev/quarto-actions/setup@v2
       # Runs a single command using the runners shell
       - name: Run CI
         run: clojure -T:build ci
