@@ -48,8 +48,11 @@ jobs:
         run: clojure -T:build ci
 
       - name: copy news data   
-        run: curl http://qwone.com/~jason/20Newsgroups/20news-bydate.tar.gz | tar xz -C bigdata -f -
-           
+        run: |
+          curl http://qwone.com/~jason/20Newsgroups/20news-bydate.tar.gz | tar xz -C bigdata -f -
+          ls bigdata  
+
+
       - name: render notebooks
         run: clojure -T:build render-notebooks
 

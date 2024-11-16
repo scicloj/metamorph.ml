@@ -49,6 +49,8 @@
      (filter #(.isFile %))
      (map parse-f)))))
 
+
+(assert (pos? (tc/row-count raw-text)) "raw-text is empty")
 (def raw-text-cleaned
   (->
    raw-text
