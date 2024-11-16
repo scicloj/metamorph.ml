@@ -51,6 +51,7 @@ jobs:
         run: clojure -T:build render-notebooks
 
   deploy-gh:
+          needs: build
           environment:
             name: github-pages
             url: ${{ steps.deployment.outputs.page_url }}
