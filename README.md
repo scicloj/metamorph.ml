@@ -26,7 +26,6 @@ But it can be as well a "boolean" alternative, such as if stemming should be use
 
 This library allows exactly this, namely hyper-tune an arbitrary complex data transformation pipeline.
 
-Several code examples for metamorph are available in this repository: [metamorph-examples](https://github.com/scicloj/metamorph-examples)
 
 ## Quick start
 
@@ -34,10 +33,6 @@ If you just want to see code, here it is:
 
 Some libraries are needed for a complete test case, 
 see the deps.edn file in alias "test".
-
-As alternative to use `methamorph.ml` directly, we made a more user friendly
-re-organisation of the various libraries and namespaces,
-which might be a better quick start experience, still full featured as same code: [scicloj.ml](https://github.com/scicloj/scicloj.ml)
 
 
 ```clojure
@@ -231,6 +226,16 @@ and custom ones can be created easily.
 - https://github.com/scicloj/tablecloth
 - https://github.com/scicloj/sklearn-clj
 
+## Further tutorials / example
+
+Several code examples for metamorph are available in this repository: [metamorph-examples](https://github.com/scicloj/metamorph-examples)
+
+Here we have some [tutorials](https://scicloj.github.io/clojure-data-tutorials/) of data science topics , some use metamorph.ml.
+
+[noj](https://github.com/scicloj/noj) is as well using metamorph.ml and has a cookbook [here](https://scicloj.github.io/noj/)
+
+We have as well a (very unpolished) collection of [notebooks](https://scicloj.github.io/metamorph.ml/)  showcasing
+only metamorph.ml functionality.
 
 
 <!--  LocalWords:  metamorph
