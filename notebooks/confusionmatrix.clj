@@ -5,10 +5,11 @@
 
 (comment
   (clerk/clear-cache!)
+  (nextjournal.clerk/build! { :paths ["notebooks/confusionmatrix.clj"]})
   (nextjournal.clerk/show! "notebooks/confusionmatrix.clj")
 
-  (nextjournal.clerk/serve! {:browse true
-                             :watch-paths ["notebooks"]}))
+  (nextjournal.clerk/serve! {:browse false
+                             }))
 
 
 
