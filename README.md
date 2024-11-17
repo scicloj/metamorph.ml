@@ -101,14 +101,23 @@ see the deps.edn file in alias "test".
 
 
 
-This library contains the basis functions for machine learning.
-
-It is documented in `scicloj.ml`, which re-exports the functions of this library:
-https://github.com/scicloj/scicloj.ml
+This library contains the basis functions for machine learning, arround:
 
 * Train a model
 * Predict on a trained model
 * Register a trained model
+
+## model plugins
+
+`metamorh.ml` is a framework, only containing a single model `linear regression`.
+It is ment to be used together with other libraries, which contribute models:
+|library| url | descriptions
+|----------------------------|-----------------------------------------------|------------- 
+|org.scicloj/scicloj.ml.smile |  https://github.com/scicloj/scicloj.ml.smile | most models of Java Smile package
+|org.scicloj/scicloj.ml.tribuo| https://github.com/scicloj/scicloj.ml.tribuo | all models of Java Tribuo package
+|org.scicloj/sklearn-clj      | https://github.com/scicloj/sklearn-clj       | most models of python-sklearn
+|org.scicloj/scicloj.ml.xgboost|https://github.com/scicloj/scicloj.ml.xgboost | xgboost4J models
+
 
 ## Evaluate pipelines
 Instead of running  `train` and `predict` as separate steps, 
