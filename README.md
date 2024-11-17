@@ -109,7 +109,7 @@ This library contains the basis functions for machine learning, arround:
 
 ## model plugins
 
-`metamorh.ml` is a framework, only containing a single model `linear regression`.
+`metamorph.ml` is a framework, only containing a single model `linear regression`.
 It is ment to be used together with other libraries, which contribute models:
 |library| url | descriptions
 |----------------------------|-----------------------------------------------|------------- 
