@@ -1,3 +1,7 @@
+
+unreleased
+* added :target-datatypes in train result and clarified expected 'shape' of prediction
+
 0.10.3
  * re-added data.json dependency
 

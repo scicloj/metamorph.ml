@@ -47,15 +47,10 @@
         model (ml/train ds  {:model-type :metamorph.ml/dummy-classifier
                              :dummy-strategy :fixed-class
                              :fixed-class 0})
-
-
-
         prediction (ml/predict ds model)]
 
-
+    (is (= {:species :int16} (:target-datatypes model)))
     (is (= (:species prediction) (repeat 150 0)))))
-
-
 
 (deftest dummy-classification-majority []
   (let [ds (toydata/breast-cancer-ds)
@@ -64,7 +59,7 @@
 
 
         prediction (ml/predict ds model)]
-    
+
     (is (= (:class prediction) (repeat 569 0)))))
 
 
