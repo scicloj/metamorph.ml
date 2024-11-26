@@ -1,5 +1,7 @@
-
 unreleased
+
+
+0.10.4
 * added :target-datatypes in train result and clarified expected 'shape' of prediction
 
 0.10.3
