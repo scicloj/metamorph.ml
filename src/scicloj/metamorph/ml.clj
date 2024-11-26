@@ -698,6 +698,23 @@
    :target-categorical-maps  
 
    it is receiving.
+
+   Any implementing model need to behave symetric between the 'datatype in the target columns
+   of training data' and the 'datatype of the prediction columns`
+   A model can decide to not accept certaiin dataypes in the target columns of training data.
+   (and fail with exception). But any model should try to minimize this and accept for categorical data:
+
+   - all numeric types ( :int32, :int64, :float32, :float64)
+   - string
+   - categorical maps
+
+   It NEED to be symetric, and return the same datatype in prediction as it receives in training:
+   numeric in train -> same numeric in predict
+   string in train -> string in predict
+   categorical map in train -> equivalent categorical map in predict
+   
+   ml/train passes the needed information of the rain target column to the model implementaion to do this.
+
    "
   {:malli/schema [:=> [:cat [:fn dataset?]
                        [:map [:options map?]
