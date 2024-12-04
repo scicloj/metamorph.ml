@@ -600,3 +600,65 @@
                (score-categorical   [0 1] {:a 0.0 :b 1.0}
                                     [0 1] {:a 0.0 :b 1.0}
                                     loss/classification-accuracy))))
+(require '[scicloj.ml.smile.regression]
+         '[scicloj.metamorph.ml.regression]
+         )
+
+(deftest grid-search-cv
+
+  (def res
+    (let [iris
+          (->
+           (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+           (tc/select-columns [:sepal_length :sepal_width :petal_length :petal_width])
+           (ds-mod/set-inference-target :petal_length))]
+
+      (ml/grid-search-cv
+       iris
+       [{:model-type :fastmath/ols :alpha 0.05}
+        {:model-type :fastmath/ols :alpha 0.1}
+        {:model-type :smile.regression/random-forest}]
+       [:kfold {:k 3}]
+
+       loss/mae
+       :loss)))
+
+
+  ;; spec of best model
+  (-> res :fit-ctx :model :options)
+  ;;=> {:model-type :smile.regression/random-forest}
+
+  ;; train mean error
+  (-> res  :train-transform :mean)
+  ;;=> 0.2369483740246279
+  
+  ;; test mean error
+  (-> res :test-transform :mean)
+  ;;=> 0.30776931858370016
+  
+  
+  )
+
+(->>
+ (ml/hyperparameters :smile.regression/lasso)
+ scicloj.metamorph.ml.gridsearch/sobol-gridsearch
+ (take 5)
+ (map #(assoc % :model-type :smile.regression/lasso))
+ )
+;;=> ({:lambda 5.0505545454545455,
+;;     :tolerance 0.005051000000000001,
+;;     :max-iterations 5055454,
+;;     :model-type :smile.regression/lasso}
+;;    {:lambda 7.474772727272728,
+;;     :tolerance 0.0025260000000000005,
+;;     :max-iterations 2532727,
+;;     :model-type :smile.regression/lasso}
+;;    {:lambda 2.525327272727273,
+;;     :tolerance 0.007475000000000002,
+;;     :max-iterations 7477272,
+;;     :model-type :smile.regression/lasso}
+;;    {:lambda 3.7374363636363643,
+;;     :tolerance 0.003738000000000001,
+;;     :max-iterations 6266363,
+;;     :model-type :smile.regression/lasso}
+;;    {:lambda 8.787890909090908, :tolerance 0.008788, :max-iterations 1220909, :model-type :smile.regression/lasso})

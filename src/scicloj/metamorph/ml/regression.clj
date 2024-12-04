@@ -79,13 +79,13 @@
 (defn- predict-fm-ols [feature-ds thawed-model model]
   (let [prediction (map
                     (:model-data model)
-                    (-> feature-ds ds/rowvecs))]
+                    (-> feature-ds ds/rowvecs))
+        target-column-name (-> model :target-columns first)]
 
-    (let [target-column-name (-> model :target-columns first)]
-      (ds/new-dataset [target-column-name
-                       (ds/new-column target-column-name
-                                      prediction
-                                      {:column-type :prediction})]))))
+    (ds/new-dataset [target-column-name
+                     (ds/new-column target-column-name
+                                    prediction
+                                    {:column-type :prediction})])))
 
 
 (defn- tidy-ols [model]
@@ -152,7 +152,6 @@
 
 (defn- single-predict [model xs]
 
-  (def model model)
   (let [beta (-> model :model-data :beta)
         intercept (Array/aget beta 0)
         coefficients (vec (rest beta))]
@@ -176,12 +175,13 @@
         predicted-values
         (map
          #(single-predict model %)
-         xs)]
-    (let [target-column-name (-> model :target-columns first)]
-      (ds/new-dataset [target-column-name
-                       (ds/new-column target-column-name
-                                      predicted-values
-                                      {:column-type :prediction})]))))
+         xs)
+        target-column-name (-> model :target-columns first)
+        ]
+    (ds/new-dataset [target-column-name
+                     (ds/new-column target-column-name
+                                    predicted-values
+                                    {:column-type :prediction})])))
 
 
 

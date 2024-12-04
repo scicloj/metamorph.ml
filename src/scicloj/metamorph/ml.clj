@@ -17,7 +17,9 @@
    [tech.v3.datatype.export-symbols :as exporter]
    [tech.v3.datatype.functional :as dfn]
    [scicloj.metamorph.ml.tidy-models :as tidy]
-   [clojure.set :as set])
+   [clojure.set :as set]
+   [scicloj.metamorph.ml :as ml]
+   [tablecloth.api :as tc])
     ;;
 
   (:import
@@ -914,3 +916,25 @@
                      
 
 (malli/instrument-ns 'scicloj.metamorph.ml)
+
+
+(defn grid-search-cv [ds model-specs split-spec metric-fn loss-or-accuracy]
+
+  (let [pipelines
+        (map
+         #(mm/pipeline
+           {:metamorph/id :model}
+           (ml/model %))
+         model-specs)
+
+        splits
+        (apply tc/split->seq ds split-spec)]
+
+    (->
+     (ml/evaluate-pipelines pipelines
+                            splits
+                            metric-fn
+                            loss-or-accuracy)
+     flatten
+     first)))
+
