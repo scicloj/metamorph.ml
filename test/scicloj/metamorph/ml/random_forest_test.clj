@@ -1,26 +1,27 @@
-(ns scicloj.metamorph.ml.random-forest-test 
+(ns scicloj.metamorph.ml.random-forest-test
   (:require
-   [scicloj.metamorph.ml.random-forest :refer [random-forest predict-forest]]))
+   [clojure.test :refer [is deftest]]
+   [scicloj.metamorph.ml.random-forest :refer [random-forest predict-forest]]
+   [tablecloth.api :as tc]))
 
 (def seed 1234)
 
-(def random
-  (java.util.Random. seed))
 
-(defn seeded-rand [n]
+(defn seeded-rand [n random]
   (* n (.nextDouble random)))
 
 
 
+
 (defn deterministic-shuffle
-  [^java.util.Collection coll]
+  [^java.util.Collection coll random]
   (let [al (java.util.ArrayList. coll)
-        rng (java.util.Random. seed)]
-    (java.util.Collections/shuffle al rng)
+        ]
+    (java.util.Collections/shuffle al random)
     (clojure.lang.RT/vector (.toArray al))))
 
-(defn train-test-split [data test-ratio]
-  (let [shuffled (deterministic-shuffle data)
+(defn train-test-split [data test-ratio random]
+  (let [shuffled (deterministic-shuffle data random)
         test-size (int (* test-ratio (count data)))]
     {:test (take test-size shuffled)
      :train (drop test-size shuffled)}))
@@ -34,8 +35,8 @@
 
 ;; Function to generate synthetic dataset of size n
 
-(defn generate-dataset [n]
-  (let [rand-feature (fn [] (seeded-rand 10))
+(defn generate-dataset [n random]
+  (let [rand-feature (fn [] (seeded-rand 10 random))
         rand-label (fn [f1 f2]
                      (if (> (+ f1 f2) 10)
                        1
@@ -48,26 +49,32 @@
          :feature2 f2
          :label label}))))
 
-;; Main function
 
-;; Generate a dataset with 100 samples
-(def dataset (generate-dataset 100))
-(def test-ratio 0.3) ;; 30% of data for testing
-(def data-split (train-test-split dataset test-ratio))
-(def train-data (:train data-split))
-(def test-data (:test data-split))
- ;; Build the random forest using training data
-(def n-trees 10) ;; Number of trees (increased for a larger dataset)
-(def max-depth 10);; Maximum depth of each tree
-(def min-size 1);; Minimum size of groups (leaf nodes)
-(def sample-size (count train-data)) ;; Number of samples per tree
-(def n-features 2) ;; Number of features to consider at each split
-(def forest (random-forest train-data n-trees max-depth min-size sample-size n-features))
-;; Make predictions on test data
 (defn get-predictions [forest test-data]
   (map #(predict-forest forest %) test-data))
-(def test-labels (map :label test-data))
-(def predictions (get-predictions forest test-data))
+
+(deftest random-forest-test
+;; Generate a dataset with 100 samples
+  (let [ random (java.util.Random. seed)
+
+        dataset (generate-dataset 1000 random)
+        test-ratio 0.3 ;; 30% of data for testing
+        data-split (train-test-split dataset test-ratio random)
+        train-data (:train data-split)
+        test-data (:test data-split)
+
+        n-trees 10 ;; Number of trees (increased for a larger dataset)
+        max-depth 10 ;; Maximum depth of each tree
+        min-size 1 ;; Minimum size of groups (leaf nodes)
+        sample-size (count train-data) ;; Number of samples per tree
+        n-features 2 ;; Number of features to consider at each split
+        forest (random-forest train-data n-trees max-depth min-size sample-size n-features)
+
+;; Make predictions on test data
+        test-labels (map :label test-data)
+        predictions (get-predictions forest test-data)
 ;; Calculate accuracy
-(def acc (accuracy predictions test-labels))
-(println "Accuracy:" (* 100.0 acc) "%")
+        acc (accuracy predictions test-labels)
+        ]
+    (is (= 0.97 (double acc)))
+    ))
