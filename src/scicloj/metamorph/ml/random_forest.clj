@@ -1,13 +1,22 @@
 (ns scicloj.metamorph.ml.random-forest
   (:require [clojure.set :as set]))
 
-(def random
-  (java.util.Random. 1234))
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
+
+(def seed 1234)
 
 (defn seeded-rand-int [random n]
   (.nextInt random n))
 (defn seeded-rand-nth [random coll]
   (nth coll (seeded-rand-int random (count coll))))
+
+(defn deterministic-shuffle
+  [^java.util.Collection coll random]
+  (let [al (java.util.ArrayList. coll)]
+    (java.util.Collections/shuffle al random)
+    (clojure.lang.RT/vector (.toArray al))))
+
 
 ;; Function to generate bootstrap samples
 
@@ -32,29 +41,29 @@
 ;; Function to find the best split
 
 (defn best-split [data features]
-(let [base-gini (gini-impurity (map :label data))]
-(reduce
- (fn [best feature]
-   (reduce
-    (fn [best value]
-      (let [[left right] (split-dataset data feature value)
-            p-left (/ (count left) (count data))
-            p-right (/ (count right) (count data))
-            gini-left (gini-impurity (map :label left))
-            gini-right (gini-impurity (map :label right))
-            gini-split (+ (* p-left gini-left) (* p-right gini-right))]
+  (let [base-gini (gini-impurity (map :label data))]
+  (reduce
+   (fn [best feature]
+     (reduce
+      (fn [best value]
+        (let [[left right] (split-dataset data feature value)
+              p-left (/ (count left) (count data))
+              p-right (/ (count right) (count data))
+              gini-left (gini-impurity (map :label left))
+              gini-right (gini-impurity (map :label right))
+              gini-split (+ (* p-left gini-left) (* p-right gini-right))]
 
-        (if (< gini-split (:gini best))
-          {:feature feature
-           :value value
-           :gini gini-split
-           :groups [left right]}
-          best)))
-    best
-    (distinct (map feature data))))
+          (if (< gini-split (:gini best))
+            {:feature feature
+             :value value
+             :gini gini-split
+             :groups [left right]}
+            best)))
+      best
+      (distinct (map feature data))))
 
- {:gini base-gini}
- features)))
+   {:gini base-gini}
+   features)))
 
 ;; Function to create a terminal node (leaf)
 
@@ -65,7 +74,7 @@
 
 ;; Recursive function to build a decision tree
 
-(defn build-tree [data max-depth min-size n-features depth]
+(defn build-tree [data max-depth min-size n-features depth random]
   (let [labels (map :label data)]
     (if (or (empty? data)
             (<= (count (distinct labels)) 1)
@@ -73,7 +82,7 @@
             (<= (count data) min-size))
       (to-terminal data)
       (let [all-features (remove #{:label} (keys (first data)))
-            features (take n-features (shuffle all-features))
+            features (take n-features (deterministic-shuffle all-features random))
             split (best-split data features)]
         (if (or (nil? (:groups split))
                 (empty? (first (:groups split)))
@@ -83,8 +92,8 @@
                 node {:feature (:feature split)
                       :value (:value split)}]
             (assoc node
-                   :left (build-tree left max-depth min-size n-features (inc depth))
-                   :right (build-tree right max-depth min-size n-features (inc depth)))))))))
+                   :left (build-tree left max-depth min-size n-features (inc depth) random)
+                   :right (build-tree right max-depth min-size n-features (inc depth) random))))))))
 
 ;; Function to build a random forest
 
@@ -92,7 +101,7 @@
   (let [random (java.util.Random. 1234)]
     (repeatedly n-trees
                 #(let [sample (bootstrap-sample data sample-size random)]
-                   (build-tree sample max-depth min-size n-features 1)))))
+                   (build-tree sample max-depth min-size n-features 1 random)))))
 
 ;; Function to make a prediction with a single tree
 
