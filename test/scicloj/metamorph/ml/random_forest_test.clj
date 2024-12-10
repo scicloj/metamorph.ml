@@ -53,8 +53,12 @@
 (defn get-predictions [forest test-data]
   (map #(predict-forest forest %) test-data))
 
+(require '[clj-async-profiler.core :as prof])
+
+(System/getProperty "jdk.attach.allowAttachSelf")
 (deftest random-forest-test
 ;; Generate a dataset with 100 samples
+  
   (let [ random (java.util.Random. seed)
 
         dataset (generate-dataset 1000 random)
@@ -68,7 +72,10 @@
         min-size 1 ;; Minimum size of groups (leaf nodes)
         sample-size (count train-data) ;; Number of samples per tree
         n-features 2 ;; Number of features to consider at each split
-        forest (random-forest train-data n-trees max-depth min-size sample-size n-features)
+        forest 
+        (time
+         (doall
+          (random-forest train-data n-trees max-depth min-size sample-size n-features)))
 
 ;; Make predictions on test data
         test-labels (map :label test-data)
