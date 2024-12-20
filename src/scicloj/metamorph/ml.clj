@@ -611,7 +611,8 @@
         combined-hash (str tmd-hash "___" options-hash)
         
         
-        cached (car/wcar wcar-opts (car/get combined-hash))
+        cached (when wcar-opts 
+                 (car/wcar wcar-opts (car/get combined-hash)))
 
         model
         (if cached
@@ -649,8 +650,10 @@
                   :target-datatypes targets-datatypes}
                  (when-not (== 0 (count cat-maps))
                    {:target-categorical-maps cat-maps}))]
-            (println :cache-miss! combined-hash)
-            (car/wcar wcar-opts (car/set combined-hash model-1))
+            (when wcar-opts
+              (println :cache-miss! combined-hash)
+              (car/wcar wcar-opts (car/set combined-hash model-1)))
+            
 
             model-1))]
     model))
