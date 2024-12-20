@@ -23,7 +23,10 @@
                                                   cljsjs/vega-embed
                                                   cljsjs/vega-tooltip]}
         ;; needed by hanami
-        org.clojure/data.json {:mvn/version "0.2.6"}}
+        org.clojure/data.json {:mvn/version "0.2.6"}
+        com.taoensso/nippy {:mvn/version "3.4.2"}
+        com.taoensso/carmine {:mvn/version "3.4.1"}
+        }
 
  :paths ["src" "resources"]
 
@@ -49,7 +52,8 @@
    :extra-deps {
                 io.github.nextjournal/clerk {:mvn/version "0.17.1102"}
                 org.scicloj/clay {:mvn/version "2-beta23"}
-                scicloj/scicloj.ml.smile {:mvn/version "7.4.1"}
+                org.scicloj/scicloj.ml.smile {:mvn/version "7.4.3"}
+                
                 
                 
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
@@ -62,7 +66,8 @@
    :extra-paths ["test"]
    :extra-deps {com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.3.0"}
                 lambdaisland/kaocha {:mvn/version "1.88.1376"}
-                scicloj/scicloj.ml.smile {:mvn/version "7.4.1"}
+                
+                org.scicloj/scicloj.ml.smile {:mvn/version "7.4.3"}
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
                 ch.qos.logback/logback-classic {:mvn/version "1.5.6"}
                 org.mapdb/mapdb {:mvn/version "3.1.0"}
@@ -70,10 +75,12 @@
   :runner {:main-opts ["-m" "kaocha.runner"]}
   
   :exp {:jvm-opts ["-Djdk.attach.allowAttachSelf" "-Xmx8G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
-        :extra-paths ["exp"]
+        :extra-paths ["exp" "test"]
         :extra-deps {com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.3.0"}
                      ch.qos.logback/logback-classic {:mvn/version "1.5.6"}
                      criterium/criterium {:mvn/version  "0.4.6"}
+                     
+                     org.scicloj/scicloj.ml.smile {:mvn/version "7.4.3"}
                      }}
 
   :smoke-test {:jvm-opts ["-Djdk.attach.allowAttachSelf" "-Xmx1G" "--add-opens=java.base/java.io=ALL-UNNAMED"]

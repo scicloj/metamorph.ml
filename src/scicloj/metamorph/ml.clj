@@ -1,5 +1,6 @@
 (ns scicloj.metamorph.ml
   (:require
+   [clojure.set :as set]
    [clojure.string :as str]
    [pppmap.core :as ppp]
    [scicloj.metamorph.core :as mm]
@@ -7,7 +8,10 @@
    [scicloj.metamorph.ml.evaluation-handler]
    [scicloj.metamorph.ml.loss :as loss]
    [scicloj.metamorph.ml.malli :as malli]
+   [scicloj.metamorph.ml.tidy-models :as tidy]
    [scicloj.metamorph.ml.tools :refer [dissoc-in]]
+   [taoensso.nippy :as nippy]
+   [taoensso.carmine :as car]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.categorical :as ds-cat]
    [tech.v3.dataset.column-filters :as cf]
@@ -16,8 +20,7 @@
    [tech.v3.datatype.errors :as errors]
    [tech.v3.datatype.export-symbols :as exporter]
    [tech.v3.datatype.functional :as dfn]
-   [scicloj.metamorph.ml.tidy-models :as tidy]
-   [clojure.set :as set])
+   [valuehash.api])
     ;;
 
   (:import
@@ -26,11 +29,14 @@
 
 (exporter/export-symbols scicloj.metamorph.ml.ensemble ensemble-pipe)
 
+
+
+
 (defn get-categorical-maps [ds]
   (->> (ds/column-names ds)
        (map #(list % (-> ds (get %) meta :categorical-map)))
        (remove #(nil? (second %)))
-       (map #(hash-map (first % ) (second %)))
+       (map #(hash-map (first %) (second %)))
        (apply merge)))
 
 
@@ -78,8 +84,7 @@
 
 (defn- supervised-eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
 
-  (let [
-        start-transform (System/currentTimeMillis)
+  (let [start-transform (System/currentTimeMillis)
         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
         end-transform (System/currentTimeMillis)
 
@@ -125,13 +130,12 @@
 
 (defn- calc-metric [pipeline-fn metric-fn train-ds test-ds tune-options]
   (try
-    (let [
-          start-fit (System/currentTimeMillis)
+    (let [start-fit (System/currentTimeMillis)
           fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
           end-fit (System/currentTimeMillis)
 
           ;; TODO: double cec this, ensembles do not have it so far in "fit"
-          #_ (errors/when-not-error (:model fitted-ctx) "Pipeline contexts under evaluation need to have the model operation with id :model")
+          #_(errors/when-not-error (:model fitted-ctx) "Pipeline contexts under evaluation need to have the model operation with id :model")
 
 
           eval-pipe-result-train (eval-pipe pipeline-fn fitted-ctx metric-fn train-ds (:other-metrices tune-options))
@@ -141,13 +145,13 @@
                                    :ctx fitted-ctx
                                    :metric 0}
                                   (eval-pipe pipeline-fn fitted-ctx metric-fn test-ds (:other-metrices tune-options)))]
-          
 
-          
-         {:fit-ctx  fitted-ctx
-           :timing-fit (- end-fit start-fit)
-           :train-transform eval-pipe-result-train
-           :test-transform eval-pipe-result-test})
+
+
+      {:fit-ctx  fitted-ctx
+       :timing-fit (- end-fit start-fit)
+       :train-transform eval-pipe-result-train
+       :test-transform eval-pipe-result-test})
 
 
     (catch Exception e
@@ -163,7 +167,7 @@
             (dissoc-in x y))
           r
           result-dissoc-in-seq))
-          
+
 
 (defn- format-fn-sources [fn-sources]
   (->> fn-sources
@@ -197,9 +201,7 @@
 
 (defn- evaluate-one-pipeline [pipeline-decl-or-fn train-test-split-seq metric-fn loss-or-accuracy tune-options]
 
-  (let [
-
-        pipe-fn (if (fn? pipeline-decl-or-fn)
+  (let [pipe-fn (if (fn? pipeline-decl-or-fn)
                   pipeline-decl-or-fn
                   (mm/->pipeline pipeline-decl-or-fn))
         pipeline-decl (when (sequential? pipeline-decl-or-fn)
@@ -223,7 +225,7 @@
 
                  reduced-result ((tune-options :evaluation-handler-fn) complete-result)]
              reduced-result)))
-             
+
 
 
 
@@ -256,8 +258,8 @@
     result))
 
 
-      
-    
+
+
 
 (def default-result-dissoc-in-seq
   [[:fit-ctx :metamorph/data]
@@ -431,7 +433,7 @@
       [:sequential [:map {:closed true}
                     [:split-uid {:optional true} string?]
                     [:train [:fn dataset?]]
-                    [:test  {:optional true}[:fn dataset?]]]]
+                    [:test  {:optional true} [:fn dataset?]]]]
       fn?
       [:enum :accuracy :loss]]
 
@@ -455,7 +457,7 @@
                               :return-best-pipeline-only true
                               :return-best-crossvalidation-only true
                               :evaluation-handler-fn default-result-dissoc-in-fn}
-                         
+
                              options)
          map-fn
          (case (used-options :map-fn)
@@ -553,7 +555,7 @@
                                              :unsupervised? unsupervised?
                                              :documentation documentation})
 
-                                             
+
   :ok)
 
 
@@ -602,39 +604,61 @@
   {:malli/schema [:=> [:cat [:fn dataset?] map?]
                   [map?]]}
   [dataset options]
-  (let [{:keys [train-fn unsupervised?]} (options->model-def options)
-        feature-ds (cf/feature  dataset)
-        _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
-                                 "No features provided")
-        target-ds (if unsupervised?
-                    nil
-                    (do
-                      (errors/when-not-error (> (ds/row-count (cf/target dataset)) 0) "No target columns provided, see tech.v3.dataset.modelling/set-inference-target")
-                      (cf/target dataset)))
+  ;(println :dataset-hash (valuehash.api/md5-str dataset))
+  ;(println :options-hash )
+  (let [wcar-opts (get-in options  [:cache-opts :wcar-opts])
+        cleaned-options (dissoc options :cache-opts)
+        tmd-hash (str (hash dataset))
+        options-hash (hash cleaned-options)
+        combined-hash (str tmd-hash "___" options-hash)
+        
+        
+        cached (car/wcar wcar-opts (car/get combined-hash))
 
-                     
-        model-data (train-fn feature-ds target-ds options)
+        model
+        (if cached
+          (do
+            (println :cache-hit combined-hash)
+            cached)
+          (let [{:keys [train-fn unsupervised?]} (options->model-def options)
+                feature-ds (cf/feature  dataset)
+                _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
+                                         "No features provided")
+                target-ds (if unsupervised?
+                            nil
+                            (do
+                              (errors/when-not-error (> (ds/row-count (cf/target dataset)) 0) "No target columns provided, see tech.v3.dataset.modelling/set-inference-target")
+                              (cf/target dataset)))
+                model-data (train-fn feature-ds target-ds 
+                                     cleaned-options)
         ;; _ (errors/when-not-error (:model-as-bytes model-data)  "train-fn need to return a map with key :model-as-bytes")
+                targets-datatypes
+                (zipmap
+                 (keys target-ds)
+                 (->>
+                  (vals target-ds)
+                  (map meta)
+                  (map :datatype)))
+                cat-maps (ds-mod/dataset->categorical-xforms target-ds)
 
-        targets-datatypes
-        (zipmap
-         (keys target-ds)
-         (->>
-          (vals target-ds)
-          (map meta)
-          (map :datatype)))
-        cat-maps (ds-mod/dataset->categorical-xforms target-ds)]
+                model-1
+                (merge
+                 {:model-data model-data
+                  :options cleaned-options
+                  :id (UUID/randomUUID)
+                  :feature-columns (vec (ds/column-names feature-ds))
+                  :target-columns (vec (ds/column-names target-ds))
+                  :target-datatypes targets-datatypes}
+                 (when-not (== 0 (count cat-maps))
+                   {:target-categorical-maps cat-maps}))]
+            (println :cache-miss! combined-hash)
+            (car/wcar wcar-opts (car/set combined-hash model-1))
 
-    (merge
-     {:model-data model-data
-      :options options
-      :id (UUID/randomUUID)
-      :feature-columns (vec (ds/column-names feature-ds))
-      :target-columns (vec (ds/column-names target-ds))
-      :target-datatypes targets-datatypes}
-     (when-not (== 0 (count cat-maps))
-       {:target-categorical-maps cat-maps}))))
-
+            model-1))]
+    model))
+        
+    
+    
 
 (defn thaw-model
   "Thaw a model.  Model's returned from train may be 'frozen' meaning a 'thaw'
@@ -720,7 +744,7 @@
                        [:map [:options map?]
                         [:feature-columns sequential?]
                         [:target-columns sequential?]]]
-                       
+
 
                   [map?]]}
   [dataset model]
@@ -839,7 +863,7 @@
   loss fn. If column is categorical, loss is tech.v3.ml.loss/classification-loss, else
   the loss is tech.v3.ml.loss/mae (mean average error)."
   {:malli/schema [:=> [:cat [:fn dataset?]]
-                    [fn?]]}
+                  [fn?]]}
   [dataset]
   (let [target-ds (cf/target dataset)]
     (errors/when-not-errorf
@@ -902,15 +926,30 @@
                              ::unsupervised? (get (options->model-def options) :unsupervised? false)))
 
        :transform  (if (get-in ctx [id ::unsupervised?])
-                       ctx
-                       (-> ctx
-                           (update
-                                   id
-                                   assoc
-                                   ::feature-ds (cf/feature data)
-                                   ::target-ds (cf/target data))
-                           (assoc
-                            :metamorph/data (predict data (get ctx id)))))))))
-                     
+                     ctx
+                     (-> ctx
+                         (update
+                          id
+                          assoc
+                          ::feature-ds (cf/feature data)
+                          ::target-ds (cf/target data))
+                         (assoc
+                          :metamorph/data (predict data (get ctx id)))))))))
+
 
 (malli/instrument-ns 'scicloj.metamorph.ml)
+
+(comment
+
+
+  (wcar* (car/ping))
+
+
+  (wcar* (car/set
+          (str tmd-hash "___" options-hash)
+          model))
+
+
+
+  (wcar* (car/get "sss")))
+
