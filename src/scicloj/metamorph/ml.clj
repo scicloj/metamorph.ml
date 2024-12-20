@@ -20,7 +20,7 @@
    [tech.v3.datatype.errors :as errors]
    [tech.v3.datatype.export-symbols :as exporter]
    [tech.v3.datatype.functional :as dfn]
-   [valuehash.api])
+   )
     ;;
 
   (:import
@@ -604,8 +604,6 @@
   {:malli/schema [:=> [:cat [:fn dataset?] map?]
                   [map?]]}
   [dataset options]
-  ;(println :dataset-hash (valuehash.api/md5-str dataset))
-  ;(println :options-hash )
   (let [wcar-opts (get-in options  [:cache-opts :wcar-opts])
         cleaned-options (dissoc options :cache-opts)
         tmd-hash (str (hash dataset))
