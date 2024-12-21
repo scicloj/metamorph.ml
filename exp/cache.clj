@@ -65,14 +65,13 @@
 (def     my-wcar-opts {:pool my-conn-pool, :spec my-conn-spec})
 
 
-
+(reset! ml/wcar-opts my-wcar-opts)
 
 (defn pipe-fns [model-type hyper-params n]
   (->>
    (map
     #(pipe-fn
       (assoc %
-             :cache-opts {:wcar-opts my-wcar-opts}
              :model-type model-type))
     (gs/sobol-gridsearch hyper-params))
    (take n))

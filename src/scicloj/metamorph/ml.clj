@@ -20,7 +20,8 @@
    [tech.v3.datatype.errors :as errors]
    [tech.v3.datatype.export-symbols :as exporter]
    [tech.v3.datatype.functional :as dfn]
-   )
+   
+   [clojure.tools.reader :as tr])
     ;;
 
   (:import
@@ -30,6 +31,7 @@
 (exporter/export-symbols scicloj.metamorph.ml.ensemble ensemble-pipe)
 
 
+(def wcar-opts (atom nil))
 
 
 (defn get-categorical-maps [ds]
@@ -604,20 +606,20 @@
   {:malli/schema [:=> [:cat [:fn dataset?] map?]
                   [map?]]}
   [dataset options]
-  (let [wcar-opts (get-in options  [:cache-opts :wcar-opts])
+  (let [
         cleaned-options (dissoc options :cache-opts)
         tmd-hash (str (hash dataset))
         options-hash (hash cleaned-options)
         combined-hash (str tmd-hash "___" options-hash)
         
         
-        cached (when wcar-opts 
-                 (car/wcar wcar-opts (car/get combined-hash)))
+        cached (when @wcar-opts 
+                 (car/wcar @wcar-opts (car/get combined-hash)))
 
         model
         (if cached
           (do
-            (println :cache-hit combined-hash)
+            (println :cache-hit-train! combined-hash)
             cached)
           (let [{:keys [train-fn unsupervised?]} (options->model-def options)
                 feature-ds (cf/feature  dataset)
@@ -644,15 +646,16 @@
                 (merge
                  {:model-data model-data
                   :options cleaned-options
+                  :train-input-hash combined-hash
                   :id (UUID/randomUUID)
                   :feature-columns (vec (ds/column-names feature-ds))
                   :target-columns (vec (ds/column-names target-ds))
                   :target-datatypes targets-datatypes}
                  (when-not (== 0 (count cat-maps))
                    {:target-categorical-maps cat-maps}))]
-            (when wcar-opts
-              (println :cache-miss! combined-hash)
-              (car/wcar wcar-opts (car/set combined-hash model-1)))
+            (when @wcar-opts
+              (println :cache-miss-train! combined-hash)
+              (car/wcar @wcar-opts (car/set combined-hash model-1)))
             
 
             model-1))]
@@ -709,6 +712,7 @@
       ;;   (-> target-cat-maps-from-predict vals first :lookup-table)))
 
 
+
 (defn predict
   "Predict returns a dataset with only the predictions in it.
 
@@ -748,16 +752,31 @@
 
 
                   [map?]]}
-  [dataset model]
-  (let [{:keys [predict-fn] :as model-def} (options->model-def (:options model))
-        feature-ds (ds/select-columns dataset (:feature-columns model))
-        thawed-model (thaw-model model model-def)
-        pred-ds (predict-fn feature-ds
-                            thawed-model
-                            model)]
+  [dataset {:keys [feature-columns options train-input-hash] 
+            :as model}]
+  (let [predict-hash (str train-input-hash "--" (hash dataset))
+        cached (when @wcar-opts
+                 (car/wcar @wcar-opts (car/get predict-hash)))
 
-    (warn-inconsitent-maps model pred-ds)
+        pred-ds
+        (if cached
+          (do
+            (println :cache-hit-predict! predict-hash)
+            cached)
+          (let [{:keys [predict-fn] :as model-def} (options->model-def options)
+                feature-ds (ds/select-columns dataset feature-columns)
+                thawed-model (thaw-model model model-def)
+                pred-ds (predict-fn feature-ds
+                                    thawed-model
+                                    model)]
+            (warn-inconsitent-maps model pred-ds)
+            
+            (when @wcar-opts
+              (println :cache-miss-predict! predict-hash)
+              (car/wcar @wcar-opts (car/set predict-hash pred-ds)))
+            pred-ds))]
     pred-ds))
+
 
 
 (defn loglik [model y yhat]
