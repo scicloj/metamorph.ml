@@ -622,7 +622,7 @@
         model
         (if cached
           (do
-            (println :cache-hit-train! combined-hash)
+            ;(println :cache-hit-train! combined-hash)
             cached)
           (let [{:keys [train-fn unsupervised?]} (options->model-def options)
                 feature-ds (cf/feature  dataset)
@@ -764,7 +764,7 @@
         pred-ds
         (if cached
           (do
-            (println :cache-hit-predict! predict-hash)
+            ;(println :cache-hit-predict! predict-hash)
             cached)
           (let [{:keys [predict-fn] :as model-def} (options->model-def options)
                 feature-ds (ds/select-columns dataset feature-columns)
