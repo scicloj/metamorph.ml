@@ -1,5 +1,7 @@
 unreleased
 * allow parameters for :fastmath/ols (fixes #27)
+* added metrics-and-model-keep-fn
+
 
 0.10.4
 * added :target-datatypes in train result and clarified expected 'shape' of prediction

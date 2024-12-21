@@ -282,17 +282,12 @@
    [:test-transform :ctx :model :model-data :smile-df-used]])
 
 
-(defn default-result-dissoc-in-fn [result]
-  (reduce-result result default-result-dissoc-in-seq))
 
 
 (def result-dissoc-in-seq--ctxs
   [[:fit-ctx]
    [:train-transform :ctx]
    [:test-transform :ctx]])
-
-(defn result-dissoc-in-seq-ctx-fn [result]
-  (reduce-result result result-dissoc-in-seq--ctxs))
 
 
 (def result-dissoc-in-seq--all
@@ -310,8 +305,29 @@
    [:loss-or-accuracy]
    [:source-information]])
 
-(defn result-dissoc-in-seq--all-fn [result]
+(defn result-dissoc-in-seq--all-fn 
+  "evaluation-handler-fn which removes all :ctx"
+  [result]
   (reduce-result result result-dissoc-in-seq--all))
+
+(defn default-result-dissoc-in-fn
+  "default evaluation-handler-fn"
+  [result]
+  (reduce-result result default-result-dissoc-in-seq))
+
+(defn result-dissoc-in-seq-ctx-fn
+  "evaluation-handler-fn which removes all :ctx"
+  [result]
+  (reduce-result result result-dissoc-in-seq--ctxs))
+
+
+(defn metrics-and-model-keep-fn
+  "evaluation-handler-fn which keeps only train-metric, test-metric and and the fitted model"
+  [result]
+  {:train-transform {:metric (get-in result [:train-transform :metric])}
+   :test-transform {:metric (get-in result [:test-transform :metric])}
+   :fit-ctx {:model (get-in result [:fit-ctx :model])}})
+
 
 
 (defn evaluate-pipelines
