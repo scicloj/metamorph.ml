@@ -1,7 +1,7 @@
 unreleased
 * allow parameters for :fastmath/ols (fixes #27)
 * added metrics-and-model-keep-fn
-* added :ppmap
+* added :ppmap with :ppmap-grain-size 10
 
 
 0.10.4

@@ -401,6 +401,7 @@
                              [:return-best-pipeline-only {:optional true} boolean?]
                              [:return-best-crossvalidation-only {:optional true} boolean?]
                              [:map-fn {:optional true} [:enum :map :pmap :mapv :ppmap]]
+                             [:ppmap-grain-size {:optional true} int?]
                              [:evaluation-handler-fn {:optional true} fn?]
                              [:other-metrices {:optional true} [:sequential [:map
                                                                              [:name keyword?]
@@ -474,12 +475,14 @@
    (let [used-options (merge {:map-fn :map
                               :return-best-pipeline-only true
                               :return-best-crossvalidation-only true
-                              :evaluation-handler-fn default-result-dissoc-in-fn}
+                              :evaluation-handler-fn default-result-dissoc-in-fn
+                              :ppmap-grain-size 10}
+                              
 
                              options)
          map-fn
          (case (used-options :map-fn)
-           :ppmap (partial ppp/ppmap-with-progress "ppmap: evaluate pipelines" 10)
+           :ppmap (partial ppp/ppmap-with-progress "ppmap: evaluate pipelines" (used-options :ppmap-grain-size))
            :pmap (partial ppp/pmap-with-progress "pmap: evaluate pipelines")
            :map (partial ppp/map-with-progress "map: evaluate pipelines")
            :mapv mapv)
