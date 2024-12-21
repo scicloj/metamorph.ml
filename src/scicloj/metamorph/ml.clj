@@ -657,7 +657,7 @@
                  (when-not (== 0 (count cat-maps))
                    {:target-categorical-maps cat-maps}))]
             (when @wcar-opts
-              (println :cache-miss-train! combined-hash)
+              ;(println :cache-miss-train! combined-hash)
               (car/wcar @wcar-opts (car/set combined-hash model-1)))
             
 
@@ -775,7 +775,7 @@
             (warn-inconsitent-maps model pred-ds)
             
             (when @wcar-opts
-              (println :cache-miss-predict! predict-hash)
+              ;(println :cache-miss-predict! predict-hash)
               (car/wcar @wcar-opts (car/set predict-hash pred-ds)))
             pred-ds))]
     pred-ds))
