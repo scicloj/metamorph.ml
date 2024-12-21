@@ -400,7 +400,7 @@
      {::options [:or empty? [:map
                              [:return-best-pipeline-only {:optional true} boolean?]
                              [:return-best-crossvalidation-only {:optional true} boolean?]
-                             [:map-fn {:optional true} [:enum :map :pmap :mapv]]
+                             [:map-fn {:optional true} [:enum :map :pmap :mapv :ppmap]]
                              [:evaluation-handler-fn {:optional true} fn?]
                              [:other-metrices {:optional true} [:sequential [:map
                                                                              [:name keyword?]
@@ -479,7 +479,8 @@
                              options)
          map-fn
          (case (used-options :map-fn)
-           :pmap (partial ppp/pmap-with-progress "pmap: evaluate pipelines ")
+           :ppmap (partial ppp/ppmap-with-progress "ppmap: evaluate pipelines" 10)
+           :pmap (partial ppp/pmap-with-progress "pmap: evaluate pipelines")
            :map (partial ppp/map-with-progress "map: evaluate pipelines")
            :mapv mapv)
 
