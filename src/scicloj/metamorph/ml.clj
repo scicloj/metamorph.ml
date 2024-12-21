@@ -608,9 +608,12 @@
   [dataset options]
   (let [
         cleaned-options (dissoc options :cache-opts)
-        tmd-hash (str (hash dataset))
-        options-hash (hash cleaned-options)
-        combined-hash (str tmd-hash "___" options-hash)
+
+        combined-hash (when @wcar-opts
+                        
+                        (str (str (hash dataset)) 
+                             "___" 
+                             (hash cleaned-options)))
         
         
         cached (when @wcar-opts 
@@ -754,7 +757,7 @@
                   [map?]]}
   [dataset {:keys [feature-columns options train-input-hash] 
             :as model}]
-  (let [predict-hash (str train-input-hash "--" (hash dataset))
+  (let [predict-hash (when @wcar-opts (str train-input-hash "--" (hash dataset)))
         cached (when @wcar-opts
                  (car/wcar @wcar-opts (car/get predict-hash)))
 
