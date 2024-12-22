@@ -328,6 +328,13 @@
    :test-transform {:metric (get-in result [:test-transform :metric])}
    :fit-ctx {:model (get-in result [:fit-ctx :model])}})
 
+(defn metrics-and-options-keep-fn
+  "evaluation-handler-fn which keeps only train-metric, test-metric and and the options"
+  [result]
+  {:train-transform {:metric (get-in result [:train-transform :metric])}
+   :test-transform {:metric (get-in result [:test-transform :metric])}
+   :fit-ctx {:model {:options (get-in result [:fit-ctx :model :options])}}})
+
 
 
 (defn evaluate-pipelines
