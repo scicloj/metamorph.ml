@@ -133,5 +133,84 @@
   (mapv #(qualify-keywords % pipe-ns) pipe-decls))
 
 
+(def default-result-dissoc-in-seq
+  [[:fit-ctx :metamorph/data]
+
+   [:train-transform :ctx :metamorph/data]
+
+   [:train-transform :ctx :model :scicloj.metamorph.ml/target-ds]
+   [:train-transform :ctx :model :scicloj.metamorph.ml/feature-ds]
+
+   [:test-transform :ctx :metamorph/data]
+
+   [:test-transform :ctx :model :scicloj.metamorph.ml/target-ds]
+   [:test-transform :ctx :model :scicloj.metamorph.ml/feature-ds]
+   ;;  scicloj.ml.smile specific
+   [:train-transform :ctx :model :model-data :model-as-bytes]
+   [:train-transform :ctx :model :model-data :smile-df-used]
+   [:test-transform :ctx :model :model-data :model-as-bytes]
+   [:test-transform :ctx :model :model-data :smile-df-used]])
+
+
+
+
+(def result-dissoc-in-seq--ctxs
+  [[:fit-ctx]
+   [:train-transform :ctx]
+   [:test-transform :ctx]])
+
+
+(def result-dissoc-in-seq--all
+  [[:metric-fn]
+   [:fit-ctx]
+   [:train-transform :ctx]
+   [:train-transform :other-metrices]
+   [:train-transform :timing]
+   [:test-transform :ctx]
+   [:test-transform :other-metrices]
+   [:test-transform :timing]
+   [:pipe-decl]
+   [:pipe-fn]
+   [:timing-fit]
+   [:loss-or-accuracy]
+   [:source-information]])
+
+(defn- reduce-result [r result-dissoc-in-seq]
+  (reduce (fn [x y]
+            (dissoc-in x y))
+          r
+          result-dissoc-in-seq))
+
+
+(defn result-dissoc-in-seq--all-fn
+  "evaluation-handler-fn which removes all :ctx"
+  [result]
+  (reduce-result result result-dissoc-in-seq--all))
+
+(defn default-result-dissoc-in-fn
+  "default evaluation-handler-fn"
+  [result]
+  (reduce-result result default-result-dissoc-in-seq))
+
+(defn result-dissoc-in-seq-ctx-fn
+  "evaluation-handler-fn which removes all :ctx"
+  [result]
+  (reduce-result result result-dissoc-in-seq--ctxs))
+
+
+(defn metrics-and-model-keep-fn
+  "evaluation-handler-fn which keeps only train-metric, test-metric and and the fitted model"
+  [result]
+  {:train-transform {:metric (get-in result [:train-transform :metric])}
+   :test-transform {:metric (get-in result [:test-transform :metric])}
+   :fit-ctx {:model (get-in result [:fit-ctx :model])}})
+
+(defn metrics-and-options-keep-fn
+  "evaluation-handler-fn which keeps only train-metric, test-metric and and the options"
+  [result]
+  {:train-transform {:metric (get-in result [:train-transform :metric])}
+   :test-transform {:metric (get-in result [:test-transform :metric])}
+   :fit-ctx {:model {:options (get-in result [:fit-ctx :model :options])}}})
+
 (comment
   (def x (nippy/thaw-from-file "/tmp/f29648a6-9a73-4cb4-a7df-27e868b5bccf.nippy")))

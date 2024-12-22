@@ -80,10 +80,7 @@
 (def all-piep-fns
   (concat
    (pipe-fns :smile.classification/decision-tree
-             {:max-nodes (gs/linear 10 1000 30 :int32)
-              :node-size (gs/linear 1 20 20 :int32)
-              :max-depth (gs/linear 1 50 20 :int32)
-              :split-rule (gs/categorical [:gini :entropy :classification-error])}
+             (ml/hyperparameters :smile.classification/decision-tree)
              n)
    (pipe-fns :smile.classification/logistic-regression
              (ml/hyperparameters :smile.classification/logistic-regression)
@@ -93,11 +90,8 @@
              (ml/hyperparameters :smile.classification/ada-boost)
              n)
    (pipe-fns :smile.classification/random-forest
-             {:trees (gs/linear 10 1000 100 :int32)
-              :max-depth (gs/linear 10 100 100 :int32)
-              :max-nodes (gs/linear 10 100 100 :int32)
-              :node-size (gs/linear 1 100 100 :int32)
-              :sample-rate (gs/linear 0.1 1.0 100)}
+             (ml/hyperparameters :smile.classification/random-forest)
+
              n))
 )
 

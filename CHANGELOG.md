@@ -2,6 +2,8 @@ unreleased
 * allow parameters for :fastmath/ols (fixes #27)
 * added metrics-and-model-keep-fn
 * added :ppmap with :ppmap-grain-size 10
+* more evaluation-handler suitable for model-spec search
+* breaking: move all eval handler to ns scicloj.metamorph.ml.evaluation-handler
 
 
 0.10.4

@@ -79,8 +79,9 @@
         :extra-deps {com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.3.0"}
                      ch.qos.logback/logback-classic {:mvn/version "1.5.6"}
                      criterium/criterium {:mvn/version  "0.4.6"}
+                     org.scicloj/scicloj.ml.smile {:git/url "https://github.com/scicloj/scicloj.ml.smile"
+                                                   :git/sha "7e9fbed1b4a8c9bc798c5ae4107a740cc05805f1"}                     
                      
-                     org.scicloj/scicloj.ml.smile {:mvn/version "7.4.3"}
                      }}
 
   :smoke-test {:jvm-opts ["-Djdk.attach.allowAttachSelf" "-Xmx1G" "--add-opens=java.base/java.io=ALL-UNNAMED"]

@@ -5,12 +5,10 @@
    [pppmap.core :as ppp]
    [scicloj.metamorph.core :as mm]
    [scicloj.metamorph.ml.ensemble]
-   [scicloj.metamorph.ml.evaluation-handler]
+   [scicloj.metamorph.ml.evaluation-handler :as eval-handler]
    [scicloj.metamorph.ml.loss :as loss]
    [scicloj.metamorph.ml.malli :as malli]
    [scicloj.metamorph.ml.tidy-models :as tidy]
-   [scicloj.metamorph.ml.tools :refer [dissoc-in]]
-   [taoensso.nippy :as nippy]
    [taoensso.carmine :as car]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.categorical :as ds-cat]
@@ -19,11 +17,7 @@
    [tech.v3.dataset.modelling :as ds-mod]
    [tech.v3.datatype.errors :as errors]
    [tech.v3.datatype.export-symbols :as exporter]
-   [tech.v3.datatype.functional :as dfn]
-   
-   [clojure.tools.reader :as tr])
-    ;;
-
+   [tech.v3.datatype.functional :as dfn])
   (:import
    java.util.UUID))
 
@@ -164,11 +158,6 @@
          :transform-ctx nil
          :metric nil}))))
 
-(defn- reduce-result [r result-dissoc-in-seq]
-  (reduce (fn [x y]
-            (dissoc-in x y))
-          r
-          result-dissoc-in-seq))
 
 
 (defn- format-fn-sources [fn-sources]
@@ -263,77 +252,6 @@
 
 
 
-(def default-result-dissoc-in-seq
-  [[:fit-ctx :metamorph/data]
-
-   [:train-transform :ctx :metamorph/data]
-
-   [:train-transform :ctx :model :scicloj.metamorph.ml/target-ds]
-   [:train-transform :ctx :model :scicloj.metamorph.ml/feature-ds]
-
-   [:test-transform :ctx :metamorph/data]
-
-   [:test-transform :ctx :model :scicloj.metamorph.ml/target-ds]
-   [:test-transform :ctx :model :scicloj.metamorph.ml/feature-ds]
-   ;;  scicloj.ml.smile specific
-   [:train-transform :ctx :model :model-data :model-as-bytes]
-   [:train-transform :ctx :model :model-data :smile-df-used]
-   [:test-transform :ctx :model :model-data :model-as-bytes]
-   [:test-transform :ctx :model :model-data :smile-df-used]])
-
-
-
-
-(def result-dissoc-in-seq--ctxs
-  [[:fit-ctx]
-   [:train-transform :ctx]
-   [:test-transform :ctx]])
-
-
-(def result-dissoc-in-seq--all
-  [[:metric-fn]
-   [:fit-ctx]
-   [:train-transform :ctx]
-   [:train-transform :other-metrices]
-   [:train-transform :timing]
-   [:test-transform :ctx]
-   [:test-transform :other-metrices]
-   [:test-transform :timing]
-   [:pipe-decl]
-   [:pipe-fn]
-   [:timing-fit]
-   [:loss-or-accuracy]
-   [:source-information]])
-
-(defn result-dissoc-in-seq--all-fn 
-  "evaluation-handler-fn which removes all :ctx"
-  [result]
-  (reduce-result result result-dissoc-in-seq--all))
-
-(defn default-result-dissoc-in-fn
-  "default evaluation-handler-fn"
-  [result]
-  (reduce-result result default-result-dissoc-in-seq))
-
-(defn result-dissoc-in-seq-ctx-fn
-  "evaluation-handler-fn which removes all :ctx"
-  [result]
-  (reduce-result result result-dissoc-in-seq--ctxs))
-
-
-(defn metrics-and-model-keep-fn
-  "evaluation-handler-fn which keeps only train-metric, test-metric and and the fitted model"
-  [result]
-  {:train-transform {:metric (get-in result [:train-transform :metric])}
-   :test-transform {:metric (get-in result [:test-transform :metric])}
-   :fit-ctx {:model (get-in result [:fit-ctx :model])}})
-
-(defn metrics-and-options-keep-fn
-  "evaluation-handler-fn which keeps only train-metric, test-metric and and the options"
-  [result]
-  {:train-transform {:metric (get-in result [:train-transform :metric])}
-   :test-transform {:metric (get-in result [:test-transform :metric])}
-   :fit-ctx {:model {:options (get-in result [:fit-ctx :model :options])}}})
 
 
 
@@ -482,7 +400,7 @@
    (let [used-options (merge {:map-fn :map
                               :return-best-pipeline-only true
                               :return-best-crossvalidation-only true
-                              :evaluation-handler-fn default-result-dissoc-in-fn
+                              :evaluation-handler-fn eval-handler/default-result-dissoc-in-fn
                               :ppmap-grain-size 10}
                               
 
@@ -988,18 +906,4 @@
 
 
 (malli/instrument-ns 'scicloj.metamorph.ml)
-
-(comment
-
-
-  (wcar* (car/ping))
-
-
-  (wcar* (car/set
-          (str tmd-hash "___" options-hash)
-          model))
-
-
-
-  (wcar* (car/get "sss")))
 
