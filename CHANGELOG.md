@@ -1,10 +1,11 @@
 unreleased
 * allow parameters for :fastmath/ols (fixes #27)
+* added optional redis caching for train / predict
 * added metrics-and-model-keep-fn
-* added :ppmap with :ppmap-grain-size 10
-* more evaluation-handler suitable for model-spec search
+* added option :ppmap with :ppmap-grain-size 10 to ml/eval-pipelines
+* added more evaluation-handler suitable for model-spec search
 * breaking: move all eval handler to ns scicloj.metamorph.ml.evaluation-handler
-* added :probbality-distributin to ml/eval-pipelines
+* added :probability-distributin to ml/eval-pipelines result
 
 
 0.10.4

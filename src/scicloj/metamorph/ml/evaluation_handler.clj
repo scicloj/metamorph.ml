@@ -1,12 +1,12 @@
 (ns scicloj.metamorph.ml.evaluation-handler
   (:require
-   [scicloj.metamorph.ml.tools :refer [dissoc-in pp-str multi-dissoc-in]]
-   [clojure.tools.reader :as tr]
-   [clojure.tools.reader.reader-types :as rts]
    [clojure.java.classpath]
    [clojure.repl :as repl]
-   [taoensso.nippy :as nippy])
-  (:import [java.io File]))
+   [clojure.tools.reader :as tr]
+   [clojure.tools.reader.reader-types :as rts]
+   [clojure.walk :as walk]
+   [scicloj.metamorph.ml.tools :refer [dissoc-in multi-dissoc-in pp-str]]
+   [taoensso.nippy :as nippy]))
 
 (defn file->topforms-with-metadata [path]
   (->> path
@@ -81,7 +81,7 @@
 
 (defn get-fn-sources [qualified-pipe-decl pipe-ns pipeline-source-file]
   (let [codes (atom {})]
-    (clojure.walk/postwalk (fn [keyword]
+    (walk/postwalk (fn [keyword]
                              (when (keyword? keyword)
                                (let [symbol (symbol keyword)]
                                  (swap! codes #(assoc % symbol
@@ -110,7 +110,7 @@
       (result-reduce-fn result))))
 
 (defn qualify-keywords [pipe-decl pipe-ns]
-  (clojure.walk/postwalk (fn [form]
+  (walk/postwalk (fn [form]
                            ;; (println form)
                            (if-let [resolved (resolve-keyword form pipe-ns)]
                              (do 
@@ -216,5 +216,3 @@
    :test-transform {:metric (get-in result [:test-transform :metric])}
    :fit-ctx {:model {:options (get-in result [:fit-ctx :model :options])}}})
 
-(comment
-  (def x (nippy/thaw-from-file "/tmp/f29648a6-9a73-4cb4-a7df-27e868b5bccf.nippy")))
