@@ -4,6 +4,7 @@ unreleased
 * added :ppmap with :ppmap-grain-size 10
 * more evaluation-handler suitable for model-spec search
 * breaking: move all eval handler to ns scicloj.metamorph.ml.evaluation-handler
+* added :probbality-distributin to ml/eval-pipelines
 
 
 0.10.4

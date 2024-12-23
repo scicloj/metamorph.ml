@@ -1,7 +1,9 @@
 (ns cache 
   (:require
+   [clojure.pprint :as pp]
    [scicloj.metamorph.core :as mm]
    [scicloj.metamorph.ml :as ml]
+   [scicloj.metamorph.ml.evaluation-handler :as eval-handler]
    [scicloj.metamorph.ml.gridsearch :as gs]
    [scicloj.metamorph.ml.loss :as loss]
    [scicloj.ml.smile.classification]
@@ -10,8 +12,7 @@
    [taoensso.carmine :as car]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.metamorph :as mds]
-   [tech.v3.dataset.modelling :as ds-mod]
-   [scicloj.metamorph.ml.evaluation-handler :as eval-handler]))
+   [tech.v3.dataset.modelling :as ds-mod]))
 
 (def titanic-train
   (->
@@ -22,9 +23,7 @@
   (->
    (ds/->dataset "https://github.com/scicloj/metamorph-examples/raw/main/data/titanic/test.csv"
                  {:key-fn keyword})
-   (tc/add-column :Survived 0)
-   )
-  )
+   (tc/add-column :Survived 0)))
 
 
 (defn preprocess [ds]
@@ -98,47 +97,19 @@
 
 (time
  
- (clojure.pprint/pprint
+ (pp/pprint
   (->
    (ml/evaluate-pipelines
     all-piep-fns
-    [{:train 
+    [{:train
       ;(preprocess) 
-      titanic-train  
-      :test titanic-test
-      }]
+      titanic-train
+      :test titanic-test}]
     loss/classification-accuracy
     :accuracy
-    {
-     :evaluation-handler-fn eval-handler/metrics-and-options-keep-fn
-     }
-    )
+    {:evaluation-handler-fn eval-handler/metrics-and-options-keep-fn})
    first
    first
    (#(hash-map :options (get-in % [:fit-ctx :model :options])
                :train-accuracy (get-in % [:train-transform :metric])
-               :test-accuracy (get-in % [:test-transform :metric])))
-
-   )))
-
-result
-
-
-(-> result :fit-ctx :model keys)
-;;=> (:feature-columns
-;;    :target-categorical-maps
-;;    :target-columns
-;;    :train-input-hash
-;;    :target-datatypes
-;;    :scicloj.metamorph.ml/unsupervised?
-;;    :model-data
-;;    :id
-;;    :options)
-
-(-> result :fit-ctx :model :model-data keys)
-;;=> (:n-labels :smile-df-used :smile-props-used :smile-formula-used :model-as-bytes)
-
-(-> result :fit-ctx :model :options keys)
-;;=> (:trees :max-depth :max-nodes :node-size :sample-rate :split-rule :model-type)
- 
- 
+               :test-accuracy (get-in % [:test-transform :metric]))))))

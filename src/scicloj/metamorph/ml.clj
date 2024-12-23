@@ -109,6 +109,7 @@
         {:other-metrices (:other-metrices-result scores)
          :timing (- end-transform start-transform)
          :ctx predicted-ctx
+         :probability-distribution (cf/probability-distribution (:metamorph/data predicted-ctx))
          :metric (:metric scores)}]
     eval-result))
 
@@ -348,6 +349,7 @@
                                                            [:metric float?]]]]
                             [:timing int?]
                             [:metric float?]
+                            [:probability-distribution  [:maybe [:fn dataset?]]]
                             [:min float?]
                             [:mean float?]
                             [:max float?]
@@ -359,6 +361,7 @@
                                                           [:metric float?]]]]
                            [:timing int?]
                            [:metric float?]
+                           [:probability-distribution  [:maybe [:fn dataset?]]]
                            [:min float?]
                            [:mean float?]
                            [:max float?]

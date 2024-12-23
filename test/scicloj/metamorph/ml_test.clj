@@ -1,7 +1,6 @@
 (ns scicloj.metamorph.ml-test
   (:require
    [clojure.test :as t :refer [deftest is]]
-   [confuse.multi-class-metrics :as mcm]
    [malli.core :as m]
    [scicloj.metamorph.core :as morph]
    [scicloj.metamorph.ml :as ml]
@@ -9,15 +8,14 @@
     :as eval
     :refer [qualify-pipelines]]
    [scicloj.metamorph.ml.loss :as loss]
-   [scicloj.metamorph.ml.toydata :as toydata]
    [scicloj.metamorph.ml.metrics]
    [tablecloth.api :as tc]
-   [taoensso.nippy :as nippy]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.categorical :as ds-cat]
    [tech.v3.dataset.metamorph :as ds-mm]
-   [tech.v3.dataset.modelling :as ds-mod])
+   [tech.v3.dataset.modelling :as ds-mod]
+   [scicloj.metamorph.ml.evaluation-handler :as eval-handler])
   (:import
    (clojure.lang ExceptionInfo)
    (java.util UUID)))
@@ -105,7 +103,7 @@
     (is (=  1 (count evaluations)))
     (is (=  1 (count (first evaluations))))
 
-    (is (= #{:min :mean :max :timing :ctx :metric :other-metrices}
+    (is (= #{:min :mean :max :timing :ctx :metric :other-metrices  :probability-distribution }
            (set (-> evaluations first first :train-transform keys))))
     ;; =>
     (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-fn :timing-fit :loss-or-accuracy :source-information :split-uid])
@@ -135,7 +133,6 @@
 
         evaluations
         (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss {:evaluation-handler-fn identity})
-        _ (def evaluations evaluations)
 
         best-fitted-context  (-> evaluations first first :fit-ctx)
         best-pipe-fn         (-> evaluations first first :pipe-fn)]
@@ -321,7 +318,7 @@
          (tc/split->seq iris)
          loss/classification-accuracy
          :accuracy
-         {:evaluation-handler-fn ml/result-dissoc-in-seq--all-fn})]
+         {:evaluation-handler-fn eval-handler/result-dissoc-in-seq--all-fn})]
 
     ;(def evaluation-result evaluation-result)
     (is (= 
@@ -426,9 +423,6 @@
         (m/validate
          result-schema
          evaluation-result)))))
-
-
-
 
 
 (deftest call-without-ds
