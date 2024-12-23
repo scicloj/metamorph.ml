@@ -199,7 +199,9 @@
 
 
 (defn metrics-and-model-keep-fn
-  "evaluation-handler-fn which keeps only train-metric, test-metric and and the fitted model"
+  "evaluation-handler-fn which keeps only train-metric, test-metric and 
+   the fitted model map, which contains as well the model object as byte array
+   (amon other things)"
   [result]
   {:train-transform {:metric (get-in result [:train-transform :metric])}
    :test-transform {:metric (get-in result [:test-transform :metric])}

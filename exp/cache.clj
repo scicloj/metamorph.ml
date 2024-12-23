@@ -10,7 +10,8 @@
    [taoensso.carmine :as car]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.metamorph :as mds]
-   [tech.v3.dataset.modelling :as ds-mod]))
+   [tech.v3.dataset.modelling :as ds-mod]
+   [scicloj.metamorph.ml.evaluation-handler :as eval-handler]))
 
 (def titanic-train
   (->
@@ -53,10 +54,10 @@
    (tc-mm/replace-missing )
    (mds/set-inference-target :Survived)
 
-   (fn [ctx]
-     (assoc ctx :options (dissoc options
-                                 :cache-opts))
-     )
+  ;;  (fn [ctx]
+  ;;    (assoc ctx :options (dissoc options
+  ;;                                :cache-opts))
+  ;;    )
    {:metamorph/id :model}
    (ml/model options)))
 
@@ -107,15 +108,37 @@
       :test titanic-test
       }]
     loss/classification-accuracy
-    :accuracy)
+    :accuracy
+    {
+     :evaluation-handler-fn eval-handler/metrics-and-options-keep-fn
+     }
+    )
    first
    first
-   (#(hash-map :options (get-in % [:fit-ctx :options])
+   (#(hash-map :options (get-in % [:fit-ctx :model :options])
                :train-accuracy (get-in % [:train-transform :metric])
                :test-accuracy (get-in % [:test-transform :metric])))
 
    )))
 
-                                 
+result
+
+
+(-> result :fit-ctx :model keys)
+;;=> (:feature-columns
+;;    :target-categorical-maps
+;;    :target-columns
+;;    :train-input-hash
+;;    :target-datatypes
+;;    :scicloj.metamorph.ml/unsupervised?
+;;    :model-data
+;;    :id
+;;    :options)
+
+(-> result :fit-ctx :model :model-data keys)
+;;=> (:n-labels :smile-df-used :smile-props-used :smile-formula-used :model-as-bytes)
+
+(-> result :fit-ctx :model :options keys)
+;;=> (:trees :max-depth :max-nodes :node-size :sample-rate :split-rule :model-type)
  
  
