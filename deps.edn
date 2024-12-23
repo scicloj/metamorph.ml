@@ -2,10 +2,9 @@
         scicloj/metamorph           {:mvn/version "0.2.4"}
         pppmap/pppmap               {:mvn/version "1.0.0"}
         scicloj/tablecloth          {:mvn/version "7.029.2"}
-        metosin/malli               {:mvn/version "0.16.0"}
+        metosin/malli               {:mvn/version "0.17.0"}
         generateme/fastmath         {:mvn/version "3.0.0-alpha2"}
         it.unimi.dsi/fastutil       {:mvn/version "8.5.15"}
-        org.scicloj/tableplot {:mvn/version "1-alpha13"}
         aerial.hanami/aerial.hanami {:mvn/version "0.20.0"
                                      ;; we only need hanami templating
                                      :exclusions [org.clojure/clojurescript
@@ -24,6 +23,7 @@
                                                   cljsjs/vega-tooltip]}
         ;; needed by hanami
         org.clojure/data.json {:mvn/version "0.2.6"}
+        
         com.taoensso/nippy {:mvn/version "3.4.2"}
         com.taoensso/carmine {:mvn/version "3.4.1"}
         }
@@ -49,13 +49,10 @@
 
   :dev
   {:jvm-opts ["-Djava.awt.headless=true"] 
-   :extra-deps {
-                io.github.nextjournal/clerk {:mvn/version "0.17.1102"}
+   :extra-deps {io.github.nextjournal/clerk {:mvn/version "0.17.1102"}
                 org.scicloj/clay {:mvn/version "2-beta23"}
                 org.scicloj/scicloj.ml.smile {:mvn/version "7.4.3"}
-                
-                
-                
+                org.scicloj/tableplot {:mvn/version "1-alpha13"}
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
                 ch.qos.logback/logback-classic {:mvn/version "1.5.6"}
                 criterium/criterium {:mvn/version  "0.4.6"}
