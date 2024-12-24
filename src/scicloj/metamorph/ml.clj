@@ -9,7 +9,6 @@
    [scicloj.metamorph.ml.loss :as loss]
    [scicloj.metamorph.ml.malli :as malli]
    [scicloj.metamorph.ml.tidy-models :as tidy]
-   [taoensso.carmine :as car]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.categorical :as ds-cat]
    [tech.v3.dataset.column-filters :as cf]
@@ -24,8 +23,9 @@
 
 (exporter/export-symbols scicloj.metamorph.ml.ensemble ensemble-pipe)
 
-
-(def wcar-opts (atom nil))
+(def kv-cache (atom {:use-cache false
+                     :get-fn (fn [key] nil)
+                     :set-fn (fn [key value] nil)}))
 
 
 (defn get-categorical-maps [ds]
@@ -555,62 +555,55 @@
                   [map?]]}
   [dataset options]
   (let [
-        cleaned-options (dissoc options :cache-opts)
 
-        combined-hash (when @wcar-opts
-                        
-                        (str (str (hash dataset)) 
-                             "___" 
-                             (hash cleaned-options)))
+        combined-hash (when (:use-cache @kv-cache) 
+                        (str  (hash dataset) "___"  (hash options))
+                        )
         
-        
-        cached (when @wcar-opts 
-                 (car/wcar @wcar-opts (car/get combined-hash)))
+        cached (when combined-hash ((:get-fn @kv-cache) combined-hash))]
 
-        model
-        (if cached
-          (do
-            ;(println :cache-hit-train! combined-hash)
-            cached)
-          (let [{:keys [train-fn unsupervised?]} (options->model-def options)
-                feature-ds (cf/feature  dataset)
-                _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
-                                         "No features provided")
-                target-ds (if unsupervised?
-                            nil
-                            (do
-                              (errors/when-not-error (> (ds/row-count (cf/target dataset)) 0) "No target columns provided, see tech.v3.dataset.modelling/set-inference-target")
-                              (cf/target dataset)))
-                model-data (train-fn feature-ds target-ds 
-                                     cleaned-options)
+    (if cached
+      (do
+        (println :cache-hit-train! combined-hash)
+        cached)
+      (let [{:keys [train-fn unsupervised?]} (options->model-def options)
+            feature-ds (cf/feature  dataset)
+            _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
+                                     "No features provided")
+            target-ds (if unsupervised?
+                        nil
+                        (do
+                          (errors/when-not-error (> (ds/row-count (cf/target dataset)) 0) "No target columns provided, see tech.v3.dataset.modelling/set-inference-target")
+                          (cf/target dataset)))
+            model-data (train-fn feature-ds target-ds
+                                 options)
         ;; _ (errors/when-not-error (:model-as-bytes model-data)  "train-fn need to return a map with key :model-as-bytes")
-                targets-datatypes
-                (zipmap
-                 (keys target-ds)
-                 (->>
-                  (vals target-ds)
-                  (map meta)
-                  (map :datatype)))
-                cat-maps (ds-mod/dataset->categorical-xforms target-ds)
+            targets-datatypes
+            (zipmap
+             (keys target-ds)
+             (->>
+              (vals target-ds)
+              (map meta)
+              (map :datatype)))
+            cat-maps (ds-mod/dataset->categorical-xforms target-ds)
 
-                model-1
-                (merge
-                 {:model-data model-data
-                  :options cleaned-options
-                  :train-input-hash combined-hash
-                  :id (UUID/randomUUID)
-                  :feature-columns (vec (ds/column-names feature-ds))
-                  :target-columns (vec (ds/column-names target-ds))
-                  :target-datatypes targets-datatypes}
-                 (when-not (== 0 (count cat-maps))
-                   {:target-categorical-maps cat-maps}))]
-            (when @wcar-opts
-              ;(println :cache-miss-train! combined-hash)
-              (car/wcar @wcar-opts (car/set combined-hash model-1)))
-            
+            model
+            (merge
+             {:model-data model-data
+              :options options
+              :train-input-hash combined-hash
+              :id (UUID/randomUUID)
+              :feature-columns (vec (ds/column-names feature-ds))
+              :target-columns (vec (ds/column-names target-ds))
+              :target-datatypes targets-datatypes}
+             (when-not (== 0 (count cat-maps))
+               {:target-categorical-maps cat-maps}))]
+        (when combined-hash
+          (println :cache-miss-train! combined-hash)
+          ((:set-fn @kv-cache) combined-hash model))
 
-            model-1))]
-    model))
+        model))
+    ))
         
     
     
@@ -705,14 +698,13 @@
                   [map?]]}
   [dataset {:keys [feature-columns options train-input-hash] 
             :as model}]
-  (let [predict-hash (when @wcar-opts (str train-input-hash "--" (hash dataset)))
-        cached (when @wcar-opts
-                 (car/wcar @wcar-opts (car/get predict-hash)))
+  (let [predict-hash (when (:use-cache @kv-cache) (str train-input-hash "--" (hash dataset)))
+        cached (when predict-hash ((:get-fn @kv-cache) predict-hash))
 
         pred-ds
         (if cached
           (do
-            ;(println :cache-hit-predict! predict-hash)
+            (println :cache-hit-predict! predict-hash)
             cached)
           (let [{:keys [predict-fn] :as model-def} (options->model-def options)
                 feature-ds (ds/select-columns dataset feature-columns)
@@ -722,9 +714,10 @@
                                     model)]
             (warn-inconsitent-maps model pred-ds)
             
-            (when @wcar-opts
-              ;(println :cache-miss-predict! predict-hash)
-              (car/wcar @wcar-opts (car/set predict-hash pred-ds)))
+            (when predict-hash
+              (println :cache-miss-predict! predict-hash)
+              ( (:set-fn @kv-cache) predict-hash pred-ds))
+              
             pred-ds))]
     pred-ds))
 

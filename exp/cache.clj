@@ -65,7 +65,12 @@
 (def     my-wcar-opts {:pool my-conn-pool, :spec my-conn-spec})
 
 
-(reset! ml/wcar-opts my-wcar-opts)
+
+
+(reset! ml/kv-cache {:use-cache true
+                     :get-fn (fn [key] (car/wcar my-wcar-opts (car/get key)))
+                     :set-fn (fn [key value] (car/wcar my-wcar-opts (car/set key value)))})
+
 
 (defn pipe-fns [model-type hyper-params n]
   (->>
