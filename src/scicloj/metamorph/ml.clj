@@ -23,9 +23,12 @@
 
 (exporter/export-symbols scicloj.metamorph.ml.ensemble ensemble-pipe)
 
-(def kv-cache (atom {:use-cache false
-                     :get-fn (fn [key] nil)
-                     :set-fn (fn [key value] nil)}))
+(def train-predict-cache 
+  "Controls , if train/predict invocations are cached.
+   if 'use-cache' is true, the get-fn and set-fn functions ar called accorddngly"
+  (atom {:use-cache false
+         :get-fn (fn [key] nil)
+         :set-fn (fn [key value] nil)}))
 
 
 (defn get-categorical-maps [ds]
@@ -556,11 +559,11 @@
   [dataset options]
   (let [
 
-        combined-hash (when (:use-cache @kv-cache) 
+        combined-hash (when (:use-cache @train-predict-cache) 
                         (str  (hash dataset) "___"  (hash options))
                         )
         
-        cached (when combined-hash ((:get-fn @kv-cache) combined-hash))]
+        cached (when combined-hash ((:get-fn @train-predict-cache) combined-hash))]
 
     (if cached
       (do
@@ -600,7 +603,7 @@
                {:target-categorical-maps cat-maps}))]
         (when combined-hash
           (println :cache-miss-train! combined-hash)
-          ((:set-fn @kv-cache) combined-hash model))
+          ((:set-fn @train-predict-cache) combined-hash model))
 
         model))
     ))
@@ -698,8 +701,8 @@
                   [map?]]}
   [dataset {:keys [feature-columns options train-input-hash] 
             :as model}]
-  (let [predict-hash (when (:use-cache @kv-cache) (str train-input-hash "--" (hash dataset)))
-        cached (when predict-hash ((:get-fn @kv-cache) predict-hash))
+  (let [predict-hash (when (:use-cache @train-predict-cache) (str train-input-hash "--" (hash dataset)))
+        cached (when predict-hash ((:get-fn @train-predict-cache) predict-hash))
 
         pred-ds
         (if cached
@@ -716,7 +719,7 @@
             
             (when predict-hash
               (println :cache-miss-predict! predict-hash)
-              ( (:set-fn @kv-cache) predict-hash pred-ds))
+              ( (:set-fn @train-predict-cache) predict-hash pred-ds))
               
             pred-ds))]
     pred-ds))

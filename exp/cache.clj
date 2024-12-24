@@ -60,7 +60,7 @@
 ;;                      :get-fn (fn [key] (car/wcar my-wcar-opts (car/get key)))
 ;;                      :set-fn (fn [key value] (car/wcar my-wcar-opts (car/set key value)))})
 
-(reset! ml/kv-cache {:use-cache true
+(reset! ml/train-predict-cache {:use-cache true
                      :get-fn (fn [key] (get @cache-map key))
                      :set-fn (fn [key value] (swap! cache-map assoc key value))})
 

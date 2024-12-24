@@ -117,13 +117,13 @@
     
     
     
-    (reset! ml/kv-cache {:use-cache true
+    (reset! ml/train-predict-cache {:use-cache true
                          :get-fn (fn [key] (get @cache-map key))
                          :set-fn (fn [key value] (swap! cache-map assoc key value))})
 
     (validate-simple-pipeline)
     (validate-simple-pipeline)
-    (reset! ml/kv-cache {:use-cache false
+    (reset! ml/train-predict-cache {:use-cache false
                          :get-fn nil
                          :set-fn nil}))
 
