@@ -26,20 +26,6 @@
    (tc/add-column :Survived 0)))
 
 
-(defn preprocess [ds]
-  (-> ds
-      (tc/select-columns [:Pclass :Survived :Embarked :Sex])
-      (tc/add-or-replace-column :Survived (fn [ds] (map #(case %
-                                                              1 "yes"
-                                                              0 "no")
-                                                           (:Survived ds))))
-      (ds/categorical->number [:Survived :Sex :Embarked])
-      (tc/replace-missing)
-      (ds-mod/set-inference-target :Survived)
-      )
-  
-  )
-
 (defn pipe-fn [options]
   (mm/pipeline
    (mds/select-columns [:Pclass :Survived :Embarked :Sex])
@@ -65,11 +51,18 @@
 (def     my-wcar-opts {:pool my-conn-pool, :spec my-conn-spec})
 
 
+(ns-unmap *ns* 'cache-map)
+(defonce cache-map (atom {}))
+(keys @cache-map)
 
+
+;; (reset! ml/kv-cache {:use-cache true
+;;                      :get-fn (fn [key] (car/wcar my-wcar-opts (car/get key)))
+;;                      :set-fn (fn [key value] (car/wcar my-wcar-opts (car/set key value)))})
 
 (reset! ml/kv-cache {:use-cache true
-                     :get-fn (fn [key] (car/wcar my-wcar-opts (car/get key)))
-                     :set-fn (fn [key value] (car/wcar my-wcar-opts (car/set key value)))})
+                     :get-fn (fn [key] (get @cache-map key))
+                     :set-fn (fn [key value] (swap! cache-map assoc key value))})
 
 
 (defn pipe-fns [model-type hyper-params n]
@@ -112,9 +105,15 @@
       :test titanic-test}]
     loss/classification-accuracy
     :accuracy
-    {:evaluation-handler-fn eval-handler/metrics-and-options-keep-fn})
+    {:evaluation-handler-fn (fn [result]
+                              (def result result)
+                              
+                              ( eval-handler/metrics-and-options-keep-fn result))})
    first
    first
    (#(hash-map :options (get-in % [:fit-ctx :model :options])
                :train-accuracy (get-in % [:train-transform :metric])
                :test-accuracy (get-in % [:test-transform :metric]))))))
+
+
+(-> result  eval-handler/metrics-and-options-keep-fn :fit-ctx :model :options keys )

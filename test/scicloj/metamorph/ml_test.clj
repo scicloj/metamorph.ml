@@ -58,14 +58,8 @@
     {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
                    {:coefficients {:petal_width [0]}})}))
 
-
-
-
-(deftest evaluate-pipelines-simplest
-  (do-define-model)
-  (let [
-
-        pipe-fn
+(defn- validate-simple-pipeline []
+  (let [pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
          (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/target ds))) iris-target-values :int)
@@ -74,7 +68,7 @@
          {:metamorph/id :model}
          (ml/model {:model-type :test-model}))
 
-        train-split-seq (tc/split->seq iris :holdout)
+        train-split-seq (tc/split->seq iris :holdout {:seed 123})
         pipe-fn-seq [pipe-fn]
 
         evaluations
@@ -96,14 +90,14 @@
                   :metamorph/mode :transform}))
          (:metamorph/data))]
     ;; (ds-mod/column-values->categorical :species)
-
+    
 
     (is (= (repeat 10 "versicolor")
            (-> predictions ds-cat/reverse-map-categorical-xforms :species seq)))
     (is (=  1 (count evaluations)))
     (is (=  1 (count (first evaluations))))
 
-    (is (= #{:min :mean :max :timing :ctx :metric :other-metrices  :probability-distribution }
+    (is (= #{:min :mean :max :timing :ctx :metric :other-metrices  :probability-distribution}
            (set (-> evaluations first first :train-transform keys))))
     ;; =>
     (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-fn :timing-fit :loss-or-accuracy :source-information :split-uid])
@@ -111,6 +105,31 @@
     (is (contains?   (:fit-ctx (first (first evaluations)))  :metamorph/mode))
     (is (contains?   (:ctx (:train-transform (first (first evaluations))))  :metamorph/mode))
     (is (contains?   (:ctx (:test-transform (first (first evaluations))))  :metamorph/mode))))
+
+(deftest evaluate-pipelines-simplest
+  (do-define-model)
+  (validate-simple-pipeline))
+
+
+(deftest evaluate-pipelines-simplest-witch-cache
+  (do-define-model)
+  (let [cache-map (atom {})]
+    
+    
+    
+    (reset! ml/kv-cache {:use-cache true
+                         :get-fn (fn [key] (get @cache-map key))
+                         :set-fn (fn [key value] (swap! cache-map assoc key value))})
+
+    (validate-simple-pipeline)
+    (validate-simple-pipeline)
+    (reset! ml/kv-cache {:use-cache false
+                         :get-fn nil
+                         :set-fn nil}))
+
+  )
+
+
 
 
 
