@@ -3,7 +3,7 @@ unreleased
 * added optional redis caching for train / predict
 * added metrics-and-model-keep-fn
 * added option :ppmap with :ppmap-grain-size 10 to ml/eval-pipelines
-* added more evaluation-handler suitable for model-spec search
+* added more evaluation-handler fns suitable for model-spec search
 * breaking: move all eval handler to ns scicloj.metamorph.ml.evaluation-handler
 * added :probability-distributin to ml/eval-pipelines result
 

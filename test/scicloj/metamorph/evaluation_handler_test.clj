@@ -28,14 +28,3 @@
 
 
 
-(comment
-
-  (->
-   (get-source-information [[:tech.v3.dataset.modelling/set-inference-target]]
-                           (find-ns 'scicloj.metamorph.ml-test)
-                           "/home/carsten/Dropbox/sources/metamorph.ml/test/scicloj/metamorph/ml_test.clj")
-   :fn-sources
-   vals
-   first
-   :code-source
-   read-string))

@@ -51,9 +51,8 @@
 (def     my-wcar-opts {:pool my-conn-pool, :spec my-conn-spec})
 
 
-(ns-unmap *ns* 'cache-map)
+;(ns-unmap *ns* 'cache-map)
 (defonce cache-map (atom {}))
-(keys @cache-map)
 
 
 ;; (reset! ml/kv-cache {:use-cache true

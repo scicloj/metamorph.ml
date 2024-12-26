@@ -5,10 +5,10 @@
    [clojure.tools.reader :as tr]
    [clojure.tools.reader.reader-types :as rts]
    [clojure.walk :as walk]
-   [scicloj.metamorph.ml.tools :refer [dissoc-in multi-dissoc-in pp-str]]
+   [scicloj.metamorph.ml.tools :refer [dissoc-in multi-dissoc-in pp-str reduce-result]]
    [taoensso.nippy :as nippy]))
 
-(defn file->topforms-with-metadata [path]
+(defn- file->topforms-with-metadata [path]
   (->> path
        slurp
        rts/source-logging-push-back-reader
@@ -16,7 +16,7 @@
        (map #(tr/read % false :EOF))
        (take-while (partial not= :EOF))))
 
-(defn resolve-keyword
+(defn- resolve-keyword
   "Interpret keyword or list as a symbol and try to resolve it."
   [k pipe-ns]
   (if (or  (sequential? k) (map? k))
@@ -31,7 +31,7 @@
 
 
 
-(defn fns->code-list [pipeline-source-file]
+(defn- fns->code-list [pipeline-source-file]
   (->>
    (file->topforms-with-metadata pipeline-source-file)
 
@@ -45,13 +45,13 @@
    (map #(assoc % :fn-name (second (:form  %))))))
 
 
-(defn fns->code-map [pipeline-source-file]
+(defn- fns->code-map [pipeline-source-file]
   (let [fns-code-list (fns->code-list pipeline-source-file)]
     (zipmap
      (map :fn-name fns-code-list)
      fns-code-list)))
 
-(defn fn-symbol->code [fn-symbol pipe-ns pipeline-source-file]
+(defn- fn-symbol->code [fn-symbol pipe-ns pipeline-source-file]
   (:form-str
    (get (fns->code-map pipeline-source-file)
         (:name
@@ -59,8 +59,7 @@
           (resolve-keyword  fn-symbol pipe-ns))))))
 
 
-(defn get-code [symbol pipe-ns pipeline-source-file]
-  ;; (def symbol symbol)
+(defn- get-code [symbol pipe-ns pipeline-source-file]
   (let [source (repl/source-fn symbol)
         orig-source (some-> symbol
                          resolve
@@ -68,18 +67,16 @@
                          :orig
                          clojure.repl/source-fn)]
 
-    ;; resolve
-    ;; #(.toSymbol %)
 
     {:code-source (if orig-source orig-source source)
      :code-local-source (fn-symbol->code symbol pipe-ns pipeline-source-file)}))
 
-(defn get-classpath []
+(defn- get-classpath []
   (->>
    (clojure.java.classpath/classpath)
    (map #(.getPath %))))
 
-(defn get-fn-sources [qualified-pipe-decl pipe-ns pipeline-source-file]
+(defn- get-fn-sources [qualified-pipe-decl pipe-ns pipeline-source-file]
   (let [codes (atom {})]
     (walk/postwalk (fn [keyword]
                              (when (keyword? keyword)
@@ -177,11 +174,6 @@
    [:loss-or-accuracy]
    [:source-information]])
 
-(defn- reduce-result [r result-dissoc-in-seq]
-  (reduce (fn [x y]
-            (dissoc-in x y))
-          r
-          result-dissoc-in-seq))
 
 
 (defn result-dissoc-in-seq--all-fn
@@ -199,20 +191,41 @@
   [result]
   (reduce-result result result-dissoc-in-seq--ctxs))
 
+(defn select-paths [m paths]
+  (reduce (fn [acc path]
+            (let [v (get-in m path)]
+              (if v
+                (assoc-in acc path v)
+                acc)))
+          {}
+          paths))  
+
 
 (defn metrics-and-model-keep-fn
   "evaluation-handler-fn which keeps only train-metric, test-metric and 
    the fitted model map, which contains as well the model object as byte array
    (amon other things)"
   [result]
-  {:train-transform {:metric (get-in result [:train-transform :metric])}
-   :test-transform {:metric (get-in result [:test-transform :metric])}
-   :fit-ctx {:model (get-in result [:fit-ctx :model])}})
+  (select-paths result
+                [[:train-transform :metric]
+                 [:test-transform :metric]
+                 [:fit-ctx :model]]))
+
+
 
 (defn metrics-and-options-keep-fn
   "evaluation-handler-fn which keeps only train-metric, test-metric and and the options"
   [result]
-  {:train-transform {:metric (get-in result [:train-transform :metric])}
-   :test-transform {:metric (get-in result [:test-transform :metric])}
-   :fit-ctx {:model {:options (get-in result [:fit-ctx :model :options])}}})
+  (select-paths result
+                [[:train-transform :metric]
+                 [:test-transform :metric]
+                 [:fit-ctx :model :options]]))
+
+
+(defn metrics-keep-fn
+  "evaluation-handler-fn which keeps only train-metric, test-metric and and the options"
+  [result]
+  (select-paths result
+                [[:train-transform :metric]
+                 [:test-transform :metric]]))
 
