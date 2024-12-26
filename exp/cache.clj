@@ -12,7 +12,8 @@
    [taoensso.carmine :as car]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.metamorph :as mds]
-   [tech.v3.dataset.modelling :as ds-mod]))
+   [tech.v3.dataset.modelling :as ds-mod]
+   [tablecloth.column.api :as tcc]))
 
 (def titanic-train
   (->
@@ -73,7 +74,7 @@
     (gs/sobol-gridsearch hyper-params))
    (take n))
    )
-(def n 10)
+(def n 100)
 (def all-piep-fns
   (concat
    (pipe-fns :smile.classification/decision-tree
@@ -94,25 +95,44 @@
 
 (time
  
- (pp/pprint
-  (->
-   (ml/evaluate-pipelines
-    all-piep-fns
-    [{:train
-      ;(preprocess) 
-      titanic-train
-      :test titanic-test}]
-    loss/classification-accuracy
-    :accuracy
-    {:evaluation-handler-fn (fn [result]
-                              (def result result)
-                              
-                              ( eval-handler/metrics-and-options-keep-fn result))})
-   first
-   first
-   (#(hash-map :options (get-in % [:fit-ctx :model :options])
-               :train-accuracy (get-in % [:train-transform :metric])
-               :test-accuracy (get-in % [:test-transform :metric]))))))
+ (let [eval-result
+       (ml/evaluate-pipelines
+        all-piep-fns
+        [{:train
+          titanic-train
+          :test titanic-test}]
+        loss/classification-accuracy
+        :accuracy
+        {:return-best-pipeline-only false
+         :return-best-crossvalidation-only false
+         :evaluation-handler-fn (fn [result]
+                                  (def result result)
+       
+                                  (eval-handler/metrics-and-options-keep-fn result))})]
+   (def eval-result eval-result)
+   (pp/pprint
+    (-> eval-result
+     
+     first
+     first
+     (#(hash-map :options (get-in % [:fit-ctx :model :options])
+                 :train-accuracy (get-in % [:train-transform :metric])
+                 :test-accuracy (get-in % [:test-transform :metric])))))))
 
 
-(-> result  eval-handler/metrics-and-options-keep-fn :fit-ctx :model :options keys )
+(def datasets
+  (map
+   (fn [result]
+     (tc/dataset
+      (merge (-> result  :test-transform (select-keys [:metric]))
+             (-> result :fit-ctx :model :options)))
+     )
+   (-> eval-result flatten)))
+
+(def metrices
+  (apply tc/concat datasets))
+
+(-> metrices
+    (tc/group-by :model-type)
+    (tc/aggregate (fn [ds]
+                    (tcc/mean (:metric ds)))))
