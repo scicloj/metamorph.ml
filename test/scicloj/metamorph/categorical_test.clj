@@ -1,8 +1,7 @@
 (ns scicloj.metamorph.categorical-test
-  (:require  [clojure.test :refer [deftest is are]]
+  (:require  [clojure.test :refer [deftest is ]]
              [scicloj.metamorph.ml.categorical :as cat]
              [scicloj.metamorph.core :as mm]
-             [scicloj.metamorph.ml :as ml]
              [tablecloth.api :as tc]))
 
 
@@ -70,10 +69,3 @@
 
 
 
-(comment
-
-  (tech.v3.dataset.categorical/transform-one-hot
-   (tc/dataset {:a [:x :y :z]})
-   {:one-hot-table {:y :a-y, :xx :a-xx, :z :a-z, :yy :a-yy, :zz :a-zz, :x :a-x},
-    :src-column :a,
-    :result-datatype :float64}))

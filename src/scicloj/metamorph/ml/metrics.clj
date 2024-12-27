@@ -1,8 +1,6 @@
 (ns scicloj.metamorph.ml.metrics
   "Excellent metrics tools from the cortex project."
   (:require [tech.v3.datatype :as dtype]
-            [tech.v3.dataset :as ds]
-            [tech.v3.dataset.modelling :as ds-mod]
             [fastmath.core :as fm]
             [scicloj.metamorph.ml :as ml]
             [tech.v3.datatype.functional :as dfn]))

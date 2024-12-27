@@ -89,3 +89,52 @@ that label."
     (/ (- (reduce + (map * rank sorted-labels))
           (* n-pos (inc n-pos) 1/2))
        (* n-pos n-neg))))
+
+
+
+(comment
+  ;; not sure how tghis relates to fn auc
+  ;; this needs probability score
+  (defn compute-roc-auc
+    
+    "Calculates the ROC AUC given true labels and predicted scores.  
+    
+  Parameters:  
+  - y_true: A sequence of true binary labels (0 or 1).  
+  - y_scores: A sequence of predicted scores or probabilities.  
+    
+  Returns:  
+  - AUC value between 0 and 1."
+    [y_true y_scores]
+    (let [n (count y_true)
+          n_pos (count (filter #(= % 1) y_true))
+          n_neg (count (filter #(= % 0) y_true))
+        ;; Combine scores and labels into a sequence of tuples  
+          data (map vector y_scores y_true)
+        ;; Sort data by predicted scores in ascending order  
+          sorted-data (sort-by first data)
+        ;; Assign ranks, handling tied scores by assigning average ranks  
+          ranks (let [grouped (vals (group-by first (map-indexed vector sorted-data)))
+                      assign-ranks (fn [groups]
+                                     (loop [gs groups
+                                            current-rank 1
+                                            ranks []]
+                                       (if (empty? gs)
+                                         ranks
+                                         (let [group (first gs)
+                                               size (count group)
+                                               avg-rank (+ current-rank (/ (dec size) 2.0))]
+                                           (recur (rest gs)
+                                                  (+ current-rank size)
+                                                  (concat ranks (repeat size avg-rank)))))))
+                      ranks (assign-ranks grouped)]
+                  ranks)
+        ;; Sum ranks of positive samples  
+          sum-positive-ranks (reduce + (map first
+                                            (filter #(= (second (second %)) 1)
+                                                    (map vector ranks sorted-data))))
+        ;; Calculate AUC using the Mann-Whitney U statistic  
+          auc (/ (- sum-positive-ranks (* n_pos (+ n_pos 1) 0.5))
+                 (* n_pos n_neg))]
+      auc))
+  )

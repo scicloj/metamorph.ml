@@ -1,7 +1,6 @@
 (ns scicloj.metamorph.ml.classification
   (:require [tech.v3.dataset :as ds]
             [tech.v3.dataset.modelling :as ds-mod]
-            [tech.v3.dataset.modelling :as ds-cat]
             [tech.v3.datatype.pprint :as dtype-pp]
             [scicloj.metamorph.ml :as ml]))
             
