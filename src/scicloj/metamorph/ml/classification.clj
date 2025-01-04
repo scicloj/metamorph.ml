@@ -77,7 +77,7 @@
                             (ds-mod/inference-target-column-names target-ds))]
     (->>
      (-> target-ds (get target-column-name) frequencies)
-     (sort-by :second)
+     (sort-by second)
      reverse
      first
      first)))
