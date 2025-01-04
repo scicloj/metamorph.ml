@@ -6,7 +6,7 @@
   <version>LATEST</version>
   <name>metamorph.ml</name>
   <description>Machine learning functions for tech.ml.dataset and metamorph</description>
-  <url>https://github.com/$USER/$PROJECT</url>
+  <url>https://github.com/scicloj/metamorph.ml</url>
 
   <licenses>
     <license>
