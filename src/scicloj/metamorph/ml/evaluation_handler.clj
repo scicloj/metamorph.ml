@@ -223,7 +223,7 @@
 
 
 (defn metrics-keep-fn
-  "evaluation-handler-fn which keeps only train-metric, test-metric and and the options"
+  "evaluation-handler-fn which keeps only train-metric, test-metric"
   [result]
   (select-paths result
                 [[:train-transform :metric]
