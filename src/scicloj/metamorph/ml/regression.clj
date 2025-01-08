@@ -9,7 +9,9 @@
    [fastmath.core :as m]
    [fastmath.vector :as v]
 
-   [tech.v3.dataset.column-filters :as cf])
+   [tech.v3.dataset.column-filters :as cf]
+   [tablecloth.column.api :as tcc]
+   [tech.v3.dataset.modelling :as ds-mod])
   (:import [org.apache.commons.math3.stat.regression OLSMultipleLinearRegression]
            [fastmath.java Array]))
 
@@ -199,6 +201,28 @@
    :tidy-fn tidy-fm-ols
    :glance-fn glance-fm-ols
    :augment-fn augment-fm-fn})
+
+(ml/define-model! :metamorph.ml/dummy-regressor
+  (fn [feature-ds target-ds options]
+    (let [mean-y (tcc/mean
+                  (-> target-ds
+                      cf/target
+                      tc/columns
+                      first
+                      ))]
+      {:mean mean-y}
+      )
+    
+    )
+  (fn [feature-ds thawed-model model]
+    (-> (tc/dataset {(first (:target-columns model))
+                     (repeat (tc/row-count feature-ds) (-> model :model-data :mean))
+                     })
+        (ds/assoc-metadata ( :target-columns model) :column-type :prediction)
+        
+        )
+    )
+  {})
 
 
 

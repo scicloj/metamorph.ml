@@ -1,5 +1,6 @@
 unreleased
 * fixes #30 - dummy classifier does not predict by majority #30
+* added dummy regression model
 
 0.11.1
 * allow parameters for :fastmath/ols (fixes #27)
