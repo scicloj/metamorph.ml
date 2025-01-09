@@ -11,7 +11,8 @@
 
    [tech.v3.dataset.column-filters :as cf]
    [tablecloth.column.api :as tcc]
-   [tech.v3.dataset.modelling :as ds-mod])
+   [tech.v3.dataset.modelling :as ds-mod]
+   [fastmath.ml.regression :as regression])
   (:import [org.apache.commons.math3.stat.regression OLSMultipleLinearRegression]
            [fastmath.java Array]))
 
@@ -75,9 +76,14 @@
         (-> target-ds
             cf/target
             first
-            second)]
-
-    (fm-reg/lm ys xss clean-options)))
+            second)
+        model (fm-reg/lm ys xss clean-options)]
+    
+    (assoc model
+     :analysis
+     (-> model :analysis deref))
+    
+    ))
 
 (defn- predict-fm-ols [feature-ds thawed-model model]
   (let [prediction (map
