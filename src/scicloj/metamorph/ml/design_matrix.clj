@@ -3,69 +3,59 @@
             [clojure.set :as set]
             [tech.v3.dataset.column-filters :as cf]
             [tech.v3.dataset :as ds]
-            [tech.v3.dataset.modelling :as ds-mod]))
+            [tech.v3.dataset.modelling :as ds-mod]
+            [tech.v3.dataset.impl.column :as col-impl]))
 
-(defn- create-design-matrix-column [ds new-colum spec]
+(defn- create-design-matrix-column [ds new-column spec]
 
-  (let [col-set (into #{} (tc/column-names ds))
-        new-colum (if (nil? new-colum)
-                    (str spec)
-                    new-colum)
+  (def ds ds)
+  (def new-column new-column)
+  (def spec spec)
+  
+  
+  
+  (let [cols+params 
+        (flatten (vec (rest spec)))
+        
+        _ (def cols+params cols+params)
 
+        cols (filterv
+              #(tc/has-column? ds %)
+              cols+params)
+        
+        params (filterv
+                #(not (tc/has-column? ds %))
+                cols+params)
 
-        matching-keyword-cols
-        (->> (-> spec flatten)
-             (filterv
-              #(contains? col-set (keyword %)))
-             (into #{}))
-
-
-        matching-string-cols
-        (->> (-> spec flatten)
-             (filterv
-              #(contains? col-set (str %)))
-             (into #{}))
-
-
-        matching-symbol-cols
-        (->> (-> spec flatten)
-             (filterv
-              #(contains? col-set %))
-             (into #{}))
-
-
-        cols
-        (mapv #(cond (contains? matching-string-cols %) (str %)
-                     (contains? matching-symbol-cols %) (symbol %)
-                     (contains? matching-keyword-cols %) (keyword %)
-                     :else (throw (Exception. "column not found: %")))
-
-
-              (concat (vec matching-string-cols)
-                      (vec matching-keyword-cols)
-                      (vec matching-symbol-cols)))
-
-
-        duplicates
-        (filter #(> (val %) 1)
-                (frequencies cols))
-
-
-
-        _ (when (seq duplicates)
-            (throw (Exception. (str  "ambigous column names found" (str  (mapv first duplicates))))))
-
-
-        params (mapv symbol cols)
-        decl (list 'fn params)
+        _ (def params params)
+        _ (def cols cols)
+        syms
+        (mapv
+         (fn [_] (gensym))
+         cols)
+        
+        _ (def syms syms)
 
         fnn
-        (list (first decl) params spec)]
+        (list 'fn syms 
+              (concat 
+              [(first spec)]
+               params
+               syms))
 
-    (tc/map-columns ds new-colum cols (eval fnn))))
+        _ (def fnn fnn)
+        f (eval fnn)
+
+        _ (def f f)
+        ]
+
+    (tc/map-columns ds new-column cols f)))
 
 
+(tc/map-columns ds new-column cols f)
+(map class spec)
 
+( (eval fnn) 1 2 3)
 
 (defn create-design-matrix [ds
                             targets-specs
