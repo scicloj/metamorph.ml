@@ -40,14 +40,10 @@
 
 
 
-
-
 (defn- create-design-matrix-column [ds new-column spec]
   (let [new-column (if (nil? new-column)
                      (str spec)
                      new-column)
-
-
 
         cols (filterv
               #(tc/has-column? ds %)
@@ -76,7 +72,7 @@
     (tc/map-columns ds new-column cols f)))
 
 
-(defn create-design-matrix 
+(defn create-design-matrix
   "Converts the given dataset into a full numeric dataset.
    
    `target-specs` are the specifications how to transform the target varibales
@@ -93,7 +89,7 @@
    tc             (tablecloth.api)
    tcc            (tablecloth.column.api)
    
-   "   
+   "
   [ds
    targets-specs
    features-specs]
@@ -103,7 +99,7 @@
   (alias 'tc 'tablecloth.api)
   (alias 'tcc 'tablecloth.column.api)
 
-  (let [ ds-columns (tc/column-names ds)
+  (let [ds-columns (tc/column-names ds)
 
         mapping-specs-cols
         (concat targets-specs
@@ -124,7 +120,7 @@
                                         (second e2)))
          ds
          features-specs)
-        
+
         all-cols (tc/column-names transformed-ds)
 
 
@@ -141,14 +137,11 @@
          transformed-ds
          all-cols)]
 
-    
+
     (-> seperated-ds
         (ds-mod/set-inference-target targets-specs)
         (tc/drop-columns columns-to-be-removed)
-        (ds/categorical->number cf/categorical))
-
-    
-    ))
+        (ds/categorical->number cf/categorical))))
 
 
 
