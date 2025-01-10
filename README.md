@@ -1,6 +1,6 @@
 [![Clojars Project](https://img.shields.io/clojars/v/org.scicloj/metamorph.ml.svg)](https://clojars.org/org.scicloj/metamorph.ml)
 [![CI](https://github.com/scicloj/metamorph.ml/actions/workflows/main.yml/badge.svg)](https://github.com/scicloj/metamorph.ml/actions/workflows/main.yml)
-[![cljdoc badge](https://cljdoc.org/badge/scicloj/metamorph.ml)](https://cljdoc.org/d/scicloj/metamorph.ml)
+[![cljdoc badge](https://cljdoc.org/badge/org.scicloj/metamorph.ml)](https://cljdoc.org/d/org.scicloj/metamorph.m)
 
 ![ml logo](https://github.com/scicloj/graphic-design/blob/live/icons/scicloj.ml.svg)
 
