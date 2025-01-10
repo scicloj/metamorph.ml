@@ -24,15 +24,13 @@
     :x ["a" "b" "c" "d" "e" "f" "g" "h" "i"]
     :y [3 1 2 4 2 1 3 2 4]}))
 
-(deftest design-matrix 
+(deftest design-matrix
   (let [my-dm
 
         (dm/create-design-matrix
          ds
          [:y]                                  ;becomes "target column"
-         [
-          
-          [:sum '(+ "a" :b c)]
+         [[:sum '(+ "a" :b c)]
           [:b '(clojure.core/identity :b)]                   ; stays as is
           [:a** '(tablecloth.column.api/pow "a" 2)]
           [:a-str '(clojure.core/str "a")]
@@ -40,14 +38,12 @@
           [:a+c '(clojure.core/+ "a" c)]
           ['a+c*b '(clojure.core/* :a+c :b)]
           [:interaction '(scicloj.metamorph.design-matrix-test/interactions :b c)] ;will be split, as it returns seq in mapping,
-          [nil '(tablecloth.column.api/+ "a" :b c :sum :a+c a+c*b)]
-          
-          ])
+          [nil '(tablecloth.column.api/+ "a" :b c :sum :a+c a+c*b)]])
 
         t (tensor/dataset->tensor my-dm)]
 
-    (is (= 
-         
+    (is (=
+
          [:b
           :y
           :sum
@@ -59,9 +55,8 @@
           "(tablecloth.column.api/+ \"a\" :b c :sum :a+c a+c*b)"
           :interaction-0
           :interaction-1]
-         (tc/column-names my-dm)
-         ))
-    
+         (tc/column-names my-dm)))
+
     (is (=
          [[1.000 3.000 11.00 49.00 5.000 1.000 10.00 10.00 42.00 3.000 4.000]
           [2.000 1.000 6.000 9.000 1.000 0.000 4.000 8.000 24.00 2.000 3.000]
@@ -73,7 +68,7 @@
           [2.000 2.000 11.00 49.00 5.000 7.000 9.000 18.00 49.00 4.000 4.000]
           [1.000 4.000 13.00 64.00 6.000 8.000 12.00 12.00 50.00 4.000 5.000]]
          t))))
- 
+
 
 (deftest all-col-names-varints
   (let [ds
@@ -90,8 +85,8 @@
 
     (is (= [6 9 12]
            (:sum dm)))))
-  
-(deftest dm-mutiple-returns 
+
+(deftest dm-mutiple-returns
   (is (=
        [{:y 2, :p-0 2, :p-1 0, :q-a 2, :q-b 0, :r-0 2, :r-1 0}
         {:y 1, :p-0 2, :p-1 1, :q-a 2, :q-b 1, :r-0 2, :r-1 1}
@@ -119,7 +114,7 @@
             {:a [{:x 1 :y 2}
                  {:x 3 :y 4}]}) :a))))
 
-  
+
   (is (= ["a-x" "a-y"]
          (tc/column-names
           (dm/map-column->columns
@@ -133,5 +128,7 @@
            (tc/dataset
             {:a [{:x 1 "y" 2}
                  {:x 3 "y" 4}]}) :a)))))
+
+
 
 

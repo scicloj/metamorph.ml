@@ -100,7 +100,7 @@
    
 
    Example:
-
+ 
    (dm/create-design-matrix
          ds
          [:y] 
