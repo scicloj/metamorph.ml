@@ -75,22 +75,23 @@
 (defn create-design-matrix
   "Converts the given dataset into a full numeric dataset.
    
+   `ds` Is te tech.v3 dataset to transform
    `target-specs` are the specifications how to transform the target variables
    `features-specs` are the specifications how to transform the features 
 
    The 'spec' can express several types of dataset transformations in a compact way:
-   - add new dervied columns
+   - add new derived columns
    - remove columns
    - rename columns
-   - convert to catgorical
+   - convert columns to categorical
    - set inference target
 
 
-   Function calls need to be given as lists (quoted by '), and can refer to other column names.
-   They get evaluated from top->bottom, so can refer to each other.
+   Function calls need to be given as lists (quoted by '), and can refer to column names.
+   They get evaluated from top->bottom, and can refer to each other.
    
    The followig aliases can be used as part of the spec.
-   (Other function needs to be full qualified).
+   (Other functions need to be full qualified).
 
    clojure.core  can be used without full qailifying te symbols
    ds             (tech.v3.dataset)
@@ -114,8 +115,6 @@
    
 
    See  `design_matrix_test.clj` for more examples.
-   
-    
    
    "
   [ds
