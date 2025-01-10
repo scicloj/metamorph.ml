@@ -10,9 +10,7 @@
    [fastmath.vector :as v]
 
    [tech.v3.dataset.column-filters :as cf]
-   [tablecloth.column.api :as tcc]
-   [tech.v3.dataset.modelling :as ds-mod]
-   [fastmath.ml.regression :as regression])
+   [tablecloth.column.api :as tcc])
   (:import [org.apache.commons.math3.stat.regression OLSMultipleLinearRegression]
            [fastmath.java Array]))
 
@@ -30,9 +28,6 @@
       :estimate (map :estimate coeff)
       :p.value (map :p-value coeff)
       :std.error (map :stderr coeff)})))
-
-
-
 
 
 

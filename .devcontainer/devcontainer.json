@@ -24,7 +24,8 @@
 			"extensions": 
 			[
 				"vscjava.vscode-java-pack",
-				"betterthantomorrow.calva"
+				"betterthantomorrow.calva",
+				"djblue.portal"
 			]
 		}
 	},

@@ -1,4 +1,7 @@
 unreleased
+
+
+0.2
 * fixes #30 - dummy classifier does not predict by majority #30
 * added dummy regression model
 * improved design-matrix feature . Breaking !  columns need to be refered know by "precise name" (string, symbol, keyword)
