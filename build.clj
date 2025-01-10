@@ -40,7 +40,7 @@
     [:connection "scm:git:https://github.com/scicloj/metamorph.ml.git"]
     [:developerConnection "scm:git:https://github.com/scicloj/metamorph.ml.git"]
 
-    [:tag (str "v" version)]]])
+    [:tag (str version)]]])
 
 
 (defn jar [_]
