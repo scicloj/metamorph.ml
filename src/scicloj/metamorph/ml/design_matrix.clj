@@ -75,30 +75,58 @@
 (defn create-design-matrix
   "Converts the given dataset into a full numeric dataset.
    
-   `target-specs` are the specifications how to transform the target varibales
-   `features-specs` are the specifications how to transform the features variables
+   `target-specs` are the specifications how to transform the target variables
+   `features-specs` are the specifications how to transform the features 
 
-   See  `design_matrix_test.clj` for examples.
+   The 'spec' can express several types of dataset transformations in a compact way:
+   - add new dervied columns
+   - remove columns
+   - rename columns
+   - convert to catgorical
+   - set inference target
+
+
+   Function calls need to be given as lists (quoted by '), and can refer to column names.
+   They get evaluated from to->bottom, so can refer to each other.
    
-    
-   The followig aliases can be used as part of te spec.
-   Other function needs to be full qualified.
+   The followig aliases can be used as part of the spec.
+   (Other function needs to be full qualified).
 
    clojure.core  can be used without full qailifying te symbols
    ds             (tech.v3.dataset)
    tc             (tablecloth.api)
    tcc            (tablecloth.column.api)
    
+
+   Example:
+
+   (dm/create-design-matrix
+         ds
+         [:y] 
+         [         
+          [:sum '(+ :a :b :c)]
+         ])
+   
+   This will:
+   - set inference target to y:
+   - create a new derived variables :sum
+   - remove all columns except :y and :sum
+   
+
+   See  `design_matrix_test.clj` for more examples.
+   
+    
+   
    "
   [ds
    targets-specs
    features-specs]
 
-  ;; be sure, they are availbale
-  (alias 'ds 'tech.v3.dataset)
-  (alias 'tc 'tablecloth.api)
-  (alias 'tcc 'tablecloth.column.api)
-
+  ;; be sure, they are available
+  (require '[tech.v3.dataset :as ds]
+           '[tablecloth.api :as tc]
+           '[tablecloth.column.api :as tcc])
+  
   (let [ds-columns (tc/column-names ds)
 
         mapping-specs-cols
