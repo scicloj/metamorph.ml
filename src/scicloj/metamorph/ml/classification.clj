@@ -2,7 +2,10 @@
   (:require [tech.v3.dataset :as ds]
             [tech.v3.dataset.modelling :as ds-mod]
             [tech.v3.datatype.pprint :as dtype-pp]
-            [scicloj.metamorph.ml :as ml]))
+            [scicloj.metamorph.ml :as ml]
+            [scicloj.metamorph.ml.random-forest :as rf]
+            
+            [tablecloth.api :as tc]))
             
             
 (defn- safe-inc
@@ -104,3 +107,44 @@
                                                                        :categorical-map (get target-categorical-maps target-column-name)})])))
      
   {:glance-fn (fn [_] (ds/->dataset {:npar 0}))})
+
+(ml/define-model! :metamorph.ml/rf-classifier
+  (fn [feature-ds target-ds options]
+    
+    (let [ feature-maps (-> feature-ds (ds/rows :as-maps))
+
+          label-maps
+          (map
+           #(hash-map :label (first %))
+           
+           (-> target-ds (ds/rowvecs)))
+          
+          feature-and-label-maps
+          (map
+           merge
+           feature-maps
+           label-maps
+           )
+          
+          model 
+          (rf/random-forest feature-and-label-maps
+                            (:n-trees options) ;; Number of trees (increased for a larger dataset)
+                            (:max-depth options) ;; Maximum depth of each tree
+                            (:min-group-size options) ;; Minimum size of groups (leaf nodes)
+                            (:n-samples options)  ;; Number of samples per tree
+                            (:n-features-per-split options))] 
+      model)
+    )
+  (fn [feature-ds thawed-model {:keys [options model-data target-categorical-maps] :as model}]
+    
+    (let [ feature-maps (-> feature-ds (ds/rows :as-maps))]
+      (ds/->dataset
+       {
+        :species
+        (map 
+         #(rf/predict-forest model-data %)
+         feature-maps)}))
+    )
+  {}
+  )
+

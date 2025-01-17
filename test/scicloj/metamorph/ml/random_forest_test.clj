@@ -59,7 +59,7 @@
 (deftest random-forest-test
 ;; Generate a dataset with 100 samples
   
-  (let [ random (java.util.Random. seed)
+  (let [random (java.util.Random. seed)
 
         dataset (generate-dataset 1000 random)
         test-ratio 0.3 ;; 30% of data for testing
@@ -72,7 +72,7 @@
         min-size 1 ;; Minimum size of groups (leaf nodes)
         sample-size (count train-data) ;; Number of samples per tree
         n-features 2 ;; Number of features to consider at each split
-        forest 
+        forest
         (time
          (doall
           (random-forest train-data n-trees max-depth min-size sample-size n-features)))
@@ -81,7 +81,6 @@
         test-labels (map :label test-data)
         predictions (get-predictions forest test-data)
 ;; Calculate accuracy
-        acc (accuracy predictions test-labels)
-        ]
+        acc (accuracy predictions test-labels)]
     (is (= 0.97 (double acc)))
     ))

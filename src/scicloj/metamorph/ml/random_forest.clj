@@ -118,6 +118,15 @@
 ;; Function to make a prediction with the forest
 
 (defn predict-forest [forest sample]
+  (def forest forest)
+  (def sample sample)
+  
+    
+
+  (def predictions (map #(predict-tree % sample) forest))
+  (def freqs (frequencies predictions))
+  (apply max-key val freqs)
+  
   (let [predictions (map #(predict-tree % sample) forest)
         freqs (frequencies predictions)]
     (key (apply max-key val freqs))))

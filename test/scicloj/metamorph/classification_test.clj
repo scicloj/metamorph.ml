@@ -5,11 +5,13 @@
             [scicloj.metamorph.ml.loss :as loss]
             [scicloj.metamorph.core :as mm]
             [tech.v3.dataset :as ds]
+
             [tech.v3.dataset.modelling :as ds-mod]
             [tech.v3.dataset.categorical :as ds-cat]
             [tablecloth.api :as tc]
             [scicloj.ml.smile.classification]
-            [scicloj.metamorph.ml.toydata :as toydata]))
+            [scicloj.metamorph.ml.toydata :as toydata]
+            [clojure.set :as set]))
 
 
 (deftest test-normalized
@@ -92,7 +94,7 @@
 
 
         prediction (ml/predict ds model)]
-   (is (= [0 1] (-> prediction :class distinct sort)))))
+    (is (= [0 1] (-> prediction :class distinct sort)))))
 
 (deftest categorical-not-needed-for-ml
 
@@ -104,7 +106,7 @@
         model (ml/train ds {:model-type :metamorph.ml/dummy-classifier
                             :dummy-strategy :random-class})]
 
-    (is (= [:a ] (-> (ds/->dataset {:x [0]}) (ml/predict model) :y)))))
+    (is (= [:a] (-> (ds/->dataset {:x [0]}) (ml/predict model) :y)))))
 
 
 (deftest dummy-categorical
@@ -119,7 +121,7 @@
                             :dummy-strategy :random-class})]
 
 
-    (is (= [:a ] (-> (ds/->dataset {:x [0]}) (ml/predict model) (ds-cat/reverse-map-categorical-xforms) :y)))))
+    (is (= [:a] (-> (ds/->dataset {:x [0]}) (ml/predict model) (ds-cat/reverse-map-categorical-xforms) :y)))))
 
 (deftest dummy-pipeline-eval
   (let [pipe-fn (mm/pipeline
@@ -140,4 +142,32 @@
             first
             :test-transform
             :metric)))))
+
+
+(deftest rf
+
+
+  (let [split
+        (first
+         (tc/split->seq (toydata/iris-ds) :holdout {:seed 123}))
+        model (ml/train (:train split)
+                        {:model-type :metamorph.ml/rf-classifier
+                         :n-trees 10
+                         :max-depth 10
+                         :min-group-size 1
+                         :n-samples (ds/row-count (:train split))
+
+                         :n-features-per-split 2})
+
+        prediction (ml/predict (:test split) model)
+
+        accuracy
+        (loss/classification-accuracy (-> split :test ds-cat/reverse-map-categorical-xforms :species vec)
+                                      (mapv
+                                       (-> split :test :species meta :categorical-map :lookup-table set/map-invert)
+
+                                       (:species prediction)))]
+
+    (is (= 0.96 accuracy))
+    accuracy))
 
