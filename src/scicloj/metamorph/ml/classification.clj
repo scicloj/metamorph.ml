@@ -135,15 +135,18 @@
                             (get options :n-features-per-split 2))] 
       model)
     )
-  (fn [feature-ds thawed-model {:keys [options model-data target-categorical-maps] :as model}]
+  (fn [feature-ds thawed-model {:keys [options model-data target-columns] :as model}]
+    (def model model)
+
     
     (let [ feature-maps (-> feature-ds (ds/rows :as-maps))]
-      (ds/->dataset
-       {
-        :species
-        (map 
-         #(rf/predict-forest model-data %)
-         feature-maps)}))
+      (ds/new-dataset
+       [(ds/new-column
+         (first target-columns)
+         (map
+          #(rf/predict-forest model-data %)
+          feature-maps)
+         {:column-type :prediction})]))
     )
   {}
   )
