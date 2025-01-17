@@ -128,11 +128,11 @@
           
           model 
           (rf/random-forest feature-and-label-maps
-                            (:n-trees options) ;; Number of trees (increased for a larger dataset)
-                            (:max-depth options) ;; Maximum depth of each tree
-                            (:min-group-size options) ;; Minimum size of groups (leaf nodes)
-                            (:n-samples options)  ;; Number of samples per tree
-                            (:n-features-per-split options))] 
+                            (get options :n-trees 10) ;; Number of trees (increased for a larger dataset)
+                            (get options :max-depth 10) ;; Maximum depth of each tree
+                            (get options :min-group-size 1) ;; Minimum size of groups (leaf nodes)
+                            (get options :n-samples (ds/row-count feature-ds))  ;; Number of samples per tree
+                            (get options :n-features-per-split 2))] 
       model)
     )
   (fn [feature-ds thawed-model {:keys [options model-data target-categorical-maps] :as model}]
