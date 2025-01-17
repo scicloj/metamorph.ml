@@ -62,6 +62,27 @@
 
     (is (= (:class prediction) (repeat 569 0)))))
 
+(deftest dummy-classification--default-majority []
+  (let [ds (toydata/breast-cancer-ds)
+        model (ml/train ds {:model-type :metamorph.ml/dummy-classifier})
+
+
+        prediction (ml/predict ds model)]
+
+    (is (= (:class prediction) (repeat 569 0)))))
+
+(deftest dummy-classification--default-majority-2 []
+  (let [model (-> {:x (range 3)
+                   :y [:A :A :B]}
+                  tc/dataset
+                  (ds-mod/set-inference-target :y)
+                  (ml/train
+                   {:model-type :metamorph.ml/dummy-classifier}))]
+    (is (= [:A]
+           (-> {:x [0]}
+               tc/dataset
+               (ml/predict model)
+               :y)))))
 
 
 (deftest dummy-classification-random []
@@ -112,7 +133,7 @@
                       [data-split]
                       loss/classification-accuracy
                       :accuracy)]
-    (is (= 0.391812865497076
+    (is (= 0.608187134502924
            (->
             eval-results
             flatten

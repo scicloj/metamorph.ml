@@ -1,14 +1,14 @@
 (ns scicloj.metamorph.ml.evaluation-handler
   (:require
-   [scicloj.metamorph.ml.tools :refer [dissoc-in pp-str multi-dissoc-in]]
-   [clojure.tools.reader :as tr]
-   [clojure.tools.reader.reader-types :as rts]
    [clojure.java.classpath]
    [clojure.repl :as repl]
-   [taoensso.nippy :as nippy])
-  (:import [java.io File]))
+   [clojure.tools.reader :as tr]
+   [clojure.tools.reader.reader-types :as rts]
+   [clojure.walk :as walk]
+   [scicloj.metamorph.ml.tools :refer [dissoc-in multi-dissoc-in pp-str reduce-result]]
+   [taoensso.nippy :as nippy]))
 
-(defn file->topforms-with-metadata [path]
+(defn- file->topforms-with-metadata [path]
   (->> path
        slurp
        rts/source-logging-push-back-reader
@@ -16,7 +16,7 @@
        (map #(tr/read % false :EOF))
        (take-while (partial not= :EOF))))
 
-(defn resolve-keyword
+(defn- resolve-keyword
   "Interpret keyword or list as a symbol and try to resolve it."
   [k pipe-ns]
   (if (or  (sequential? k) (map? k))
@@ -31,7 +31,7 @@
 
 
 
-(defn fns->code-list [pipeline-source-file]
+(defn- fns->code-list [pipeline-source-file]
   (->>
    (file->topforms-with-metadata pipeline-source-file)
 
@@ -45,13 +45,13 @@
    (map #(assoc % :fn-name (second (:form  %))))))
 
 
-(defn fns->code-map [pipeline-source-file]
+(defn- fns->code-map [pipeline-source-file]
   (let [fns-code-list (fns->code-list pipeline-source-file)]
     (zipmap
      (map :fn-name fns-code-list)
      fns-code-list)))
 
-(defn fn-symbol->code [fn-symbol pipe-ns pipeline-source-file]
+(defn- fn-symbol->code [fn-symbol pipe-ns pipeline-source-file]
   (:form-str
    (get (fns->code-map pipeline-source-file)
         (:name
@@ -59,8 +59,7 @@
           (resolve-keyword  fn-symbol pipe-ns))))))
 
 
-(defn get-code [symbol pipe-ns pipeline-source-file]
-  ;; (def symbol symbol)
+(defn- get-code [symbol pipe-ns pipeline-source-file]
   (let [source (repl/source-fn symbol)
         orig-source (some-> symbol
                          resolve
@@ -68,20 +67,18 @@
                          :orig
                          clojure.repl/source-fn)]
 
-    ;; resolve
-    ;; #(.toSymbol %)
 
     {:code-source (if orig-source orig-source source)
      :code-local-source (fn-symbol->code symbol pipe-ns pipeline-source-file)}))
 
-(defn get-classpath []
+(defn- get-classpath []
   (->>
    (clojure.java.classpath/classpath)
    (map #(.getPath %))))
 
-(defn get-fn-sources [qualified-pipe-decl pipe-ns pipeline-source-file]
+(defn- get-fn-sources [qualified-pipe-decl pipe-ns pipeline-source-file]
   (let [codes (atom {})]
-    (clojure.walk/postwalk (fn [keyword]
+    (walk/postwalk (fn [keyword]
                              (when (keyword? keyword)
                                (let [symbol (symbol keyword)]
                                  (swap! codes #(assoc % symbol
@@ -110,7 +107,7 @@
       (result-reduce-fn result))))
 
 (defn qualify-keywords [pipe-decl pipe-ns]
-  (clojure.walk/postwalk (fn [form]
+  (walk/postwalk (fn [form]
                            ;; (println form)
                            (if-let [resolved (resolve-keyword form pipe-ns)]
                              (do 
@@ -133,5 +130,102 @@
   (mapv #(qualify-keywords % pipe-ns) pipe-decls))
 
 
-(comment
-  (def x (nippy/thaw-from-file "/tmp/f29648a6-9a73-4cb4-a7df-27e868b5bccf.nippy")))
+(def default-result-dissoc-in-seq
+  [[:fit-ctx :metamorph/data]
+
+   [:train-transform :ctx :metamorph/data]
+
+   [:train-transform :ctx :model :scicloj.metamorph.ml/target-ds]
+   [:train-transform :ctx :model :scicloj.metamorph.ml/feature-ds]
+
+   [:test-transform :ctx :metamorph/data]
+
+   [:test-transform :ctx :model :scicloj.metamorph.ml/target-ds]
+   [:test-transform :ctx :model :scicloj.metamorph.ml/feature-ds]
+   ;;  scicloj.ml.smile specific
+   [:train-transform :ctx :model :model-data :model-as-bytes]
+   [:train-transform :ctx :model :model-data :smile-df-used]
+   [:test-transform :ctx :model :model-data :model-as-bytes]
+   [:test-transform :ctx :model :model-data :smile-df-used]])
+
+
+
+
+(def result-dissoc-in-seq--ctxs
+  [[:fit-ctx]
+   [:train-transform :ctx]
+   [:test-transform :ctx]])
+
+
+(def result-dissoc-in-seq--all
+  [[:metric-fn]
+   [:fit-ctx]
+   [:train-transform :ctx]
+   [:train-transform :other-metrices]
+   [:train-transform :timing]
+   [:train-transform :probability-distribution]
+   [:test-transform :ctx]
+   [:test-transform :other-metrices]
+   [:test-transform :timing]
+   [:test-transform :probability-distribution]
+   [:pipe-decl]
+   [:pipe-fn]
+   [:timing-fit]
+   [:loss-or-accuracy]
+   [:source-information]])
+
+
+
+(defn result-dissoc-in-seq--all-fn
+  "evaluation-handler-fn which removes all :ctx"
+  [result]
+  (reduce-result result result-dissoc-in-seq--all))
+
+(defn default-result-dissoc-in-fn
+  "default evaluation-handler-fn"
+  [result]
+  (reduce-result result default-result-dissoc-in-seq))
+
+(defn result-dissoc-in-seq-ctx-fn
+  "evaluation-handler-fn which removes all :ctx"
+  [result]
+  (reduce-result result result-dissoc-in-seq--ctxs))
+
+(defn select-paths [m paths]
+  (reduce (fn [acc path]
+            (let [v (get-in m path)]
+              (if v
+                (assoc-in acc path v)
+                acc)))
+          {}
+          paths))  
+
+
+(defn metrics-and-model-keep-fn
+  "evaluation-handler-fn which keeps only train-metric, test-metric and 
+   the fitted model map, which contains as well the model object as byte array
+   (amon other things)"
+  [result]
+  (select-paths result
+                [[:train-transform :metric]
+                 [:test-transform :metric]
+                 [:fit-ctx :model]]))
+
+
+
+(defn metrics-and-options-keep-fn
+  "evaluation-handler-fn which keeps only train-metric, test-metric and and the options"
+  [result]
+  (select-paths result
+                [[:train-transform :metric]
+                 [:test-transform :metric]
+                 [:fit-ctx :model :options]]))
+
+
+(defn metrics-keep-fn
+  "evaluation-handler-fn which keeps only train-metric, test-metric"
+  [result]
+  (select-paths result
+                [[:train-transform :metric]
+                 [:test-transform :metric]]))
+

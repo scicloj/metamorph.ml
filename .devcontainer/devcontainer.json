@@ -11,7 +11,8 @@
 		"ghcr.io/devcontainers-contrib/features/bash-command:1": {
 			"command": "apt-get update && apt-get install -y rlwrap"
 		},
-		"ghcr.io/rocker-org/devcontainer-features/quarto-cli:1": {}
+		"ghcr.io/rocker-org/devcontainer-features/quarto-cli:1": {},
+		"ghcr.io/itsmechlark/features/redis-server:1": {}
 
 
 },
@@ -23,7 +24,8 @@
 			"extensions": 
 			[
 				"vscjava.vscode-java-pack",
-				"betterthantomorrow.calva"
+				"betterthantomorrow.calva",
+				"djblue.portal"
 			]
 		}
 	},

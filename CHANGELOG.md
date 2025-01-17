@@ -1,5 +1,23 @@
 unreleased
+
+
+
+
+0.12
+* fixes #30 - dummy classifier does not predict by majority #30
+* added dummy regression model
+* improved design-matrix feature . Breaking !  columns need to be refered know by "precise name" (string, symbol, keyword)
+* made model  :fastmath/ols frezzable by nippy
+ 
+
+0.11.1
 * allow parameters for :fastmath/ols (fixes #27)
+* added optional caching for train / predict
+* added new evaluation-handler: metrics-and-model-keep-fn
+* added option :ppmap with :ppmap-grain-size 10 to ml/eval-pipelines
+* added more evaluation-handler fns suitable for model-spec search
+* added :probability-distributin to ml/eval-pipelines result
+* breaking: move all eval handler to ns scicloj.metamorph.ml.evaluation-handler
 
 0.10.4
 * added :target-datatypes in train result and clarified expected 'shape' of prediction

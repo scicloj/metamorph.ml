@@ -1,7 +1,6 @@
 (ns scicloj.metamorph.ml-test
   (:require
    [clojure.test :as t :refer [deftest is]]
-   [confuse.multi-class-metrics :as mcm]
    [malli.core :as m]
    [scicloj.metamorph.core :as morph]
    [scicloj.metamorph.ml :as ml]
@@ -9,15 +8,15 @@
     :as eval
     :refer [qualify-pipelines]]
    [scicloj.metamorph.ml.loss :as loss]
-   [scicloj.metamorph.ml.toydata :as toydata]
    [scicloj.metamorph.ml.metrics]
    [tablecloth.api :as tc]
-   [taoensso.nippy :as nippy]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.categorical :as ds-cat]
    [tech.v3.dataset.metamorph :as ds-mm]
-   [tech.v3.dataset.modelling :as ds-mod])
+   [tech.v3.dataset.modelling :as ds-mod]
+   [scicloj.metamorph.ml.tools :refer [keys-in]]
+   )
   (:import
    (clojure.lang ExceptionInfo)
    (java.util UUID)))
@@ -25,18 +24,6 @@
 (def iris (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
 (def iris-target-values (-> iris :species distinct sort))
 
-(defn keys-in
-  "Returns a sequence of all key paths in a given map using DFS walk."
-  [m]
-  (letfn [(children [node]
-            (let [v (get-in m node)]
-              (if (map? v)
-                (map (fn [x] (conj node x)) (keys v))
-                [])))
-          (branch? [node] (-> (children node) seq boolean))]
-    (->> (keys m)
-         (map vector)
-         (mapcat #(tree-seq branch? children %)))))
 
 (defn do-define-model []
   (ml/define-model! :test-model
@@ -60,14 +47,8 @@
     {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
                    {:coefficients {:petal_width [0]}})}))
 
-
-
-
-(deftest evaluate-pipelines-simplest
-  (do-define-model)
-  (let [
-
-        pipe-fn
+(defn- validate-simple-pipeline []
+  (let [pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
          (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/target ds))) iris-target-values :int)
@@ -76,7 +57,7 @@
          {:metamorph/id :model}
          (ml/model {:model-type :test-model}))
 
-        train-split-seq (tc/split->seq iris :holdout)
+        train-split-seq (tc/split->seq iris :holdout {:seed 123})
         pipe-fn-seq [pipe-fn]
 
         evaluations
@@ -98,14 +79,14 @@
                   :metamorph/mode :transform}))
          (:metamorph/data))]
     ;; (ds-mod/column-values->categorical :species)
-
+    
 
     (is (= (repeat 10 "versicolor")
            (-> predictions ds-cat/reverse-map-categorical-xforms :species seq)))
     (is (=  1 (count evaluations)))
     (is (=  1 (count (first evaluations))))
 
-    (is (= #{:min :mean :max :timing :ctx :metric :other-metrices}
+    (is (= #{:min :mean :max :timing :ctx :metric :other-metrices  :probability-distribution}
            (set (-> evaluations first first :train-transform keys))))
     ;; =>
     (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-fn :timing-fit :loss-or-accuracy :source-information :split-uid])
@@ -113,6 +94,31 @@
     (is (contains?   (:fit-ctx (first (first evaluations)))  :metamorph/mode))
     (is (contains?   (:ctx (:train-transform (first (first evaluations))))  :metamorph/mode))
     (is (contains?   (:ctx (:test-transform (first (first evaluations))))  :metamorph/mode))))
+
+(deftest evaluate-pipelines-simplest
+  (do-define-model)
+  (validate-simple-pipeline))
+
+
+(deftest evaluate-pipelines-simplest-witch-cache
+  (do-define-model)
+  (let [cache-map (atom {})]
+    
+    
+    
+    (reset! ml/train-predict-cache {:use-cache true
+                         :get-fn (fn [key] (get @cache-map key))
+                         :set-fn (fn [key value] (swap! cache-map assoc key value))})
+
+    (validate-simple-pipeline)
+    (validate-simple-pipeline)
+    (reset! ml/train-predict-cache {:use-cache false
+                         :get-fn nil
+                         :set-fn nil}))
+
+  )
+
+
 
 
 
@@ -135,7 +141,6 @@
 
         evaluations
         (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss {:evaluation-handler-fn identity})
-        _ (def evaluations evaluations)
 
         best-fitted-context  (-> evaluations first first :fit-ctx)
         best-pipe-fn         (-> evaluations first first :pipe-fn)]
@@ -186,7 +191,7 @@
          (ds-mm/set-inference-target :species)
          (ds-mm/categorical->number cf/categorical iris-target-values)
 
-         {:metamorph/id :model}(ml/model {:model-type :test-model}))
+         {:metamorph/id :model} (ml/model {:model-type :test-model}))
 
         train-split-seq (tc/split->seq iris :kfold)
         pipe-fn-seq [pipe-fn pipe-fn]
@@ -239,6 +244,75 @@
 
 
 
+(deftest evaluate-pipelines--metric-keep-fn
+  (do-define-model)
+  (let [pipe-fn
+        (morph/pipeline
+         (ds-mm/set-inference-target :species)
+         (ds-mm/categorical->number cf/categorical)
+         {:metamorph/id :model} (ml/model {:model-type :test-model}))
+
+        train-split-seq (tc/split->seq iris :holdout)
+        pipe-fn-seq [pipe-fn]
+
+        result
+        (ml/evaluate-pipelines
+         pipe-fn-seq
+         train-split-seq
+         loss/classification-loss
+         :loss
+         {:evaluation-handler-fn
+          ;(fn [result] (def result result) result)
+          eval/metrics-keep-fn
+          })]
+    (is (=
+         [[:train-transform]
+          [:train-transform :metric]
+          [:train-transform :min]
+          [:train-transform :max]
+          [:train-transform :mean]
+          [:test-transform]
+          [:test-transform :metric]
+          [:test-transform :min]
+          [:test-transform :max]
+          [:test-transform :mean]]
+         (keys-in (-> result first first))))))
+
+(deftest evaluate-pipelines--metric-and-options-keep-fn
+  (do-define-model)
+  (let [pipe-fn
+        (morph/pipeline
+         (ds-mm/set-inference-target :species)
+         (ds-mm/categorical->number cf/categorical)
+         {:metamorph/id :model} (ml/model {:model-type :test-model}))
+
+        train-split-seq (tc/split->seq iris :holdout)
+        pipe-fn-seq [pipe-fn]
+
+        result
+        (ml/evaluate-pipelines
+         pipe-fn-seq
+         train-split-seq
+         loss/classification-loss
+         :loss
+         {:evaluation-handler-fn
+          eval/metrics-and-options-keep-fn})]
+    (is (=
+         [[:train-transform]
+          [:train-transform :metric]
+          [:train-transform :min]
+          [:train-transform :max]
+          [:train-transform :mean]
+          [:test-transform]
+          [:test-transform :metric]
+          [:test-transform :min]
+          [:test-transform :max]
+          [:test-transform :mean]
+          [:fit-ctx]
+          [:fit-ctx :model]
+          [:fit-ctx :model :options]
+          [:fit-ctx :model :options :model-type]]
+         (keys-in (-> result first first))))))
 
 
 
@@ -321,7 +395,7 @@
          (tc/split->seq iris)
          loss/classification-accuracy
          :accuracy
-         {:evaluation-handler-fn ml/result-dissoc-in-seq--all-fn})]
+         {:evaluation-handler-fn eval/result-dissoc-in-seq--all-fn})]
 
     ;(def evaluation-result evaluation-result)
     (is (= 
@@ -426,9 +500,6 @@
         (m/validate
          result-schema
          evaluation-result)))))
-
-
-
 
 
 (deftest call-without-ds
