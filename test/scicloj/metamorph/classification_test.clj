@@ -163,10 +163,8 @@
 
         accuracy
         (loss/classification-accuracy (-> split :test ds-cat/reverse-map-categorical-xforms :species vec)
-                                      (mapv
-                                       (-> split :test :species meta :categorical-map :lookup-table set/map-invert)
-
-                                       (:species prediction)))]
+                                      (-> prediction ds-cat/reverse-map-categorical-xforms :species)
+                                      )]
 
     (is (= 0.96 accuracy))
     accuracy))

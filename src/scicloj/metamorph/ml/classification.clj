@@ -5,7 +5,8 @@
             [scicloj.metamorph.ml :as ml]
             [scicloj.metamorph.ml.random-forest :as rf]
             
-            [tablecloth.api :as tc]))
+            [tablecloth.api :as tc]
+            [clojure.set :as set]))
             
             
 (defn- safe-inc
@@ -135,18 +136,23 @@
                             (get options :n-features-per-split 2))] 
       model)
     )
-  (fn [feature-ds thawed-model {:keys [options model-data target-columns] :as model}]
-    (def model model)
-
+  (fn [feature-ds thawed-model {:keys [options model-data target-columns target-categorical-maps] :as model}]
     
-    (let [ feature-maps (-> feature-ds (ds/rows :as-maps))]
+        
+    (let [ feature-maps (-> feature-ds (ds/rows :as-maps))
+          prediction (map
+                      #(rf/predict-forest model-data %)
+                      feature-maps)
+          ]
+        
+
       (ds/new-dataset
        [(ds/new-column
          (first target-columns)
-         (map
-          #(rf/predict-forest model-data %)
-          feature-maps)
-         {:column-type :prediction})]))
+         prediction
+         {:column-type :prediction
+          :categorical? true
+          :categorical-map (-> target-categorical-maps (get (first target-columns)))})]))
     )
   {}
   )
