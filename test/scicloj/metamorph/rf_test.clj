@@ -32,11 +32,12 @@
 
 (def titanic-final
   (-> titanic
-      (tc/select-columns  [:sex :pclass :survived])
+      (tc/select-columns  [:sex :pclass :fare :age :survived])
       (ds/categorical->number categorical-columns)
       (ds-mod/set-inference-target :survived)
+      (tc/drop-missing)
       (tc/shuffle)
-      (tc/head 10000)
+      (tc/head 1000)
       ))
 
 (def titanic-split
