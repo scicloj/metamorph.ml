@@ -133,7 +133,9 @@
                             (get options :max-depth 10) ;; Maximum depth of each tree
                             (get options :min-group-size 1) ;; Minimum size of groups (leaf nodes)
                             (get options :n-samples (ds/row-count feature-ds))  ;; Number of samples per tree
-                            (get options :n-features-per-split 2))] 
+                            (get options :n-features-per-split 2)
+                            (get options :map-fn)
+                            )] 
       model)
     )
   (fn [feature-ds thawed-model {:keys [options model-data target-columns target-categorical-maps] :as model}]

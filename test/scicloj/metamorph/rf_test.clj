@@ -19,7 +19,7 @@
 (def titanic
   (tc/dataset "bigdata/huge_1M_titanic.csv" {:key-fn csk/->kebab-case-keyword}))
 
-(tc/info titanic)
+
 
 
 (def categorical-columns [:sex :pclass :survived])
@@ -28,7 +28,7 @@
 
 (tc/column-names titanic)
 
-
+(add-tap println)
 
 (def titanic-final
   (-> titanic
@@ -37,8 +37,13 @@
       (ds-mod/set-inference-target :survived)
       (tc/drop-missing)
       (tc/shuffle)
-      (tc/head 1000)
+      (tc/head 10000)
       ))
+
+
+(println
+ (tc/info titanic-final :columns)
+ )
 
 (def titanic-split
   (tc/split->seq titanic-final :holdout))
@@ -73,7 +78,8 @@
 (def eval-result
   (ml/evaluate-pipelines 
    [(make-pipe {:model-type :metamorph.ml/dummy-classifier}) 
-    (make-pipe {:model-type :metamorph.ml/rf-classifier  :n-trees 10}) 
+    (make-pipe {:model-type :metamorph.ml/rf-classifier  :n-trees 10 :map-fn map}) 
+    (make-pipe {:model-type :metamorph.ml/rf-classifier  :n-trees 10 :map-fn pmap}) 
     (make-pipe {:model-type :smile.classification/random-forest :trees 10}) 
 
     (make-pipe tribuo-rf-spec)
@@ -112,3 +118,11 @@
           ))
    )))
 
+
+;; | :test-metric |          :prediction | :timing-fit |                         :model-type | :train-transform--timing | :test-transform--timing |
+;; |-------------:|----------------------|------------:|-------------------------------------|-------------------------:|------------------------:|
+;; |   0.78734253 | {0.0 2312, 1.0 1022} |         237 | :smile.classification/random-forest |                      179 |                      68 |
+;; |   0.82123575 |      {0 2343, 1 991} |       59856 |         :metamorph.ml/rf-classifier |                       68 |                      35 |
+;; |   0.82003599 |      {0 2367, 1 967} |         957 |   :scicloj.ml.tribuo/classification |                      150 |                      68 |
+;; |   0.81763647 |     {0 2289, 1 1045} |      246559 |         :metamorph.ml/rf-classifier |                       78 |                      34 |
+;; |   0.62417516 |             {0 3334} |           5 |      :metamorph.ml/dummy-classifier |                       15 |                       4 |
