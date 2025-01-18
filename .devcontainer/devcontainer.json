@@ -30,6 +30,6 @@
 		}
 	},
 
-	"remoteUser": "vscode"
-	//"postStartCommand": "tmux new -d /home/vscode/.asdf/shims/clojure -Sdeps '{:deps {nrepl/nrepl {:mvn/version,\"1.0.0\"},cider/cider-nrepl {:mvn/version,\"RELEASE\"}}},refactor-nrepl/refactor-nrepl {:mvn/version \"RELEASE\"}}' -m nrepl.cmdline -p 12345 --middleware \"[cider.nrepl/cider-middleware]\" &"
+	"remoteUser": "vscode",
+	"postCreateCommand": "curl -L -o ~/Downloads/titanic-huge-dataset-1m-passengers.zip  https://www.kaggle.com/api/v1/datasets/download/marcpaulo/titanic-huge-dataset-1m-passengers && unzip bigdata/titanic-huge-dataset-1m-passengers.zip -d bigdata"
 }

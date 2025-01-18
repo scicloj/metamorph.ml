@@ -98,10 +98,11 @@
 ;; Function to build a random forest
 
 (defn random-forest [data n-trees max-depth min-size sample-size n-features]
-  (let [random (java.util.Random. 1234)]
-    (repeatedly n-trees
-                #(let [sample (bootstrap-sample data sample-size random)]
-                   (build-tree sample max-depth min-size n-features 1 random)))))
+  (doall
+   (let [random (java.util.Random. 1234)]
+     (repeatedly n-trees
+                 #(let [sample (bootstrap-sample data sample-size random)]
+                    (build-tree sample max-depth min-size n-features 1 random))))))
 
 ;; Function to make a prediction with a single tree
 
