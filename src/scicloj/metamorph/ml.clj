@@ -477,7 +477,7 @@
                                               [:tidy-fn {:optional true} fn?]
                                               [:augment-fn {:optional true} fn?]
                                               [:glance-fn {:optional true} fn?]
-                                              [:options {:optional true} sequential?]
+                                              [:options {:optional true} [:fn m/schema?]]
                                               [:documentation {:optional true} [:map
                                                                                 [:javadoc {:optional true} [:maybe string?]]
                                                                                 [:user-guide {:optional true} [:maybe string?]]
