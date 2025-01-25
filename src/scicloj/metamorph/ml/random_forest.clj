@@ -1,5 +1,6 @@
 (ns scicloj.metamorph.ml.random-forest
-  (:require [clojure.set :as set]))
+  (:import
+   [java.util Random]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -7,7 +8,7 @@
 (def seed 1234)
 
 (defn seeded-rand-int [random n]
-  (.nextInt random n))
+  (.nextInt ^Random random n))
 (defn seeded-rand-nth [random coll]
   (nth coll (seeded-rand-int random (count coll))))
 
@@ -26,16 +27,16 @@
 ;; Function to compute the Gini impurity
 
 (defn gini-impurity [labels]
-  (let [total (count labels)
+  (let [total (int (count labels))
         freqs (vals (frequencies labels))
-        probs (map #(/ % total) freqs)]
-    (- 1 (reduce + (map #(* % %) probs)))))
+        probs (map #(/ (int %) total) freqs)]
+    (- 1 (double (reduce + (map #(* (double %) (double %)) probs))))))
 
 ;; Function to split the dataset based on a feature and a value
 
 (defn split-dataset [data feature value]
-  (let [left (filter #(<= (feature %) value) data)
-        right (filter #(> (feature %) value) data)]
+  (let [left (filter #(<= (double (feature %)) (double value)) data)
+        right (filter #(> (double (feature %)) (double value)) data)]
     [left right]))
 
 ;; Function to find the best split
@@ -47,13 +48,13 @@
      (reduce
       (fn [best value]
         (let [[left right] (split-dataset data feature value)
-              p-left (/ (count left) (count data))
-              p-right (/ (count right) (count data))
-              gini-left (gini-impurity (map :label left))
-              gini-right (gini-impurity (map :label right))
-              gini-split (+ (* p-left gini-left) (* p-right gini-right))]
+              p-left (double (/ (count left) (count data)))
+              p-right (double (/ (count right) (count data)))
+              gini-left (double (gini-impurity (map :label left)))
+              gini-right (double (gini-impurity (map :label right)))
+              gini-split (double (+ (* p-left gini-left) (* p-right gini-right)))]
 
-          (if (< gini-split (:gini best))
+          (if (< gini-split (double (:gini best)))
             {:feature feature
              :value value
              :gini gini-split
@@ -77,9 +78,9 @@
 (defn build-tree [data max-depth min-size n-features depth random]
   (let [labels (map :label data)]
     (if (or (empty? data)
-            (<= (count (distinct labels)) 1)
-            (>= depth max-depth)
-            (<= (count data) min-size))
+            (<= (int (count (distinct labels))) 1)
+            (>= (int depth) (int max-depth))
+            (<= (int (count data)) (int min-size)))
       (to-terminal data)
       (let [all-features (remove #{:label} (keys (first data)))
             features (take n-features (deterministic-shuffle all-features random))
@@ -92,8 +93,8 @@
                 node {:feature (:feature split)
                       :value (:value split)}]
             (assoc node
-                   :left (build-tree left max-depth min-size n-features (inc depth) random)
-                   :right (build-tree right max-depth min-size n-features (inc depth) random))))))))
+                   :left (build-tree left max-depth min-size n-features (inc (int depth)) random)
+                   :right (build-tree right max-depth min-size n-features (inc (int depth)) random))))))))
 
 ;; Function to build a random forest
 

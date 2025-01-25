@@ -31,5 +31,5 @@
 	},
 
 	"remoteUser": "vscode",
-	"postCreateCommand": "curl -L -o ~/Downloads/titanic-huge-dataset-1m-passengers.zip  https://www.kaggle.com/api/v1/datasets/download/marcpaulo/titanic-huge-dataset-1m-passengers && unzip bigdata/titanic-huge-dataset-1m-passengers.zip -d bigdata"
+	"postCreateCommand": "curl -L -o bigdata/titanic-huge-dataset-1m-passengers.zip  https://www.kaggle.com/api/v1/datasets/download/marcpaulo/titanic-huge-dataset-1m-passengers && unzip -o bigdata/titanic-huge-dataset-1m-passengers.zip -d bigdata"
 }

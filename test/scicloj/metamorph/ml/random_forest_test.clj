@@ -75,7 +75,7 @@
         forest
         (time
          (doall
-          (random-forest train-data n-trees max-depth min-size sample-size n-features)))
+          (random-forest train-data n-trees max-depth min-size sample-size n-features pmap)))
 
 ;; Make predictions on test data
         test-labels (map :label test-data)

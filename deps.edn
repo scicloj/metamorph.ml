@@ -61,6 +61,7 @@
   {:jvm-opts ["-Djdk.attach.allowAttachSelf","-Xmx14G" "--add-opens=java.base/java.io=ALL-UNNAMED" ]
    :extra-paths ["test"]
    :extra-deps {com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.3.0"}
+                criterium/criterium {:mvn/version  "0.4.6"}
                 lambdaisland/kaocha {:mvn/version "1.91.1392"}
                 org.scicloj/scicloj.ml.smile {:mvn/version "7.4.4"}
                 org.scicloj/scicloj.ml.tribuo {:mvn/version "0.1.6"}
@@ -68,7 +69,7 @@
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
                 ch.qos.logback/logback-classic {:mvn/version "1.5.16"}
                 org.mapdb/mapdb {:mvn/version "3.1.0"}
-                com.clojure-goes-fast/clj-async-profiler {:mvn/version "1.5.1"}
+                com.clojure-goes-fast/clj-async-profiler {:mvn/version "1.6.0"}
                 }}
   :runner {:main-opts ["-m" "kaocha.runner"]}
   

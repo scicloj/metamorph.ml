@@ -37,7 +37,7 @@
       (ds-mod/set-inference-target :survived)
       (tc/drop-missing)
       (tc/shuffle)
-      (tc/head 10000)
+      (tc/head 100000)
       ))
 
 
@@ -74,25 +74,23 @@
                        {:name "votecombiner" :type "org.tribuo.classification.ensemble.VotingCombiner"}]
    :tribuo-trainer-name "rf"})
 
+(require '[clj-async-profiler.core :as prof])
 
-(def eval-result
-  (ml/evaluate-pipelines 
-   [(make-pipe {:model-type :metamorph.ml/dummy-classifier}) 
-    (make-pipe {:model-type :metamorph.ml/rf-classifier  :n-trees 10 :map-fn map}) 
-    (make-pipe {:model-type :metamorph.ml/rf-classifier  :n-trees 10 :map-fn pmap}) 
-    (make-pipe {:model-type :smile.classification/random-forest :trees 10}) 
-
-    (make-pipe tribuo-rf-spec)
-    ]
-   titanic-split
-   loss/classification-accuracy
-   :accuracy
-   {:return-best-pipeline-only false
-    :evaluation-handler-fn identity}
-   ))
-
-(-> titanic-split first :train :survived frequencies)
-
+;(prof/profile)
+ (def eval-result
+   (ml/evaluate-pipelines
+    [(make-pipe {:model-type :metamorph.ml/dummy-classifier}) 
+     ;(make-pipe {:model-type :metamorph.ml/rf-classifier  :n-trees 10 :map-fn map}) 
+     ;(make-pipe {:model-type :metamorph.ml/rf-classifier  :n-trees 10 :map-fn pmap})
+     (make-pipe {:model-type :smile.classification/random-forest :trees 10}) 
+     (make-pipe tribuo-rf-spec)
+     ]
+    titanic-split
+    loss/classification-accuracy
+    :accuracy
+    {:return-best-pipeline-only false
+     :evaluation-handler-fn identity}))
+  (-> titanic-split first :train :survived frequencies)
 (->>
  eval-result
  flatten
@@ -118,6 +116,9 @@
           ))
    )))
 
+
+(comment
+  (prof/serve-ui 8080))
 
 ;; | :test-metric |          :prediction | :timing-fit |                         :model-type | :train-transform--timing | :test-transform--timing |
 ;; |-------------:|----------------------|------------:|-------------------------------------|-------------------------:|------------------------:|
