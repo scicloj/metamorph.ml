@@ -103,4 +103,15 @@
       (ds/new-dataset [(ds/new-column target-column-name dummy-labels {:column-type :prediction
                                                                        :categorical-map (get target-categorical-maps target-column-name)})])))
      
-  {:glance-fn (fn [_] (ds/->dataset {:npar 0}))})
+  {:glance-fn (fn [_] (ds/->dataset {:npar 0}))
+   :options [
+             [:dummy-strategy 
+              {:optional true
+               :description "The stratgey to use for te dummy classifier"}
+              [:enum :majority-class :fixed-class :random-class]]
+             [:fixed-class {:optional true
+                            :description "The fixedc lass to use when strategy :fixed-class"
+                            }
+              number?]
+             ]
+   })

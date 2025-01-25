@@ -7,6 +7,8 @@
    [scicloj.metamorph.ml.ensemble]
    [scicloj.metamorph.ml.evaluation-handler :as eval-handler]
    [scicloj.metamorph.ml.loss :as loss]
+   [malli.core :as m]
+   [malli.error :as me]
    [scicloj.metamorph.ml.malli :as malli]
    [scicloj.metamorph.ml.tidy-models :as tidy]
    [tech.v3.dataset :as ds]
@@ -532,6 +534,23 @@
   [model-kwd]
   (:hyperparameters (options->model-def {:model-type model-kwd})))
 
+(defn- validate-options [model-options options]
+  (let [ options-schema
+        (vec
+         (concat
+          [:map {:closed true}]
+          (concat
+           [[:model-type keyword?]]
+           (:options model-options))))]
+    
+    (when (not (m/validate options-schema options))
+      (throw (ex-info "Invalid options: "
+                      (->
+                       (m/explain options-schema options)
+                       (me/humanize))))))
+
+  )
+
 
 (defn train
   "Given a dataset and an options map produce a model.  The model-type keyword in the
@@ -557,8 +576,11 @@
   {:malli/schema [:=> [:cat [:fn dataset?] map?]
                   [map?]]}
   [dataset options]
-  (let [
-
+  
+  (let [model-options (options->model-def options)
+        _ (when (some? (:options model-options))
+            (validate-options model-options options))
+        
         combined-hash (when (:use-cache @train-predict-cache) 
                         (str  (hash dataset) "___"  (hash options))
                         )
@@ -569,7 +591,7 @@
       (do
         (println :cache-hit-train! combined-hash)
         cached)
-      (let [{:keys [train-fn unsupervised?]} (options->model-def options)
+      (let [{:keys [train-fn unsupervised?]} model-options
             feature-ds (cf/feature  dataset)
             _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
                                      "No features provided")
