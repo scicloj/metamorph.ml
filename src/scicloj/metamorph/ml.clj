@@ -538,14 +538,7 @@
 (defn- validate-options [model-options options]
   (def model-options model-options)
   (def options options)
-  (let [options-schema
-        (->
-         (m/schema
-          (vec
-           (concat
-            [:map {:closed true}]
-            (:options model-options))))
-         (mu/assoc :model-type keyword?))]
+  (let [options-schema (malli/model-options->full-schema model-options)]
 
     (when (not (m/validate options-schema options))
       (throw (ex-info "Invalid options: "
