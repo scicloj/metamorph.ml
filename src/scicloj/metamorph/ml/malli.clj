@@ -23,6 +23,6 @@
 
 (defn model-options->full-schema [model-options]
   (->
-   (:options model-options)
+   (get model-options :options [:map ])
    m/schema
    (mu/assoc :model-type keyword?)))
