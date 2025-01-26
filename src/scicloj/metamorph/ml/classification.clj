@@ -111,10 +111,10 @@
    [
     [:dummy-strategy
      {:optional true
-      :description "The stratgey to use for te dummy classifier"}
+      :description "The strategy to use for the dummy classifier"}
      [:enum :majority-class :fixed-class :random-class]]
     [:fixed-class {:optional true
-                   :description "The fixedc lass to use when strategy :fixed-class"}
+                   :description "The fixed class to use when strategy is :fixed-class"}
      number?]]})
 
 
