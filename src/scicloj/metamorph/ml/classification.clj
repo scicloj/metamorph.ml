@@ -108,14 +108,13 @@
      
   {:glance-fn (fn [_] (ds/->dataset {:npar 0}))
    :options
-   (m/schema
-    [:map {:closed true}
-     [:dummy-strategy
-      {:optional true
-       :description "The stratgey to use for te dummy classifier"}
-      [:enum :majority-class :fixed-class :random-class]]
-     [:fixed-class {:optional true
-                    :description "The fixedc lass to use when strategy :fixed-class"}
-      number?]])})
+   [
+    [:dummy-strategy
+     {:optional true
+      :description "The stratgey to use for te dummy classifier"}
+     [:enum :majority-class :fixed-class :random-class]]
+    [:fixed-class {:optional true
+                   :description "The fixedc lass to use when strategy :fixed-class"}
+     number?]]})
 
 

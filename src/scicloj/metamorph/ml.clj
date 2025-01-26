@@ -477,7 +477,7 @@
                                               [:tidy-fn {:optional true} fn?]
                                               [:augment-fn {:optional true} fn?]
                                               [:glance-fn {:optional true} fn?]
-                                              [:options {:optional true} [:fn m/schema?]]
+                                              [:options {:optional true} vector?]
                                               [:documentation {:optional true} [:map
                                                                                 [:javadoc {:optional true} [:maybe string?]]
                                                                                 [:user-guide {:optional true} [:maybe string?]]
@@ -536,9 +536,15 @@
   (:hyperparameters (options->model-def {:model-type model-kwd})))
 
 (defn- validate-options [model-options options]
+  (def model-options model-options)
+  (def options options)
   (let [options-schema
         (->
-         (:options model-options)
+         (m/schema
+          (vec
+           (concat
+            [:map {:closed true}]
+            (:options model-options))))
          (mu/assoc :model-type keyword?))]
 
     (when (not (m/validate options-schema options))
