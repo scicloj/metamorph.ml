@@ -498,6 +498,11 @@
                                   :as opts}]
 
   (println "Register model: " model-kwd)
+  
+
+  (malli/model-options->full-schema options) ;; throws on invalid malli schema for options
+  
+
   (swap! model-definitions* assoc model-kwd {:train-fn train-fn
                                              :predict-fn predict-fn
                                              :hyperparameters hyperparameters
