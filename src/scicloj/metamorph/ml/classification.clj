@@ -108,7 +108,7 @@
      
   {:glance-fn (fn [_] (ds/->dataset {:npar 0}))
    :options
-   [
+   [:map {:closed true}
     [:dummy-strategy
      {:optional true
       :description "The strategy to use for the dummy classifier"}

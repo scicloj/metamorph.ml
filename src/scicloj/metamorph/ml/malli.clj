@@ -23,10 +23,6 @@
 
 (defn model-options->full-schema [model-options]
   (->
-   (concat
-    [:map {:closed true}]
-    (:options model-options))
-   vec
+   (:options model-options)
    m/schema
-   (mu/assoc :model-type keyword?))
-  )
+   (mu/assoc :model-type keyword?)))
