@@ -499,8 +499,7 @@
 
   (println "Register model: " model-kwd)
   
-
-  (malli/model-options->full-schema options) ;; throws on invalid malli schema for options
+  (malli/model-options->full-schema opts) ;; throws on invalid malli schema for options
   
 
   (swap! model-definitions* assoc model-kwd {:train-fn train-fn
