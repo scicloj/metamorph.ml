@@ -1,6 +1,6 @@
 (ns scicloj.metamorph.loss-test
-  (:require [scicloj.metamorph.ml.loss :refer :all]
-            [clojure.test :refer :all]
+  (:require [scicloj.metamorph.ml.loss :refer [auc classification-accuracy]]
+            [clojure.test :refer [deftest is]]
             [tech.v3.dataset :as ds]))
 
 

@@ -1,23 +1,6 @@
 (ns scicloj.metamorph.to-disk-perf
-  (:require [clojure.test :refer [deftest is]]
-            [scicloj.metamorph.core :as morph]
-            [scicloj.metamorph.ml :as ml]
-            [scicloj.metamorph.ml.gridsearch :as gs]
-            [scicloj.metamorph.ml.loss :as loss]
-            [scicloj.ml.smile.classification]
-            [tech.v3.dataset.metamorph :as ds-mm]
-            [tech.v3.dataset :as ds]
-            [tech.v3.dataset.column-filters :as cf]
-            [tech.v3.dataset.modelling :as ds-mod]
-            [scicloj.metamorph.ml.gridsearch :as gs]
-            [tablecloth.api :as tc]
-            [scicloj.ml.smile.classification]
-            [fastmath.stats :as stats]
-            [taoensso.nippy :as nippy]
-            [clojure.java.io :as io]
-            [clojure.string :as str]
-            [scicloj.metamorph.persistence-tools :refer [find-model-data]])
-  (:import java.util.UUID))
+  (:require
+   [scicloj.ml.smile.classification]))
   
 
 (comment

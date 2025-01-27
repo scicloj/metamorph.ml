@@ -336,19 +336,19 @@
         _ (intern new-ns 'ds ds)
         _ (.addAlias new-ns 'morph (the-ns 'scicloj.metamorph.core))
         _ (.addAlias new-ns 'nippy (the-ns 'taoensso.nippy))
-        species-freqs (binding [*ns* new-ns]  (do
-                                                (eval '(def thawed-result (nippy/thaw-from-file file)))
+        species-freqs (binding [*ns* new-ns]  
+                        (eval '(def thawed-result (nippy/thaw-from-file file)))
 
 
-                                                (eval '(def thawed-pipe-fn (clojure.core/->
-                                                                            thawed-result
-                                                                             :pipe-decl
-                                                                            (morph/->pipeline))))
-                                                (eval '(clojure.core/->
-                                                        (morph/fit-pipe ds thawed-pipe-fn)
-                                                        :metamorph/data
-                                                        :species
-                                                        (clojure.core/frequencies)))))]
+                        (eval '(def thawed-pipe-fn (clojure.core/->
+                                                    thawed-result
+                                                    :pipe-decl
+                                                    (morph/->pipeline))))
+                        (eval '(clojure.core/->
+                                (morph/fit-pipe ds thawed-pipe-fn)
+                                :metamorph/data
+                                :species
+                                (clojure.core/frequencies))))]
     species-freqs))
 
 

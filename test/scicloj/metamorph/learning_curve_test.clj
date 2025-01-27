@@ -1,15 +1,16 @@
 (ns scicloj.metamorph.learning-curve-test
-  (:require  [clojure.test :as t]
-             [tech.v3.dataset]
-             [scicloj.metamorph.core :as mm]
-             [tech.v3.dataset.metamorph :as mds]
-             [tablecloth.api :as tc]
-             [tablecloth.pipeline :as tc-mm]
-             [scicloj.metamorph.ml]
-             [scicloj.metamorph.ml.loss]
-             [scicloj.metamorph.ml.learning-curve :as lc]
-             [scicloj.ml.smile.classification]
-             [scicloj.metamorph.ml.loss :as loss]))
+  (:require
+   [clojure.test :as t]
+   [scicloj.metamorph.core :as mm]
+   [scicloj.metamorph.ml]
+   [scicloj.metamorph.ml.learning-curve :as lc]
+   [scicloj.metamorph.ml.loss]
+   [scicloj.metamorph.ml.loss :as loss]
+   [scicloj.ml.smile.classification]
+   [tablecloth.api :as tc]
+   [tablecloth.pipeline :as tc-mm]
+   [tech.v3.dataset]
+   [tech.v3.dataset.metamorph :as mds]))
 
 
 

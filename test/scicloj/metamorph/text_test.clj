@@ -9,9 +9,7 @@
    [scicloj.metamorph.ml.text :as text]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
-   [fastmath.core :as fm]
-   [fastmath.vector :as fmv]
-   [criterium.core :as crit])
+   [fastmath.vector :as fmv])
   (:import
    [org.mapdb DBMaker]
    [tech.v3.datatype.native_buffer NativeBuffer]))
@@ -73,8 +71,6 @@
                           :datatype-meta :object
                           :compacting-document-intervall compacting-document-intervall)
         df (first datasets)]
-
-    (def df df)
 
     (is (= reviews-7l
            (ds/rowvecs df)))

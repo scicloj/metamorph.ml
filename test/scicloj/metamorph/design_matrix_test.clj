@@ -3,11 +3,7 @@
              [tablecloth.api :as tc]
              [tablecloth.column.api]
              [tech.v3.dataset.tensor :as tensor]
-             [scicloj.metamorph.ml.design-matrix :as dm]
-             [tech.v3.dataset :as ds]
-             [tech.v3.dataset.modelling :as ds-mod]
-             [tech.v3.dataset.categorical :as ds-cat]
-             [scicloj.metamorph.ml.design-matrix :as design-matrix]))
+             [scicloj.metamorph.ml.design-matrix :as dm]))
 
 
 
