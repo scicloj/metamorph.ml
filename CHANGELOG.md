@@ -1,7 +1,5 @@
 unreleased
-
-
-
+* use malli to describe options
 
 0.12
 * fixes #30 - dummy classifier does not predict by majority #30
