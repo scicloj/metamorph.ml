@@ -58,11 +58,11 @@ see the deps.edn file in alias "test".
    (ds-mm/set-inference-target :species)
    ;; convert all categorical variables to numbers
    (ds-mm/categorical->number cf/categorical)
-   ;; train or predict , depending on :mode
+   ;; train a random forrest model or use it for prediction , depending on :metamorph/mode
    {:metamorph/id :model}
    (ml/model {:model-type :smile.classification/random-forest})))
 
-;;  the simplest split, produces a seq of one, a single split into train/test
+;;  the simplest split, produces a seq of length one, a single split into train/test
 (def  train-split-seq (split/split->seq ds :holdout))
 
 ;; we have only one pipe-fn here
@@ -105,13 +105,14 @@ This library contains the basis functions for machine learning, arround:
 
 ## model plugins
 
-`metamorph.ml` is a framework, only containing a single model `linear regression`.
-It is ment to be used together with other libraries, which contribute models:
+`metamorph.ml` is a framework, only containing a single model type of a linear regression.
+It is meant to be used together with other libraries, which contribute models:
+
 |library| url | descriptions
 |----------------------------|-----------------------------------------------|------------- 
 |org.scicloj/scicloj.ml.smile |  https://github.com/scicloj/scicloj.ml.smile | most models of Java Smile package
-|org.scicloj/scicloj.ml.tribuo| https://github.com/scicloj/scicloj.ml.tribuo | all models of Java Tribuo package
-|org.scicloj/sklearn-clj      | https://github.com/scicloj/sklearn-clj       | most models of python-sklearn
+|org.scicloj/scicloj.ml.tribuo| https://github.com/scicloj/scicloj.ml.tribuo | all regression/classification models of Java Tribuo package
+|org.scicloj/sklearn-clj      | https://github.com/scicloj/sklearn-clj       | most regression/classification models of python-sklearn
 |org.scicloj/scicloj.ml.xgboost|https://github.com/scicloj/scicloj.ml.xgboost | xgboost4J models
 
 
@@ -168,7 +169,7 @@ https://github.com/scicloj/metamorph.ml/blob/973606776cfabbe5a666a6cc0bab5a1833f
 A simple pipeline looks like this:
 
 ```clojure
- (morph/pipeline
+ (mm/pipeline
          (ds-mm/set-inference-target :species)
          (ds-mm/categorical->number cf/categorical)
          (ml-mm/model {:model-type :smile.classification/random-forest}))
