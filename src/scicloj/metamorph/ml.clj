@@ -274,7 +274,7 @@
    The function returns a seq of seqs of evaluation results per pipe-fn per train-test split.
    Each of the evaluation results is a context map, which is specified in the malli schema attached to this function.
 
-   * `pipe-fn-or-decl-seq` need to be  sequence of pipeline functions or pipline declarations which follow the metamorph approach.
+   * `pipeline-fn-or-decl-seq` need to be  sequence of pipeline functions or pipline declarations which follow the metamorph approach.
       These type of functions get produced typically by calling `scicloj.metamorph/pipeline`. Documentation is here:
 
    * `train-test-split-seq` need to be a sequence of maps containing the  train and test dataset (being tech.ml.dataset) at keys :train and :test.
@@ -405,7 +405,7 @@
      ::evaluation-result]]}
   ;;
 
-  ([pipe-fn-or-decl-seq train-test-split-seq metric-fn loss-or-accuracy options]
+  ([pipeline-fn-or-decl-seq train-test-split-seq metric-fn loss-or-accuracy options]
    (let [used-options (merge {:map-fn :map
                               :return-best-pipeline-only true
                               :return-best-crossvalidation-only true
@@ -431,7 +431,7 @@
              metric-fn
              loss-or-accuracy
              used-options))
-          pipe-fn-or-decl-seq)
+          pipeline-fn-or-decl-seq)
 
          pipe-eval-means
          (->>
