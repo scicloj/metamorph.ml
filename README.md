@@ -39,28 +39,27 @@ see the deps.edn file in alias "test".
 (require
  '[tech.v3.dataset :as ds]
  '[tech.v3.dataset.metamorph :as ds-mm]
- '[scicloj.metamorph.core :as morph]
+ '[scicloj.metamorph.core :as mm]
  '[tech.v3.dataset.modelling :as ds-mod]
  '[tech.v3.dataset.column-filters :as cf]
  '[tablecloth.api.split :as split]
  '[scicloj.metamorph.ml :as ml]
  '[scicloj.metamorph.ml.loss :as loss]
  '[scicloj.ml.smile.classification]
-
- )
+ :reload)
 
 ;;  the data
 (def  ds (ds/->dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
 
 ;;  the (single, fixed) pipe-fn
 (def pipe-fn
-  (morph/pipeline
-   ;; set inference traget column
+  (mm/pipeline
+   ;; set inference target column
    (ds-mm/set-inference-target :species)
    ;; convert all categorical variables to numbers
    (ds-mm/categorical->number cf/categorical)
    ;; train or predict , depending on :mode
-   {:metamorph/id :model}         
+   {:metamorph/id :model}
    (ml/model {:model-type :smile.classification/random-forest})))
 
 ;;  the simplest split, produces a seq of one, a single split into train/test
@@ -78,22 +77,20 @@ see the deps.edn file in alias "test".
 
 ;; get training loss
 (-> evaluations first first :train-transform :metric)
-;; => 0.06000000000000005
+;; => 0.04
 
 ;;  simulate new data
-(def  new-ds (ds/sample ds 10 {:seed 1234} ))
+(def  new-ds (ds/sample ds 10 {:seed 1234}))
 
-;;  do prediction on new data
+;;  make prediction on new data
+
 (def  predictions
   (->
-   (best-pipe-fn
-    (merge best-fitted-context
-           {:metamorph/data new-ds
-            :metamorph/mode :transform}))
-   (:metamorph/data)
+   (mm/transform-pipe new-ds best-pipe-fn best-fitted-context)
+   :metamorph/data
    (ds-mod/column-values->categorical :species)
    seq))
-
+predictions
 ;;["versicolor" "versicolor" "virginica" "versicolor" "virginica" "setosa" "virginica" "virginica" "versicolor" "versicolor" ]
 
 ```
