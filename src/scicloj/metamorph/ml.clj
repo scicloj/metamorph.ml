@@ -82,7 +82,7 @@
 
 
 
-(defn- supervised-eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrics]
+(defn- supervised-eval-pipeline [pipeline-fn fitted-ctx metric-fn ds other-metrics]
 
   (let [start-transform (System/currentTimeMillis)
         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
@@ -118,7 +118,7 @@
     eval-result))
 
 
-(defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrics]
+(defn- eval-pipeline [pipeline-fn fitted-ctx metric-fn ds other-metrics]
 
   (if  (-> fitted-ctx :model ::unsupervised?)
     {:other-metrics []
@@ -126,7 +126,7 @@
      :ctx {}
      :metric (metric-fn fitted-ctx)}
 
-    (supervised-eval-pipe pipeline-fn fitted-ctx metric-fn ds other-metrics)))
+    (supervised-eval-pipeline pipeline-fn fitted-ctx metric-fn ds other-metrics)))
 
 
 (defn- calc-metric [pipeline-fn metric-fn train-ds test-ds tune-options]
@@ -139,20 +139,20 @@
           #_(errors/when-not-error (:model fitted-ctx) "Pipeline contexts under evaluation need to have the model operation with id :model")
 
 
-          eval-pipe-result-train (eval-pipe pipeline-fn fitted-ctx metric-fn train-ds (:other-metrics tune-options))
-          eval-pipe-result-test (if (-> fitted-ctx :model ::unsupervised?)
+          eval-pipeline-result-train (eval-pipeline pipeline-fn fitted-ctx metric-fn train-ds (:other-metrics tune-options))
+          eval-pipeline-result-test (if (-> fitted-ctx :model ::unsupervised?)
                                   {:other-metrics []
                                    :timing 0
                                    :ctx fitted-ctx
                                    :metric 0}
-                                  (eval-pipe pipeline-fn fitted-ctx metric-fn test-ds (:other-metrics tune-options)))]
+                                  (eval-pipeline pipeline-fn fitted-ctx metric-fn test-ds (:other-metrics tune-options)))]
 
 
 
       {:fit-ctx  fitted-ctx
        :timing-fit (- end-fit start-fit)
-       :train-transform eval-pipe-result-train
-       :test-transform eval-pipe-result-test})
+       :train-transform eval-pipeline-result-train
+       :test-transform eval-pipeline-result-test})
 
 
     (catch Exception e
@@ -185,19 +185,19 @@
 
 
 
-(defn- get-nice-source-info [pipeline-decl pipe-fns-ns pipe-fns-source-file]
-  (when (and  (some? pipe-fns-ns) (some? pipeline-decl))
+(defn- get-nice-source-info [pipeline-decl pipeline-fns-ns pipeline-fns-source-file]
+  (when (and  (some? pipeline-fns-ns) (some? pipeline-decl))
     (let [source-information (scicloj.metamorph.ml.evaluation-handler/get-source-information
                               pipeline-decl
-                              pipe-fns-ns
-                              pipe-fns-source-file)]
+                              pipeline-fns-ns
+                              pipeline-fns-source-file)]
       (update source-information :fn-sources format-fn-sources))))
 
 
 
 (defn- evaluate-one-pipeline [pipeline-decl-or-fn train-test-split-seq metric-fn loss-or-accuracy tune-options]
 
-  (let [pipe-fn (if (fn? pipeline-decl-or-fn)
+  (let [pipeline-fn (if (fn? pipeline-decl-or-fn)
                   pipeline-decl-or-fn
                   (mm/->pipeline pipeline-decl-or-fn))
         pipeline-decl (when (sequential? pipeline-decl-or-fn)
@@ -208,12 +208,12 @@
          (for [train-test-split train-test-split-seq]
            (let [{:keys [train test split-uid]} train-test-split
                  complete-result
-                 (assoc (calc-metric pipe-fn metric-fn train test tune-options)
+                 (assoc (calc-metric pipeline-fn metric-fn train test tune-options)
                         :split-uid split-uid
                         :loss-or-accuracy loss-or-accuracy
                         :metric-fn metric-fn
                         :pipe-decl pipeline-decl
-                        :pipe-fn pipe-fn
+                        :pipe-fn pipeline-fn
                         :source-information
                         (get-nice-source-info pipeline-decl
                                               (get-in tune-options [:attach-fn-sources :ns])
@@ -420,18 +420,18 @@
            :mapv mapv)
 
 
-         pipe-evals
+         pipeline-evals
          (map-fn
-          (fn [pipe-fn-or-decl]
+          (fn [pipeline-fn-or-decl]
             (evaluate-one-pipeline
-             pipe-fn-or-decl
+             pipeline-fn-or-decl
              train-test-split-seq
              metric-fn
              loss-or-accuracy
              used-options))
           pipeline-fn-or-decl-seq)
 
-         pipe-eval-means
+         pipeline-eval-means
          (->>
           (mapv
            (fn [pipe-eval]
@@ -439,24 +439,24 @@
               (dfn/mean
                (mapv (comp :metric :train-transform) pipe-eval))
               :pipe-eval pipe-eval})
-           pipe-evals)
+           pipeline-evals)
           (sort-by :pipe-mean))
 
 
-         result-pipe-evals
+         result-pipeline-evals
          (if (used-options :return-best-pipeline-only)
            (case loss-or-accuracy
-             :loss     (->> pipe-eval-means  (take 1) (map :pipe-eval))
-             :accuracy (->> pipe-eval-means  (take-last 1) (map :pipe-eval)))
+             :loss     (->> pipeline-eval-means  (take 1) (map :pipe-eval))
+             :accuracy (->> pipeline-eval-means  (take-last 1) (map :pipe-eval)))
            (case loss-or-accuracy
-             :loss     (->> pipe-eval-means  (map :pipe-eval))
-             :accuracy (->> pipe-eval-means  reverse (mapv :pipe-eval))))]
+             :loss     (->> pipeline-eval-means  (map :pipe-eval))
+             :accuracy (->> pipeline-eval-means  reverse (mapv :pipe-eval))))]
 
 
-     result-pipe-evals))
+     result-pipeline-evals))
 
-  ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy]
-   (evaluate-pipelines pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy {})))
+  ([pipeline-fn-seq train-test-split-seq metric-fn loss-or-accuracy]
+   (evaluate-pipelines pipeline-fn-seq train-test-split-seq metric-fn loss-or-accuracy {})))
 
 
 
