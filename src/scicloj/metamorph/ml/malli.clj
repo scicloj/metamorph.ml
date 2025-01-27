@@ -3,6 +3,7 @@
    [malli.core :as m]
    [malli.dev.pretty :as pretty]
    [malli.instrument :as mi]
+   [malli.util :as mu]
    [tech.v3.dataset.impl.dataset :refer [dataset?]]))
 
 (defn instrument-mm [fn]
@@ -19,3 +20,9 @@
 (defn instrument-ns [ns]
   (mi/collect! {:ns ns})
   (mi/instrument! {:report (pretty/thrower) :scope #{:input}}))
+
+(defn model-options->full-schema [model-options]
+  (->
+   (get model-options :options [:map ])
+   m/schema
+   (mu/assoc :model-type keyword?)))

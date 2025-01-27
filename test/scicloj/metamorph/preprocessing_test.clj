@@ -1,9 +1,8 @@
 (ns scicloj.metamorph.preprocessing-test
   (:require  [clojure.test :refer [deftest is]]
-             [scicloj.metamorph.ml.preprocessing :refer :all]
+             [scicloj.metamorph.ml.preprocessing :refer [min-max-scale std-scale]]
              [scicloj.metamorph.core :as mm]
              [tablecloth.api :refer [dataset] :as tc]
-             [tech.v3.dataset.math :as std-math]
              ))
 
 (def data

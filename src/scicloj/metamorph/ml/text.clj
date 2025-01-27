@@ -14,7 +14,7 @@
    [tech.v3.datatype.mmap :as mmap])
   (:import
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap LongOpenHashSet]
-   [it.unimi.dsi.fastutil.objects Object2IntOpenHashMap Object2LongOpenHashMap]
+   [it.unimi.dsi.fastutil.objects Object2IntOpenHashMap ]
    [java.io BufferedReader BufferedWriter]
    [java.util List Map]))
 

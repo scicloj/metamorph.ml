@@ -7,6 +7,8 @@
    [scicloj.metamorph.ml.ensemble]
    [scicloj.metamorph.ml.evaluation-handler :as eval-handler]
    [scicloj.metamorph.ml.loss :as loss]
+   [malli.core :as m]
+   [malli.error :as me]
    [scicloj.metamorph.ml.malli :as malli]
    [scicloj.metamorph.ml.tidy-models :as tidy]
    [tech.v3.dataset :as ds]
@@ -60,28 +62,27 @@
 
 
 
-(defn score [predictions-ds trueth-ds target-column-name metric-fn other-metrices]
+(defn score [predictions-ds trueth-ds target-column-name metric-fn other-metrics]
   (let [predictions-col (get (ds-cat/reverse-map-categorical-xforms predictions-ds)
                              target-column-name)
         trueth-col (get (ds-cat/reverse-map-categorical-xforms trueth-ds)
                         target-column-name)
 
-
         _ (strict-type-check trueth-col predictions-col)
         metric (metric-fn trueth-col predictions-col)
 
-        other-metrices-result
+        other-metrics-result
         (map
-         (fn [{:keys [name metric-fn] :as m}]
+         (fn [{:keys [metric-fn] :as m}]
            (assoc m
                   :metric (metric-fn trueth-col predictions-col)))
-         other-metrices)]
+         other-metrics)]
     {:metric metric
-     :other-metrices-result other-metrices-result}))
+     :other-metrics-result other-metrics-result}))
 
 
 
-(defn- supervised-eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
+(defn- supervised-eval-pipeline [pipeline-fn fitted-ctx metric-fn ds other-metrics]
 
   (let [start-transform (System/currentTimeMillis)
         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
@@ -105,11 +106,11 @@
         _ (check-categorical-maps trueth-ds predictions-ds target-column-name)
 
 
-        scores (score predictions-ds trueth-ds target-column-name metric-fn other-metrices)
+        scores (score predictions-ds trueth-ds target-column-name metric-fn other-metrics)
 
 
         eval-result
-        {:other-metrices (:other-metrices-result scores)
+        {:other-metrics (:other-metrics-result scores)
          :timing (- end-transform start-transform)
          :ctx predicted-ctx
          :probability-distribution (cf/probability-distribution (:metamorph/data predicted-ctx))
@@ -117,15 +118,15 @@
     eval-result))
 
 
-(defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
+(defn- eval-pipeline [pipeline-fn fitted-ctx metric-fn ds other-metrics]
 
   (if  (-> fitted-ctx :model ::unsupervised?)
-    {:other-metrices []
+    {:other-metrics []
      :timing 0
      :ctx {}
      :metric (metric-fn fitted-ctx)}
 
-    (supervised-eval-pipe pipeline-fn fitted-ctx metric-fn ds other-metrices)))
+    (supervised-eval-pipeline pipeline-fn fitted-ctx metric-fn ds other-metrics)))
 
 
 (defn- calc-metric [pipeline-fn metric-fn train-ds test-ds tune-options]
@@ -138,20 +139,20 @@
           #_(errors/when-not-error (:model fitted-ctx) "Pipeline contexts under evaluation need to have the model operation with id :model")
 
 
-          eval-pipe-result-train (eval-pipe pipeline-fn fitted-ctx metric-fn train-ds (:other-metrices tune-options))
-          eval-pipe-result-test (if (-> fitted-ctx :model ::unsupervised?)
-                                  {:other-metrices []
+          eval-pipeline-result-train (eval-pipeline pipeline-fn fitted-ctx metric-fn train-ds (:other-metrics tune-options))
+          eval-pipeline-result-test (if (-> fitted-ctx :model ::unsupervised?)
+                                  {:other-metrics []
                                    :timing 0
                                    :ctx fitted-ctx
                                    :metric 0}
-                                  (eval-pipe pipeline-fn fitted-ctx metric-fn test-ds (:other-metrices tune-options)))]
+                                  (eval-pipeline pipeline-fn fitted-ctx metric-fn test-ds (:other-metrics tune-options)))]
 
 
 
       {:fit-ctx  fitted-ctx
        :timing-fit (- end-fit start-fit)
-       :train-transform eval-pipe-result-train
-       :test-transform eval-pipe-result-test})
+       :train-transform eval-pipeline-result-train
+       :test-transform eval-pipeline-result-test})
 
 
     (catch Exception e
@@ -184,19 +185,19 @@
 
 
 
-(defn- get-nice-source-info [pipeline-decl pipe-fns-ns pipe-fns-source-file]
-  (when (and  (some? pipe-fns-ns) (some? pipeline-decl))
+(defn- get-nice-source-info [pipeline-decl pipeline-fns-ns pipeline-fns-source-file]
+  (when (and  (some? pipeline-fns-ns) (some? pipeline-decl))
     (let [source-information (scicloj.metamorph.ml.evaluation-handler/get-source-information
                               pipeline-decl
-                              pipe-fns-ns
-                              pipe-fns-source-file)]
+                              pipeline-fns-ns
+                              pipeline-fns-source-file)]
       (update source-information :fn-sources format-fn-sources))))
 
 
 
 (defn- evaluate-one-pipeline [pipeline-decl-or-fn train-test-split-seq metric-fn loss-or-accuracy tune-options]
 
-  (let [pipe-fn (if (fn? pipeline-decl-or-fn)
+  (let [pipeline-fn (if (fn? pipeline-decl-or-fn)
                   pipeline-decl-or-fn
                   (mm/->pipeline pipeline-decl-or-fn))
         pipeline-decl (when (sequential? pipeline-decl-or-fn)
@@ -207,12 +208,12 @@
          (for [train-test-split train-test-split-seq]
            (let [{:keys [train test split-uid]} train-test-split
                  complete-result
-                 (assoc (calc-metric pipe-fn metric-fn train test tune-options)
+                 (assoc (calc-metric pipeline-fn metric-fn train test tune-options)
                         :split-uid split-uid
                         :loss-or-accuracy loss-or-accuracy
                         :metric-fn metric-fn
                         :pipe-decl pipeline-decl
-                        :pipe-fn pipe-fn
+                        :pipe-fn pipeline-fn
                         :source-information
                         (get-nice-source-info pipeline-decl
                                               (get-in tune-options [:attach-fn-sources :ns])
@@ -271,7 +272,7 @@
    The function returns a seq of seqs of evaluation results per pipe-fn per train-test split.
    Each of the evaluation results is a context map, which is specified in the malli schema attached to this function.
 
-   * `pipe-fn-or-decl-seq` need to be  sequence of pipeline functions or pipline declarations which follow the metamorph approach.
+   * `pipeline-fn-or-decl-seq` need to be  sequence of pipeline functions or pipline declarations which follow the metamorph approach.
       These type of functions get produced typically by calling `scicloj.metamorph/pipeline`. Documentation is here:
 
    * `train-test-split-seq` need to be a sequence of maps containing the  train and test dataset (being tech.ml.dataset) at keys :train and :test.
@@ -315,7 +316,7 @@
 
 
   
-       * `:other-metrices` Specifies other metrices to be calculated during evaluation
+       * `:other-metrics` Specifies other metrices to be calculated during evaluation
 
    This function expects as well the ground truth of the target variable into
    a specific key in the context at key `:model :scicloj.metamorph.ml/target-ds`
@@ -332,7 +333,7 @@
                              [:map-fn {:optional true} [:enum :map :pmap :mapv :ppmap]]
                              [:ppmap-grain-size {:optional true} int?]
                              [:evaluation-handler-fn {:optional true} fn?]
-                             [:other-metrices {:optional true} [:sequential [:map
+                             [:other-metrics {:optional true} [:sequential [:map
                                                                              [:name keyword?]
                                                                              [:metric-fn fn?]]]]
                              [:attach-fn-sources {:optional true} [:map [:ns any?]
@@ -346,7 +347,7 @@
          [:timing-fit int?]
 
          [:train-transform [:map {:closed true}
-                            [:other-metrices [:sequential [:map {:closed true}
+                            [:other-metrics [:sequential [:map {:closed true}
                                                            [:name keyword?]
                                                            [:metric-fn fn?]
                                                            [:metric float?]]]]
@@ -358,7 +359,7 @@
                             [:max float?]
                             [:ctx map?]]]
          [:test-transform [:map {:closed true}
-                           [:other-metrices [:sequential [:map {:closed true}
+                           [:other-metrics [:sequential [:map {:closed true}
                                                           [:name keyword?]
                                                           [:metric-fn fn?]
                                                           [:metric float?]]]]
@@ -402,7 +403,7 @@
      ::evaluation-result]]}
   ;;
 
-  ([pipe-fn-or-decl-seq train-test-split-seq metric-fn loss-or-accuracy options]
+  ([pipeline-fn-or-decl-seq train-test-split-seq metric-fn loss-or-accuracy options]
    (let [used-options (merge {:map-fn :map
                               :return-best-pipeline-only true
                               :return-best-crossvalidation-only true
@@ -419,18 +420,18 @@
            :mapv mapv)
 
 
-         pipe-evals
+         pipeline-evals
          (map-fn
-          (fn [pipe-fn-or-decl]
+          (fn [pipeline-fn-or-decl]
             (evaluate-one-pipeline
-             pipe-fn-or-decl
+             pipeline-fn-or-decl
              train-test-split-seq
              metric-fn
              loss-or-accuracy
              used-options))
-          pipe-fn-or-decl-seq)
+          pipeline-fn-or-decl-seq)
 
-         pipe-eval-means
+         pipeline-eval-means
          (->>
           (mapv
            (fn [pipe-eval]
@@ -438,24 +439,24 @@
               (dfn/mean
                (mapv (comp :metric :train-transform) pipe-eval))
               :pipe-eval pipe-eval})
-           pipe-evals)
+           pipeline-evals)
           (sort-by :pipe-mean))
 
 
-         result-pipe-evals
+         result-pipeline-evals
          (if (used-options :return-best-pipeline-only)
            (case loss-or-accuracy
-             :loss     (->> pipe-eval-means  (take 1) (map :pipe-eval))
-             :accuracy (->> pipe-eval-means  (take-last 1) (map :pipe-eval)))
+             :loss     (->> pipeline-eval-means  (take 1) (map :pipe-eval))
+             :accuracy (->> pipeline-eval-means  (take-last 1) (map :pipe-eval)))
            (case loss-or-accuracy
-             :loss     (->> pipe-eval-means  (map :pipe-eval))
-             :accuracy (->> pipe-eval-means  reverse (mapv :pipe-eval))))]
+             :loss     (->> pipeline-eval-means  (map :pipe-eval))
+             :accuracy (->> pipeline-eval-means  reverse (mapv :pipe-eval))))]
 
 
-     result-pipe-evals))
+     result-pipeline-evals))
 
-  ([pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy]
-   (evaluate-pipelines pipe-fn-seq train-test-split-seq metric-fn loss-or-accuracy {})))
+  ([pipeline-fn-seq train-test-split-seq metric-fn loss-or-accuracy]
+   (evaluate-pipelines pipeline-fn-seq train-test-split-seq metric-fn loss-or-accuracy {})))
 
 
 
@@ -474,7 +475,7 @@
                                               [:tidy-fn {:optional true} fn?]
                                               [:augment-fn {:optional true} fn?]
                                               [:glance-fn {:optional true} fn?]
-                                              [:options {:optional true} sequential?]
+                                              [:options {:optional true} vector?]
                                               [:documentation {:optional true} [:map
                                                                                 [:javadoc {:optional true} [:maybe string?]]
                                                                                 [:user-guide {:optional true} [:maybe string?]]
@@ -495,6 +496,10 @@
                                   :as opts}]
 
   (println "Register model: " model-kwd)
+  
+  (malli/model-options->full-schema opts) ;; throws on invalid malli schema for options
+  
+
   (swap! model-definitions* assoc model-kwd {:train-fn train-fn
                                              :predict-fn predict-fn
                                              :hyperparameters hyperparameters
@@ -532,6 +537,17 @@
   [model-kwd]
   (:hyperparameters (options->model-def {:model-type model-kwd})))
 
+(defn- validate-options [model-options options]
+  (let [options-schema (malli/model-options->full-schema model-options)]
+
+    (when (not (m/validate options-schema options))
+      (throw (ex-info "Invalid options: "
+                      (->
+                       (m/explain options-schema options)
+                       (me/humanize)))))))
+
+
+
 
 (defn train
   "Given a dataset and an options map produce a model.  The model-type keyword in the
@@ -557,8 +573,11 @@
   {:malli/schema [:=> [:cat [:fn dataset?] map?]
                   [map?]]}
   [dataset options]
-  (let [
-
+  
+  (let [model-options (options->model-def options)
+        _ (when (some? (:options model-options))
+            (validate-options model-options options))
+        
         combined-hash (when (:use-cache @train-predict-cache) 
                         (str  (hash dataset) "___"  (hash options))
                         )
@@ -569,7 +588,7 @@
       (do
         (println :cache-hit-train! combined-hash)
         cached)
-      (let [{:keys [train-fn unsupervised?]} (options->model-def options)
+      (let [{:keys [train-fn unsupervised?]} model-options
             feature-ds (cf/feature  dataset)
             _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
                                      "No features provided")

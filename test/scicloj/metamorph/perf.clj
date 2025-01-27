@@ -1,18 +1,13 @@
 (ns scicloj.metamorph.perf
-  (:require [clojure.test :refer [deftest is]]
-            [scicloj.metamorph.core :as morph]
-            [scicloj.metamorph.ml :as ml]
-            [scicloj.metamorph.ml.gridsearch :as gs]
-            [scicloj.metamorph.ml.loss :as loss]
-            [scicloj.ml.smile.classification]
-            [tech.v3.dataset.metamorph :as ds-mm]
-            [tech.v3.dataset :as ds]
-            [tech.v3.dataset.column-filters :as cf]
-            [tech.v3.dataset.modelling :as ds-mod]
-            [tablecloth.api :as tc]
-            [scicloj.ml.smile.classification]
-            [fastmath.stats :as stats]
-            [clj-memory-meter.core :as mm]))
+  (:require
+   [scicloj.metamorph.core :as morph]
+   [scicloj.metamorph.ml :as ml]
+   [scicloj.metamorph.ml.loss :as loss]
+   [scicloj.ml.smile.classification]
+   [tech.v3.dataset.metamorph :as ds-mm]
+   [tech.v3.dataset.column-filters :as cf]
+   [tablecloth.api :as tc]
+   [clj-memory-meter.core :as mm]))
 
 
 (defn measure [{:keys [n-pipes n-folds return-best-pipeline-only return-best-crossvalidation-only dissoc] :as opts}]
@@ -41,10 +36,7 @@
         _ (println "class : " (class dissoc))
         evaluations
         (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-accuracy :accuracy tune-options)]
-                               
-    (def evaluations evaluations)
-    (System/gc)
-    (keys (first  evaluations))
+    
     (mm/measure evaluations)))
 
 (comment

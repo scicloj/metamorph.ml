@@ -1,6 +1,6 @@
 (ns scicloj.metamorph.classification-test
   (:require [scicloj.metamorph.ml.classification :refer [confusion-map confusion-map->ds]]
-            [clojure.test :refer :all]
+            [clojure.test :refer [deftest is]]
             [scicloj.metamorph.ml :as ml]
             [scicloj.metamorph.ml.loss :as loss]
             [scicloj.metamorph.core :as mm]

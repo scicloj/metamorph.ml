@@ -1,7 +1,6 @@
 unreleased
-
-
-
+* use malli to describe options
+* renamed :other-metrices -> :other-metrics
 
 0.12
 * fixes #30 - dummy classifier does not predict by majority #30

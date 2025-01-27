@@ -1,19 +1,11 @@
 (ns roc-curve
   (:require
-     [nextjournal.clerk :as clerk]
-     [scicloj.metamorph.core :as mm]
-     [scicloj.metamorph.ml :as ml]
-     [scicloj.metamorph.ml.learning-curve :as lc]
-     [scicloj.metamorph.ml.viz :as ml-viz]
-     [scicloj.metamorph.ml.viz.learning-curve :as mlviz.lc]
+   [nextjournal.clerk :as clerk]
    [scicloj.metamorph.ml.metrics :as m]
    [nextjournal.clerk.viewer]
-   [tablecloth.api :as tc]
    [scicloj.metamorph.ml.loss]
    [scicloj.ml.smile.classification]
-   [tablecloth.pipeline :as tc-mm]
-   [tech.v3.dataset]
-   [tech.v3.dataset.metamorph :as mds]))
+   [tech.v3.dataset]))
 
 (comment
   (clerk/clear-cache!)
