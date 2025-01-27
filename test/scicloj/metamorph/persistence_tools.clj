@@ -1,10 +1,7 @@
 (ns scicloj.metamorph.persistence-tools
-  (:require  [clojure.test :as t]
-             [clojure.tools.reader :as tr]
-             [clojure.tools.reader.reader-types :as rts]
-             [clojure.java.classpath]
-             [scicloj.metamorph.ml.evaluation-handler :as eval]
-             [clojure.repl]))
+  (:require
+   [clojure.java.classpath]
+   [clojure.repl]))
    
 
 (defn keys-in

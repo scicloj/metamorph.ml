@@ -18,8 +18,7 @@
    [tech.v3.dataset.modelling :as ds-mod]
    [tech.v3.datatype.errors :as errors]
    [tech.v3.datatype.export-symbols :as exporter]
-   [tech.v3.datatype.functional :as dfn]
-   [malli.util :as mu])
+   [tech.v3.datatype.functional :as dfn])
   (:import
    java.util.UUID))
 
@@ -540,8 +539,6 @@
   (:hyperparameters (options->model-def {:model-type model-kwd})))
 
 (defn- validate-options [model-options options]
-  (def model-options model-options)
-  (def options options)
   (let [options-schema (malli/model-options->full-schema model-options)]
 
     (when (not (m/validate options-schema options))

@@ -2,10 +2,7 @@
   (:require [tech.v3.dataset :as ds]
             [tech.v3.dataset.modelling :as ds-mod]
             [tech.v3.datatype.pprint :as dtype-pp]
-            [scicloj.metamorph.ml :as ml]
-            [malli.util :as mu]
-            
-            [malli.core :as m]))
+            [scicloj.metamorph.ml :as ml]))
             
             
 (defn- safe-inc
