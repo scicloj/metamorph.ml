@@ -86,7 +86,7 @@
     (is (=  1 (count evaluations)))
     (is (=  1 (count (first evaluations))))
 
-    (is (= #{:min :mean :max :timing :ctx :metric :other-metrices  :probability-distribution}
+    (is (= #{:min :mean :max :timing :ctx :metric :other-metrics  :probability-distribution}
            (set (-> evaluations first first :train-transform keys))))
     ;; =>
     (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-fn :timing-fit :loss-or-accuracy :source-information :split-uid])
@@ -444,7 +444,7 @@
 
 
 
-(deftest other-metrices
+(deftest other-metrics
   (do-define-model)
   (let [base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
@@ -458,13 +458,13 @@
          loss/classification-accuracy
          :accuracy
          {
-          :other-metrices [{:name :acc-2  :metric-fn loss/classification-accuracy}
+          :other-metrics [{:name :acc-2  :metric-fn loss/classification-accuracy}
                            {:name :fscore :metric-fn (fn [truth prediction] 0)}
                            {:name :acc    :metric-fn scicloj.metamorph.ml.metrics/accuracy}]})]
 
-    (is (pos? (-> evaluation-result first first :train-transform :other-metrices first :metric)))
-    (is (zero? (-> evaluation-result first first :train-transform :other-metrices second :metric)))
-    (is (some? (-> evaluation-result first first :train-transform :other-metrices (nth 2) :metric)))))
+    (is (pos? (-> evaluation-result first first :train-transform :other-metrics first :metric)))
+    (is (zero? (-> evaluation-result first first :train-transform :other-metrics second :metric)))
+    (is (some? (-> evaluation-result first first :train-transform :other-metrics (nth 2) :metric)))))
 
 
 (deftest validate-schema
@@ -573,7 +573,7 @@
 
 
 (defn is-accuracy [predict-col trueth-col metric-fn expected-acc]
-  (is (= {:metric expected-acc, :other-metrices-result []}
+  (is (= {:metric expected-acc, :other-metrics-result []}
          (do-score predict-col trueth-col metric-fn))))
 
 
@@ -603,7 +603,7 @@
                                  metric-fn
                                  expected-accuracy]
   
-  (is (= {:metric expected-accuracy, :other-metrices-result []}
+  (is (= {:metric expected-accuracy, :other-metrics-result []}
          
          (score-categorical
           predict-col-seq predict-a-b-table
@@ -671,3 +671,24 @@
                (score-categorical   [0 1] {:a 0.0 :b 1.0}
                                     [0 1] {:a 0.0 :b 1.0}
                                     loss/classification-accuracy))))
+
+
+
+(deftest score-other-metrics
+  (is (= 
+        {:metric 0.6666666666666667,
+         :other-metrics-result
+        [{:name :m-1, :metric-fn loss/classification-accuracy :metric 0.6666666666666667}
+         {:name :m-2, :metric-fn loss/classification-loss :metric 0.33333333333333326}]}
+
+        (ml/score
+         (ds/->dataset  {:x [:a :a :a]})
+         (ds/->dataset {:x [:a :b :a]})
+         :x
+         loss/classification-accuracy
+         [
+          {:name :m-1
+           :metric-fn loss/classification-accuracy}
+          {:name :m-2
+           :metric-fn loss/classification-loss}]))))
+        

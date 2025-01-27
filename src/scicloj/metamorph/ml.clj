@@ -62,28 +62,31 @@
 
 
 
-(defn score [predictions-ds trueth-ds target-column-name metric-fn other-metrices]
+(defn score [predictions-ds trueth-ds target-column-name metric-fn other-metrics]
+  (def other-metrics other-metrics)
   (let [predictions-col (get (ds-cat/reverse-map-categorical-xforms predictions-ds)
                              target-column-name)
         trueth-col (get (ds-cat/reverse-map-categorical-xforms trueth-ds)
                         target-column-name)
 
+        _ (def predictions-col predictions-col)
+        _ (def trueth-col trueth-col)
 
         _ (strict-type-check trueth-col predictions-col)
         metric (metric-fn trueth-col predictions-col)
 
-        other-metrices-result
+        other-metrics-result
         (map
-         (fn [{:keys [name metric-fn] :as m}]
+         (fn [{:keys [metric-fn] :as m}]
            (assoc m
                   :metric (metric-fn trueth-col predictions-col)))
-         other-metrices)]
+         other-metrics)]
     {:metric metric
-     :other-metrices-result other-metrices-result}))
+     :other-metrics-result other-metrics-result}))
 
 
 
-(defn- supervised-eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
+(defn- supervised-eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrics]
 
   (let [start-transform (System/currentTimeMillis)
         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
@@ -107,11 +110,11 @@
         _ (check-categorical-maps trueth-ds predictions-ds target-column-name)
 
 
-        scores (score predictions-ds trueth-ds target-column-name metric-fn other-metrices)
+        scores (score predictions-ds trueth-ds target-column-name metric-fn other-metrics)
 
 
         eval-result
-        {:other-metrices (:other-metrices-result scores)
+        {:other-metrics (:other-metrics-result scores)
          :timing (- end-transform start-transform)
          :ctx predicted-ctx
          :probability-distribution (cf/probability-distribution (:metamorph/data predicted-ctx))
@@ -119,15 +122,15 @@
     eval-result))
 
 
-(defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrices]
+(defn- eval-pipe [pipeline-fn fitted-ctx metric-fn ds other-metrics]
 
   (if  (-> fitted-ctx :model ::unsupervised?)
-    {:other-metrices []
+    {:other-metrics []
      :timing 0
      :ctx {}
      :metric (metric-fn fitted-ctx)}
 
-    (supervised-eval-pipe pipeline-fn fitted-ctx metric-fn ds other-metrices)))
+    (supervised-eval-pipe pipeline-fn fitted-ctx metric-fn ds other-metrics)))
 
 
 (defn- calc-metric [pipeline-fn metric-fn train-ds test-ds tune-options]
@@ -140,13 +143,13 @@
           #_(errors/when-not-error (:model fitted-ctx) "Pipeline contexts under evaluation need to have the model operation with id :model")
 
 
-          eval-pipe-result-train (eval-pipe pipeline-fn fitted-ctx metric-fn train-ds (:other-metrices tune-options))
+          eval-pipe-result-train (eval-pipe pipeline-fn fitted-ctx metric-fn train-ds (:other-metrics tune-options))
           eval-pipe-result-test (if (-> fitted-ctx :model ::unsupervised?)
-                                  {:other-metrices []
+                                  {:other-metrics []
                                    :timing 0
                                    :ctx fitted-ctx
                                    :metric 0}
-                                  (eval-pipe pipeline-fn fitted-ctx metric-fn test-ds (:other-metrices tune-options)))]
+                                  (eval-pipe pipeline-fn fitted-ctx metric-fn test-ds (:other-metrics tune-options)))]
 
 
 
@@ -317,7 +320,7 @@
 
 
   
-       * `:other-metrices` Specifies other metrices to be calculated during evaluation
+       * `:other-metrics` Specifies other metrices to be calculated during evaluation
 
    This function expects as well the ground truth of the target variable into
    a specific key in the context at key `:model :scicloj.metamorph.ml/target-ds`
@@ -334,7 +337,7 @@
                              [:map-fn {:optional true} [:enum :map :pmap :mapv :ppmap]]
                              [:ppmap-grain-size {:optional true} int?]
                              [:evaluation-handler-fn {:optional true} fn?]
-                             [:other-metrices {:optional true} [:sequential [:map
+                             [:other-metrics {:optional true} [:sequential [:map
                                                                              [:name keyword?]
                                                                              [:metric-fn fn?]]]]
                              [:attach-fn-sources {:optional true} [:map [:ns any?]
@@ -348,7 +351,7 @@
          [:timing-fit int?]
 
          [:train-transform [:map {:closed true}
-                            [:other-metrices [:sequential [:map {:closed true}
+                            [:other-metrics [:sequential [:map {:closed true}
                                                            [:name keyword?]
                                                            [:metric-fn fn?]
                                                            [:metric float?]]]]
@@ -360,7 +363,7 @@
                             [:max float?]
                             [:ctx map?]]]
          [:test-transform [:map {:closed true}
-                           [:other-metrices [:sequential [:map {:closed true}
+                           [:other-metrics [:sequential [:map {:closed true}
                                                           [:name keyword?]
                                                           [:metric-fn fn?]
                                                           [:metric float?]]]]
