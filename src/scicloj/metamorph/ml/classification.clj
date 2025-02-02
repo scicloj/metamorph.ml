@@ -74,14 +74,19 @@
 
 (defn- get-majority-class [target-ds]
   (let [target-column-name (first
-                            (ds-mod/inference-target-column-names target-ds))]
+                            (ds-mod/inference-target-column-names target-ds))
+        target-column (get target-ds target-column-name)
+        freqs (frequencies target-column)
+        ]
+    ;; (println  :target-column target-column)
+    ;; (println  :target-column--meta (meta target-column))
+    ;; (println  :target-column--freq  freqs)
     (->>
-     (-> target-ds (get target-column-name) frequencies)
+     freqs
      (sort-by second)
      reverse
      first
      first)))
-
 
 (ml/define-model! :metamorph.ml/dummy-classifier
   (fn [feature-ds target-ds options]

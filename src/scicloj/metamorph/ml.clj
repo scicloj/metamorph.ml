@@ -25,7 +25,7 @@
 
 (exporter/export-symbols scicloj.metamorph.ml.ensemble ensemble-pipe)
 
-(def train-predict-cache 
+(def train-predict-cache
   "Controls , if train/predict invocations are cached.
    if 'use-cache' is true, the get-fn and set-fn functions ar called accorddngly"
   (atom {:use-cache false
@@ -33,7 +33,7 @@
          :set-fn (fn [key value] nil)}))
 
 
-(defn get-categorical-maps [ds]
+(defn- get-categorical-maps [ds]
   (->> (ds/column-names ds)
        (map #(list % (-> ds (get %) meta :categorical-map)))
        (remove #(nil? (second %)))
@@ -141,11 +141,11 @@
 
           eval-pipeline-result-train (eval-pipeline pipeline-fn fitted-ctx metric-fn train-ds (:other-metrics tune-options))
           eval-pipeline-result-test (if (-> fitted-ctx :model ::unsupervised?)
-                                  {:other-metrics []
-                                   :timing 0
-                                   :ctx fitted-ctx
-                                   :metric 0}
-                                  (eval-pipeline pipeline-fn fitted-ctx metric-fn test-ds (:other-metrics tune-options)))]
+                                      {:other-metrics []
+                                       :timing 0
+                                       :ctx fitted-ctx
+                                       :metric 0}
+                                      (eval-pipeline pipeline-fn fitted-ctx metric-fn test-ds (:other-metrics tune-options)))]
 
 
 
@@ -198,8 +198,8 @@
 (defn- evaluate-one-pipeline [pipeline-decl-or-fn train-test-split-seq metric-fn loss-or-accuracy tune-options]
 
   (let [pipeline-fn (if (fn? pipeline-decl-or-fn)
-                  pipeline-decl-or-fn
-                  (mm/->pipeline pipeline-decl-or-fn))
+                      pipeline-decl-or-fn
+                      (mm/->pipeline pipeline-decl-or-fn))
         pipeline-decl (when (sequential? pipeline-decl-or-fn)
                         pipeline-decl-or-fn)
 
@@ -334,8 +334,8 @@
                              [:ppmap-grain-size {:optional true} int?]
                              [:evaluation-handler-fn {:optional true} fn?]
                              [:other-metrics {:optional true} [:sequential [:map
-                                                                             [:name keyword?]
-                                                                             [:metric-fn fn?]]]]
+                                                                            [:name keyword?]
+                                                                            [:metric-fn fn?]]]]
                              [:attach-fn-sources {:optional true} [:map [:ns any?]
                                                                    [:pipe-fns-clj-file string?]]]]]
       ::evaluation-result
@@ -348,9 +348,9 @@
 
          [:train-transform [:map {:closed true}
                             [:other-metrics [:sequential [:map {:closed true}
-                                                           [:name keyword?]
-                                                           [:metric-fn fn?]
-                                                           [:metric float?]]]]
+                                                          [:name keyword?]
+                                                          [:metric-fn fn?]
+                                                          [:metric float?]]]]
                             [:timing int?]
                             [:metric float?]
                             [:probability-distribution  [:maybe [:fn dataset?]]]
@@ -360,9 +360,9 @@
                             [:ctx map?]]]
          [:test-transform [:map {:closed true}
                            [:other-metrics [:sequential [:map {:closed true}
-                                                          [:name keyword?]
-                                                          [:metric-fn fn?]
-                                                          [:metric float?]]]]
+                                                         [:name keyword?]
+                                                         [:metric-fn fn?]
+                                                         [:metric float?]]]]
                            [:timing int?]
                            [:metric float?]
                            [:probability-distribution  [:maybe [:fn dataset?]]]
@@ -409,7 +409,7 @@
                               :return-best-crossvalidation-only true
                               :evaluation-handler-fn eval-handler/default-result-dissoc-in-fn
                               :ppmap-grain-size 10}
-                              
+
 
                              options)
          map-fn
@@ -496,9 +496,9 @@
                                   :as opts}]
 
   (println "Register model: " model-kwd)
-  
+
   (malli/model-options->full-schema opts) ;; throws on invalid malli schema for options
-  
+
 
   (swap! model-definitions* assoc model-kwd {:train-fn train-fn
                                              :predict-fn predict-fn
@@ -577,17 +577,14 @@
   (let [model-options (options->model-def options)
         _ (when (some? (:options model-options))
             (validate-options model-options options))
-        
-        combined-hash (when (:use-cache @train-predict-cache) 
-                        (str  (hash dataset) "___"  (hash options))
-                        )
-        
+
+        combined-hash (when (:use-cache @train-predict-cache)
+                        (str  (hash dataset) "___"  (hash options)))
+
         cached (when combined-hash ((:get-fn @train-predict-cache) combined-hash))]
 
     (if cached
-      (do
-        (println :cache-hit-train! combined-hash)
-        cached)
+      cached
       (let [{:keys [train-fn unsupervised?]} model-options
             feature-ds (cf/feature  dataset)
             _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
@@ -621,14 +618,12 @@
              (when-not (== 0 (count cat-maps))
                {:target-categorical-maps cat-maps}))]
         (when combined-hash
-          (println :cache-miss-train! combined-hash)
           ((:set-fn @train-predict-cache) combined-hash model))
 
-        model))
-    ))
-        
-    
-    
+        model))))
+
+
+
 
 (defn thaw-model
   "Thaw a model.  Model's returned from train may be 'frozen' meaning a 'thaw'
@@ -654,28 +649,36 @@
      (thaw-fn (:model-data model)))))
 
 
-(defn- warn-inconsitent-maps [model pred-ds]
+(defn- warn-inconsistent-maps [model pred-ds]
+  ;; TODO revise
+  ;;https://github.com/scicloj/metamorph.ml/issues/35
+
 
   (let [target-cat-maps-from-train (-> model :target-categorical-maps)
         target-cat-maps-from-predict (-> pred-ds get-categorical-maps)
         simple-predicted-values (-> pred-ds cf/prediction (get (first (keys target-cat-maps-from-predict))) seq)
         inverse-map (-> target-cat-maps-from-predict vals first :lookup-table set/map-invert)]
-    (when  (not (= target-cat-maps-from-predict target-cat-maps-from-train)))
-     ;; (println
-     ;;  (format
-     ;;   "target categorical maps do not match between train an predict. \n train: %s \n predict: %s "
-     ;;   target-cat-maps-from-train target-cat-maps-from-predict))
+    (when  (not (= target-cat-maps-from-predict target-cat-maps-from-train))
+      
+      ;; (throw (Exception.
+      ;;         (format
+      ;;          "target categorical maps do not match between train an predict. \n train: %s \n predict: %s "
+      ;;          target-cat-maps-from-train target-cat-maps-from-predict)))
+      
+      )
 
     (when (not (every? some?
                        (map inverse-map
-                            (distinct simple-predicted-values)))))))
-      ;; (println
-      ;;  (format
-      ;;   "Some predicted values are not in catetegorical map. -> Invalid predict fn.
-      ;;                       values: %s
+                            (distinct simple-predicted-values))))
+      ;; (throw (Exception.
+      ;;         (format
+      ;;          "Some predicted values are not in categorical map. -> Invalid predict fn.
+      ;;                       predicted values: %s
       ;;                       categorical map: %s "
-      ;;   (vec (distinct simple-predicted-values))
-      ;;   (-> target-cat-maps-from-predict vals first :lookup-table)))
+      ;;          (vec (distinct simple-predicted-values))
+      ;;          (-> target-cat-maps-from-predict vals first :lookup-table))))
+      
+      )))
 
 
 
@@ -708,7 +711,7 @@
    string in train -> string in predict
    categorical map in train -> equivalent categorical map in predict
    
-   ml/train passes the needed information of the rain target column to the model implementaion to do this.
+   ml/train passes the needed information of the train target column to the model implementaion to do this.
 
    "
   {:malli/schema [:=> [:cat [:fn dataset?]
@@ -716,30 +719,28 @@
                         [:feature-columns sequential?]
                         [:target-columns sequential?]]]
 
-
                   [map?]]}
-  [dataset {:keys [feature-columns options train-input-hash] 
+
+  [dataset {:keys [feature-columns options train-input-hash]
             :as model}]
   (let [predict-hash (when (:use-cache @train-predict-cache) (str train-input-hash "--" (hash dataset)))
         cached (when predict-hash ((:get-fn @train-predict-cache) predict-hash))
 
         pred-ds
         (if cached
-          (do
-            (println :cache-hit-predict! predict-hash)
-            cached)
+          cached
+          
           (let [{:keys [predict-fn] :as model-def} (options->model-def options)
                 feature-ds (ds/select-columns dataset feature-columns)
                 thawed-model (thaw-model model model-def)
                 pred-ds (predict-fn feature-ds
                                     thawed-model
                                     model)]
-            (warn-inconsitent-maps model pred-ds)
-            
+            (warn-inconsistent-maps model pred-ds)
+
             (when predict-hash
-              (println :cache-miss-predict! predict-hash)
-              ( (:set-fn @train-predict-cache) predict-hash pred-ds))
-              
+              ((:set-fn @train-predict-cache) predict-hash pred-ds))
+
             pred-ds))]
     pred-ds))
 

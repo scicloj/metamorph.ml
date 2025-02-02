@@ -107,19 +107,33 @@
     (is (= [:a ] (-> (ds/->dataset {:x [0]}) (ml/predict model) :y)))))
 
 
-(deftest dummy-categorical
+(deftest dummy-categorical-int
 
   (let [ds (->
-            {:x [0] :y [:a]}
+            {:x [3.0] :y [:a]}
             (ds/->dataset)
-            (ds/categorical->number [:y])
+            (ds/categorical->number [:y] [:a] :int)
             (ds-mod/set-inference-target :y))
-
         model (ml/train ds {:model-type :metamorph.ml/dummy-classifier
-                            :dummy-strategy :random-class})]
+                            :dummy-strategy :random-class})
+        prediction (ml/predict  (ds/->dataset {:x [0]}) model)]
+    
+    (is (= [:a] (-> prediction  (ds-cat/reverse-map-categorical-xforms) :y seq)))))
 
 
-    (is (= [:a ] (-> (ds/->dataset {:x [0]}) (ml/predict model) (ds-cat/reverse-map-categorical-xforms) :y)))))
+(deftest dummy-categorical-float32--failing
+
+  (let [ds (->
+            {:x [3.0] :y [:a]}
+            (ds/->dataset)
+            (ds/categorical->number [:y] [:a] :float32)
+            (ds-mod/set-inference-target :y))
+        model (ml/train ds {:model-type :metamorph.ml/dummy-classifier
+                            :dummy-strategy :random-class})
+        prediction (ml/predict  (ds/->dataset {:x [0]}) model)]
+
+    (is (= [:a] (-> prediction  (ds-cat/reverse-map-categorical-xforms) :y seq)))))
+
 
 (deftest dummy-pipeline-eval
   (let [pipe-fn (mm/pipeline
