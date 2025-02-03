@@ -1,4 +1,4 @@
-unreleased
+1.0
 * use malli to describe model options and validate them in ml/train
 * renamed :other-metrices -> :other-metrics
 
