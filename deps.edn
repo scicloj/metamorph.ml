@@ -51,9 +51,7 @@
    :extra-deps {io.github.nextjournal/clerk {:mvn/version "0.17.1102"}
                 org.scicloj/clay {:mvn/version "2-beta27"}
                 org.scicloj/scicloj.ml.smile
-                {:git/url "https://github.com/scicloj/scicloj.ml.smile"
-                 :git/sha "b302bd8846a5f99abfb92276c3b8c09fd91b4a92"}
-                ;{:mvn/version "7.4.4"}
+                {:mvn/version "7.5.0"}
                 
                 org.scicloj/tableplot {:mvn/version "1-beta1.1"}
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
@@ -66,11 +64,8 @@
    :extra-paths ["test"]
    :extra-deps {com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.3.0"}
                 lambdaisland/kaocha {:mvn/version "1.91.1392"}
-                ;org.scicloj/scicloj.ml.smile {:mvn/version "7.4.4"}
-                org.scicloj/scicloj.ml.smile
-                {:git/url "https://github.com/scicloj/scicloj.ml.smile"
-                 :git/sha "b302bd8846a5f99abfb92276c3b8c09fd91b4a92"}
-
+                org.scicloj/scicloj.ml.smile {:mvn/version "7.5.0"}
+                
                 criterium/criterium {:mvn/version  "0.4.6"}
                 
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
@@ -84,11 +79,8 @@
                      ch.qos.logback/logback-classic {:mvn/version "1.5.16"}
                      criterium/criterium {:mvn/version  "0.4.6"}
                      
-                     org.scicloj/scicloj.ml.smile
-                     {:git/url "https://github.com/scicloj/scicloj.ml.smile"
-                      :git/sha "b302bd8846a5f99abfb92276c3b8c09fd91b4a92"}
-
-                     ;;org.scicloj/scicloj.ml.smile {:mvn/version "7.4.4"}
+                     
+                     org.scicloj/scicloj.ml.smile {:mvn/version "7.5.0"}
                      com.taoensso/carmine {:mvn/version "3.4.1"}}}
 
   :smoke-test {:jvm-opts ["-Djdk.attach.allowAttachSelf" "-Xmx1G" "--add-opens=java.base/java.io=ALL-UNNAMED"]

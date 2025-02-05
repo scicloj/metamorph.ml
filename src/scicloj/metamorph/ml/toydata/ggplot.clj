@@ -1,4 +1,6 @@
 (ns scicloj.metamorph.ml.toydata.ggplot
+  "Deprecated ns. Use scicloj.metamorph.ml.datasets instead"
+  {:deprecated "1.1"}
   (:require [tech.v3.dataset]
             [clojure.java.io :as io]))
 
