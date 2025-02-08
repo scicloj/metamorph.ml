@@ -1,4 +1,14 @@
 (ns scicloj.metamorph.ml.datasets (:require [tablecloth.api :as tc] [camel-snake-kebab.core :as csk]))
+
+;;    Using data documentation from 
+;;    @Manual{,
+;;    title = {Rdatasets: A collection of datasets originally distributed in various R packages},
+;;    author = {Vincent Arel-Bundock},
+;;    year = {2024},
+;;    note = {R package version 1.0.0},
+;;    url = {https://vincentarelbundock.github.io/Rdatasets},
+;;   }
+    
 (defn _fetch-dataset [csv] (-> csv (tc/dataset {:key-fn csk/->kebab-case-keyword})))
 (def fetch-dataset (memoize _fetch-dataset))
 (defn AER-Affairs "  --------- -----------------\n  Affairs     Documentation\n  --------- -----------------\n\n## Fair\\'s Extramarital Affairs Data\n\n### Description\n\nInfidelity data, known as Fair\\'s Affairs. Cross-section data from a\nsurvey conducted by Psychology Today in 1969.\n\n\n\n### Format\n\nA data frame containing 601 observations on 9 variables.\n\naffairs\n\n:   numeric. How often engaged in extramarital sexual intercourse during\n    the past year? `0` = none, `1` = once, `2` = twice, `3` = 3 times,\n    `7` = 4--10 times, `12` = monthly, `12` = weekly, `12` = daily.\n\ngender\n\n:   factor indicating gender.\n\nage\n\n:   numeric variable coding age in years: `17.5` = under 20, `22` =\n    20--24, `27` = 25--29, `32` = 30--34, `37` = 35--39, `42` = 40--44,\n    `47` = 45--49, `52` = 50--54, `57` = 55 or over.\n\nyearsmarried\n\n:   numeric variable coding number of years married: `0.125` = 3 months\n    or less, `0.417` = 4--6 months, `0.75` = 6 months--1 year, `1.5` =\n    1--2 years, `4` = 3--5 years, `7` = 6--8 years, `10` = 9--11 years,\n    `15` = 12 or more years.\n\nchildren\n\n:   factor. Are there children in the marriage?\n\nreligiousness\n\n:   numeric variable coding religiousness: `1` = anti, `2` = not at all,\n    `3` = slightly, `4` = somewhat, `5` = very.\n\neducation\n\n:   numeric variable coding level of education: `9` = grade school, `12`\n    = high school graduate, `14` = some college, `16` = college\n    graduate, `17` = some graduate work, `18` = master\\'s degree, `20` =\n    Ph.D., M.D., or other advanced degree.\n\noccupation\n\n:   numeric variable coding occupation according to Hollingshead\n    classification (reverse numbering).\n\nrating\n\n:   numeric variable coding self rating of marriage: `1` = very unhappy,\n    `2` = somewhat unhappy, `3` = average, `4` = happier than average,\n    `5` = very happy.\n\n### Source\n\nOnline complements to Greene (2003). Table F22.2.\n\n<https://pages.stern.nyu.edu/~wgreene/Text/tables/tablelist5.htm>\n\n### References\n\nGreene, W.H. (2003). *Econometric Analysis*, 5th edition. Upper Saddle\nRiver, NJ: Prentice Hall.\n\nFair, R.C. (1978). A Theory of Extramarital Affairs. *Journal of\nPolitical Economy*, **86**, 45--61.\n\n### See Also\n\n`Greene2003`\n" [] (fetch-dataset "https://vincentarelbundock.github.io/Rdatasets/csv/AER/Affairs.csv"))

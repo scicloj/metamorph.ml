@@ -60,11 +60,25 @@
 
 (with-open [writer (io/writer "src/scicloj/metamorph/ml/datasets.clj")]
 
-  
   (writeln! writer (str
                     '(ns scicloj.metamorph.ml.datasets
                        (:require [tablecloth.api :as tc]
+
+
                                  [camel-snake-kebab.core :as csk]))))
+
+  (writeln! writer   
+            "
+;;    Using data documentation from 
+;;    @Manual{,
+;;    title = {Rdatasets: A collection of datasets originally distributed in various R packages},
+;;    author = {Vincent Arel-Bundock},
+;;    year = {2024},
+;;    note = {R package version 1.0.0},
+;;    url = {https://vincentarelbundock.github.io/Rdatasets},
+;;   }
+    ")
+
   (writeln! writer
 
 
@@ -135,3 +149,5 @@
  ### Format                  
 
                   "))
+
+
