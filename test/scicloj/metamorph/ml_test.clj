@@ -1,5 +1,6 @@
 (ns scicloj.metamorph.ml-test
   (:require
+   [scicloj.metamorph.ml.classification]
    [clojure.test :as t :refer [deftest is]]
    [malli.core :as m]
    [scicloj.metamorph.core :as morph]
@@ -685,3 +686,33 @@
        (-> 
         (ml/train iris-train {:model-type :test-model--options})
         :model-data))))
+
+(deftest non-consistent-cat-map []
+  (is ( thrown?  Exception
+       (ml/train
+        (->
+         (ds/new-dataset [(ds/new-column :x [0 1 2 3]
+                                         {:categorical-map (ds-cat/create-categorical-map {:x-0 0
+                                                                                           :x-1 1}
+                                                                                          :x
+                                                                                          :int16)})
+                          (ds/new-column  :y [0 1 0 1 2]
+                                          {:categorical-map (ds-cat/create-categorical-map {:y-0 0
+                                                                                            :y-1 1}
+                                                                                           :y
+                                                                                           :int16)})]))
+        {:model-type :metamorph.ml/dummy-classifier
+         :dummy-strategy :fixed-class
+         :fixed-class 3}))))
+
+(->
+ (ds-mod/probability-distributions->label-column
+  (ds/->dataset {:a [0.7]
+                 :b [0.3]})
+  :y
+  :int64
+  
+  )
+ :y
+ meta
+ )

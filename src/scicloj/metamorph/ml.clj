@@ -18,7 +18,8 @@
    [tech.v3.dataset.modelling :as ds-mod]
    [tech.v3.datatype.errors :as errors]
    [tech.v3.datatype.export-symbols :as exporter]
-   [tech.v3.datatype.functional :as dfn])
+   [tech.v3.datatype.functional :as dfn]
+   [tech.v3.datatype :as dt])
   (:import
    java.util.UUID))
 
@@ -546,6 +547,27 @@
                        (m/explain options-schema options)
                        (me/humanize)))))))
 
+(defn- assert-categorical-consistency [dataset]
+  (-> ;; should not throw
+   (ds-cat/reverse-map-categorical-xforms dataset)
+   (ds/categorical->number (ds/column-names dataset)))
+  (let [distinc-datatypes
+        (->> dataset ds-cat/dataset->categorical-maps
+             (map #(->> % :lookup-table vals (map dt/datatype)))
+             flatten
+             distinct)]
+    (assert (contains? #{0 1} 
+               (count distinc-datatypes)) (str "Non uniform cat map " (->> dataset ds-cat/dataset->categorical-maps vec)))
+    (assert
+     (or
+      (empty? distinc-datatypes)
+      (contains? #{:int :int32 :int64}
+                 (first distinc-datatypes)))
+     (str "Non :int cat map " (->> dataset ds-cat/dataset->categorical-maps vec))))
+  )
+
+
+
 
 
 
@@ -573,7 +595,10 @@
   {:malli/schema [:=> [:cat [:fn dataset?] map?]
                   [map?]]}
   [dataset options]
-  
+
+  (assert-categorical-consistency dataset)
+
+
   (let [model-options (options->model-def options)
         _ (when (some? (:options model-options))
             (validate-options model-options options))
@@ -657,26 +682,31 @@
   (let [target-cat-maps-from-train (-> model :target-categorical-maps)
         target-cat-maps-from-predict (-> pred-ds get-categorical-maps)
         simple-predicted-values (-> pred-ds cf/prediction (get (first (keys target-cat-maps-from-predict))) seq)
-        inverse-map (-> target-cat-maps-from-predict vals first :lookup-table set/map-invert)]
+        inverse-predicted-map (-> target-cat-maps-from-predict vals first :lookup-table set/map-invert)]
     (when  (not (= target-cat-maps-from-predict target-cat-maps-from-train))
       
-      ;; (throw (Exception.
-      ;;         (format
-      ;;          "target categorical maps do not match between train an predict. \n train: %s \n predict: %s "
-      ;;          target-cat-maps-from-train target-cat-maps-from-predict)))
+      (throw (Exception.
+              (format
+               "target categorical maps do not match between train an predict. \n train: %s \n predict: %s "
+               target-cat-maps-from-train target-cat-maps-from-predict)))
       
       )
-
+    
     (when (not (every? some?
-                       (map inverse-map
+                       (map inverse-predicted-map
                             (distinct simple-predicted-values))))
-      ;; (throw (Exception.
-      ;;         (format
-      ;;          "Some predicted values are not in categorical map. -> Invalid predict fn.
-      ;;                       predicted values: %s
-      ;;                       categorical map: %s "
-      ;;          (vec (distinct simple-predicted-values))
-      ;;          (-> target-cat-maps-from-predict vals first :lookup-table))))
+      (throw (Exception. 
+              (format
+               "Some predicted values are not in prediction categorical map. Maybe invalid predict fn.
+                            predicted values: %s
+                            categorical map from predict: %s 
+                            categorical map from train %s
+                    
+                    "
+               (vec (distinct simple-predicted-values))
+               (-> target-cat-maps-from-predict)
+               (-> target-cat-maps-from-train)
+               )))
       
       )))
 
@@ -699,7 +729,7 @@
 
    Any implementing model need to behave symetric between the 'datatype in the target columns
    of training data' and the 'datatype of the prediction columns`
-   A model can decide to not accept certaiin dataypes in the target columns of training data.
+   A model can decide to not accept certain dataypes in the target columns of training data.
    (and fail with exception). But any model should try to minimize this and accept for categorical data:
 
    - all numeric types ( :int32, :int64, :float32, :float64)
@@ -723,13 +753,14 @@
 
   [dataset {:keys [feature-columns options train-input-hash]
             :as model}]
+  (assert-categorical-consistency dataset)
   (let [predict-hash (when (:use-cache @train-predict-cache) (str train-input-hash "--" (hash dataset)))
         cached (when predict-hash ((:get-fn @train-predict-cache) predict-hash))
 
         pred-ds
         (if cached
           cached
-          
+
           (let [{:keys [predict-fn] :as model-def} (options->model-def options)
                 feature-ds (ds/select-columns dataset feature-columns)
                 thawed-model (thaw-model model model-def)

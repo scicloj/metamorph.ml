@@ -70,7 +70,8 @@
    (fn [ds]
      (let [column-names (tc/column-names ds column-selector)]
        (reduce (fn [d n]
-                 (tc/add-column d (str n "-copy") (d n))) ds column-names)))))
+                 (tc/add-column d (str n "-copy") (d n))) 
+               ds column-names)))))
 
 
 (defn upper-case-col [col]
@@ -121,8 +122,9 @@
 (deftest test-decl-2
   (do-define-model)
   (is-pos-metric [[:tech.v3.dataset.metamorph/categorical->number [:species ] iris-target-values]
-                  [::duplicate-columns :type/numerical]
                   [:tech.v3.dataset.metamorph/set-inference-target :species]
+                  [::duplicate-columns :type/feature]
+                  
                   {:metamorph/id :model} [:scicloj.metamorph.ml/model (merge {:model-type :test-model})]]))
 
 (deftest test-decl-3
