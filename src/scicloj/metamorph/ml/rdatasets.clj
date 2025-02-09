@@ -20,7 +20,8 @@
    (str/replace #"\|(\-*)\|(\-*)\|" "")))
 (defn doc-url->md [doc]
   (clean-R-relevant (.. (FlexmarkHtmlConverter/builder) build (convert (slurp doc)))))
-(defn _fetch-dataset [csv] (-> csv (tc/dataset {:key-fn csk/->kebab-case-keyword})))
+(defn _fetch-dataset [csv]
+  (-> csv (tc/dataset {:key-fn (fn [s] (-> s (str/replace #"\." "-") csk/->kebab-case-keyword))})))
 
 (def fetch-dataset (memoize _fetch-dataset))
 

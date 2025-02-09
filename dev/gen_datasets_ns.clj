@@ -119,7 +119,11 @@
                 (-> csv
 
                     (tc/dataset {:key-fn
-                                 csk/->kebab-case-keyword})))))
+                                 (fn [s]
+                                   (-> s
+                                       (str/replace
+                                        #"\." "-")
+                                       csk/->kebab-case-keyword))})))))
   (writeln! writer
 
             (format-code

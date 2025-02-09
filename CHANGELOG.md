@@ -1,3 +1,6 @@
+unreleased 
+* cleaned column names from "." in rdatasets
+
 1.1
 * added access fn to all datasets from https://vincentarelbundock.github.io/Rdatasets/articles/data.html
 
