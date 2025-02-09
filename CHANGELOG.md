@@ -1,5 +1,5 @@
-unreleased:
-* added all datasets from https://vincentarelbundock.github.io/Rdatasets/articles/data.html
+1.1
+* added access fn to all datasets from https://vincentarelbundock.github.io/Rdatasets/articles/data.html
 
 
 1.0
