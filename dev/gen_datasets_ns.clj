@@ -4,10 +4,15 @@
    [clojure.java.io :as io]
    [clojure.java.shell :as sh]
    [clojure.string :as str]
-   [tablecloth.api :as tc])
+   [tablecloth.api :as tc]
+   [scicloj.metamorph.ml.rdatasets :as rdatasets])
   
   (:import
-   [java.io Writer]))
+   [java.io Writer]
+   [com.vladsch.flexmark.html2md.converter FlexmarkHtmlConverter]
+   ))
+
+
 
 (def datasets-info
   (->
@@ -41,31 +46,31 @@
     "")
    (str/replace
     "R Documentation"
-    "Documentation")))
+    "Documentation")
+   (str/replace "|--------------|-----------------|" "") 
+   ))
 
 
-(defn doc-url->md [html-file md-file doc]
-  (sh/sh "wget" "-O" html-file doc)
-  (sh/sh "pandoc" "--from" "html" "--to" "markdown" "--no-highlight"
-         html-file
-         "-o" md-file)
-  (sh/sh "rm" html-file)
-  (let [md-text
-        (if (.exists (io/file md-file))
-          (clean-R-relevant
-           (slurp md-file))
-          "NO-DOC")]
-    (sh/sh "rm" "-f" md-file)
-    md-text))
+(defn doc-url->md [doc]
+  (clean-R-relevant
+   (.. (FlexmarkHtmlConverter/builder) build (convert (slurp doc)))))
 
 (with-open [writer (io/writer "src/scicloj/metamorph/ml/rdatasets.clj")]
 
   (writeln! writer (str
                     '(ns scicloj.metamorph.ml.rdatasets
                        (:require [tablecloth.api :as tc]
+                                 [clojure.string :as str]
 
 
-                                 [camel-snake-kebab.core :as csk]))))
+                                 [camel-snake-kebab.core :as csk])
+                       
+                       (:import
+                        [com.vladsch.flexmark.html2md.converter FlexmarkHtmlConverter])
+                       )
+                    
+                    
+                    ))
 
   (writeln! writer   
             "
@@ -80,6 +85,29 @@
     ")
 
   (writeln! writer
+
+            (str
+             '(defn clean-R-relevant [s]
+                (->
+                 (str/replace
+                  s
+                  #"\n\n### Examples(?s).*```"
+                  "")
+                 (str/replace
+                  ":::: container\n::: container\n"
+                  "")
+                 (str/replace
+                  #"### Usage(?s).*```"
+                  "")
+                 (str/replace
+                  "R Documentation"
+                  "Documentation")
+                 (str/replace "|--------------|-----------------|" ""))))
+            
+            (str 
+             '(defn doc-url->md [doc]
+                (clean-R-relevant
+                 (.. (FlexmarkHtmlConverter/builder) build (convert (slurp doc))))))
 
 
             (str
@@ -101,22 +129,45 @@
      (let [clean-item (str/replace item #"[ ()]" "")
            md-file (format "%s.md" clean-item)
            html-file (format "%s.html" clean-item)
-           md-text (doc-url->md html-file md-file doc)]
+           ;md-text (doc-url->md doc)
+           sym (symbol (str  package "-"
+                             clean-item
+                             nil))]
        (println :package (str package "/" clean-item))
 
        (writeln! writer (str (list
                               'defn
-                              (symbol (str  package "-"
-                                            clean-item
-                                            nil))
-                              ;md-text
+                              sym
+                              
+                              
+                              
                               (format "Data description: %s" doc)
+                              {:doc-link doc}
+                              ;md-text
+                              
                               []
-                              (list 'fetch-dataset csv))))))
+                              (list 'fetch-dataset csv))))
+       
+       ;(writeln! writer (format "(def ^{:a 1} a 1)"))
+
+       (writeln! writer (str (list
+                              'alter-meta!
+                              (list 'var sym)
+                              '(fn [var-m]
+                                 (assoc var-m :doc 
+                                        (doc-url->md (:doc-link var-m))
+                                        ;; (reify Object
+                                        ;;   (toString [this]
+                                        ;;     ;(slurp (:doc-link var-m))
+                                        ;;     (doc-url->md (:doc-link var-m))
+                                        ;;     )
+                                        ;;   )
+                                        ))))
+  )
+       ))
    
    (take 10000
          (tc/rows datasets-info :as-maps))))
-
 
 (when (not clojure.core/*repl*)
   (shutdown-agents))
@@ -165,3 +216,31 @@
   )
 
 
+(comment
+  (alter-meta! #'scicloj.metamorph.ml.rdatasets/AER-Affairs
+               (fn [var-m]
+                 (def var-m var-m)
+                 (println :var-m var-m)
+                 (assoc var-m :doc (slurp (:doc-link var-m)))
+                 ))
+  
+  )
+
+
+
+
+(comment
+  (defn AER-CigarettesSW
+    {:doc-link "https://vincentarelbundock.github.io/Rdatasets/doc/AER/CigarettesSW.html"}
+    []
+    (fetch-dataset "https://vincentarelbundock.github.io/Rdatasets/csv/AER/CigarettesSW.csv"))
+  
+  (alter-meta! (var AER-CigarettesSW) (fn [var-m] (assoc var-m :doc (slurp (:doc-link var-m)))))
+
+  )
+
+(require '[scicloj.metamorph.ml.rdatasets :as rdatasets] :reload)
+
+()
+
+(clojure.repl/doc rdatasets/datasets-airmiles)
