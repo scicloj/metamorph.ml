@@ -2,15 +2,14 @@
   (:require
    [camel-snake-kebab.core :as csk]
    [clojure.java.io :as io]
-   [clojure.java.shell :as sh]
+   [clojure.pprint :as pprint]
    [clojure.string :as str]
-   [tablecloth.api :as tc]
-   [scicloj.metamorph.ml.rdatasets :as rdatasets])
+   [tablecloth.api :as tc] ;[scicloj.metamorph.ml.rdatasets :as rdatasets]
+)
   
   (:import
-   [java.io Writer]
    [com.vladsch.flexmark.html2md.converter FlexmarkHtmlConverter]
-   ))
+   [java.io Writer]))
 
 
 
@@ -55,26 +54,31 @@
   (clean-R-relevant
    (.. (FlexmarkHtmlConverter/builder) build (convert (slurp doc)))))
 
+(def num-packages 10000)
+
+(defn format-code [o]
+  (with-out-str
+    (binding [pprint/*print-right-margin* 100
+              pprint/*print-miser-width* 60]
+      (pprint/with-pprint-dispatch pprint/code-dispatch
+        (pprint/pprint o)))))
+
 (with-open [writer (io/writer "src/scicloj/metamorph/ml/rdatasets.clj")]
 
-  (writeln! writer (str
+  (writeln! writer (format-code
                     '(ns scicloj.metamorph.ml.rdatasets
                        (:require [tablecloth.api :as tc]
                                  [clojure.string :as str]
 
 
                                  [camel-snake-kebab.core :as csk])
-                       
-                       (:import
-                        [com.vladsch.flexmark.html2md.converter FlexmarkHtmlConverter])
-                       )
-                    
-                    
-                    ))
 
-  (writeln! writer   
+                       (:import
+                        [com.vladsch.flexmark.html2md.converter FlexmarkHtmlConverter]))))
+
+  (writeln! writer
             "
-;;    Using data documentation from 
+;;    Based on
 ;;    @Manual{,
 ;;    title = {Rdatasets: A collection of datasets originally distributed in various R packages},
 ;;    author = {Vincent Arel-Bundock},
@@ -86,7 +90,7 @@
 
   (writeln! writer
 
-            (str
+            (format-code
              '(defn clean-R-relevant [s]
                 (->
                  (str/replace
@@ -102,72 +106,73 @@
                  (str/replace
                   "R Documentation"
                   "Documentation")
-                 (str/replace "|--------------|-----------------|" ""))))
-            
-            (str 
+                 (str/replace #"\|(\-*)\|(\-*)\|"  ""))))
+
+            (format-code
              '(defn doc-url->md [doc]
                 (clean-R-relevant
                  (.. (FlexmarkHtmlConverter/builder) build (convert (slurp doc))))))
 
 
-            (str
+            (format-code
              '(defn _fetch-dataset [csv]
                 (-> csv
-                    
-                    (tc/dataset {:key-fn 
-                                 csk/->kebab-case-keyword
-                                 })
-                    ))))
+
+                    (tc/dataset {:key-fn
+                                 csk/->kebab-case-keyword})))))
   (writeln! writer
-            
-            (str
+
+            (format-code
              '(def fetch-dataset (memoize _fetch-dataset))))
 
   (run!
    (fn [{:keys [package item doc csv]}]
 
      (let [clean-item (str/replace item #"[ ()]" "")
-           md-file (format "%s.md" clean-item)
-           html-file (format "%s.html" clean-item)
-           ;md-text (doc-url->md doc)
            sym (symbol (str  package "-"
                              clean-item
                              nil))]
        (println :package (str package "/" clean-item))
 
-       (writeln! writer (str (list
-                              'defn
-                              sym
-                              
-                              
-                              
-                              (format "Data description: %s" doc)
-                              {:doc-link doc}
+       (writeln! writer (format-code (list
+                                      'defn sym
+                                      (format "Data description: %s" doc)
+                                      {:doc-link doc}
                               ;md-text
-                              
-                              []
-                              (list 'fetch-dataset csv))))
-       
-       ;(writeln! writer (format "(def ^{:a 1} a 1)"))
 
-       (writeln! writer (str (list
-                              'alter-meta!
-                              (list 'var sym)
-                              '(fn [var-m]
-                                 (assoc var-m :doc 
-                                        (doc-url->md (:doc-link var-m))
-                                        ;; (reify Object
-                                        ;;   (toString [this]
-                                        ;;     ;(slurp (:doc-link var-m))
-                                        ;;     (doc-url->md (:doc-link var-m))
-                                        ;;     )
-                                        ;;   )
-                                        ))))
+                                      []
+                                      (list 'fetch-dataset csv))))))
+   (take num-packages
+         (tc/rows datasets-info :as-maps)))
+
+
+
+  (writeln! writer
+            (format-code
+             '(defn dataset-descriptions->doc-strings! 
+                "Run this function to attach the dataset descriptions as doc string to the fetch fns"
+                []
+                (run!
+                 (fn [v] (->
+                          (symbol
+                           "scicloj.metamorph.ml.rdatasets"
+                           (name v))
+                          (find-var)
+                          (alter-meta!  (fn [var-m]
+                                          (if (:doc-link var-m)
+                                            (do (println :fetch (:doc-link var-m))
+                                                (assoc var-m :doc (doc-url->md (:doc-link var-m))))
+                                            var-m)))))
+
+
+
+                 (keys (ns-publics (find-ns (symbol "scicloj.metamorph.ml.rdatasets"))))))))
+
   )
-       ))
-   
-   (take 10000
-         (tc/rows datasets-info :as-maps))))
+
+
+
+
 
 (when (not clojure.core/*repl*)
   (shutdown-agents))
@@ -239,8 +244,3 @@
 
   )
 
-(require '[scicloj.metamorph.ml.rdatasets :as rdatasets] :reload)
-
-()
-
-(clojure.repl/doc rdatasets/datasets-airmiles)
