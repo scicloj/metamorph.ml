@@ -140,7 +140,11 @@
 
        (writeln! writer (format-code (list
                                       'defn sym
-                                      (format "Data description: %s" doc)
+                                      (format "Fetch the dataset '%s' from rdatasets. 
+                                               
+                                               Data description: %s" 
+                                              (str package "-" item)
+                                              doc)
                                       {:doc-link doc}
                               ;md-text
 
