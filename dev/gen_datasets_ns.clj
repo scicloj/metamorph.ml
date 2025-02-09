@@ -58,10 +58,10 @@
     (sh/sh "rm" "-f" md-file)
     md-text))
 
-(with-open [writer (io/writer "src/scicloj/metamorph/ml/datasets.clj")]
+(with-open [writer (io/writer "src/scicloj/metamorph/ml/rdatasets.clj")]
 
   (writeln! writer (str
-                    '(ns scicloj.metamorph.ml.datasets
+                    '(ns scicloj.metamorph.ml.rdatasets
                        (:require [tablecloth.api :as tc]
 
 
@@ -109,7 +109,8 @@
                               (symbol (str  package "-"
                                             clean-item
                                             nil))
-                              md-text
+                              ;md-text
+                              (format "Data description: %s" doc)
                               []
                               (list 'fetch-dataset csv))))))
    
@@ -149,5 +150,18 @@
  ### Format                  
 
                   "))
+
+
+(comment 
+
+  (intern *ns*
+          (with-meta
+            'my-fn
+            {:doc (reify Object
+                    (toString [this] "dynamic doc"))})
+          (fn
+            [a b]
+            (+ a b)))
+  )
 
 
