@@ -25,6 +25,7 @@
         org.clojure/data.json {:mvn/version "0.2.6"}
         
         com.taoensso/nippy {:mvn/version "3.4.2"}
+        com.vladsch.flexmark/flexmark-html2md-converter {:mvn/version "0.64.8"}
         }
 
  :paths ["src" "resources"]
@@ -58,7 +59,7 @@
                 ch.qos.logback/logback-classic {:mvn/version "1.5.16"}
                 criterium/criterium {:mvn/version  "0.4.6"}
                 com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.3.0"}
-                com.vladsch.flexmark/flexmark-html2md-converter {:mvn/version "0.64.8"}
+                
                 }}
 
   :test
