@@ -1,5 +1,7 @@
-unreleased 
+1.1.1
 * cleaned column names from "." in rdatasets
+* better initial doc string for rdatasets functions
+* new fn 'dataset-descriptions->doc-strings!' to attach dataset description as docsting to all rdadasets functions
 
 1.1
 * added access fn to all datasets from https://vincentarelbundock.github.io/Rdatasets/articles/data.html
