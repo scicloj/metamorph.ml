@@ -1,4 +1,4 @@
-unresead
+unreleased
 - removed most toy data and forward fns to rdatasets/*
 
 1.1.1
