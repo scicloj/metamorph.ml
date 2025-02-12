@@ -691,24 +691,29 @@
                target-cat-maps-from-train target-cat-maps-from-predict)))
       
       )
+    ;; should not throw
+    (ds-cat/reverse-map-categorical-xforms pred-ds)
     
-    (when (not (every? some?
-                       (map inverse-predicted-map
-                            (distinct simple-predicted-values))))
-      (throw (Exception. 
-              (format
-               "Some predicted values are not in prediction categorical map. Maybe invalid predict fn.
-                            predicted values: %s
-                            categorical map from predict: %s 
-                            categorical map from train %s
+    ;; too strong validation: It would fail in mismatch between 0.0 and 0 for example
+    ;; (when (not (every? some?
+    ;;                    (map inverse-predicted-map
+    ;;                         (distinct simple-predicted-values))))
+    ;;   (throw (Exception. 
+    ;;           (format
+    ;;            "Some predicted values are not in prediction categorical map. Maybe invalid predict fn.
+    ;;                         predicted values: %s
+    ;;                         categorical map from predict: %s 
+    ;;                         categorical map from train %s
                     
-                    "
-               (vec (distinct simple-predicted-values))
-               (-> target-cat-maps-from-predict)
-               (-> target-cat-maps-from-train)
-               )))
+    ;;                 "
+    ;;            (vec (distinct simple-predicted-values))
+    ;;            (-> target-cat-maps-from-predict)
+    ;;            (-> target-cat-maps-from-train)
+    ;;            )))
       
-      )))
+    ;;   )
+    
+    ))
 
 
 
