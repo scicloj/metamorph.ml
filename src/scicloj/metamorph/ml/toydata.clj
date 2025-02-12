@@ -1,13 +1,14 @@
 (ns scicloj.metamorph.ml.toydata
-  "Deprecated ns. Use scicloj.metamorph.ml.datasets instead"
+  "Deprecated ns. Use scicloj.metamorph.ml.rdatasets instead"
   {:deprecated "1.1"}
   (:require
    [camel-snake-kebab.core :as csk]
    [clojure.java.io :as io]
+   [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.modelling :as ds-mod]))
-            
+
 
 (defn sonar-ds []
   (->  (ds/->dataset
@@ -47,23 +48,19 @@
      (ds-mod/set-inference-target :disease-progression))))
 
 (defn iris-ds []
-  (-> (io/resource "data/iris.csv")
-      (io/input-stream)
-      (ds/->dataset
-       {:file-type :csv :header-row? false  :n-initial-skip-rows 1})
-      (ds/rename-columns
-       (zipmap
-        ( map #(str "column-" %) (range 5))
-        [:sepal_length :sepal_width
-         :petal_length :petal_width
-         :species]))
-         
-      (ds-mod/set-inference-target :species)
-      (ds/categorical->number [:species] {} :int16)))
+  (-> 
+   (rdatasets/datasets-iris)
+   (tc/drop-columns :rownames)
+   (ds-mod/set-inference-target :species)
+   (ds/categorical->number [:species] {} :int16)))
 
 
 (defn breast-cancer-ds []
-  (let [col-names (mapv csk/->kebab-case-keyword
+  (let [dslabs-brca
+        (->
+         (rdatasets/dslabs-brca)
+         (tc/drop-columns :rownames))
+        col-names (mapv csk/->kebab-case-keyword
                         ["mean radius" "mean texture"
                          "mean perimeter" "mean area"
                          "mean smoothness" "mean compactness"
@@ -78,25 +75,24 @@
                          "worst perimeter" "worst area"
                          "worst smoothness" "worst compactness"
                          "worst concavity" "worst concave points"
-                         "worst symmetry" "worst fractal dimension"])]
-       (-> (io/resource "data/breast_cancer.csv")
-           (io/input-stream)
-           (ds/->dataset
-            {:file-type :csv :header-row? false
-             :n-initial-skip-rows 1})
-           (ds/rename-columns
-            (zipmap
-             ( map #(str "column-" %) (range 31))
-             (conj col-names :class)))
+                         "worst symmetry" "worst fractal dimension"])
+        old-col-names
+        (tc/column-names dslabs-brca)]
+       (-> 
+        dslabs-brca
+        (ds/rename-columns
+         (zipmap
+          old-col-names
+          (conj col-names :class)))
 
-           (ds/update-column :class (fn [col] (map #(case %
-                                                     0  :malignant
-                                                     1  :benign)
-                                                  col)))
-                                         
-                        
-           (ds/categorical->number [:class] {} :int16)
-           (ds-mod/set-inference-target :class))))
+        (ds/update-column :class (fn [col] (map #(case %
+                                                   "M"  :malignant
+                                                   "B"  :benign)
+                                                col)))
+        
+        
+        (ds/categorical->number [:class] {} :int16)
+        (ds-mod/set-inference-target :class))))
 
 
 (defn titanic-ds-split []
@@ -113,7 +109,7 @@
 
 (defn mtcars-ds []
   (->
-   (io/resource "data/mtcars.csv")
-   (io/input-stream)
-   (ds/->dataset {:file-type :csv
-                  :key-fn keyword})))
+   (rdatasets/datasets-mtcars)
+   (tc/drop-columns [:rownames])))
+
+

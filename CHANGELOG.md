@@ -1,3 +1,6 @@
+unresead
+- removed most toy data and forward fns to rdatasets/*
+
 1.1.1
 * cleaned column names from "." in rdatasets
 * better initial doc string for rdatasets functions

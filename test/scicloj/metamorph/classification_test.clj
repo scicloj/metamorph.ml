@@ -147,7 +147,7 @@
                       [data-split]
                       loss/classification-accuracy
                       :accuracy)]
-    (is (= 0.608187134502924
+    (is (= 0.6608187134502924
            (->
             eval-results
             flatten

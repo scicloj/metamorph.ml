@@ -1,50 +1,40 @@
 (ns scicloj.metamorph.ml.toydata.ggplot
-  "Deprecated ns. Use scicloj.metamorph.ml.datasets instead"
+  "Deprecated ns. Use scicloj.metamorph.ml.rdatasets instead"
   {:deprecated "1.1"}
   (:require [tech.v3.dataset]
-            [clojure.java.io :as io]))
-
-;; datasets copied from the (MIT-licensed) R ggplot2 package version 3.4.1
-
-
-(defn- ->resource-dataset [resource-path]
-  (-> resource-path
-      io/resource
-      io/input-stream
-      (tech.v3.dataset/->dataset
-       {:file-type :csv
-        :gzipped? true
-        :key-fn keyword})))
+            [clojure.java.io :as io]
+            [scicloj.metamorph.ml.rdatasets :as rdatasets]
+            ))
 
 (def diamonds
-  (->resource-dataset "data/ggplot/diamonds.csv.gz"))
+  (rdatasets/ggplot2-diamonds))
 
 (def ecomonics
-  (->resource-dataset "data/ggplot/ecomonics.csv.gz"))
+  (rdatasets/ggplot2-economics))
 
 (def ecomonics_long
-  (->resource-dataset "data/ggplot/ecomonics_long.csv.gz"))
+  (rdatasets/ggplot2-economics_long))
 
 (def faithfuld
-  (->resource-dataset "data/ggplot/faithfuld.csv.gz"))
+  (rdatasets/ggplot2-faithfuld))
 
 (def luv_colours
-  (->resource-dataset "data/ggplot/luv_colours.csv.gz"))
+  (rdatasets/ggplot2-luv_colours))
 
 (def midwest
-  (->resource-dataset "data/ggplot/midwest.csv.gz"))
+  (rdatasets/ggplot2-midwest))
 
 (def mpg
-  (->resource-dataset "data/ggplot/mpg.csv.gz"))
+  (rdatasets/ggplot2-mpg))
 
 (def msleep
-  (->resource-dataset "data/ggplot/msleep.csv.gz"))
+  (rdatasets/ggplot2-msleep))
 
 (def presidential
-  (->resource-dataset "data/ggplot/presidential.csv.gz"))
+  (rdatasets/ggplot2-presidential))
 
 (def seals
-  (->resource-dataset "data/ggplot/seals.csv.gz"))
+  (rdatasets/ggplot2-seals))
 
 (def txhousing
-  (->resource-dataset "data/ggplot/txhousing.csv.gz"))
+  (rdatasets/ggplot2-txhousing))
