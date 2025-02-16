@@ -679,20 +679,18 @@
   ;(def pred-ds pred-ds)
   ;; TODO revise
   ;;https://github.com/scicloj/metamorph.ml/issues/35
-
-  (-> pred-ds :y meta    )
-
-  (let [target-cat-maps-from-train (-> model :target-categorical-maps)
+  
+    (let [target-cat-maps-from-train (-> model :target-categorical-maps)
         target-cat-maps-from-predict (-> pred-ds get-categorical-maps)
         simple-predicted-values (-> pred-ds cf/prediction (get (first (keys target-cat-maps-from-predict))) seq)
         inverse-predicted-map (-> target-cat-maps-from-predict vals first :lookup-table set/map-invert)]
     ;; (when  (not (= target-cat-maps-from-predict target-cat-maps-from-train))
-      
+    
     ;;   (throw (Exception.
     ;;           (format
     ;;            "target categorical maps do not match between train an predict. \n train: %s \n predict: %s "
     ;;            target-cat-maps-from-train target-cat-maps-from-predict)))
-      
+    
     ;;   )
     ;; should not throw
     (when target-cat-maps-from-train
@@ -708,13 +706,13 @@
     ;;                         predicted values: %s
     ;;                         categorical map from predict: %s 
     ;;                         categorical map from train %s
-                    
+    
     ;;                 "
     ;;            (vec (distinct simple-predicted-values))
     ;;            (-> target-cat-maps-from-predict)
     ;;            (-> target-cat-maps-from-train)
     ;;            )))
-      
+    
     ;;   )
     
     ))
