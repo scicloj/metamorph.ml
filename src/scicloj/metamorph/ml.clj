@@ -674,7 +674,7 @@
      (thaw-fn (:model-data model)))))
 
 
-(defn- warn-inconsistent-maps [model pred-ds]
+(defn- validate-inconsistent-maps [model pred-ds]
   ;; TODO revise
   ;;https://github.com/scicloj/metamorph.ml/issues/35
 
@@ -692,7 +692,8 @@
       
       )
     ;; should not throw
-    (ds-cat/reverse-map-categorical-xforms pred-ds)
+    (when target-cat-maps-from-train
+      (ds-cat/reverse-map-categorical-xforms pred-ds))
     
     ;; too strong validation: It would fail in mismatch between 0.0 and 0 for example
     ;; (when (not (every? some?
@@ -772,7 +773,7 @@
                 pred-ds (predict-fn feature-ds
                                     thawed-model
                                     model)]
-            (warn-inconsistent-maps model pred-ds)
+            (validate-inconsistent-maps model pred-ds)
 
             (when predict-hash
               ((:set-fn @train-predict-cache) predict-hash pred-ds))

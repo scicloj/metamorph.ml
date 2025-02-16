@@ -4,6 +4,7 @@
    [scicloj.metamorph.core :as morph]
    [scicloj.metamorph.ml :as ml]
    [scicloj.metamorph.ml.ensemble :as ensemble]
+   [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.column-filters :as cf]
@@ -63,7 +64,9 @@
     {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
                    {:coefficients {:petal_width [0]}})}))
 
-(def iris (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
+(def iris 
+  (rdatasets/datasets-iris))
+
 (def pipe-1
   (morph/pipeline
    (ds-mm/set-inference-target :species)

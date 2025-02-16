@@ -8,8 +8,9 @@
             [tech.v3.dataset.modelling :as ds-mod]
             [tech.v3.dataset.categorical :as ds-cat]
             [tablecloth.api :as tc]
-            [scicloj.ml.smile.classification]
-            [scicloj.metamorph.ml.toydata :as toydata]))
+            [scicloj.metamorph.ml.toydata :as toydata]
+            [scicloj.ml.smile.classification]))
+
 
 
 (deftest test-normalized
@@ -160,5 +161,7 @@
             first
             :test-transform
             :metric)))))
+
+
 
 

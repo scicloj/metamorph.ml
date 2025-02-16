@@ -15,13 +15,16 @@
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.categorical :as ds-cat]
    [tech.v3.dataset.metamorph :as ds-mm]
+   [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [tech.v3.dataset.modelling :as ds-mod]
    [scicloj.metamorph.ml.tools :refer [keys-in]])
   (:import
    (clojure.lang ExceptionInfo)
    (java.util UUID)))
 
-(def iris (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
+
+(def iris
+  (rdatasets/datasets-iris))
 
 (def iris-train
   (-> iris
@@ -705,14 +708,3 @@
          :dummy-strategy :fixed-class
          :fixed-class 3}))))
 
-(->
- (ds-mod/probability-distributions->label-column
-  (ds/->dataset {:a [0.7]
-                 :b [0.3]})
-  :y
-  :int64
-  
-  )
- :y
- meta
- )

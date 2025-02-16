@@ -1,18 +1,19 @@
 (ns scicloj.metamorph.perf
   (:require
+   [clj-memory-meter.core :as mm]
    [scicloj.metamorph.core :as morph]
    [scicloj.metamorph.ml :as ml]
    [scicloj.metamorph.ml.loss :as loss]
+   [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [scicloj.ml.smile.classification]
-   [tech.v3.dataset.metamorph :as ds-mm]
-   [tech.v3.dataset.column-filters :as cf]
    [tablecloth.api :as tc]
-   [clj-memory-meter.core :as mm]))
+   [tech.v3.dataset.column-filters :as cf]
+   [tech.v3.dataset.metamorph :as ds-mm]))
 
 
 (defn measure [{:keys [n-pipes n-folds return-best-pipeline-only return-best-crossvalidation-only dissoc] :as opts}]
   (println "opts: " opts)
-  (let [ds (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword})
+  (let [ds (rdatasets/datasets-iris)
         pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)

@@ -1,4 +1,5 @@
 (ns scicloj.metamorph.ml.rdatasets
+  {:clj-kondo/ignore true}
   (:require [tablecloth.api :as tc] [clojure.string :as str] [camel-snake-kebab.core :as csk])
   (:import [com.vladsch.flexmark.html2md.converter FlexmarkHtmlConverter]))
 
@@ -24,6 +25,7 @@
   (-> csv (tc/dataset {:key-fn (fn [s] (-> s (str/replace #"\." "-") csk/->kebab-case-keyword))})))
 
 (def fetch-dataset (memoize _fetch-dataset))
+
 
 (defn AER-Affairs
   "Fetch the dataset 'AER-Affairs' from rdatasets. \n                                               \n                                               Data description: https://vincentarelbundock.github.io/Rdatasets/doc/AER/Affairs.html"
