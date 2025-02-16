@@ -675,8 +675,8 @@
 
 
 (defn- validate-inconsistent-maps [model pred-ds]
-  (def model model)
-  (def pred-ds pred-ds)
+  ;(def model model)
+  ;(def pred-ds pred-ds)
   ;; TODO revise
   ;;https://github.com/scicloj/metamorph.ml/issues/35
 
