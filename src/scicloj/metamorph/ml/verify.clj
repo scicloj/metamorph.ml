@@ -6,10 +6,8 @@
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.modelling :as ds-mod]
-   [tech.v3.datatype :as dtype]
    [tech.v3.datatype.functional :as dfn]
-   [scicloj.metamorph.ml.rdatasets :as rdatasets]
-   ))
+   [scicloj.metamorph.ml.rdatasets :as rdatasets]))
 
 
 
@@ -28,9 +26,10 @@
                                 (ds/remove-column :rownames)
                                    ;;We have to have a lookup map for the column in order to
                                    ;;do classification on the column.
-                                
+                                (ds/drop-missing)
                                 (ds/categorical->number cf/categorical)
                                 (ds-mod/set-inference-target :survived))))
+
 
 
 (defn basic-regression
