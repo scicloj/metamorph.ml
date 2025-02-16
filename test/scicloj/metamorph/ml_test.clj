@@ -708,3 +708,44 @@
          :dummy-strategy :fixed-class
          :fixed-class 3}))))
 
+
+
+(require '[scicloj.ml.smile.classification])
+(->>
+ (ml/train
+  (->  (ds/->dataset {:x [1 0] :y [1 0]})
+       (ds-mod/set-inference-target [:y])
+       (ds/assoc-metadata [:y] 
+                          :categorical-map nil
+                          :categorical? true)
+       )
+  {:model-type :smile.classification/ada-boost})
+ (ml/predict (ds/->dataset {:x [1 0] :y [1 0]}))
+ :y
+ meta
+ :categorical-map
+ )
+
+(defn call->lable-column [m]
+  (->
+   (ds-mod/probability-distributions->label-column
+    (ds/->dataset
+     m)
+    :x
+    :int64)
+   (get :x)
+   ( (fn [col]
+       {:datatype (-> col meta :datatype)
+        :lookup-table (-> col meta :categorical-map :lookup-table)
+        :values (vec col)}
+       ))
+   ))
+
+(call->lable-column {:x-1 [0.4] :x-2 [0.6]})
+;;=> {:datatype :int64, :lookup-table {:x-1 0, :x-2 1}, :values [1]}
+
+(call->lable-column {0 [0.4] 1 [0.6]})
+;;=> {:datatype :int64, :lookup-table {0 0, 1 1}, :values [1]}
+
+(call->lable-column {1 [0.4] 0 [0.6]})
+;;=> {:datatype :int64, :lookup-table {1 0, 0 1}, :values [1]}
