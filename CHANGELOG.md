@@ -1,3 +1,6 @@
+1.2beta1.4
+- fixed release build
+
 1.2beta1.3
 - fixed release build
 

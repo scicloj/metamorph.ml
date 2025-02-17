@@ -21,7 +21,7 @@ jobs:
       - name: create pom
         run: clojure -T:build generate-pom
 
-      - uses: jlesquembre/clojars-publish-action@0.3
+      - uses: jlesquembre/clojars-publish-action@0.4
         env:
           CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
           CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
