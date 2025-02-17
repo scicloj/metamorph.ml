@@ -675,48 +675,51 @@
 
 (def enable-strict-prediction-validations (atom false))
 
-(defn- validate-inconsistent-maps [model pred-ds]
-  ;(def model model)
-  ;(def pred-ds pred-ds)
-  ;; TODO revise
-  ;;https://github.com/scicloj/metamorph.ml/issues/35
-  
-    (let [target-cat-maps-from-train (-> model :target-categorical-maps)
-          target-cat-maps-from-predict (-> pred-ds get-categorical-maps)
-          simple-predicted-values (-> pred-ds cf/prediction (get (first (keys target-cat-maps-from-predict))) seq)
-          inverse-predicted-map (-> target-cat-maps-from-predict vals first :lookup-table set/map-invert)]
+
+  (let [target-cat-maps-from-train (-> model :target-categorical-maps)
+        target-cat-maps-from-predict (-> pred-ds get-categorical-maps)
+        simple-predicted-values--int (map int (-> pred-ds cf/prediction (get (first (keys target-cat-maps-from-predict))) seq))
+        inverse-predicted-map (-> target-cat-maps-from-predict vals first :lookup-table set/map-invert)]
+
 
       ;; should not throw  
-      (when target-cat-maps-from-train
-        (ds-cat/reverse-map-categorical-xforms pred-ds))
+    (when target-cat-maps-from-train
+      (ds-cat/reverse-map-categorical-xforms pred-ds))
 
-      (when
-       (and @enable-strict-prediction-validations
-            (not (= target-cat-maps-from-predict target-cat-maps-from-train)))
+    (when
+     (and @enable-strict-prediction-validations
+          (not (= target-cat-maps-from-predict target-cat-maps-from-train)))
 
-        (throw (Exception.
-                (format
-                 "target categorical maps do not match between train an predict. \n train: %s \n predict: %s "
-                 target-cat-maps-from-train target-cat-maps-from-predict))))
+      (throw (Exception.
+              (format
+               "target categorical maps do not match between train an predict. \n train: %s \n predict: %s "
+               target-cat-maps-from-train target-cat-maps-from-predict))))
 
 
-      ;strong validation: It would fail in mismatch between 0.0 and 0 for example
-      (when 
-       (and @enable-strict-prediction-validations
-            (not (every? some?
-                         (map inverse-predicted-map
-                              (distinct simple-predicted-values)))))
-        (throw (Exception.
-                (format
-                 "Some predicted values are not in prediction categorical map. Maybe invalid predict fn.
+
+
+
+    (when
+     (and @enable-strict-prediction-validations
+          (or
+
+           (not (every? some?
+                        (map inverse-predicted-map
+                             (distinct simple-predicted-values--int))))
+           (not (=
+                 (-> target-cat-maps-from-predict vals first :lookup-table keys)
+                 (-> target-cat-maps-from-train vals first :lookup-table keys)))))
+      (throw (Exception.
+              (format
+               "Some predicted values are not in prediction categorical map. Maybe invalid predict fn.
                             predicted values: %s
                             categorical map from predict: %s 
                             categorical map from train %s
     
                     "
-                 (vec (distinct simple-predicted-values))
-                 (-> target-cat-maps-from-predict)
-                 (-> target-cat-maps-from-train)))))))
+               (vec (distinct simple-predicted-values--int))
+               (-> target-cat-maps-from-predict)
+               (-> target-cat-maps-from-train)))))))
 
 
 
