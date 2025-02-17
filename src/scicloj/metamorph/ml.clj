@@ -675,7 +675,7 @@
 
 (def enable-strict-prediction-validations (atom false))
 
-
+(defn- validate-inconsistent-maps [model pred-ds]
   (let [target-cat-maps-from-train (-> model :target-categorical-maps)
         target-cat-maps-from-predict (-> pred-ds get-categorical-maps)
         simple-predicted-values--int (map int (-> pred-ds cf/prediction (get (first (keys target-cat-maps-from-predict))) seq))

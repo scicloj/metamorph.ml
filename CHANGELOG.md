@@ -1,3 +1,6 @@
+1.2beta1.6
+- fixed syntax
+
 1.2beta1.5
 - improved catmap check
 
