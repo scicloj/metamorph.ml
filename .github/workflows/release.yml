@@ -12,6 +12,13 @@ jobs:
     steps:
       # This step checks out a copy of your repository.
       - uses: actions/checkout@v4.2.2
+
+      - name: Install clojure tools
+        uses: DeLaGuardo/setup-clojure@13.1
+        with:
+          cli: 1.12.0.1495
+
+      - name: create pom
         run: clojure -Spom
 
       - uses: jlesquembre/clojars-publish-action@0.3
