@@ -47,7 +47,7 @@ jobs:
         uses: quarto-dev/quarto-actions/setup@v2
       # Runs a single command using the runners shell
       - name: Run CI
-        run: clojure -X:deps prep :aliases [:test] && clojure -T:build ci
+        run: clojure -X:deps prep :aliases [:dev] && clojure -T:build ci
 
       - name: copy news data   
         run: |
