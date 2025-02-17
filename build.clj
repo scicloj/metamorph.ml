@@ -13,7 +13,7 @@
 (def lib 'org.scicloj/metamorph.ml)
 ; alternatively, use MAJOR.MINOR.COMMITS:
 ;; (def version (format "6.2.%s" (b/git-count-revs nil)))
-(def version "1.2beta1.2")
+(def version "1.2beta1.3")
 (def class-dir "target/classes")
 (def basis (b/create-basis {:project "deps.edn"}))
 (def jar-file (format "target/%s-%s.jar" (name lib) version))
@@ -54,6 +54,15 @@
                :target-dir class-dir})
   (b/jar {:class-dir class-dir
           :jar-file jar-file}))
+
+(defn generate-pom [_]
+  (b/write-pom {:target "."
+                :lib lib
+                :version version
+                :basis basis
+                :pom-data (pom-template version)
+                :src-dirs ["src"]})
+  )
 
 (defn ci "Run the CI pipeline of tests (and build the JAR)." [opts]
   (-> opts

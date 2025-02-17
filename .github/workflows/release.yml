@@ -19,7 +19,7 @@ jobs:
           cli: 1.12.0.1495
 
       - name: create pom
-        run: clojure -Spom
+        run: clojure -T:build generate-pom
 
       - uses: jlesquembre/clojars-publish-action@0.3
         env:
