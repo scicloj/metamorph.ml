@@ -1,3 +1,6 @@
+1.2beta1.5
+- improved catmap check
+
 1.2beta1.4
 - fixed release build
 
