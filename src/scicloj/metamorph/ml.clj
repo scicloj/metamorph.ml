@@ -673,6 +673,7 @@
           (options->model-def (:options model)))]
      (thaw-fn (:model-data model)))))
 
+(def enable-strict-prediction-validations (atom false))
 
 (defn- validate-inconsistent-maps [model pred-ds]
   ;(def model model)
@@ -681,41 +682,41 @@
   ;;https://github.com/scicloj/metamorph.ml/issues/35
   
     (let [target-cat-maps-from-train (-> model :target-categorical-maps)
-        target-cat-maps-from-predict (-> pred-ds get-categorical-maps)
-        simple-predicted-values (-> pred-ds cf/prediction (get (first (keys target-cat-maps-from-predict))) seq)
-        inverse-predicted-map (-> target-cat-maps-from-predict vals first :lookup-table set/map-invert)]
-    ;; (when  (not (= target-cat-maps-from-predict target-cat-maps-from-train))
+          target-cat-maps-from-predict (-> pred-ds get-categorical-maps)
+          simple-predicted-values (-> pred-ds cf/prediction (get (first (keys target-cat-maps-from-predict))) seq)
+          inverse-predicted-map (-> target-cat-maps-from-predict vals first :lookup-table set/map-invert)]
+
+      ;; should not throw  
+      (when target-cat-maps-from-train
+        (ds-cat/reverse-map-categorical-xforms pred-ds))
+
+      (when
+       (and @enable-strict-prediction-validations
+            (not (= target-cat-maps-from-predict target-cat-maps-from-train)))
+
+        (throw (Exception.
+                (format
+                 "target categorical maps do not match between train an predict. \n train: %s \n predict: %s "
+                 target-cat-maps-from-train target-cat-maps-from-predict))))
+
+
+      ;strong validation: It would fail in mismatch between 0.0 and 0 for example
+      (when 
+       (and @enable-strict-prediction-validations
+            (not (every? some?
+                         (map inverse-predicted-map
+                              (distinct simple-predicted-values)))))
+        (throw (Exception.
+                (format
+                 "Some predicted values are not in prediction categorical map. Maybe invalid predict fn.
+                            predicted values: %s
+                            categorical map from predict: %s 
+                            categorical map from train %s
     
-    ;;   (throw (Exception.
-    ;;           (format
-    ;;            "target categorical maps do not match between train an predict. \n train: %s \n predict: %s "
-    ;;            target-cat-maps-from-train target-cat-maps-from-predict)))
-    
-    ;;   )
-    ;; should not throw
-    (when target-cat-maps-from-train
-      (ds-cat/reverse-map-categorical-xforms pred-ds))
-    
-    ;; too strong validation: It would fail in mismatch between 0.0 and 0 for example
-    ;; (when (not (every? some?
-    ;;                    (map inverse-predicted-map
-    ;;                         (distinct simple-predicted-values))))
-    ;;   (throw (Exception. 
-    ;;           (format
-    ;;            "Some predicted values are not in prediction categorical map. Maybe invalid predict fn.
-    ;;                         predicted values: %s
-    ;;                         categorical map from predict: %s 
-    ;;                         categorical map from train %s
-    
-    ;;                 "
-    ;;            (vec (distinct simple-predicted-values))
-    ;;            (-> target-cat-maps-from-predict)
-    ;;            (-> target-cat-maps-from-train)
-    ;;            )))
-    
-    ;;   )
-    
-    ))
+                    "
+                 (vec (distinct simple-predicted-values))
+                 (-> target-cat-maps-from-predict)
+                 (-> target-cat-maps-from-train)))))))
 
 
 
