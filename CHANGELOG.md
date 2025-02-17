@@ -1,4 +1,4 @@
-unreleased
+1.2beta1
 - removed most toy data and forward fns to rdatasets/*
 - additional validation of consitency of predict / cat maps 
 
