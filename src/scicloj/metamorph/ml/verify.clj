@@ -6,31 +6,30 @@
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.modelling :as ds-mod]
-   [tech.v3.datatype :as dtype]
-   [tech.v3.datatype.functional :as dfn]))
+   [tech.v3.datatype.functional :as dfn]
+   [scicloj.metamorph.ml.rdatasets :as rdatasets]))
 
 
-(def target-colname "petal_width")
 
 
 (def regression-iris* (delay
-                        (-> (ds/->dataset "test/data/iris.csv")
-                            (ds/remove-column "species")
-                            (ds-mod/set-inference-target "petal_width"))))
+                        (->
+                         (rdatasets/datasets-iris)
+                         (ds/remove-column :species)
+                         (ds-mod/set-inference-target :petal-width))))
 
 
 (def classification-titanic* (delay
-                               (-> (ds/->dataset "test/data/titanic.csv")
-                                   (ds/remove-column "Name")
+                               (->
+                                (rdatasets/carData-TitanicSurvival)
+                                
+                                (ds/remove-column :rownames)
                                    ;;We have to have a lookup map for the column in order to
                                    ;;do classification on the column.
-                                   (ds/update-column "Survived"
-                                                     (fn [col]
-                                                       (let [val-map {0 :drowned
-                                                                      1 :survived}]
-                                                         (dtype/emap val-map :keyword col))))
-                                   (ds/categorical->number cf/categorical)
-                                   (ds-mod/set-inference-target "Survived"))))
+                                (ds/drop-missing)
+                                (ds/categorical->number cf/categorical)
+                                (ds-mod/set-inference-target :survived))))
+
 
 
 (defn basic-regression
@@ -69,6 +68,4 @@
      (is (< avg-mae max-avg-loss))))
   ([options-map]
    (basic-classification options-map 0.5)))
-
-
 

@@ -8,8 +8,9 @@
             [tech.v3.dataset.modelling :as ds-mod]
             [tech.v3.dataset.categorical :as ds-cat]
             [tablecloth.api :as tc]
-            [scicloj.ml.smile.classification]
-            [scicloj.metamorph.ml.toydata :as toydata]))
+            [scicloj.metamorph.ml.toydata :as toydata]
+            [scicloj.ml.smile.classification]))
+
 
 
 (deftest test-normalized
@@ -123,6 +124,7 @@
 
 (deftest dummy-categorical-float32--failing
 
+  
   (let [ds (->
             {:x [3.0] :y [:a]}
             (ds/->dataset)
@@ -130,9 +132,14 @@
             (ds-mod/set-inference-target :y))
         model (ml/train ds {:model-type :metamorph.ml/dummy-classifier
                             :dummy-strategy :random-class})
-        prediction (ml/predict  (ds/->dataset {:x [0]}) model)]
+        prediction (ml/predict  (ds/->dataset {:x [0]}) model)
+        ]
 
-    (is (= [:a] (-> prediction  (ds-cat/reverse-map-categorical-xforms) :y seq)))))
+    (is (= [:a] (-> prediction  (ds-cat/reverse-map-categorical-xforms) :y seq)))
+    
+    ))
+
+
 
 
 (deftest dummy-pipeline-eval
@@ -154,4 +161,7 @@
             first
             :test-transform
             :metric)))))
+
+
+
 

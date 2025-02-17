@@ -2,6 +2,8 @@
         scicloj/metamorph           {:mvn/version "0.2.4"}
         pppmap/pppmap               {:mvn/version "1.0.0"}
         scicloj/tablecloth          {:mvn/version "7.029.2"}
+        techascent/tech.ml.dataset  {:mvn/version "7.042"}
+
         metosin/malli               {:mvn/version "0.17.0"}
         generateme/fastmath         {:mvn/version "3.0.0-alpha3"}
         it.unimi.dsi/fastutil       {:mvn/version "8.5.15"}
@@ -52,7 +54,9 @@
    :extra-deps {io.github.nextjournal/clerk {:mvn/version "0.17.1102"}
                 org.scicloj/clay {:mvn/version "2-beta28"}
                 org.scicloj/scicloj.ml.smile
-                {:mvn/version "7.5.0"}
+                {:git/url "https://github.com/scicloj/scicloj.ml.smile"
+                 :git/sha "8ce37f6a1f5886dda3cb004f18b63c08e783f0e3"}
+;                {:mvn/version "7.5.0"}
 
                 org.scicloj/tableplot {:mvn/version "1-beta1.1"}
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}

@@ -1,5 +1,6 @@
 unreleased
 - removed most toy data and forward fns to rdatasets/*
+- additional validation of consitency of predict / cat maps 
 
 1.1.1
 * cleaned column names from "." in rdatasets

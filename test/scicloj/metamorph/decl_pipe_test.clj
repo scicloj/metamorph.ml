@@ -1,14 +1,17 @@
 (ns scicloj.metamorph.decl-pipe-test
-  (:require  [clojure.test :refer [deftest is] :as t]
-             [scicloj.metamorph.core :as mm]
-             [scicloj.metamorph.ml :as ml]
-             [scicloj.metamorph.ml.loss :as loss]
-             [tablecloth.api :as tc]
-             [clojure.string :as str]
-             [tech.v3.dataset :as ds]))
+  (:require
+   [clojure.string :as str]
+   [clojure.test :refer [deftest is] :as t]
+   [scicloj.metamorph.core :as mm]
+   [scicloj.metamorph.ml :as ml]
+   [scicloj.metamorph.ml.loss :as loss]
+   [scicloj.metamorph.ml.rdatasets :as rdatasets]
+   [tablecloth.api :as tc]
+   [tech.v3.dataset :as ds]))
 
-(defonce data
-  (tc/dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
+(def data
+  (rdatasets/datasets-iris))
+
 (def iris-target-values (-> data :species distinct sort))
 (def iris-target-values-capital
   (map str/upper-case
@@ -70,7 +73,8 @@
    (fn [ds]
      (let [column-names (tc/column-names ds column-selector)]
        (reduce (fn [d n]
-                 (tc/add-column d (str n "-copy") (d n))) ds column-names)))))
+                 (tc/add-column d (str n "-copy") (d n))) 
+               ds column-names)))))
 
 
 (defn upper-case-col [col]
@@ -121,8 +125,9 @@
 (deftest test-decl-2
   (do-define-model)
   (is-pos-metric [[:tech.v3.dataset.metamorph/categorical->number [:species ] iris-target-values]
-                  [::duplicate-columns :type/numerical]
                   [:tech.v3.dataset.metamorph/set-inference-target :species]
+                  [::duplicate-columns :type/feature]
+                  
                   {:metamorph/id :model} [:scicloj.metamorph.ml/model (merge {:model-type :test-model})]]))
 
 (deftest test-decl-3
