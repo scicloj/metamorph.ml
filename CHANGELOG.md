@@ -1,6 +1,6 @@
 1.2
-- removed most toy data and forward fns to rdatasets/*
-    - attention: column nams of some 'toydatasets' have changed, now in kebak-keyword style
+- removed most toy datasets and forward existing fns to rdatasets/*
+    - attention: column nams of some 'toydatasets' have changed, now in kebab-keyword style
 - additional validation of consitency of predict / cat maps 
 
 1.1.1
