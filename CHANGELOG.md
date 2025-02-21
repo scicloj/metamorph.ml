@@ -1,22 +1,4 @@
-1.2beta1.6
-- fixed syntax
-
-1.2beta1.5
-- improved catmap check
-
-1.2beta1.4
-- fixed release build
-
-1.2beta1.3
-- fixed release build
-
-1.2beta1.2
-- fixed build
-
-1.2beta1.1
-- fixed build
-
-1.2beta1
+1.2
 - removed most toy data and forward fns to rdatasets/*
 - additional validation of consitency of predict / cat maps 
 
