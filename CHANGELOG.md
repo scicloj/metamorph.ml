@@ -1,4 +1,6 @@
 unreleased
+- upgraded deps
+- added misisng Java classes from former tmd-smile support
 
 1.2.1
 - upgrade deps

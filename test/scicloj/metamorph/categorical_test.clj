@@ -89,10 +89,17 @@
         simple-split-for-train
         (first
          (tc/split->seq simple-ready-for-train :holdout {:seed 112723}))
+
         model
-        (ml/train (ds-mod/set-inference-target
-                   (:train simple-split-for-train) :y)
-                  {:model-type :metamorph.ml/dummy-classifier})]
+        (ml/train
+         (:train simple-split-for-train)
+         {:model-type :metamorph.ml/dummy-classifier})
+        
+        prediction
+        (ml/predict
+         (:test simple-split-for-train)
+         model)]
+    (is (= [0] (:y prediction)))
     (is (= [:model-data :options :train-input-hash :id :feature-columns :target-columns :target-datatypes :target-categorical-maps]
            (keys model)))))
 
