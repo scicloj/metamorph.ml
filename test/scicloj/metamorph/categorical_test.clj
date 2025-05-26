@@ -1,8 +1,12 @@
 (ns scicloj.metamorph.categorical-test
-  (:require  [clojure.test :refer [deftest is ]]
-             [scicloj.metamorph.ml.categorical :as cat]
-             [scicloj.metamorph.core :as mm]
-             [tablecloth.api :as tc]))
+  (:require
+   [clojure.test :refer [deftest is]]
+   [scicloj.metamorph.core :as mm]
+   [scicloj.metamorph.ml :as ml]
+   [scicloj.metamorph.ml.categorical :as cat]
+   [tablecloth.api :as tc]
+   [tech.v3.dataset :as ds]
+   [tech.v3.dataset.modelling :as ds-mod]))
 
 
 
@@ -67,5 +71,29 @@
     (is (= #{:x :y :z :xx :yy :zz} (-> fitted-ctx :metamorph/data :a-x meta :one-hot-map :one-hot-table keys set)))
     (is (= #{:x :y :z :xx :yy :zz} (-> transformed-ctx :metamorph/data :a-x meta :one-hot-map :one-hot-table keys set)))))
 
+
+
+(deftest dummy-model-one-hot
+  (let [simple-ready-for-train
+        (->
+         {:x-1 [0 1 0]
+          :x-2 [1 0 1]
+          :cat [:a :b :c]
+          :y [:a :a :b]}
+
+         (ds/->dataset)
+         (ds/categorical->number [:y])
+         (ds/categorical->one-hot [:cat])
+         (ds-mod/set-inference-target [:y]))
+
+        simple-split-for-train
+        (first
+         (tc/split->seq simple-ready-for-train :holdout {:seed 112723}))
+        model
+        (ml/train (ds-mod/set-inference-target
+                   (:train simple-split-for-train) :y)
+                  {:model-type :metamorph.ml/dummy-classifier})]
+    (is (= [:model-data :options :train-input-hash :id :feature-columns :target-columns :target-datatypes :target-categorical-maps]
+           (keys model)))))
 
 

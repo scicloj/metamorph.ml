@@ -1,5 +1,6 @@
 unreleased
 - upgrade deps
+- fixed @37
 
 
 1.2

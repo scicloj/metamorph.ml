@@ -548,16 +548,13 @@
                        (me/humanize)))))))
 
 (defn- assert-categorical-consistency [dataset]
-  (-> ;; should not throw
-   (ds-cat/reverse-map-categorical-xforms dataset)
-   (ds/categorical->number (ds/column-names dataset)))
-  (let [distinc-datatypes
+    (let [distinc-datatypes
         (->> dataset ds-cat/dataset->categorical-maps
              (map #(->> % :lookup-table vals (map dt/datatype)))
              flatten
              distinct)]
     (assert (contains? #{0 1} 
-               (count distinc-datatypes)) (str "Non uniform cat map " (->> dataset ds-cat/dataset->categorical-maps vec)))
+                       (count distinc-datatypes)) (str "Non uniform cat map " (->> dataset ds-cat/dataset->categorical-maps vec)))
     (assert
      (or
       (empty? distinc-datatypes)
