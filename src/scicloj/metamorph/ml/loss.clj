@@ -40,8 +40,8 @@
     (let [lhs-all-numeric (every? number? lhs)
           rhs-all-numeric (every? number? rhs)]
 
-     (errors/when-not-error (not (-> lhs meta :categorical-map)) "lhs should not have categorical map")
-     (errors/when-not-error (not (-> rhs meta :categorical-map)) "rhs should not have categorical map")
+     (errors/when-not-error (not (-> lhs meta :categorical-map)) "lhs should not have categorical map, please revert it before calculating accuracy. See https://scicloj.github.io/noj/noj_book.prepare_for_ml.html#categorical-maps-attached-to-a-column-change-semantic-value-of-the-column")
+     (errors/when-not-error (not (-> rhs meta :categorical-map)) "rhs should not have categorical map, please revert it before calculating accuracy. See https://scicloj.github.io/noj/noj_book.prepare_for_ml.html#categorical-maps-attached-to-a-column-change-semantic-value-of-the-column")
      (errors/when-not-errorf (= lhs-all-numeric rhs-all-numeric)
                              "lhs / rhs need to be either both numeric or both non-numeric: lhs: %s rhs: %s" lhs rhs))
 

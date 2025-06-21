@@ -1,6 +1,7 @@
 unreleased
 - upgraded deps
 - added misisng Java classes from former tmd-smile support
+- more clear error message for accuray of categorical maps
 
 1.2.1
 - upgrade deps
