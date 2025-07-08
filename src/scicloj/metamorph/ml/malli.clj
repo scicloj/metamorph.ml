@@ -19,7 +19,7 @@
 
 (defn instrument-ns [ns]
   (mi/collect! {:ns ns})
-  (mi/instrument! {:report (pretty/thrower) :scope #{:input}}))
+  (mi/instrument! {:report (pretty/thrower) :scope #{:input} :filters [(mi/-filter-ns ns)]}))
 
 (defn model-options->full-schema [model-options]
   (->
