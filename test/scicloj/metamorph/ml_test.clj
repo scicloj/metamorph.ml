@@ -21,6 +21,7 @@
    [scicloj.metamorph.ml.tools :refer [keys-in]]
    [scicloj.metamorph.ml.cache :as cache])
   (:import
+   [ml.dmlc.xgboost4j.java DMatrix]
    (clojure.lang ExceptionInfo)
    (java.util UUID)))
 
@@ -43,7 +44,7 @@
                     :smile-df-used [:blub]}})
     (fn predict
       [feature-ds _ {:keys [target-columns
-                                       target-categorical-maps]}]
+                            target-categorical-maps]}]
 
 
       (let [predic-col (ds/new-column :species (repeat (tc/row-count feature-ds) 1)
@@ -369,11 +370,11 @@
 
 
                _ (ml/evaluate-pipelines
-                            [base-pipe-declr]
-                            (tc/split->seq iris)
-                            loss/classification-accuracy
-                            :accuracy
-                            {:evaluation-handler-fn nippy-handler})]
+                  [base-pipe-declr]
+                  (tc/split->seq iris)
+                  loss/classification-accuracy
+                  :accuracy
+                  {:evaluation-handler-fn nippy-handler})]
            (fit-pipe-in-new-ns (first @files) iris)))))
 
 
@@ -686,47 +687,69 @@
            {:a ["disallowed key"]}
            (ex-data e)))))
   (is (nil?
-       (-> 
+       (->
         (ml/train iris-train {:model-type :test-model--options})
         :model-data))))
 
 (deftest non-consistent-cat-map []
-  (is ( thrown?  Exception
-       (ml/train
-        (->
-         (ds/new-dataset [(ds/new-column :x [0 1 2 3]
-                                         {:categorical-map (ds-cat/create-categorical-map {:x-0 0
-                                                                                           :x-1 1}
-                                                                                          :x
-                                                                                          :int16)})
-                          (ds/new-column  :y [0 1 0 1 2]
-                                          {:categorical-map (ds-cat/create-categorical-map {:y-0 0
-                                                                                            :y-1 1}
-                                                                                           :y
-                                                                                           :int16)})]))
-        {:model-type :metamorph.ml/dummy-classifier
-         :dummy-strategy :fixed-class
-         :fixed-class 3}))))
+  (is (thrown?  Exception
+                (ml/train
+                 (->
+                  (ds/new-dataset [(ds/new-column :x [0 1 2 3]
+                                                  {:categorical-map (ds-cat/create-categorical-map {:x-0 0
+                                                                                                    :x-1 1}
+                                                                                                   :x
+                                                                                                   :int16)})
+                                   (ds/new-column  :y [0 1 0 1 2]
+                                                   {:categorical-map (ds-cat/create-categorical-map {:y-0 0
+                                                                                                     :y-1 1}
+                                                                                                    :y
+                                                                                                    :int16)})]))
+                 {:model-type :metamorph.ml/dummy-classifier
+                  :dummy-strategy :fixed-class
+                  :fixed-class 3}))))
 
+(deftest train-dmatrix
+  (let [dmatrix (DMatrix. "test/data/iris.libsvm.txt?format=libsvm")
+        model (ml/train dmatrix
+                        {:num-class 4
+                         :model-type :xgboost/classification})
+        _ (def model model)
+        prediction (ml/predict
+                    (ds/->dataset
+                     {:0 [0.388889 -0.5]
+                      :1 [-0.333333 0.166667]
+                      :2 [0.288136 -0.864407]
+                      :3 [0.0833333 -0.916667]})
+                    model)]
+    (is (= [3 1] (-> prediction (get nil) vec)))))
 
-(comment 
+(def booster (ml/thaw-model model))
+
+(defn argmax [v]
+  (first (apply max-key second (map-indexed vector v))))
+
+(map
+ argmax
+ (vec (.predict booster dmatrix))
+ 
+ )
+(comment
   (require '[scicloj.ml.smile.classification])
-  
+
   (->>
    (ml/train
     (->  (ds/->dataset {:x [1 0] :y [1 0]})
          (ds-mod/set-inference-target [:y])
-         (ds/assoc-metadata [:y] 
+         (ds/assoc-metadata [:y]
                             :categorical-map nil
-                            :categorical? true)
-         )
+                            :categorical? true))
     {:model-type :smile.classification/ada-boost})
    (ml/predict (ds/->dataset {:x [1 0] :y [1 0]}))
    :y
    meta
-   :categorical-map
-   )
-  
+   :categorical-map)
+
 
   (defn call->lable-column [m]
     (->
@@ -736,22 +759,20 @@
       :x
       :int64)
      (get :x)
-     ( (fn [col]
-         {:datatype (-> col meta :datatype)
-          :lookup-table (-> col meta :categorical-map :lookup-table)
-          :values (vec col)}
-         ))
-     ))
-  
+     ((fn [col]
+        {:datatype (-> col meta :datatype)
+         :lookup-table (-> col meta :categorical-map :lookup-table)
+         :values (vec col)}))))
+
 
   (call->lable-column {:x-1 [0.4] :x-2 [0.6]})
-  
+
   ;;=> {:datatype :int64, :lookup-table {:x-1 0, :x-2 1}, :values [1]}
   
   (call->lable-column {0 [0.4] 1 [0.6]})
-  
+
   ;;=> {:datatype :int64, :lookup-table {0 0, 1 1}, :values [1]}
   
   (call->lable-column {1 [0.4] 0 [0.6]})
-  ;;=> {:datatype :int64, :lookup-table {1 0, 0 1}, :values [1]}
   )
+;;=> {:datatype :int64, :lookup-table {1 0, 0 1}, :values [1]}

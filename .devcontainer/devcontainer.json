@@ -32,5 +32,9 @@
 		}
 	},
 
+	"mounts": [
+"source=/mnt/extHDD/sources/,target=/sources,type=bind,consistency=cached"
+
+	],
 	"remoteUser": "vscode"
 }
