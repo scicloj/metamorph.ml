@@ -13,7 +13,10 @@
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.metamorph :as mds]
    [tech.v3.dataset.modelling :as ds-mod]
-   [tablecloth.column.api :as tcc]))
+   [tablecloth.column.api :as tcc]
+   [clojure.java.io :as io]
+   [taoensso.nippy :as nippy]
+   ))
 
 (def titanic-train
   (->
@@ -64,6 +67,16 @@
                      :get-fn (fn [key] (get @cache-map key))
                      :set-fn (fn [key value] (swap! cache-map assoc key value))})
 
+(reset! ml/train-predict-cache {:use-cache true
+                                :get-fn (fn [key]
+                                          (let [f (format "/tmp/cache/%s.cache" key)]
+                                            (when (.exists  (io/file f))
+                                              (nippy/thaw-from-file f))))
+                                :set-fn (fn [key value]
+                                          (nippy/freeze-to-file
+                                           (format "/tmp/cache/%s.cache" key)
+                                           value))})
+
 
 (defn pipe-fns [model-type hyper-params n]
   (->>
@@ -94,32 +107,30 @@
 )
 
 (time
- 
- (let [eval-result
-       (ml/evaluate-pipelines
-        all-piep-fns
-        [{:train
-          titanic-train
-          :test titanic-test}]
-        loss/classification-accuracy
-        :accuracy
-        {:return-best-pipeline-only false
-         :return-best-crossvalidation-only false
-         :evaluation-handler-fn (fn [result]
-                                  (def result result)
-       
-                                  (eval-handler/metrics-and-options-keep-fn result))})]
-   (def eval-result eval-result)
-   (pp/pprint
-    (-> eval-result
+ (def eval-result  
+   (ml/evaluate-pipelines
+    all-piep-fns
+    [{:train
+      titanic-train
+      :test titanic-test}]
+    loss/classification-accuracy
+    :accuracy
+    {:return-best-pipeline-only false
+     :return-best-crossvalidation-only false
+     ;;  :evaluation-handler-fn (fn [result]
+     ;;                           (eval-handler/metrics-and-options-keep-fn result))
      
+     })
+   ))
+
+(pp/pprint
+ (-> eval-result
+
      first
      first
      (#(hash-map :options (get-in % [:fit-ctx :model :options])
                  :train-accuracy (get-in % [:train-transform :metric])
-                 :test-accuracy (get-in % [:test-transform :metric])))))))
-
-
+                 :test-accuracy (get-in % [:test-transform :metric])))))
 (def datasets
   (map
    (fn [result]
