@@ -22,7 +22,7 @@
 
 (defn test "Run the tests." [opts]
   (-> opts
-      (assoc :aliases [:runner])
+      (assoc :aliases [:runner :dev :test])
       (bb/run-tests)))
 
 (defn- pom-template [version]
