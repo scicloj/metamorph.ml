@@ -4,8 +4,6 @@
              [tech.v3.dataset :as ds]
              [tech.v3.dataset.modelling :as ds-mod]))
 
-(set! *unchecked-math* :warn-on-boxed)
-
  ;; ============================================================================
  ;; Helper Functions
  ;; ============================================================================
@@ -40,25 +38,33 @@
 (defn- gini-impurity
   "Calculate Gini impurity for classification."
   [y]
-  (let [n (count y)
-        class-counts (frequencies y)]
+  (let [n (long (count y))]
     (if (zero? n)
       0.0
-      (- 1.0
-         (reduce + (map (fn [[_ ^long cnt]]
-                          (let [p (/ (double cnt) (double n))]
-                            (* p p)))
-                        class-counts))))))
+      (let [class-counts (frequencies y)
+            n-double (double n)
+            sum-squares (reduce (fn [^double acc [_ cnt]]
+                                 (let [p (/ (double cnt) n-double)]
+                                   (+ acc (* p p))))
+                               0.0
+                               class-counts)]
+        (- 1.0 sum-squares)))))
 
 (defn- mse
   "Calculate mean squared error for regression."
   [y]
   (if (empty? y)
     0.0
-    (let [n (count y)
-          mean (/ (reduce + y) (double n))
-          squared-diffs (map #(let [diff (- (double %) mean)] (* diff diff)) y)]
-      (/ (reduce + squared-diffs) (double n)))))
+    (let [n (long (count y))
+          n-double (double n)
+          sum (reduce (fn [^double acc val] (+ acc (double val))) 0.0 y)
+          mean (/ sum n-double)
+          sum-squared-diffs (reduce (fn [^double acc val]
+                                     (let [diff (- (double val) mean)]
+                                       (+ acc (* diff diff))))
+                                   0.0
+                                   y)]
+      (/ sum-squared-diffs n-double))))
 
 (defn- calculate-impurity
   "Calculate impurity based on task type."
@@ -72,29 +78,44 @@
 ;; ============================================================================
 
 (defn- split-data
-  "Split data based on feature and threshold."
+  "Split data based on feature and threshold using indices (avoids copying data)."
   [X y feature-idx threshold]
-  (let [indices (range (count X))
-        left-indices (filter #(<= (get-in X [% feature-idx]) threshold) indices)
-        right-indices (filter #(> (get-in X [% feature-idx]) threshold) indices)]
-    {:left-X (mapv #(nth X %) left-indices)
-     :left-y (mapv #(nth y %) left-indices)
-     :right-X (mapv #(nth X %) right-indices)
-     :right-y (mapv #(nth y %) right-indices)}))
+  (let [n (count X)
+        thresh (double threshold)
+        left-indices (transient [])
+        right-indices (transient [])]
+    ;; Single pass through data, accumulate indices
+    (loop [i 0]
+      (when (< i n)
+        (let [sample (nth X i)
+              feature-val (double (nth sample feature-idx))]
+          (if (<= feature-val thresh)
+            (conj! left-indices i)
+            (conj! right-indices i)))
+        (recur (inc i))))
+    (let [left-idx (persistent! left-indices)
+          right-idx (persistent! right-indices)]
+      {:left-X (mapv #(nth X %) left-idx)
+       :left-y (mapv #(nth y %) left-idx)
+       :right-X (mapv #(nth X %) right-idx)
+       :right-y (mapv #(nth y %) right-idx)})))
 
 (defn- calculate-split-gain
   "Calculate information gain from a split."
   [y left-y right-y task]
-  (let [n (count y)
-        n-left (count left-y)
-        n-right (count right-y)]
+  (let [n (long (count y))
+        n-left (long (count left-y))
+        n-right (long (count right-y))]
     (if (or (zero? n-left) (zero? n-right))
       0.0
       (let [parent-impurity (calculate-impurity y task)
             left-impurity (calculate-impurity left-y task)
             right-impurity (calculate-impurity right-y task)
-            weighted-child-impurity (+ (* (/ n-left n) left-impurity)
-                                       (* (/ n-right n) right-impurity))]
+            n-double (double n)
+            left-weight (/ (double n-left) n-double)
+            right-weight (/ (double n-right) n-double)
+            weighted-child-impurity (+ (* left-weight left-impurity)
+                                       (* right-weight right-impurity))]
         (- parent-impurity weighted-child-impurity)))))
 
 (defn- get-thresholds
@@ -106,20 +127,33 @@
   (let [values (vec (sort (distinct (map #(nth % feature-idx) X))))
         n-values (count values)
         max-thresholds 20]
-    (if (< n-values 2)
-      []
-      (if (<= n-values max-thresholds)
-        ;; Few values: use all midpoints
-        (map (fn [[a b]] (/ (+ a b) 2.0))
-             (partition 2 1 values))
-        ;; Many values: sample uniformly
-        (let [step (/ (dec n-values) (double max-thresholds))
-              indices (map #(int (* % step)) (range max-thresholds))]
-          (map (fn [idx]
-                 (let [a (nth values idx)
-                       b (nth values (min (inc idx) (dec n-values)))]
-                   (/ (+ a b) 2.0)))
-               indices))))))
+    (cond
+      (< n-values 2) []
+
+      (<= n-values max-thresholds)
+      ;; Few values: use all midpoints
+      (loop [i 0
+             result (transient [])]
+        (if (< i (dec n-values))
+          (let [a (double (nth values i))
+                b (double (nth values (inc i)))]
+            (recur (inc i)
+                   (conj! result (* 0.5 (+ a b)))))
+          (persistent! result)))
+
+      :else
+      ;; Many values: sample uniformly
+      (let [step (/ (double (dec n-values)) (double max-thresholds))]
+        (loop [i 0
+               result (transient [])]
+          (if (< i max-thresholds)
+            (let [idx (long (* (double i) step))
+                  idx-next (min (inc idx) (dec n-values))
+                  a (double (nth values idx))
+                  b (double (nth values idx-next))]
+              (recur (inc i)
+                     (conj! result (* 0.5 (+ a b)))))
+            (persistent! result)))))))
 
 (defn- find-best-split
   "Find the best feature and threshold to split on."
@@ -180,9 +214,10 @@
      (and max-depth (>= depth max-depth))
      ;; Too few samples
      (< n-samples min-samples-split)
-     ;; Pure node (classification only)
+     ;; Pure node (classification only) - check cheaply first
      (and (= task :classification)
-          (= (count (distinct y)) 1)))))
+          (or (<= n-samples 1)
+              (= (count (distinct y)) 1))))))
 
 (defn- build-tree
   "Recursively build a decision tree."
@@ -223,13 +258,15 @@
 (defn- predict-tree
   "Predict a single sample using a decision tree."
   [tree sample]
-  (case (:type tree)
-    :leaf (:value tree)
-    :split (let [{:keys [feature-idx threshold left right]} tree
-                 feature-value (nth sample feature-idx)]
-             (if (<= feature-value threshold)
-               (recur left sample)
-               (recur right sample)))))
+  (loop [node tree]
+    (case (:type node)
+      :leaf (:value node)
+      :split (let [{:keys [feature-idx threshold left right]} node
+                   feature-value (double (nth sample feature-idx))
+                   thresh (double threshold)]
+               (if (<= feature-value thresh)
+                 (recur left)
+                 (recur right))))))
 
 (defn- predict-tree-all
   "Predict all samples using a decision tree."
@@ -292,24 +329,45 @@
   "Predict using all trees and aggregate results."
   [trees X task]
   (let [n-trees (count trees)
-        all-predictions (mapv #(predict-tree-all % X) trees)]
+        n-samples (count X)]
 
-    ;; Transpose predictions: per-sample predictions across all trees
     (case task
       :classification
-      ;; Majority voting
-      (mapv (fn [sample-idx]
-              (let [tree-predictions (map #(nth % sample-idx) all-predictions)
-                    vote-counts (frequencies tree-predictions)]
-                (key (apply max-key val vote-counts))))
-            (range (count X)))
+      ;; Majority voting - process sample by sample to avoid large intermediate structures
+      (loop [sample-idx 0
+             result (transient [])]
+        (if (< sample-idx n-samples)
+          (let [sample (nth X sample-idx)
+                ;; Collect predictions from all trees for this sample
+                predictions (loop [tree-idx 0
+                                   preds (transient [])]
+                              (if (< tree-idx n-trees)
+                                (recur (inc tree-idx)
+                                       (conj! preds (predict-tree (nth trees tree-idx) sample)))
+                                (persistent! preds)))
+                vote-counts (frequencies predictions)
+                majority (key (apply max-key val vote-counts))]
+            (recur (inc sample-idx)
+                   (conj! result majority)))
+          (persistent! result)))
 
       :regression
       ;; Average predictions
-      (mapv (fn [sample-idx]
-              (let [tree-predictions (map #(nth % sample-idx) all-predictions)]
-                (/ (reduce + tree-predictions) n-trees)))
-            (range (count X))))))
+      (loop [sample-idx 0
+             result (transient [])]
+        (if (< sample-idx n-samples)
+          (let [sample (nth X sample-idx)
+                ;; Sum predictions from all trees
+                sum (loop [tree-idx 0
+                          acc 0.0]
+                      (if (< tree-idx n-trees)
+                        (recur (inc tree-idx)
+                               (+ acc (double (predict-tree (nth trees tree-idx) sample))))
+                        acc))
+                avg (/ sum (double n-trees))]
+            (recur (inc sample-idx)
+                   (conj! result avg)))
+          (persistent! result))))))
 
 ;; ============================================================================
 ;; metamorph.ml Integration
