@@ -4,6 +4,8 @@
              [tech.v3.dataset :as ds]
              [tech.v3.dataset.modelling :as ds-mod]))
 
+(set! *unchecked-math* :warn-on-boxed)
+
  ;; ============================================================================
  ;; Helper Functions
  ;; ============================================================================
@@ -43,8 +45,8 @@
     (if (zero? n)
       0.0
       (- 1.0
-         (reduce + (map (fn [[_ cnt]]
-                          (let [p (/ cnt n)]
+         (reduce + (map (fn [[_ ^long cnt]]
+                          (let [p (/ (double cnt) (double n))]
                             (* p p)))
                         class-counts))))))
 
@@ -53,9 +55,10 @@
   [y]
   (if (empty? y)
     0.0
-    (let [mean (/ (reduce + y) (count y))
-          squared-diffs (map #(* (- % mean) (- % mean)) y)]
-      (/ (reduce + squared-diffs) (count y)))))
+    (let [n (count y)
+          mean (/ (reduce + y) (double n))
+          squared-diffs (map #(let [diff (- (double %) mean)] (* diff diff)) y)]
+      (/ (reduce + squared-diffs) (double n)))))
 
 (defn- calculate-impurity
   "Calculate impurity based on task type."
@@ -95,13 +98,28 @@
         (- parent-impurity weighted-child-impurity)))))
 
 (defn- get-thresholds
-  "Get candidate thresholds for a feature (midpoints between unique values)."
+  "Get candidate thresholds for a feature (sample up to max-thresholds for speed).
+
+   For large datasets, trying all unique value midpoints is very slow.
+   We sample at most 20 thresholds uniformly across the value range."
   [X feature-idx]
-  (let [values (sort (distinct (map #(nth % feature-idx) X)))]
-    (if (< (count values) 2)
+  (let [values (vec (sort (distinct (map #(nth % feature-idx) X))))
+        n-values (count values)
+        max-thresholds 20]
+    (if (< n-values 2)
       []
-      (map (fn [[a b]] (/ (+ a b) 2.0))
-           (partition 2 1 values)))))
+      (if (<= n-values max-thresholds)
+        ;; Few values: use all midpoints
+        (map (fn [[a b]] (/ (+ a b) 2.0))
+             (partition 2 1 values))
+        ;; Many values: sample uniformly
+        (let [step (/ (dec n-values) (double max-thresholds))
+              indices (map #(int (* % step)) (range max-thresholds))]
+          (map (fn [idx]
+                 (let [a (nth values idx)
+                       b (nth values (min (inc idx) (dec n-values)))]
+                   (/ (+ a b) 2.0)))
+               indices))))))
 
 (defn- find-best-split
   "Find the best feature and threshold to split on."
@@ -224,9 +242,9 @@
 
 (defn- bootstrap-sample
   "Create a bootstrap sample (sample with replacement)."
-  [X y rng]
+  [X y ^java.util.Random rng]
   (let [n (count X)
-        indices (repeatedly n #(rand-int n))]
+        indices (repeatedly n #(.nextInt rng n))]
     {:X (mapv #(nth X %) indices)
      :y (mapv #(nth y %) indices)}))
 
@@ -239,24 +257,36 @@
     (build-tree sample-X sample-y 0 max-depth min-samples-split max-features-per-split task rng)))
 
 (defn- train-forest
-  "Train multiple decision trees to form a random forest."
-  [X y {:keys [n-trees max-depth min-samples-split max-features bootstrap random-seed]
+  "Train multiple decision trees to form a random forest.
+
+   Trees are trained in parallel using pmap for better performance."
+  [X y {:keys [n-trees max-depth min-samples-split max-features bootstrap random-seed parallel]
         :or {n-trees 100
              max-depth nil
              min-samples-split 2
              max-features :sqrt
              bootstrap true
-             random-seed nil}}
+             random-seed nil
+             parallel true}}
    task]
   (let [n-features (count (first X))
         max-features-per-split (calculate-max-features n-features max-features)
-        rng (if random-seed
-              (java.util.Random. random-seed)
-              (java.util.Random.))]
-    (mapv (fn [_]
-            (train-single-tree X y max-depth min-samples-split
-                               max-features-per-split bootstrap task rng))
-          (range n-trees))))
+        base-rng (if random-seed
+                   (java.util.Random. random-seed)
+                   (java.util.Random.))
+        ;; Generate seeds for each tree to ensure reproducibility
+        tree-seeds (vec (repeatedly n-trees #(.nextInt base-rng)))
+
+        ;; Function to train a single tree with its own RNG
+        train-fn (fn [tree-seed]
+                   (let [rng (java.util.Random. tree-seed)]
+                     (train-single-tree X y max-depth min-samples-split
+                                       max-features-per-split bootstrap task rng)))]
+
+    ;; Use pmap for parallel execution (unless disabled)
+    (if parallel
+      (vec (pmap train-fn tree-seeds))
+      (mapv train-fn tree-seeds))))
 
 (defn- predict-forest
   "Predict using all trees and aggregate results."
@@ -394,5 +424,6 @@
                      :min-samples-split {:type :int}
                      :max-features {}
                      :bootstrap {:type :boolean}
-                     :random-seed {:type :int}}
+                     :random-seed {:type :int}
+                     :parallel {:type :boolean}}
    :explain-fn explain-random-forest})
