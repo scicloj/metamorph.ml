@@ -1,8 +1,9 @@
-(ns cache 
+(ns cache
   (:require
    [clojure.pprint :as pp]
    [scicloj.metamorph.core :as mm]
    [scicloj.metamorph.ml :as ml]
+   [scicloj.metamorph.ml.cache :as cache]
    [scicloj.metamorph.ml.evaluation-handler :as eval-handler]
    [scicloj.metamorph.ml.gridsearch :as gs]
    [scicloj.metamorph.ml.loss :as loss]
@@ -15,8 +16,7 @@
    [tech.v3.dataset.modelling :as ds-mod]
    [tablecloth.column.api :as tcc]
    [clojure.java.io :as io]
-   [taoensso.nippy :as nippy]
-   ))
+   [taoensso.nippy :as nippy]))
 
 (def titanic-train
   (->
@@ -28,54 +28,41 @@
    (ds/->dataset "https://github.com/scicloj/metamorph-examples/raw/main/data/titanic/test.csv"
                  {:key-fn keyword})
    (tc/add-column :Survived 0)))
-
+(-> xxx :metamorph/data)
 
 (defn pipe-fn [options]
-  (mm/pipeline
-   (mds/select-columns [:Pclass :Survived :Embarked :Sex])
-   
+  (with-meta
+    (mm/pipeline
+     (fn [ctx]
+       (assoc ctx :the-train-ds (:metamorph/data ctx)))
 
-   (tc-mm/add-or-replace-column :Survived (fn [ds] (map #(case %
-                                                           1 "yes"
-                                                           0 "no")
-                                                        (:Survived ds))))
-   (mds/categorical->number [:Survived :Sex :Embarked])
-   (tc-mm/replace-missing )
-   (mds/set-inference-target :Survived)
 
-  ;;  (fn [ctx]
-  ;;    (assoc ctx :options (dissoc options
-  ;;                                :cache-opts))
-  ;;    )
-   {:metamorph/id :model}
-   (ml/model options)))
+    (mds/select-columns [:Pclass :Survived :Embarked :Sex])
 
-(defonce my-conn-pool (car/connection-pool {}))
-(def     my-conn-spec {:uri "redis://localhost:6379"})
-(def     my-wcar-opts {:pool my-conn-pool, :spec my-conn-spec})
 
+    (tc-mm/add-or-replace-column :Survived (fn [ds] (map #(case %
+                                                            1 "yes"
+                                                            0 "no")
+                                                         (:Survived ds))))
+    (mds/categorical->number [:Survived :Sex :Embarked])
+    (tc-mm/replace-missing)
+    (mds/set-inference-target :Survived)
+
+    ;;  (fn [ctx]
+    ;;    (assoc ctx :options (dissoc options
+    ;;                                :cache-opts))
+    ;;    )
+    {:metamorph/id :model}
+    (ml/model options))
+    options))
 
 ;(ns-unmap *ns* 'cache-map)
-(defonce cache-map (atom {}))
 
 
-;; (reset! ml/kv-cache {:use-cache true
-;;                      :get-fn (fn [key] (car/wcar my-wcar-opts (car/get key)))
-;;                      :set-fn (fn [key value] (car/wcar my-wcar-opts (car/set key value)))})
+(defonce my-conn-pool (car/connection-pool {}))
 
-(reset! ml/train-predict-cache {:use-cache true
-                     :get-fn (fn [key] (get @cache-map key))
-                     :set-fn (fn [key value] (swap! cache-map assoc key value))})
-
-(reset! ml/train-predict-cache {:use-cache true
-                                :get-fn (fn [key]
-                                          (let [f (format "/tmp/cache/%s.cache" key)]
-                                            (when (.exists  (io/file f))
-                                              (nippy/thaw-from-file f))))
-                                :set-fn (fn [key value]
-                                          (nippy/freeze-to-file
-                                           (format "/tmp/cache/%s.cache" key)
-                                           value))})
+(def wcar-opts {:pool my-conn-pool,
+                :spec {:uri "redis://localhost:6379"}})
 
 
 (defn pipe-fns [model-type hyper-params n]
@@ -85,9 +72,8 @@
       (assoc %
              :model-type model-type))
     (gs/sobol-gridsearch hyper-params))
-   (take n))
-   )
-(def n 100)
+   (take n)))
+(def n 10)
 (def all-piep-fns
   (concat
    (pipe-fns :smile.classification/decision-tree
@@ -96,32 +82,80 @@
    (pipe-fns :smile.classification/logistic-regression
              (ml/hyperparameters :smile.classification/logistic-regression)
              n)
-  
+
    (pipe-fns :smile.classification/ada-boost
              (ml/hyperparameters :smile.classification/ada-boost)
              n)
    (pipe-fns :smile.classification/random-forest
              (ml/hyperparameters :smile.classification/random-forest)
 
-             n))
-)
+             n)))
+
+(defn- eval-pipe []
+  (ml/evaluate-pipelines
+   all-piep-fns
+   [{:train
+     titanic-train
+     :test titanic-test}]
+   loss/classification-accuracy
+   :accuracy
+   {:return-best-pipeline-only false
+    :return-best-crossvalidation-only false
+    :skip-scoring-fn (fn [train-ds pipeline-fn]
+                       (let [exp-file (io/file (format "/tmp/exp-database/%s-%s.nippy" 
+                                                       (hash train-ds) 
+                                                       (hash (meta pipeline-fn))))]
+                         (.exists exp-file)
+                         )
+                       
+                       )
+    :evaluation-handler-fn (fn [ctx]
+                             (def ctx ctx 
+                             )
+
+                             (let [train-ds (-> ctx  :fit-ctx :train-ds)
+                                   train-ds-hash (hash train-ds)
+                                   train-options (-> ctx :fit-ctx :model :options)
+                                   train-options-hash (hash train-options)
+                                   metric (-> ctx :test-transform :metric)
+                                   train-run-data {:train-ds train-ds
+                                                   :train-options train-options
+                                                   :metric metric}
+                                   train-result-file-name (format "/tmp/exp-database/%s-%s.nippy" train-ds-hash train-options-hash)]
+
+                               (when (not (.exists (io/file train-result-file-name)))
+                                 (println :write-to-db train-result-file-name)
+                                 (nippy/freeze-to-file train-result-file-name train-run-data)))
+                             (-> (eval-handler/metrics-and-options-keep-fn ctx)))}))
+
+
 
 (time
- (def eval-result  
-   (ml/evaluate-pipelines
-    all-piep-fns
-    [{:train
-      titanic-train
-      :test titanic-test}]
-    loss/classification-accuracy
-    :accuracy
-    {:return-best-pipeline-only false
-     :return-best-crossvalidation-only false
-     ;;  :evaluation-handler-fn (fn [result]
-     ;;                           (eval-handler/metrics-and-options-keep-fn result))
-     
-     })
-   ))
+ (do
+   (cache/disable-cache!)
+   (time (let [_ (eval-pipe)]))))
+
+(do
+  (let [cache-map (atom {})]
+    (cache/enable-atom-cache! cache-map)
+    (eval-pipe))
+  (time (let [_ (eval-pipe)])))
+
+(do
+  (cache/enable-redis-cache! wcar-opts)
+  (let [_ (eval-pipe)])
+  (time (let [_ (eval-pipe)])))
+
+
+(let [cache-dir "/tmp/cache"]
+  (when (.exists (io/as-file cache-dir))
+    (run! io/delete-file (reverse (file-seq (io/as-file cache-dir)))))
+  (.mkdirs (io/as-file cache-dir))
+
+  (cache/enable-disk-cache! cache-dir)
+  (let [_ (eval-pipe)])
+  (time (let [_ (eval-pipe)])))
+
 
 (pp/pprint
  (-> eval-result
@@ -136,8 +170,7 @@
    (fn [result]
      (tc/dataset
       (merge (-> result  :test-transform (select-keys [:metric]))
-             (-> result :fit-ctx :model :options)))
-     )
+             (-> result :fit-ctx :model :options))))
    (-> eval-result flatten)))
 
 (def metrices
