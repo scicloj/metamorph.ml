@@ -1,30 +1,28 @@
 (ns scicloj.metamorph.ml.random-forest
-   "Pure Clojure Random Forest implementation for classification and regression."
-   (:require [scicloj.metamorph.ml :as ml]
-             [tech.v3.dataset :as ds]
-             [tech.v3.dataset.modelling :as ds-mod]))
+  "Optimized Pure Clojure Random Forest implementation for classification and regression."
+  (:require [scicloj.metamorph.ml :as ml]
+            [tech.v3.dataset :as ds]
+            [tech.v3.dataset.modelling :as ds-mod]))
 
- ;; ============================================================================
- ;; Helper Functions
- ;; ============================================================================
+;; ============================================================================
+;; Helper Functions
+;; ============================================================================
 
- (defn- calculate-max-features
-   "Calculate the number of features to consider at each split."
-   [n-features max-features]
-   (cond
-     (= max-features :sqrt) (int (Math/floor (Math/sqrt n-features)))
-     (= max-features :log2) (int (Math/floor (/ (Math/log n-features) (Math/log 2))))
-     (number? max-features) (min max-features n-features)
-     :else n-features))
+(defn- calculate-max-features
+  "Calculate the number of features to consider at each split."
+  [n-features max-features]
+  (cond
+    (= max-features :sqrt) (int (Math/floor (Math/sqrt n-features)))
+    (= max-features :log2) (int (Math/floor (/ (Math/log n-features) (Math/log 2))))
+    (number? max-features) (min max-features n-features)
+    :else n-features))
 
- (defn my-shuffle
-   "Return a random permutation of coll"
-   {:added "1.2"
-    :static true}
-   [^java.util.Collection coll ^java.util.Random rng]
-   (let [al (java.util.ArrayList. coll)]
-     (java.util.Collections/shuffle al rng)
-     (clojure.lang.RT/vector (.toArray al))))
+(defn- my-shuffle
+  "Return a random permutation of coll"
+  [^java.util.Collection coll ^java.util.Random rng]
+  (let [al (java.util.ArrayList. coll)]
+    (java.util.Collections/shuffle al rng)
+    (clojure.lang.RT/vector (.toArray al))))
 
 (defn- random-sample
   "Sample k random indices from 0 to n-1."
@@ -32,16 +30,34 @@
   (take k (my-shuffle (range n) rng)))
 
 ;; ============================================================================
+;; Data Structure Optimizations
+;; ============================================================================
+
+(defn- extract-feature-columns
+  "Extract features as column-major format for faster access.
+   Returns vector of columns where each column is a vector of values."
+  [X]
+  (let [n-features (count (first X))]
+    (mapv (fn [feature-idx]
+            (mapv #(double (nth % feature-idx)) X))
+          (range n-features))))
+
+(defn- get-feature-value
+  "Fast feature value lookup from column-major format."
+  [feature-columns feature-idx sample-idx]
+  (nth (nth feature-columns feature-idx) sample-idx))
+
+;; ============================================================================
 ;; Impurity and Split Metrics
 ;; ============================================================================
 
-(defn- gini-impurity
-  "Calculate Gini impurity for classification."
-  [y]
-  (let [n (long (count y))]
+(defn- gini-impurity-indexed
+  "Calculate Gini impurity for classification using indices."
+  [y indices]
+  (let [n (count indices)]
     (if (zero? n)
       0.0
-      (let [class-counts (frequencies y)
+      (let [class-counts (frequencies (map #(nth y %) indices))
             n-double (double n)
             sum-squares (reduce (fn [^double acc [_ cnt]]
                                  (let [p (/ (double cnt) n-double)]
@@ -50,67 +66,60 @@
                                class-counts)]
         (- 1.0 sum-squares)))))
 
-(defn- mse
-  "Calculate mean squared error for regression."
-  [y]
-  (if (empty? y)
+(defn- mse-indexed
+  "Calculate mean squared error for regression using indices."
+  [y indices]
+  (if (empty? indices)
     0.0
-    (let [n (long (count y))
+    (let [n (count indices)
           n-double (double n)
-          sum (reduce (fn [^double acc val] (+ acc (double val))) 0.0 y)
+          sum (reduce (fn [^double acc idx] (+ acc (double (nth y idx)))) 0.0 indices)
           mean (/ sum n-double)
-          sum-squared-diffs (reduce (fn [^double acc val]
-                                     (let [diff (- (double val) mean)]
+          sum-squared-diffs (reduce (fn [^double acc idx]
+                                     (let [val (double (nth y idx))
+                                           diff (- val mean)]
                                        (+ acc (* diff diff))))
                                    0.0
-                                   y)]
+                                   indices)]
       (/ sum-squared-diffs n-double))))
 
-(defn- calculate-impurity
-  "Calculate impurity based on task type."
-  [y task]
+(defn- calculate-impurity-indexed
+  "Calculate impurity based on task type using indices."
+  [y indices task]
   (case task
-    :classification (gini-impurity y)
-    :regression (mse y)))
+    :classification (gini-impurity-indexed y indices)
+    :regression (mse-indexed y indices)))
 
 ;; ============================================================================
-;; Splitting Logic
+;; Optimized Splitting Logic
 ;; ============================================================================
 
-(defn- split-data
-  "Split data based on feature and threshold using indices (avoids copying data)."
-  [X y feature-idx threshold]
-  (let [n (count X)
-        thresh (double threshold)
-        left-indices (transient [])
-        right-indices (transient [])]
-    ;; Single pass through data, accumulate indices
-    (loop [i 0]
-      (when (< i n)
-        (let [sample (nth X i)
-              feature-val (double (nth sample feature-idx))]
-          (if (<= feature-val thresh)
-            (conj! left-indices i)
-            (conj! right-indices i)))
-        (recur (inc i))))
-    (let [left-idx (persistent! left-indices)
-          right-idx (persistent! right-indices)]
-      {:left-X (mapv #(nth X %) left-idx)
-       :left-y (mapv #(nth y %) left-idx)
-       :right-X (mapv #(nth X %) right-idx)
-       :right-y (mapv #(nth y %) right-idx)})))
+(defn- split-indices
+  "Split indices based on feature and threshold.
+   Works with column-major feature data."
+  [feature-columns feature-idx threshold indices]
+  (let [thresh (double threshold)
+        left (transient [])
+        right (transient [])]
+    (doseq [idx indices]
+      (let [val (get-feature-value feature-columns feature-idx idx)]
+        (if (<= val thresh)
+          (conj! left idx)
+          (conj! right idx))))
+    {:left (persistent! left)
+     :right (persistent! right)}))
 
-(defn- calculate-split-gain
-  "Calculate information gain from a split."
-  [y left-y right-y task]
-  (let [n (long (count y))
-        n-left (long (count left-y))
-        n-right (long (count right-y))]
+(defn- calculate-split-gain-indexed
+  "Calculate information gain from a split using indices."
+  [y indices left-indices right-indices task]
+  (let [n (count indices)
+        n-left (count left-indices)
+        n-right (count right-indices)]
     (if (or (zero? n-left) (zero? n-right))
       0.0
-      (let [parent-impurity (calculate-impurity y task)
-            left-impurity (calculate-impurity left-y task)
-            right-impurity (calculate-impurity right-y task)
+      (let [parent-impurity (calculate-impurity-indexed y indices task)
+            left-impurity (calculate-impurity-indexed y left-indices task)
+            right-impurity (calculate-impurity-indexed y right-indices task)
             n-double (double n)
             left-weight (/ (double n-left) n-double)
             right-weight (/ (double n-right) n-double)
@@ -118,15 +127,13 @@
                                        (* right-weight right-impurity))]
         (- parent-impurity weighted-child-impurity)))))
 
-(defn- get-thresholds
-  "Get candidate thresholds for a feature (sample up to max-thresholds for speed).
-
-   For large datasets, trying all unique value midpoints is very slow.
-   We sample at most 20 thresholds uniformly across the value range."
-  [X feature-idx]
-  (let [values (vec (sort (distinct (map #(nth % feature-idx) X))))
+(defn- get-thresholds-fast
+  "Get candidate thresholds (max 10 for speed).
+   Uses column-major feature data and indices."
+  [feature-columns feature-idx indices]
+  (let [values (vec (sort (distinct (map #(get-feature-value feature-columns feature-idx %) indices))))
         n-values (count values)
-        max-thresholds 20]
+        max-thresholds 10]  ; Reduced from 20 for speed
     (cond
       (< n-values 2) []
 
@@ -155,44 +162,55 @@
                      (conj! result (* 0.5 (+ a b)))))
             (persistent! result)))))))
 
-(defn- find-best-split
-  "Find the best feature and threshold to split on."
-  [X y feature-indices task]
-  (let [n-samples (count X)]
-    (loop [features feature-indices
+(defn- find-best-split-for-feature
+  "Find best split for a single feature."
+  [feature-columns y indices feature-idx task]
+  (let [thresholds (get-thresholds-fast feature-columns feature-idx indices)]
+    (loop [thresholds thresholds
            best-gain 0.0
-           best-feature nil
            best-threshold nil]
-      (if (empty? features)
-        {:feature-idx best-feature
-         :threshold best-threshold
-         :gain best-gain}
-        (let [feature-idx (first features)
-              thresholds (get-thresholds X feature-idx)
-              {:keys [gain threshold]}
-              (reduce (fn [best thresh]
-                        (let [{:keys [left-y right-y]} (split-data X y feature-idx thresh)
-                              gain (calculate-split-gain y left-y right-y task)]
-                          (if (> gain (:gain best))
-                            {:gain gain :threshold thresh}
-                            best)))
-                      {:gain 0.0 :threshold nil}
-                      thresholds)]
+      (if (empty? thresholds)
+        {:gain best-gain :threshold best-threshold}
+        (let [thresh (first thresholds)
+              {:keys [left right]} (split-indices feature-columns feature-idx thresh indices)
+              gain (calculate-split-gain-indexed y indices left right task)]
           (if (> gain best-gain)
-            (recur (rest features) gain feature-idx threshold)
-            (recur (rest features) best-gain best-feature best-threshold)))))))
+            ;; Early stopping: if gain > 0.99, we have a near-perfect split
+            (if (>= gain 0.99)
+              {:gain gain :threshold thresh}
+              (recur (rest thresholds) gain thresh))
+            (recur (rest thresholds) best-gain best-threshold)))))))
+
+(defn- find-best-split
+  "Find the best feature and threshold to split on.
+   Optionally parallelizes feature search."
+  [feature-columns y indices feature-indices task parallel-features?]
+  (let [find-fn (fn [feature-idx]
+                 (let [{:keys [gain threshold]} (find-best-split-for-feature feature-columns y indices feature-idx task)]
+                   {:feature-idx feature-idx :gain gain :threshold threshold}))
+        results (if parallel-features?
+                  (pmap find-fn feature-indices)
+                  (map find-fn feature-indices))
+        best (reduce (fn [best current]
+                      (if (> (:gain current) (:gain best))
+                        current
+                        best))
+                    {:feature-idx nil :gain 0.0 :threshold nil}
+                    results)]
+    best))
 
 ;; ============================================================================
 ;; Decision Tree Construction
 ;; ============================================================================
 
-(defn- create-leaf
-  "Create a leaf node with prediction value."
-  [y task]
-  (let [n-samples (count y)]
+(defn- create-leaf-indexed
+  "Create a leaf node with prediction value from indices."
+  [y indices task]
+  (let [n-samples (count indices)]
     (case task
       :classification
-      (let [class-counts (frequencies y)
+      (let [values (map #(nth y %) indices)
+            class-counts (frequencies values)
             majority-class (key (apply max-key val class-counts))]
         {:type :leaf
          :value majority-class
@@ -200,50 +218,59 @@
          :n-samples n-samples})
 
       :regression
-      (let [mean (/ (reduce + y) (max 1 n-samples))]
+      (let [sum (reduce (fn [^double acc idx] (+ acc (double (nth y idx)))) 0.0 indices)
+            mean (/ sum (double (max 1 n-samples)))]
         {:type :leaf
          :value mean
          :n-samples n-samples}))))
 
 (defn- should-stop-split?
   "Check if we should stop splitting."
-  [y depth max-depth min-samples-split task]
-  (let [n-samples (count y)]
+  [y indices depth max-depth min-samples-split min-samples-leaf task]
+  (let [n-samples (count indices)]
     (or
      ;; Reached max depth
      (and max-depth (>= depth max-depth))
-     ;; Too few samples
+     ;; Too few samples to split
      (< n-samples min-samples-split)
-     ;; Pure node (classification only) - check cheaply first
+     ;; Would create too-small leaves
+     (and min-samples-leaf (< n-samples (* 2 min-samples-leaf)))
+     ;; Pure node (classification only)
      (and (= task :classification)
           (or (<= n-samples 1)
-              (= (count (distinct y)) 1))))))
+              (= 1 (count (distinct (map #(nth y %) indices)))))))))
 
-(defn- build-tree
-  "Recursively build a decision tree."
-  [X y depth max-depth min-samples-split max-features-per-split task rng]
-  (let [n-samples (count y)
-        n-features (count (first X))]
+(defn- build-tree-indexed
+  "Recursively build a decision tree using indices (avoids data copying)."
+  [feature-columns y indices depth max-depth min-samples-split min-samples-leaf
+   max-features-per-split task rng parallel-features?]
+  (let [n-samples (count indices)
+        n-features (count feature-columns)]
 
     ;; Check stopping criteria
-    (if (should-stop-split? y depth max-depth min-samples-split task)
-      (create-leaf y task)
+    (if (should-stop-split? y indices depth max-depth min-samples-split min-samples-leaf task)
+      (create-leaf-indexed y indices task)
 
       ;; Try to split
       (let [;; Randomly select features to consider
             feature-indices (if max-features-per-split
                               (random-sample n-features max-features-per-split rng)
                               (range n-features))
-            {:keys [feature-idx threshold gain]} (find-best-split X y feature-indices task)]
+            {:keys [feature-idx threshold gain]} (find-best-split feature-columns y indices
+                                                                  feature-indices task parallel-features?)]
 
         ;; If no valid split found, create leaf
         (if (or (nil? feature-idx) (<= gain 0.0))
-          (create-leaf y task)
+          (create-leaf-indexed y indices task)
 
           ;; Create split node
-          (let [{:keys [left-X left-y right-X right-y]} (split-data X y feature-idx threshold)
-                left-child (build-tree left-X left-y (inc depth) max-depth min-samples-split max-features-per-split task rng)
-                right-child (build-tree right-X right-y (inc depth) max-depth min-samples-split max-features-per-split task rng)]
+          (let [{:keys [left right]} (split-indices feature-columns feature-idx threshold indices)
+                left-child (build-tree-indexed feature-columns y left (inc depth) max-depth
+                                              min-samples-split min-samples-leaf max-features-per-split
+                                              task rng parallel-features?)
+                right-child (build-tree-indexed feature-columns y right (inc depth) max-depth
+                                               min-samples-split min-samples-leaf max-features-per-split
+                                               task rng parallel-features?)]
             {:type :split
              :feature-idx feature-idx
              :threshold threshold
@@ -256,7 +283,8 @@
 ;; ============================================================================
 
 (defn- predict-tree
-  "Predict a single sample using a decision tree."
+  "Predict a single sample using a decision tree.
+   Sample should be a vector of feature values."
   [tree sample]
   (loop [node tree]
     (case (:type node)
@@ -268,45 +296,79 @@
                  (recur left)
                  (recur right))))))
 
-(defn- predict-tree-all
-  "Predict all samples using a decision tree."
-  [tree X]
-  (mapv #(predict-tree tree %) X))
+(defn- predict-forest-batched
+  "Predict using all trees with batched processing for better cache locality."
+  [trees X task]
+  (let [n-trees (count trees)
+        n-samples (count X)]
+
+    (case task
+      :classification
+      ;; Batch prediction: predict all samples with each tree, then aggregate
+      (let [;; Get predictions from all trees (trees × samples matrix)
+            all-predictions (mapv (fn [tree]
+                                   (mapv #(predict-tree tree %) X))
+                                 trees)]
+        ;; Aggregate per sample with majority voting
+        (mapv (fn [sample-idx]
+                (let [predictions (mapv #(nth % sample-idx) all-predictions)
+                      vote-counts (frequencies predictions)]
+                  (key (apply max-key val vote-counts))))
+              (range n-samples)))
+
+      :regression
+      ;; Average predictions per sample
+      (let [all-predictions (mapv (fn [tree]
+                                   (mapv #(predict-tree tree %) X))
+                                 trees)]
+        (mapv (fn [sample-idx]
+                (let [predictions (mapv #(nth % sample-idx) all-predictions)
+                      sum (reduce + predictions)]
+                  (/ sum (double n-trees))))
+              (range n-samples))))))
 
 ;; ============================================================================
 ;; Random Forest
 ;; ============================================================================
 
-(defn- bootstrap-sample
-  "Create a bootstrap sample (sample with replacement)."
-  [X y ^java.util.Random rng]
-  (let [n (count X)
-        indices (repeatedly n #(.nextInt rng n))]
-    {:X (mapv #(nth X %) indices)
-     :y (mapv #(nth y %) indices)}))
+(defn- bootstrap-indices
+  "Create bootstrap sample indices (sample with replacement).
+   Much faster than copying data."
+  [n ^java.util.Random rng]
+  (vec (repeatedly n #(.nextInt rng n))))
 
 (defn- train-single-tree
-  "Train a single decision tree on bootstrap sample."
-  [X y max-depth min-samples-split max-features-per-split bootstrap? task rng]
-  (let [{sample-X :X sample-y :y} (if bootstrap?
-                                    (bootstrap-sample X y rng)
-                                    {:X X :y y})]
-    (build-tree sample-X sample-y 0 max-depth min-samples-split max-features-per-split task rng)))
+  "Train a single decision tree on bootstrap sample using indices."
+  [feature-columns y max-depth min-samples-split min-samples-leaf max-features-per-split
+   bootstrap? parallel-features? task rng]
+  (let [n (count y)
+        indices (if bootstrap?
+                  (bootstrap-indices n rng)
+                  (vec (range n)))]
+    (build-tree-indexed feature-columns y indices 0 max-depth min-samples-split min-samples-leaf
+                       max-features-per-split task rng parallel-features?)))
 
 (defn- train-forest
   "Train multiple decision trees to form a random forest.
-
    Trees are trained in parallel using pmap for better performance."
-  [X y {:keys [n-trees max-depth min-samples-split max-features bootstrap random-seed parallel]
+  [X y {:keys [n-trees max-depth min-samples-split min-samples-leaf max-features
+               bootstrap random-seed parallel parallel-features]
         :or {n-trees 100
              max-depth nil
              min-samples-split 2
+             min-samples-leaf 1
              max-features :sqrt
              bootstrap true
              random-seed nil
-             parallel true}}
+             parallel true
+             parallel-features false}}
    task]
   (let [n-features (count (first X))
+        n-samples (count X)
+
+        ;; Pre-compute feature columns once (major optimization)
+        feature-columns (extract-feature-columns X)
+
         max-features-per-split (calculate-max-features n-features max-features)
         base-rng (if random-seed
                    (java.util.Random. random-seed)
@@ -317,57 +379,13 @@
         ;; Function to train a single tree with its own RNG
         train-fn (fn [tree-seed]
                    (let [rng (java.util.Random. tree-seed)]
-                     (train-single-tree X y max-depth min-samples-split
-                                       max-features-per-split bootstrap task rng)))]
+                     (train-single-tree feature-columns y max-depth min-samples-split min-samples-leaf
+                                       max-features-per-split bootstrap parallel-features task rng)))]
 
     ;; Use pmap for parallel execution (unless disabled)
     (if parallel
       (vec (pmap train-fn tree-seeds))
       (mapv train-fn tree-seeds))))
-
-(defn- predict-forest
-  "Predict using all trees and aggregate results."
-  [trees X task]
-  (let [n-trees (count trees)
-        n-samples (count X)]
-
-    (case task
-      :classification
-      ;; Majority voting - process sample by sample to avoid large intermediate structures
-      (loop [sample-idx 0
-             result (transient [])]
-        (if (< sample-idx n-samples)
-          (let [sample (nth X sample-idx)
-                ;; Collect predictions from all trees for this sample
-                predictions (loop [tree-idx 0
-                                   preds (transient [])]
-                              (if (< tree-idx n-trees)
-                                (recur (inc tree-idx)
-                                       (conj! preds (predict-tree (nth trees tree-idx) sample)))
-                                (persistent! preds)))
-                vote-counts (frequencies predictions)
-                majority (key (apply max-key val vote-counts))]
-            (recur (inc sample-idx)
-                   (conj! result majority)))
-          (persistent! result)))
-
-      :regression
-      ;; Average predictions
-      (loop [sample-idx 0
-             result (transient [])]
-        (if (< sample-idx n-samples)
-          (let [sample (nth X sample-idx)
-                ;; Sum predictions from all trees
-                sum (loop [tree-idx 0
-                          acc 0.0]
-                      (if (< tree-idx n-trees)
-                        (recur (inc tree-idx)
-                               (+ acc (double (predict-tree (nth trees tree-idx) sample))))
-                        acc))
-                avg (/ sum (double n-trees))]
-            (recur (inc sample-idx)
-                   (conj! result avg)))
-          (persistent! result))))))
 
 ;; ============================================================================
 ;; metamorph.ml Integration
@@ -411,8 +429,8 @@
         ;; Get model components
         {:keys [trees task target-column categorical-map]} (:forest thawed-model)
 
-        ;; Make predictions
-        predictions (predict-forest trees X task)
+        ;; Make predictions with batched processing
+        predictions (predict-forest-batched trees X task)
 
         ;; Use target-column from training, or fall back to target-columns from options
         pred-col-name (or target-column (first target-columns))
@@ -460,8 +478,8 @@
     ;; Normalize by number of trees
     (let [total (reduce + @importance)
           normalized (if (> total 0)
-                       (mapv #(/ % total) @importance)
-                       @importance)]
+                      (mapv #(/ % total) @importance)
+                      @importance)]
       (zipmap feature-names normalized))))
 
 (defn- explain-random-forest
@@ -480,8 +498,10 @@
   {:hyperparameters {:n-trees {:type :int}
                      :max-depth {:type :int}
                      :min-samples-split {:type :int}
+                     :min-samples-leaf {:type :int}
                      :max-features {}
                      :bootstrap {:type :boolean}
                      :random-seed {:type :int}
-                     :parallel {:type :boolean}}
+                     :parallel {:type :boolean}
+                     :parallel-features {:type :boolean}}
    :explain-fn explain-random-forest})

@@ -1,12 +1,14 @@
 (ns scicloj.metamorph.random-forest-performance-test
   "Performance and speed tests for Random Forest implementation.
    These tests use larger synthetic datasets to measure training time."
-  (:require [clojure.test :refer [deftest is testing]]
-            [scicloj.metamorph.ml :as ml]
-            [scicloj.metamorph.ml.random-forest]
-            [tech.v3.dataset :as ds]
-            [tech.v3.dataset.modelling :as ds-mod]
-            [tech.v3.dataset.column-filters :as cf]))
+  (:require
+   [clojure.string :as str]
+   [clojure.test :refer [deftest is testing]]
+   [scicloj.metamorph.ml :as ml]
+   [scicloj.metamorph.ml.random-forest]
+   [tech.v3.dataset :as ds]
+   [tech.v3.dataset.column-filters :as cf]
+   [tech.v3.dataset.modelling :as ds-mod]))
 
 ;; ============================================================================
 ;; Synthetic Data Generation
@@ -343,10 +345,10 @@
         (println (format "    %s: %.4f" (name feature-name) importance-val)))
 
       ;; Check that informative features have higher importance than noise
-      (let [informative-importance (filter #(clojure.string/starts-with? (name (key %)) "informative")
+      (let [informative-importance (filter #(str/starts-with? (name (key %)) "informative")
                                           sorted-features)
             avg-informative (/ (reduce + (map val (take 5 informative-importance))) 5.0)
-            noise-importance (filter #(clojure.string/starts-with? (name (key %)) "noise")
+            noise-importance (filter #(str/starts-with? (name (key %)) "noise")
                                     sorted-features)
             avg-noise (/ (reduce + (map val noise-importance)) (count noise-importance))]
 
