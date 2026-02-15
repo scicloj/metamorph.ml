@@ -52,12 +52,19 @@
 ;; ============================================================================
 
 (defn- gini-impurity-indexed
-  "Calculate Gini impurity for classification using indices."
-  [y indices]
-  (let [n (count indices)]
+  "Calculate Gini impurity for classification using indices (int array)."
+  [y ^ints indices]
+  (let [n (alength indices)]
     (if (zero? n)
       0.0
-      (let [class-counts (frequencies (map #(nth y %) indices))
+      (let [class-counts (loop [i 0
+                                counts (transient {})]
+                           (if (< i n)
+                             (let [idx (aget indices i)
+                                   class (nth y idx)]
+                               (recur (inc i)
+                                      (assoc! counts class (inc (get counts class 0)))))
+                             (persistent! counts)))
             n-double (double n)
             sum-squares (reduce (fn [^double acc [_ cnt]]
                                  (let [p (/ (double cnt) n-double)]
@@ -67,21 +74,24 @@
         (- 1.0 sum-squares)))))
 
 (defn- mse-indexed
-  "Calculate mean squared error for regression using indices."
-  [y indices]
-  (if (empty? indices)
-    0.0
-    (let [n (count indices)
-          n-double (double n)
-          sum (reduce (fn [^double acc idx] (+ acc (double (nth y idx)))) 0.0 indices)
-          mean (/ sum n-double)
-          sum-squared-diffs (reduce (fn [^double acc idx]
-                                     (let [val (double (nth y idx))
-                                           diff (- val mean)]
-                                       (+ acc (* diff diff))))
-                                   0.0
-                                   indices)]
-      (/ sum-squared-diffs n-double))))
+  "Calculate mean squared error for regression using indices (int array)."
+  [y ^ints indices]
+  (let [n (alength indices)]
+    (if (zero? n)
+      0.0
+      (let [n-double (double n)
+            sum (loop [i 0 s 0.0]
+                  (if (< i n)
+                    (recur (inc i) (+ s (double (nth y (aget indices i)))))
+                    s))
+            mean (/ sum n-double)
+            sum-squared-diffs (loop [i 0 ss 0.0]
+                                (if (< i n)
+                                  (let [val (double (nth y (aget indices i)))
+                                        diff (- val mean)]
+                                    (recur (inc i) (+ ss (* diff diff))))
+                                  ss))]
+        (/ sum-squared-diffs n-double)))))
 
 (defn- calculate-impurity-indexed
   "Calculate impurity based on task type using indices."
@@ -95,19 +105,34 @@
 ;; ============================================================================
 
 (defn- split-indices
-  "Split indices based on feature and threshold.
+  "Split indices based on feature and threshold (returns int arrays).
    Works with column-major feature data."
-  [feature-columns feature-idx threshold indices]
+  [feature-columns feature-idx threshold ^ints indices]
   (let [thresh (double threshold)
-        left (transient [])
-        right (transient [])]
-    (doseq [idx indices]
-      (let [val (get-feature-value feature-columns feature-idx idx)]
-        (if (<= val thresh)
-          (conj! left idx)
-          (conj! right idx))))
-    {:left (persistent! left)
-     :right (persistent! right)}))
+        n (alength indices)
+        ;; First pass: count left and right
+        counts (loop [i 0 n-left 0]
+                 (if (< i n)
+                   (let [idx (aget indices i)
+                         val (get-feature-value feature-columns feature-idx idx)]
+                     (recur (inc i) (if (<= val thresh) (inc n-left) n-left)))
+                   n-left))
+        n-left counts
+        n-right (- n n-left)
+        ;; Allocate arrays
+        left (int-array n-left)
+        right (int-array n-right)
+        ;; Second pass: fill arrays
+        _ (loop [i 0 left-pos 0 right-pos 0]
+            (when (< i n)
+              (let [idx (aget indices i)
+                    val (get-feature-value feature-columns feature-idx idx)]
+                (if (<= val thresh)
+                  (do (aset left left-pos idx)
+                      (recur (inc i) (inc left-pos) right-pos))
+                  (do (aset right right-pos idx)
+                      (recur (inc i) left-pos (inc right-pos)))))))]
+    {:left left :right right}))
 
 (defn- calculate-split-gain-indexed
   "Calculate information gain from a split using indices."
@@ -129,9 +154,18 @@
 
 (defn- get-thresholds-fast
   "Get candidate thresholds (max 10 for speed).
-   Uses column-major feature data and indices."
-  [feature-columns feature-idx indices]
-  (let [values (vec (sort (distinct (map #(get-feature-value feature-columns feature-idx %) indices))))
+   Uses column-major feature data and int array indices."
+  [feature-columns feature-idx ^ints indices]
+  (let [n (alength indices)
+        ;; Collect unique values in a set, then sort into a vector
+        unique-vals (loop [i 0 vals (transient #{})]
+                      (if (< i n)
+                        (recur (inc i)
+                               (conj! vals (get-feature-value feature-columns
+                                                             feature-idx
+                                                             (aget indices i))))
+                        (persistent! vals)))
+        values (vec (sort unique-vals))
         n-values (count values)
         max-thresholds 10]  ; Reduced from 20 for speed
     (cond
@@ -204,13 +238,18 @@
 ;; ============================================================================
 
 (defn- create-leaf-indexed
-  "Create a leaf node with prediction value from indices."
-  [y indices task]
-  (let [n-samples (count indices)]
+  "Create a leaf node with prediction value from indices (int array)."
+  [y ^ints indices task]
+  (let [n-samples (alength indices)]
     (case task
       :classification
-      (let [values (map #(nth y %) indices)
-            class-counts (frequencies values)
+      (let [class-counts (loop [i 0
+                                counts (transient {})]
+                           (if (< i n-samples)
+                             (let [class (nth y (aget indices i))]
+                               (recur (inc i)
+                                      (assoc! counts class (inc (get counts class 0)))))
+                             (persistent! counts)))
             majority-class (key (apply max-key val class-counts))]
         {:type :leaf
          :value majority-class
@@ -218,16 +257,19 @@
          :n-samples n-samples})
 
       :regression
-      (let [sum (reduce (fn [^double acc idx] (+ acc (double (nth y idx)))) 0.0 indices)
+      (let [sum (loop [i 0 s 0.0]
+                  (if (< i n-samples)
+                    (recur (inc i) (+ s (double (nth y (aget indices i)))))
+                    s))
             mean (/ sum (double (max 1 n-samples)))]
         {:type :leaf
          :value mean
          :n-samples n-samples}))))
 
 (defn- should-stop-split?
-  "Check if we should stop splitting."
-  [y indices depth max-depth min-samples-split min-samples-leaf task]
-  (let [n-samples (count indices)]
+  "Check if we should stop splitting (works with int array indices)."
+  [y ^ints indices depth max-depth min-samples-split min-samples-leaf task]
+  (let [n-samples (alength indices)]
     (or
      ;; Reached max depth
      (and max-depth (>= depth max-depth))
@@ -238,7 +280,10 @@
      ;; Pure node (classification only)
      (and (= task :classification)
           (or (<= n-samples 1)
-              (= 1 (count (distinct (map #(nth y %) indices)))))))))
+              (= 1 (count (loop [i 0 classes (transient #{})]
+                            (if (< i n-samples)
+                              (recur (inc i) (conj! classes (nth y (aget indices i))))
+                              (persistent! classes))))))))))
 
 (defn- build-tree-indexed
   "Recursively build a decision tree using indices (avoids data copying)."
@@ -332,19 +377,25 @@
 ;; ============================================================================
 
 (defn- bootstrap-indices
-  "Create bootstrap sample indices (sample with replacement).
-   Much faster than copying data."
+  "Create bootstrap sample indices as int array (sample with replacement).
+   Returns int array for performance."
   [n ^java.util.Random rng]
-  (vec (repeatedly n #(.nextInt rng n))))
+  (let [arr (int-array n)]
+    (dotimes [i n]
+      (aset arr i (.nextInt rng n)))
+    arr))
 
 (defn- train-single-tree
-  "Train a single decision tree on bootstrap sample using indices."
+  "Train a single decision tree on bootstrap sample using indices (int arrays)."
   [feature-columns y max-depth min-samples-split min-samples-leaf max-features-per-split
    bootstrap? parallel-features? task rng]
   (let [n (count y)
         indices (if bootstrap?
                   (bootstrap-indices n rng)
-                  (vec (range n)))]
+                  (let [arr (int-array n)]
+                    (dotimes [i n]
+                      (aset arr i i))
+                    arr))]
     (build-tree-indexed feature-columns y indices 0 max-depth min-samples-split min-samples-leaf
                        max-features-per-split task rng parallel-features?)))
 
