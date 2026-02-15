@@ -12,37 +12,40 @@
 ;; ============================================================================
 
 (deftest test-gini-impurity
-  (testing "Gini impurity calculation"
+  (testing "Gini impurity calculation with indices"
     ;; Pure node
-    (is (= 0.0 (#'scicloj.metamorph.ml.random-forest/gini-impurity [:a :a :a :a])))
+    (is (= 0.0 (#'scicloj.metamorph.ml.random-forest/gini-impurity-indexed
+                [:a :a :a :a] [0 1 2 3])))
 
     ;; 50-50 split (maximum impurity for 2 classes)
-    (is (< 0.49 (#'scicloj.metamorph.ml.random-forest/gini-impurity [:a :a :b :b]) 0.51))
+    (is (< 0.49 (#'scicloj.metamorph.ml.random-forest/gini-impurity-indexed
+                 [:a :a :b :b] [0 1 2 3]) 0.51))
 
     ;; Three classes, equal distribution
-    (let [impurity (#'scicloj.metamorph.ml.random-forest/gini-impurity [:a :b :c :a :b :c])]
+    (let [impurity (#'scicloj.metamorph.ml.random-forest/gini-impurity-indexed
+                    [:a :b :c :a :b :c] [0 1 2 3 4 5])]
       (is (< 0.6 impurity 0.7)))))
 
 (deftest test-mse
-  (testing "Mean squared error calculation"
+  (testing "Mean squared error calculation with indices"
     ;; All same values
-    (is (= 0.0 (#'scicloj.metamorph.ml.random-forest/mse [5.0 5.0 5.0])))
+    (is (= 0.0 (#'scicloj.metamorph.ml.random-forest/mse-indexed [5.0 5.0 5.0] [0 1 2])))
 
     ;; Known MSE
-    (let [mse (#'scicloj.metamorph.ml.random-forest/mse [1.0 2.0 3.0])]
+    (let [mse (#'scicloj.metamorph.ml.random-forest/mse-indexed [1.0 2.0 3.0] [0 1 2])]
       (is (< 0.6 mse 0.7)))))
 
-(deftest test-bootstrap-sample
-  (testing "Bootstrap sampling"
-    (let [X [[1 2] [3 4] [5 6]]
-          y [:a :b :c]
+(deftest test-bootstrap-indices
+  (testing "Bootstrap index sampling"
+    (let [n 3
           rng (java.util.Random. 42)
-          {:keys [X y]} (#'scicloj.metamorph.ml.random-forest/bootstrap-sample X y rng)]
+          indices (#'scicloj.metamorph.ml.random-forest/bootstrap-indices n rng)]
       ;; Same size as original
-      (is (= 3 (count X)))
-      (is (= 3 (count y)))
-      ;; Elements should be from original dataset
-      (is (every? (fn [x] (some #(= x %) [[1 2] [3 4] [5 6]])) X)))))
+      (is (= 3 (count indices)))
+      ;; All indices should be valid (0-2)
+      (is (every? #(<= 0 % 2) indices))
+      ;; Should be a vector
+      (is (vector? indices)))))
 
 (deftest test-calculate-max-features
   (testing "Max features calculation"
@@ -54,11 +57,14 @@
 (deftest test-decision-tree-simple
   (testing "Decision tree on simple XOR-like problem"
     (let [;; XOR-like problem: class depends on both features
-          X [[0 0] [0 1] [1 0] [1 1]]
+          X [[0.0 0.0] [0.0 1.0] [1.0 0.0] [1.0 1.0]]
           y [:a :a :a :b]
           rng (java.util.Random. 42)
-          tree (#'scicloj.metamorph.ml.random-forest/build-tree
-                X y 0 10 2 2 :classification rng)]
+          ;; Extract feature columns
+          feature-columns (#'scicloj.metamorph.ml.random-forest/extract-feature-columns X)
+          indices [0 1 2 3]
+          tree (#'scicloj.metamorph.ml.random-forest/build-tree-indexed
+                feature-columns y indices 0 10 2 1 2 :classification rng false)]
 
       ;; Tree should not be a single leaf
       (is (= :split (:type tree)))
@@ -70,12 +76,15 @@
 
 (deftest test-decision-tree-depth-limit
   (testing "Decision tree respects max depth"
-    (let [X [[1] [2] [3] [4] [5] [6]]
+    (let [X [[1.0] [2.0] [3.0] [4.0] [5.0] [6.0]]
           y [:a :a :b :b :c :c]
           rng (java.util.Random. 42)
+          ;; Extract feature columns
+          feature-columns (#'scicloj.metamorph.ml.random-forest/extract-feature-columns X)
+          indices [0 1 2 3 4 5]
           ;; Max depth of 1 means only root split
-          tree (#'scicloj.metamorph.ml.random-forest/build-tree
-                X y 0 1 2 1 :classification rng)]
+          tree (#'scicloj.metamorph.ml.random-forest/build-tree-indexed
+                feature-columns y indices 0 1 2 1 1 :classification rng false)]
 
       ;; Root should be split
       (is (= :split (:type tree)))
@@ -596,6 +605,86 @@
         (println (format "Cross-validation style - Average accuracy: %.2f%%"
                          (* 100 avg-accuracy)))
         (is (>= avg-accuracy 0.7) "Average accuracy should be >= 70%")))))
+
+;; ============================================================================
+;; New Hyperparameter Tests
+;; ============================================================================
+
+(deftest test-min-samples-leaf
+  (testing "Min samples leaf constraint"
+    (let [ds (ds/->dataset
+              {:x1 [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0]
+               :x2 [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0]
+               :y  [:a :a :a :a :b :b :b :b]})
+
+          ds (ds-mod/set-inference-target ds :y)
+          feature-ds (ds/select-columns ds cf/feature)
+
+          ;; Train with min-samples-leaf constraint
+          model (ml/train ds
+                         {:model-type :metamorph.ml/random-forest
+                          :n-trees 10
+                          :min-samples-leaf 3
+                          :random-seed 42})
+
+          predictions (ml/predict feature-ds model)]
+
+      (is (= 8 (ds/row-count predictions)))
+      (is (every? #{:a :b} (vec (predictions :y)))))))
+
+(deftest test-parallel-features
+  (testing "Parallel feature search"
+    (let [ds (ds/->dataset
+              {:x1 [1.0 2.0 3.0 4.0 5.0 6.0]
+               :x2 [1.0 2.0 3.0 4.0 5.0 6.0]
+               :x3 [1.0 2.0 3.0 4.0 5.0 6.0]
+               :y  [:a :a :a :b :b :b]})
+
+          ds (ds-mod/set-inference-target ds :y)
+          feature-ds (ds/select-columns ds cf/feature)
+
+          ;; Train with parallel feature search (should still work)
+          model (ml/train ds
+                         {:model-type :metamorph.ml/random-forest
+                          :n-trees 5
+                          :parallel-features true
+                          :random-seed 42})
+
+          predictions (ml/predict feature-ds model)]
+
+      (is (= 6 (ds/row-count predictions)))
+      (is (every? #{:a :b} (vec (predictions :y)))))))
+
+(deftest test-optimized-performance-small
+  (testing "Optimized implementation produces correct results"
+    (let [ds (ds/->dataset
+              {:x1 [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0]
+               :x2 [1.0 1.5 2.0 2.5 3.0 5.0 5.5 6.0 6.5 7.0]
+               :y  [:a :a :a :a :a :b :b :b :b :b]})
+
+          ds (ds-mod/set-inference-target ds :y)
+
+          ;; Train with all optimizations enabled
+          model (ml/train ds
+                         {:model-type :metamorph.ml/random-forest
+                          :n-trees 20
+                          :max-depth 10
+                          :min-samples-leaf 2
+                          :parallel true
+                          :random-seed 42})
+
+          feature-ds (ds/select-columns ds cf/feature)
+          predictions (ml/predict feature-ds model)]
+
+      (is (= 10 (ds/row-count predictions)))
+      (is (every? #{:a :b} (vec (predictions :y))))
+
+      ;; Should have high accuracy on training data
+      (let [actual (vec ((ds/select-columns ds cf/target) :y))
+            predicted (vec (predictions :y))
+            correct (count (filter true? (map = actual predicted)))
+            accuracy (/ correct (double (count actual)))]
+        (is (>= accuracy 0.8) "Should achieve at least 80% accuracy")))))
 
 
 
