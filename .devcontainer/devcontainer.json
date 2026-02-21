@@ -27,7 +27,8 @@
 				"vscjava.vscode-java-pack",
 				"betterthantomorrow.calva",
 				"djblue.portal",
-				"eamodio.gitlens"
+				"eamodio.gitlens",
+				"zhaouv.vscode-markdown-everywhere"
 			]
 		}
 	},
