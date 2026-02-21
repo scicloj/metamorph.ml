@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(clojure -M -e:*)"
+    ]
+  }
+}

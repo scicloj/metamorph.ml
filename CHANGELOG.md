@@ -1,8 +1,8 @@
 unreleased
 - upgraded deps
-- added misisng Java classes from former tmd-smile support
+- added missing Java classes from former tmd-smile support
 - more clear error message for accuray of categorical maps
-- made  internal functins private
+- made  internal functions private
    scicloj.metamorph.ml.rdatasets
      clean-R-relevant
      doc-url->md
@@ -16,7 +16,7 @@ unreleased
 
     scicloj.metamorph.ml.viz
       apply-xform-kvs
-      
+
     scicloj.metamorph.ml
       score
           
