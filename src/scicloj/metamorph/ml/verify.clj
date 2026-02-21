@@ -12,27 +12,53 @@
 
 
 
-(def regression-iris* (delay
-                        (->
-                         (rdatasets/datasets-iris)
-                         (ds/remove-column :species)
-                         (ds-mod/set-inference-target :petal-width))))
+(def regression-iris*
+  "Lazy-loaded Iris dataset configured for regression testing.
+
+  A delayed dataset with species removed and `:petal-width` set as the inference
+  target. Used by `basic-regression` for model verification.
+
+  Deref with `@regression-iris*` to load."
+  (delay
+    (->
+     (rdatasets/datasets-iris)
+     (ds/remove-column :species)
+     (ds-mod/set-inference-target :petal-width))))
 
 
-(def classification-titanic* (delay
-                               (->
-                                (rdatasets/carData-TitanicSurvival)
-                                
-                                (ds/remove-column :rownames)
-                                   ;;We have to have a lookup map for the column in order to
-                                   ;;do classification on the column.
-                                (ds/drop-missing)
-                                (ds/categorical->number cf/categorical)
-                                (ds-mod/set-inference-target :survived))))
+(def classification-titanic*
+  "Lazy-loaded Titanic dataset configured for classification testing.
+
+  A delayed dataset with missing values dropped, categorical columns converted
+  to numeric, and `:survived` set as the inference target. Used by
+  `basic-classification` for model verification.
+
+  Deref with `@classification-titanic*` to load."
+  (delay
+    (->
+     (rdatasets/carData-TitanicSurvival)
+
+     (ds/remove-column :rownames)
+        ;;We have to have a lookup map for the column in order to
+        ;;do classification on the column.
+     (ds/drop-missing)
+     (ds/categorical->number cf/categorical)
+     (ds-mod/set-inference-target :survived))))
 
 
 
 (defn basic-regression
+  "Verifies a regression model performs within acceptable error bounds.
+
+  `options-map` - Model options map (must include `:model-type`)
+  `max-avg-loss` - Maximum acceptable average MAE (default: 0.5)
+
+  Trains the model 5 times on Iris data (predicting petal width), calculates
+  average MAE on test set, and asserts it's below `max-avg-loss`.
+
+  Returns a clojure.test assertion result.
+
+  Used for testing model implementations and ensuring regression models work correctly."
   ([options-map max-avg-loss]
 
    (let [split (ds-mod/train-test-split @regression-iris* options-map)
@@ -52,6 +78,17 @@
    (basic-regression options-map 0.5)))
 
 (defn basic-classification
+  "Verifies a classification model performs within acceptable error bounds.
+
+  `options-map` - Model options map (must include `:model-type`)
+  `max-avg-loss` - Maximum acceptable average MAE (default: 0.5)
+
+  Trains the model 5 times on Titanic survival data, calculates average MAE on
+  test set, and asserts it's below `max-avg-loss`.
+
+  Returns a clojure.test assertion result.
+
+  Used for testing model implementations and ensuring classification models work correctly."
   ([options-map max-avg-loss]
 
    (let [split (ds-mod/train-test-split @classification-titanic* options-map)

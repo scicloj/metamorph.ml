@@ -21,10 +21,24 @@
       (string? arg1) combined-str
       :else combined-str)))  
 
-(defn map-column->columns [ds src-col]
+(defn map-column->columns
+  "Expands a column containing maps into multiple separate columns.
+
+  `ds` - Dataset
+  `src-col` - Column name containing map values
+
+  Returns a new dataset where the map column is replaced with individual columns
+  for each map key. New column names are formed by combining the source column
+  name with each map key using dashes (e.g., `:src-key1`, `:src-key2`).
+
+  Example: Column `:stats` with `{:mean 5 :std 2}` becomes `:stats-mean` and
+  `:stats-std` columns.
+
+  Used for feature expansion in design matrix creation."
+  [ds src-col]
   (let [columns-ds
         (tc/dataset (get ds src-col))
-        
+
         new-col-names
         (map #(combine-with-dash src-col %)
              (tc/column-names columns-ds))

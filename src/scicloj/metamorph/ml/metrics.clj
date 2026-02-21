@@ -263,7 +263,19 @@
 
 
 
-(defn AIC [model y yhat feature-count]
+(defn AIC
+  "Calculates the Akaike Information Criterion (AIC) for model selection.
+
+  `model` - Trained model map
+  `y` - Actual target values
+  `yhat` - Predicted values
+  `feature-count` - Number of features used in the model
+
+  Returns AIC = 2k - 2L, where k = 2 + p (parameters) and L is the log-likelihood.
+  Lower AIC values indicate better model fit with complexity penalty.
+
+  See also: `scicloj.metamorph.ml.metrics/BIC`, `scicloj.metamorph.ml/loglik`"
+  [model y yhat feature-count]
   (let [
         l (ml/loglik model
                      y
@@ -275,7 +287,21 @@
      (* 2 l))))
 
 
-(defn BIC [model y yhat sample-size feature-count]
+(defn BIC
+  "Calculates the Bayesian Information Criterion (BIC) for model selection.
+
+  `model` - Trained model map
+  `y` - Actual target values
+  `yhat` - Predicted values
+  `sample-size` - Number of samples in the dataset
+  `feature-count` - Number of features used in the model
+
+  Returns BIC = -2L + k*ln(n), where L is the log-likelihood, k = 2 + p (parameters),
+  and n is the sample size. Lower BIC values indicate better model fit. BIC penalizes
+  model complexity more heavily than AIC for larger sample sizes.
+
+  See also: `scicloj.metamorph.ml.metrics/AIC`, `scicloj.metamorph.ml/loglik`"
+  [model y yhat sample-size feature-count]
   (let [l (ml/loglik model y yhat)
         n sample-size
         p feature-count

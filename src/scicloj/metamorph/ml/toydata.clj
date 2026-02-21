@@ -10,7 +10,15 @@
    [tech.v3.dataset.modelling :as ds-mod]))
 
 
-(defn sonar-ds []
+(defn sonar-ds
+  "Loads the Sonar dataset with 60 features for binary classification.
+
+  Returns a dataset for detecting material type (metal vs. rock) from sonar
+  signals. Contains 60 numeric features (:x0 through :x59) representing sonar
+  frequency returns, with `:material` as the target variable.
+
+  Inference target is set to `:material`."
+  []
   (->  (ds/->dataset
         (io/input-stream (io/resource "data/sonar.csv"))
         {:header-row? false :file-type :csv})
@@ -24,7 +32,16 @@
           
 
 
-(defn diabetes-ds []
+(defn diabetes-ds
+  "Loads the Diabetes dataset with 10 features for regression.
+
+  Returns a dataset for predicting disease progression from baseline measurements.
+  Features include `:age`, `:sex`, `:bmi` (body mass index), `:bp` (blood pressure),
+  and `:s1` through `:s6` (six blood serum measurements).
+
+  Target variable is `:disease-progression` (integer). Inference target is set
+  to `:disease-progression`."
+  []
   (let [data
         (-> (io/resource "data/diabetes_data.csv")
             (io/input-stream)
@@ -47,15 +64,33 @@
      (ds/add-column data (:disease-progression targets))
      (ds-mod/set-inference-target :disease-progression))))
 
-(defn iris-ds []
-  (-> 
+(defn iris-ds
+  "Loads the classic Iris dataset with 4 features for multi-class classification.
+
+  Returns the famous Fisher's Iris dataset containing measurements of 150 iris
+  flowers from three species. Features are sepal/petal dimensions, target is
+  `:species` (setosa, versicolor, or virginica).
+
+  Species values are converted to numeric codes. Inference target is set to `:species`."
+  []
+  (->
    (rdatasets/datasets-iris)
    (tc/drop-columns :rownames)
    (ds-mod/set-inference-target :species)
    (ds/categorical->number [:species] {} :int16)))
 
 
-(defn breast-cancer-ds []
+(defn breast-cancer-ds
+  "Loads the Breast Cancer Wisconsin (Diagnostic) dataset with 30 features for binary classification.
+
+  Returns a dataset for diagnosing breast cancer from digitized images of cell
+  nuclei. Contains 30 features describing mean, standard error, and worst values
+  of cell characteristics (radius, texture, perimeter, area, smoothness,
+  compactness, concavity, concave points, symmetry, fractal dimension).
+
+  Target variable is `:class` (:malignant or :benign, converted to numeric).
+  Inference target is set to `:class`."
+  []
   (let [dslabs-brca
         (->
          (rdatasets/dslabs-brca)
@@ -78,7 +113,7 @@
                          "worst symmetry" "worst fractal dimension"])
         old-col-names
         (tc/column-names dslabs-brca)]
-       (-> 
+       (->
         dslabs-brca
         (ds/rename-columns
          (zipmap
@@ -89,13 +124,21 @@
                                                    "M"  :malignant
                                                    "B"  :benign)
                                                 col)))
-        
-        
+
+
         (ds/categorical->number [:class] {} :int16)
         (ds-mod/set-inference-target :class))))
 
 
-(defn titanic-ds-split []
+(defn titanic-ds-split
+  "Loads the Titanic dataset pre-split into training and test sets.
+
+  Returns a map with `:train` and `:test` keys, each containing a dataset for
+  predicting passenger survival on the Titanic. Datasets are loaded from Nippy
+  format (fast binary serialization).
+
+  Use this for evaluating models with a pre-defined train/test split."
+  []
   {:train
    (->
     (io/resource "data/titanic-train.nippy")
@@ -107,7 +150,15 @@
     (io/input-stream)
     (ds/->dataset {:file-type :nippy}))})
 
-(defn mtcars-ds []
+(defn mtcars-ds
+  "Loads the Motor Trend Car Road Tests dataset with 11 features.
+
+  Returns the classic mtcars dataset from the 1974 Motor Trend magazine,
+  containing specifications and performance metrics for 32 automobiles.
+  Features include mpg, cylinders, displacement, horsepower, weight, etc.
+
+  Commonly used for regression and clustering examples."
+  []
   (->
    (rdatasets/datasets-mtcars)
    (tc/drop-columns [:rownames])))

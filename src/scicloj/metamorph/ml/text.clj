@@ -14,7 +14,7 @@
    [tech.v3.datatype.mmap :as mmap])
   (:import
    [it.unimi.dsi.fastutil.longs Long2FloatLinkedOpenHashMap Long2IntOpenHashMap LongOpenHashSet]
-   [it.unimi.dsi.fastutil.objects Object2IntOpenHashMap ]
+   [it.unimi.dsi.fastutil.objects Object2IntOpenHashMap]
    [java.io BufferedReader BufferedWriter]
    [java.util List Map]))
 
@@ -253,13 +253,11 @@
   [tidy-text &  {:keys [container-type
                         column-container-type
                         combine-method
-                        datatype-meta
-                        ]
+                        datatype-meta]
                  :or {combine-method :coalesce-blocks!
                       column-container-type :jvm-heap
                       container-type :jvm-heap
-                      datatype-meta   :object
-                      }}]
+                      datatype-meta   :object}}]
 
   (let [idfs (create-token->idf-map tidy-text)
 
@@ -386,21 +384,32 @@
     (.add ^List (:token-index-containers acc) token-index-container)))
 
 
-(defn process-line [token-lookup-table line-split-fn text-tokenizer-fn
-                    datatype-document
-                    datatype-token-pos
-                    datatype-meta
-                    datatype-token-idx
-                    container-type
-                    compacting-document-intervall
-                    combine-method
-                    new-token-behaviour
-                    acc line]
+(defn process-line
+  "Processes a single text line for document corpus creation.
+
+  Tokenizes text, looks up/assigns token IDs, and accumulates document statistics.
+  This is a low-level function used internally by text preprocessing pipelines.
+
+  Parameters control tokenization, data types, compacting behavior, and unknown
+  token handling. Updates the accumulator with parsed document data (metadata,
+  token counts, token indices).
+
+  Used internally by text corpus processing functions."
+  [token-lookup-table line-split-fn text-tokenizer-fn
+   datatype-document
+   datatype-token-pos
+   datatype-meta
+   datatype-token-idx
+   container-type
+   compacting-document-intervall
+   combine-method
+   new-token-behaviour
+   acc line]
   (let [[text meta] (line-split-fn line)
         tokens (text-tokenizer-fn text)
 
-        token-indices (map (partial tools/get-put-token 
-                                    token-lookup-table 
+        token-indices (map (partial tools/get-put-token
+                                    token-lookup-table
                                     new-token-behaviour) tokens)
         token-count (count tokens)
         meta-list (:meta-list acc)
@@ -453,12 +462,6 @@
 
 
 (defn- make-column [name container-list combine-method container-type datatype]
-
-  ;; (def name name)
-  ;; (def container-list container-list)
-  ;; (def combine-method combine-method)
-  ;; (def container-type container-type)
-  ;; (def datatype datatype)
   (let [data
         (case combine-method
           :concat-buffers (dt/concat-buffers datatype container-list)
@@ -593,7 +596,7 @@
 
         process-line-fn process-line
         ;fill-lookup-from-line
-        
+
         acc
         (tools/process-file
          lines-source
@@ -661,14 +664,24 @@
      :token-lookup-table  (java.util.Collections/unmodifiableMap token->index-map)}))
 
 
-(defn ->line [document-ds column]
+(defn- ->line
+  "Converts a document dataset to LIBSVM format line.
+
+  `document-ds` - Dataset with `:meta`, `:token-idx`, and value columns
+  `column` - Column name containing feature values
+
+  Returns a string in LIBSVM format: `<label> <index>:<value> <index>:<value> ...`
+  where tokens are ordered by index and formatted as index:value pairs.
+
+  Used by `tidy->libsvm!` for exporting TF-IDF data to SVM format."
+  [document-ds column]
   (str (first (:meta document-ds))
        " "
        (str/join
         " "
         (-> document-ds
             (tc/order-by :token-idx)
-            (tc/map-columns :pair [:token-idx column] 
+            (tc/map-columns :pair [:token-idx column]
                             (fn [token-idx value] (str token-idx ":" value)))
             :pair))))
 
@@ -676,7 +689,7 @@
   (.write w ^String (->line document-ds column))
   (.newLine w))
 
-(defn tidy->libsvm! 
+(defn tidy->libsvm!
   "Writes a tfidf dataset to a writer in the 
    svmlib text format"
   [tfidf-ds ^BufferedWriter writer column]
@@ -730,94 +743,3 @@
 
 
 
-  (comment
-    (require '[criterium.core :as crit])
-    (import [org.mapdb DBMaker]
-            [it.unimi.dsi.fastutil.objects Object2IntOpenHashMap
-             Object2LongOpenHashMap])
-
-
-
-  ;;  Execution time mean : 3.202750 ms
-    (let [heap-db
-          (.. DBMaker
-              heapDB
-              make)
-          heap-db-map (.. heap-db (hashMap "map") createOrOpen)]
-      (crit/quick-bench
-       (run!
-        #(.put heap-db-map (str "hello" %) 1)
-        (range 10000))))
-
-  ;;  Execution time mean :10.405044 ms 
-    (let [memory-db
-          (.. DBMaker
-              memoryDB
-              make)
-          heap-db-map (.. memory-db (hashMap "map") createOrOpen)]
-      (crit/quick-bench
-       (do
-         (run!
-          #(.put heap-db-map (str "hello" %) 1)
-          (range 10000))
-         (run!
-          (fn [_] (.size heap-db-map))
-          (range 10000)))))
-
-  ;;Execution time mean : 722.928142 ms
-    (let [heap-db
-          (.. DBMaker
-              tempFileDB
-              make)
-          heap-db-map (.. heap-db (hashMap "map") createOrOpen)]
-      (crit/quick-bench
-       (run!
-        #(.put heap-db-map (str "hello" %) 1)
-        (range 10000))))
-
-
-
-  ;;Execution time mean : 1.449999 ms
-    (let [o2l-map (Object2LongOpenHashMap.)]
-      (crit/quick-bench
-       (run!
-        #(.put o2l-map (str "hello" %) 1)
-        (range 10000)))
-      (println
-       (mm/measure o2l-map)))
-
-  ;;Execution time mean : 1.221315 ms
-  ;;; 667.2 KiB
-    (let [o2i-map (Object2IntOpenHashMap.)]
-      (crit/quick-bench
-       (run!
-        #(.put o2i-map (str "hello" %) 1)
-        (range 10000)))
-      (println
-       (mm/measure o2i-map)))
-  ;;Execution time mean : 1.901854 ms
-    (let [hf-map (hf/mut-map)]
-      (crit/quick-bench
-       (run!
-        #(.put hf-map (str "hello" %) 1)
-        (range 10000)))
-      (println
-       (mm/measure hf-map)))
-
-
-    (def heap-db-map
-      (.. DBMaker
-          heapDB
-          make
-          (hashMap "map")
-          counterEnable
-          createOrOpen))
-    (run!
-     #(.put heap-db-map (str "hello" %) 1)
-     (range 10000))
-
-  ;;Execution time mean : 319.890385 ms
-    (crit/quick-bench
-     (run!
-      (fn [_] (.size heap-db-map))
-      (range 1000))))

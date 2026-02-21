@@ -87,11 +87,31 @@
                            qualified-pipe-decl)
     @codes))
 
-(defn get-source-information [qualified-pipe-decl pipe-ns pipeline-source-file]
+(defn get-source-information
+  "Creates metadata about a pipeline including function sources and classpath.
+
+  `qualified-pipe-decl` - Pipeline declaration with fully-qualified keywords
+  `pipe-ns` - Namespace symbol for the pipeline
+  `pipeline-source-file` - Path to the source file containing the pipeline
+
+  Returns a map with `:fn-sources` (source code of all pipeline functions) and
+  `:classpath` (JVM classpath at evaluation time)."
+  [qualified-pipe-decl pipe-ns pipeline-source-file]
   {:fn-sources (get-fn-sources qualified-pipe-decl pipe-ns pipeline-source-file)
    :classpath (get-classpath)})
 
-(defn example-nippy-handler [files output-dir result-reduce-fn]
+(defn example-nippy-handler
+  "Creates an evaluation result handler that serializes results to Nippy format.
+
+  `files` - Atom to track generated file paths
+  `output-dir` - Directory path for output files
+  `result-reduce-fn` - Function to apply to results after serialization
+
+  Returns a handler function that removes non-freezable data (`:pipe-fn`, `:metric-fn`),
+  serializes the result to a UUID-named .nippy file, and applies `result-reduce-fn`.
+
+  See also: `scicloj.metamorph.ml/evaluate-pipelines`"
+  [files output-dir result-reduce-fn]
   (fn [result]
     (let [
           freezable-result
@@ -106,11 +126,21 @@
       (nippy/freeze-to-file temp-file freezable-result)
       (result-reduce-fn result))))
 
-(defn qualify-keywords [pipe-decl pipe-ns]
+(defn qualify-keywords
+  "Converts unqualified keywords in a pipeline declaration to fully-qualified form.
+
+  `pipe-decl` - Pipeline declaration (nested data structure)
+  `pipe-ns` - Namespace symbol for keyword resolution
+
+  Returns the pipeline declaration with all resolvable keywords converted to
+  namespace-qualified keywords (e.g., `:fn-name` becomes `:my.ns/fn-name`).
+
+  Used to make pipeline declarations portable across namespaces."
+  [pipe-decl pipe-ns]
   (walk/postwalk (fn [form]
                            ;; (println form)
                            (if-let [resolved (resolve-keyword form pipe-ns)]
-                             (do 
+                             (do
                                (if (var? resolved)
                                  (let [v (var-get resolved)
                                        k (keyword
@@ -126,11 +156,31 @@
                          pipe-decl))
 
 
-(defn qualify-pipelines [pipe-decls pipe-ns]
+(defn qualify-pipelines
+  "Qualifies all keywords in a sequence of pipeline declarations.
+
+  `pipe-decls` - Sequence of pipeline declarations
+  `pipe-ns` - Namespace symbol for keyword resolution
+
+  Returns a vector of qualified pipeline declarations. Applies `qualify-keywords`
+  to each pipeline in the sequence.
+
+  See also: `scicloj.metamorph.ml.evaluation-handler/qualify-keywords`"
+  [pipe-decls pipe-ns]
   (mapv #(qualify-keywords % pipe-ns) pipe-decls))
 
 
 (def default-result-dissoc-in-seq
+  "Default sequence of key paths to remove from evaluation results.
+
+  Removes large data objects (datasets, model internals) while preserving metrics,
+  options, and essential model metadata. Removes:
+
+  * Dataset objects from fit/train/test contexts
+  * Target and feature datasets from model
+  * Smile-specific model internals (serialized bytes, dataframes)
+
+  Used by `default-result-dissoc-in-fn` to clean results for storage/analysis."
   [[:fit-ctx :metamorph/data]
 
    [:train-transform :ctx :metamorph/data]
@@ -152,12 +202,25 @@
 
 
 (def result-dissoc-in-seq--ctxs
+  "Sequence of paths to remove all context objects from evaluation results.
+
+  Removes fit, train, and test contexts entirely, keeping only metrics and metadata.
+  More aggressive cleanup than `default-result-dissoc-in-seq`.
+
+  Used by `result-dissoc-in-seq-ctx-fn`."
   [[:fit-ctx]
    [:train-transform :ctx]
    [:test-transform :ctx]])
 
 
 (def result-dissoc-in-seq--all
+  "Maximum cleanup: removes almost everything except core metrics and model type.
+
+  Removes contexts, timing data, probability distributions, pipeline declarations,
+  functions, and source information. Keeps only the essential metric values and
+  model type.
+
+  Most aggressive cleanup option. Used by `result-dissoc-in-seq--all-fn`."
   [[:metric-fn]
    [:fit-ctx]
    [:train-transform :ctx]
@@ -191,7 +254,17 @@
   [result]
   (reduce-result result result-dissoc-in-seq--ctxs))
 
-(defn select-paths [m paths]
+(defn select-paths
+  "Extracts specific nested paths from a map into a new map.
+
+  `m` - Source map
+  `paths` - Sequence of key path vectors (e.g., `[[:a :b] [:c :d]]`)
+
+  Returns a new map containing only the specified paths with their values.
+  Paths with nil values are omitted from the result.
+
+  Example: `(select-paths {:a {:b 1} :c 2} [[:a :b]]) => {:a {:b 1}}`"
+  [m paths]
   (reduce (fn [acc path]
             (let [v (get-in m path)]
               (if v

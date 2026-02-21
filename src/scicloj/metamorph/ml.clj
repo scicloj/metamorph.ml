@@ -670,7 +670,20 @@
           (options->model-def (:options model)))]
      (thaw-fn (:model-data model)))))
 
-(def enable-strict-prediction-validations (atom false))
+(def enable-strict-prediction-validations
+  "Atom controlling strict prediction validation behavior.
+
+  When set to `true` (via `reset!` or `swap!`), enables validation that throws
+  exceptions during prediction if:
+
+  * Target categorical maps don't match between training and prediction datasets
+  * Predicted values are not present in the prediction categorical map
+
+  Defaults to `false` for backward compatibility. Set to `true` to catch
+  potential prediction inconsistencies early.
+
+  Example: `(reset! enable-strict-prediction-validations true)`"
+  (atom false))
 
 (defn- validate-inconsistent-maps [model pred-ds]
   (let [target-cat-maps-from-train (-> model :target-categorical-maps)
@@ -785,8 +798,18 @@
 
 
 
-(defn loglik [model y yhat]
+(defn loglik
+  "Calculates the log-likelihood for the given model and predictions.
 
+  `model` - Trained model map containing `:options` with model definition
+  `y` - Actual target values (ground truth)
+  `yhat` - Predicted values from the model
+
+  Returns the log-likelihood value by calling the model's `:loglik-fn` function.
+  The specific log-likelihood function used depends on the model type.
+
+  See also: `scicloj.metamorph.ml/tidy`, `scicloj.metamorph.ml/glance`"
+  [model y yhat]
   (let [loglik-fn
         (get
          (options->model-def (:options model))

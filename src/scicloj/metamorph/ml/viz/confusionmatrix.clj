@@ -8,6 +8,10 @@
 
 
 (def layer
+  "Hanami layer specification for confusion matrix visualization.
+
+  Combines a colored rectangle layer (for the heatmap) with a text layer (for
+  count values). Uses XY encoding with count values displayed as text overlay."
   [(assoc ht/rect-layer :encoding ht/xy-encoding)
    (assoc ht/text-layer
           :encoding
@@ -16,7 +20,20 @@
                  :text {:field "count" :type "quantitative"}))])
 
 
-(defn confusion-matrix-chart [values]
+(defn confusion-matrix-chart
+  "Creates a Hanami/Vega-Lite specification for a confusion matrix heatmap.
+
+  `values` - Sequence of maps with keys: `:actual`, `:predicted`, `:count`
+
+  Returns a Hanami layer chart with:
+
+  * X-axis: predicted labels (nominal)
+  * Y-axis: actual labels (nominal)
+  * Color: count values (yellow-orange-red scale)
+  * Text overlay: count values
+
+  Use with `cm-values` to generate input data from predictions and labels."
+  [values]
   (assoc
    ht/layer-chart
 
@@ -35,7 +52,23 @@
     :TXT "count"}))
            
 
-(defn cm-values [predicted-labels labels opts]
+(defn cm-values
+  "Generates confusion matrix data for visualization.
+
+  `predicted-labels` - Sequence of predicted class labels
+  `labels` - Sequence of actual class labels
+  `opts` - Options map with optional `:normalize` key (`:none`, `:true`, `:pred`, `:all`)
+
+  Returns a sequence of maps, each containing:
+
+  * `:actual` - Actual class label
+  * `:predicted` - Predicted class label
+  * `:count` - Count or normalized value from confusion matrix
+
+  Use with `confusion-matrix-chart` to create a visualization.
+
+  See also: `scicloj.metamorph.ml.classification/confusion-map`"
+  [predicted-labels labels opts]
   (let [cm (cl/confusion-map
              predicted-labels
              labels
@@ -46,7 +79,7 @@
          (distinct
           (concat predicted-labels labels))]
 
-        
+
     (for [actual distinct-labels
           prediction distinct-labels]
      (hash-map :actual actual
