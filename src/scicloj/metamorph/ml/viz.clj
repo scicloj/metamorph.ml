@@ -5,7 +5,7 @@
    [scicloj.metamorph.ml.viz.learning-curve]
    [scicloj.metamorph.ml.viz.confusionmatrix]))
 
-(defn apply-xform-kvs [spec kvs]
+(defn- apply-xform-kvs [spec kvs]
   (apply hc/xform spec (into [] cat kvs)))
 
 

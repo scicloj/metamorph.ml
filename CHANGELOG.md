@@ -2,6 +2,28 @@ unreleased
 - upgraded deps
 - added misisng Java classes from former tmd-smile support
 - more clear error message for accuray of categorical maps
+- made  internal functins private
+   scicloj.metamorph.ml.rdatasets
+     clean-R-relevant
+     doc-url->md
+     _fetch-dataset  
+
+   scicloj.metamorph.ml.text
+      make-mmap-container
+      make-container
+      ->column--concat-buffers
+      ->column--coalesce-blocks
+
+    scicloj.metamorph.ml.viz
+      apply-xform-kvs
+      
+    scicloj.metamorph.ml
+      score
+          
+         
+    
+          
+        
 
 1.2.1
 - upgrade deps

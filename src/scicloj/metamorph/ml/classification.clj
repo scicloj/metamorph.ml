@@ -42,7 +42,7 @@
 
 
 (defn confusion-map->ds
-  "Converts teh confusion-matrix map obtained via `confusion-mao` into a dataset representation"
+  "Converts the confusion-matrix map obtained via `confusion-mpo` into a dataset representation"
   [conf-matrix-map]
   (let [
         conf-matrix-map conf-matrix-map

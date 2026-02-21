@@ -63,7 +63,7 @@
 
 
 
-(defn score [predictions-ds trueth-ds target-column-name metric-fn other-metrics]
+(defn- score [predictions-ds trueth-ds target-column-name metric-fn other-metrics]
   (let [predictions-col (get (ds-cat/reverse-map-categorical-xforms predictions-ds)
                              target-column-name)
         trueth-col (get (ds-cat/reverse-map-categorical-xforms trueth-ds)

@@ -56,7 +56,7 @@
 
 
 
-(defn make-mmap-container [datatype ^long col-size]
+(defn- make-mmap-container [datatype ^long col-size]
   (let [byte-length-multiplier
         (int
          (case datatype
@@ -81,7 +81,7 @@
      (dt/set-native-datatype datatype)
      (dt/sub-buffer 0 col-size))))
 
-(defn make-container [container-type datatype col-size]
+(defn- make-container [container-type datatype col-size]
 
   (if (= :object datatype)
     (dt/make-container :jvm-heap :object col-size)
@@ -93,7 +93,7 @@
 
 
 
-(defn ->column--concat-buffers [col-name data-type tfidf-data key]
+(defn- ->column--concat-buffers [col-name data-type tfidf-data key]
   (let [data (dt/concat-buffers
               data-type
               (lznc/map key
@@ -102,7 +102,7 @@
                    :name col-name}]
     (col-impl/construct-column [] data meta-data)))
 
-(defn ->column--coalesce-blocks [col-name container-type data-type tfidf-data key]
+(defn- ->column--coalesce-blocks [col-name container-type data-type tfidf-data key]
   ;(tools/debug :->-col col-name)
 
   (let [cont-size

@@ -13,15 +13,15 @@
 ;;    url = {https://vincentarelbundock.github.io/Rdatasets},
 ;;   }
     
-(defn clean-R-relevant [s]
+(defn- clean-R-relevant [s]
   (-> (str/replace s #"\n\n### Examples(?s).*```" "")
    (str/replace ":::: container\n::: container\n" "")
    (str/replace #"### Usage(?s).*```" "")
    (str/replace "R Documentation" "Documentation")
    (str/replace #"\|(\-*)\|(\-*)\|" "")))
-(defn doc-url->md [doc]
+(defn- doc-url->md [doc]
   (clean-R-relevant (.. (FlexmarkHtmlConverter/builder) build (convert (slurp doc)))))
-(defn _fetch-dataset [csv]
+(defn- _fetch-dataset [csv]
   (-> csv (tc/dataset {:key-fn (fn [s] (-> s (str/replace #"\." "-") csk/->kebab-case-keyword))})))
 
 (def fetch-dataset (memoize _fetch-dataset))
