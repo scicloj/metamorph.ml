@@ -1,31 +1,40 @@
 (ns scicloj.metamorph.ml.cache
   (:require [scicloj.metamorph.ml :as ml]
             [clojure.java.io :as io]
-            [taoensso.carmine :as car]
-            [taoensso.nippy :as nippy]
-            )
-  )
+            [taoensso.nippy :as nippy]))
 
-(defn enable-redis-cache! [wcar-opts]
+
+(defn enable-atom-cache!
+  "Enables the caching of train/predict calls in an atom.
+   
+   `cache-atom`: Clojure atom used for caching.
+   
+   "
+  [cache-atom]
+
   (reset! ml/train-predict-cache {:use-cache true
-                                  :get-fn (fn [key] (car/wcar wcar-opts (car/get key)))
-                                  :set-fn (fn [key value] (car/wcar wcar-opts (car/set key value)))}))
+                                  :get-fn (fn [key] (get @cache-atom key))
+                                  :set-fn (fn [key value] (swap! cache-atom assoc key value))}))
 
-(defn enable-atom-cache! [cache-map]
-  (reset! ml/train-predict-cache {:use-cache true
-                                  :get-fn (fn [key] (get @cache-map key))
-                                  :set-fn (fn [key value] (swap! cache-map assoc key value))}))
+(defn enable-disk-cache!
+  "Enables the caching of train/predict calls in an directory on disk.
+     
+     `cacche-dir`: Directory used for caching.
+     
+     "
+  [cache-dir]
 
-(defn enable-disk-cache! [cache-dir]
   (reset! ml/train-predict-cache {:use-cache true
                                   :get-fn (fn [key]
-                                            (let [f (format "/tmp/cache/%s.nippy" key)]
+                                            (let [f (format "%s/%s.nippy" cache-dir key)]
                                               (when (.exists  (io/file f))
                                                 (nippy/thaw-from-file f))))
                                   :set-fn (fn [key value]
                                             (nippy/freeze-to-file
-                                             (format "/tmp/cache/%s.nippy" key)
+                                             (format "%s/%s.nippy" cache-dir key)
                                              value))}))
 
 (defn disable-cache! []
-  (reset! ml/train-predict-cache {:use-cache false}))
+  (reset! ml/train-predict-cache {:use-cache false
+                                  :get-fn nil
+                                  :set-fn nil}))

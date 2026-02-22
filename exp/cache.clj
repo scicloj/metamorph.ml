@@ -1,10 +1,8 @@
 (ns cache
   (:require
-   [clojure.pprint :as pp]
    [scicloj.metamorph.core :as mm]
    [scicloj.metamorph.ml :as ml]
    [scicloj.metamorph.ml.cache :as cache]
-   [scicloj.metamorph.ml.evaluation-handler :as eval-handler]
    [scicloj.metamorph.ml.gridsearch :as gs]
    [scicloj.metamorph.ml.loss :as loss]
    [scicloj.ml.smile.classification]
@@ -13,9 +11,7 @@
    [taoensso.carmine :as car]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.metamorph :as mds]
-   [tech.v3.dataset.modelling :as ds-mod]
-   [tablecloth.column.api :as tcc]
-   [clojure.java.io :as io]
+   [taoensso.carmine :as car]
    [taoensso.nippy :as nippy]))
 
 (def titanic-train
@@ -28,7 +24,6 @@
    (ds/->dataset "https://github.com/scicloj/metamorph-examples/raw/main/data/titanic/test.csv"
                  {:key-fn keyword})
    (tc/add-column :Survived 0)))
-(-> xxx :metamorph/data)
 
 (defn pipe-fn [options]
   (with-meta
@@ -37,23 +32,23 @@
        (assoc ctx :the-train-ds (:metamorph/data ctx)))
 
 
-    (mds/select-columns [:Pclass :Survived :Embarked :Sex])
+     (mds/select-columns [:Pclass :Survived :Embarked :Sex])
 
 
-    (tc-mm/add-or-replace-column :Survived (fn [ds] (map #(case %
-                                                            1 "yes"
-                                                            0 "no")
-                                                         (:Survived ds))))
-    (mds/categorical->number [:Survived :Sex :Embarked])
-    (tc-mm/replace-missing)
-    (mds/set-inference-target :Survived)
+     (tc-mm/add-or-replace-column :Survived (fn [ds] (map #(case %
+                                                             1 "yes"
+                                                             0 "no")
+                                                          (:Survived ds))))
+     (mds/categorical->number [:Survived :Sex :Embarked])
+     (tc-mm/replace-missing)
+     (mds/set-inference-target :Survived)
 
-    ;;  (fn [ctx]
-    ;;    (assoc ctx :options (dissoc options
-    ;;                                :cache-opts))
-    ;;    )
-    {:metamorph/id :model}
-    (ml/model options))
+     ;;  (fn [ctx]
+     ;;    (assoc ctx :options (dissoc options
+     ;;                                :cache-opts))
+     ;;    )
+     {:metamorph/id :model}
+     (ml/model options))
     options))
 
 ;(ns-unmap *ns* 'cache-map)
@@ -63,6 +58,30 @@
 
 (def wcar-opts {:pool my-conn-pool,
                 :spec {:uri "redis://localhost:6379"}})
+
+(defn enable-redis-cache!
+  "Enables the caching of train/predict calls in redis/carmine.
+   
+   `wcar-opts`: Options for Carmine
+   
+   See the [Carmine](https://github.com/taoensso/carmine) documentation for the setup.
+
+   It requires adding of `com.taoensso/carmine` to classpath
+   "
+  [wcar-opts]
+  (reset! ml/train-predict-cache {:use-cache true
+                                  :get-fn (fn [key]
+                                            (require 'taoensso.carmine)
+                                            (taoensso.carmine/wcar
+                                             wcar-opts
+                                             (taoensso.carmine/get key)))
+
+                                  :set-fn (fn [key value]
+                                            (require 'taoensso.carmine)
+                                            (taoensso.carmine/wcar
+                                             wcar-opts
+                                             (taoensso.carmine/set key value)))}))
+
 
 
 (defn pipe-fns [model-type hyper-params n]
@@ -100,34 +119,7 @@
    loss/classification-accuracy
    :accuracy
    {:return-best-pipeline-only false
-    :return-best-crossvalidation-only false
-    :skip-scoring-fn (fn [train-ds pipeline-fn]
-                       (let [exp-file (io/file (format "/tmp/exp-database/%s-%s.nippy" 
-                                                       (hash train-ds) 
-                                                       (hash (meta pipeline-fn))))]
-                         (.exists exp-file)
-                         )
-                       
-                       )
-    :evaluation-handler-fn (fn [ctx]
-                             (def ctx ctx 
-                             )
-
-                             (let [train-ds (-> ctx  :fit-ctx :train-ds)
-                                   train-ds-hash (hash train-ds)
-                                   train-options (-> ctx :fit-ctx :model :options)
-                                   train-options-hash (hash train-options)
-                                   metric (-> ctx :test-transform :metric)
-                                   train-run-data {:train-ds train-ds
-                                                   :train-options train-options
-                                                   :metric metric}
-                                   train-result-file-name (format "/tmp/exp-database/%s-%s.nippy" train-ds-hash train-options-hash)]
-
-                               (when (not (.exists (io/file train-result-file-name)))
-                                 (println :write-to-db train-result-file-name)
-                                 (nippy/freeze-to-file train-result-file-name train-run-data)))
-                             (-> (eval-handler/metrics-and-options-keep-fn ctx)))}))
-
+    :return-best-crossvalidation-only false}))
 
 
 (time
@@ -135,15 +127,15 @@
    (cache/disable-cache!)
    (time (let [_ (eval-pipe)]))))
 
-(do
-  (let [cache-map (atom {})]
-    (cache/enable-atom-cache! cache-map)
-    (eval-pipe))
+
+(let [cache-map (atom {})]
+  (cache/enable-atom-cache! cache-map)
+  (eval-pipe)
   (time (let [_ (eval-pipe)])))
 
 (do
-  (cache/enable-redis-cache! wcar-opts)
-  (let [_ (eval-pipe)])
+  (enable-redis-cache! wcar-opts)
+  (eval-pipe)
   (time (let [_ (eval-pipe)])))
 
 
@@ -157,26 +149,3 @@
   (time (let [_ (eval-pipe)])))
 
 
-(pp/pprint
- (-> eval-result
-
-     first
-     first
-     (#(hash-map :options (get-in % [:fit-ctx :model :options])
-                 :train-accuracy (get-in % [:train-transform :metric])
-                 :test-accuracy (get-in % [:test-transform :metric])))))
-(def datasets
-  (map
-   (fn [result]
-     (tc/dataset
-      (merge (-> result  :test-transform (select-keys [:metric]))
-             (-> result :fit-ctx :model :options))))
-   (-> eval-result flatten)))
-
-(def metrices
-  (apply tc/concat datasets))
-
-(-> metrices
-    (tc/group-by :model-type)
-    (tc/aggregate (fn [ds]
-                    (tcc/mean (:metric ds)))))
