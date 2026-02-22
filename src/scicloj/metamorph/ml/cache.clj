@@ -3,6 +3,38 @@
             [clojure.java.io :as io]
             [taoensso.nippy :as nippy]))
 
+(defn- macro-available? [sym]
+  (try (-> sym requiring-resolve meta :macro) (catch Exception _ false)))
+
+(defmacro when-requiring-resolve-macro
+  [sym & body]
+  (when (macro-available? sym) `(do ~@body)))
+
+
+(defn enable-redis-cache!
+  "Enables the caching of train/predict calls in an redis server
+   using carmine library
+   
+   `wcar-opts`: Clojure atom used for caching.
+
+   'com.taoensso/carmine' needed to be added as depenency
+   
+   "
+  [wcar-opts]
+  (assert (macro-available? 'taoensso.carmine/wcar) "please add 'com.taoensso/carmine' to classpath")
+  (reset! ml/train-predict-cache
+          {:use-cache true
+           :get-fn (fn [key]
+                     (when-requiring-resolve-macro
+                      taoensso.carmine/wcar
+                      (taoensso.carmine/wcar wcar-opts
+                                             (taoensso.carmine/get key))))
+           :set-fn (fn [key value]
+                     (when-requiring-resolve-macro
+                      taoensso.carmine/wcar
+                      (taoensso.carmine/wcar wcar-opts
+                                             (taoensso.carmine/set key value))))}))
+
 
 (defn enable-atom-cache!
   "Enables the caching of train/predict calls in an atom.
@@ -26,9 +58,9 @@
 
   (reset! ml/train-predict-cache {:use-cache true
                                   :get-fn (fn [key]
-                                            (let [f (format "%s/%s.nippy" cache-dir key)]
-                                              (when (.exists  (io/file f))
-                                                (nippy/thaw-from-file f))))
+                                            (let [file-name (format "%s/%s.nippy" cache-dir key)]
+                                              (when (.exists  (io/file file-name))
+                                                (nippy/thaw-from-file file-name))))
                                   :set-fn (fn [key value]
                                             (nippy/freeze-to-file
                                              (format "%s/%s.nippy" cache-dir key)

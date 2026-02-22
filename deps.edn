@@ -53,7 +53,6 @@
    :extra-deps {io.github.nextjournal/clerk {:mvn/version "0.18.1158"}
                 org.scicloj/clay {:mvn/version "2.0.11"}
                 org.scicloj/scicloj.ml.smile  {:mvn/version "7.5.3"}
-
                 org.scicloj/tableplot {:mvn/version "1-beta10.2"}
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
                 ch.qos.logback/logback-classic {:mvn/version "1.5.32"}

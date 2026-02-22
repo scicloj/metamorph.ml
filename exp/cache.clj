@@ -1,5 +1,6 @@
 (ns cache
   (:require
+   [clojure.java.io :as io]
    [scicloj.metamorph.core :as mm]
    [scicloj.metamorph.ml :as ml]
    [scicloj.metamorph.ml.cache :as cache]
@@ -8,11 +9,10 @@
    [scicloj.ml.smile.classification]
    [tablecloth.api :as tc]
    [tablecloth.pipeline :as tc-mm]
-   [taoensso.carmine :as car]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.metamorph :as mds]
    [taoensso.carmine :as car]
-   [taoensso.nippy :as nippy]))
+   ))
 
 (def titanic-train
   (->
@@ -58,32 +58,7 @@
 
 (def wcar-opts {:pool my-conn-pool,
                 :spec {:uri "redis://localhost:6379"}})
-
-(defn enable-redis-cache!
-  "Enables the caching of train/predict calls in redis/carmine.
-   
-   `wcar-opts`: Options for Carmine
-   
-   See the [Carmine](https://github.com/taoensso/carmine) documentation for the setup.
-
-   It requires adding of `com.taoensso/carmine` to classpath
-   "
-  [wcar-opts]
-  (reset! ml/train-predict-cache {:use-cache true
-                                  :get-fn (fn [key]
-                                            (require 'taoensso.carmine)
-                                            (taoensso.carmine/wcar
-                                             wcar-opts
-                                             (taoensso.carmine/get key)))
-
-                                  :set-fn (fn [key value]
-                                            (require 'taoensso.carmine)
-                                            (taoensso.carmine/wcar
-                                             wcar-opts
-                                             (taoensso.carmine/set key value)))}))
-
-
-
+(def wcar-opts {})
 (defn pipe-fns [model-type hyper-params n]
   (->>
    (map
@@ -134,9 +109,11 @@
   (time (let [_ (eval-pipe)])))
 
 (do
-  (enable-redis-cache! wcar-opts)
+  (cache/enable-redis-cache! wcar-opts)
   (eval-pipe)
   (time (let [_ (eval-pipe)])))
+
+
 
 
 (let [cache-dir "/tmp/cache"]
