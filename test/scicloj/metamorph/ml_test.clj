@@ -17,7 +17,8 @@
    [tech.v3.dataset.metamorph :as ds-mm]
    [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [tech.v3.dataset.modelling :as ds-mod]
-   [scicloj.metamorph.ml.tools :refer [keys-in]])
+   [scicloj.metamorph.ml.tools :refer [keys-in]]
+   [scicloj.metamorph.ml.cache :as cache])
   (:import
    (clojure.lang ExceptionInfo)
    (java.util UUID)))
@@ -107,22 +108,20 @@
   (validate-simple-pipeline))
 
 
-(deftest evaluate-pipelines-simplest-witch-cache
+(deftest evaluate-pipelines-simplest-with-atom-cache
   (do-define-model)
   (let [cache-map (atom {})]
-
-
-
-    (reset! ml/train-predict-cache {:use-cache true
-                                    :get-fn (fn [key] (get @cache-map key))
-                                    :set-fn (fn [key value] (swap! cache-map assoc key value))})
-
+    (cache/enable-atom-cache! cache-map)
     (validate-simple-pipeline)
     (validate-simple-pipeline)
-    (reset! ml/train-predict-cache {:use-cache false
-                                    :get-fn nil
-                                    :set-fn nil})))
+    (cache/disable-cache!)))
 
+(deftest evaluate-pipelines-simplest-with-disk-cache
+  (do-define-model)
+  (cache/enable-disk-cache! "/tmp/")
+  (validate-simple-pipeline)
+  (validate-simple-pipeline)
+  (cache/disable-cache!))
 
 
 

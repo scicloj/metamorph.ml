@@ -13,7 +13,7 @@
 
 (defn enable-redis-cache!
   "Enables the caching of train/predict calls in an redis server
-   using carmine library
+   using [carmine](https://github.com/taoensso/carmine) library
    
    `wcar-opts`: Clojure atom used for caching.
 
