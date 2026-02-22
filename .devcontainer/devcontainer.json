@@ -7,8 +7,8 @@
 
 
     "features": {
-    	"ghcr.io/devcontainers-contrib/features/clojure-asdf:2": {},
-		"ghcr.io/devcontainers-contrib/features/bash-command:1": {
+    	"ghcr.io/devcontainers-extra/features/clojure-asdf:2": {},
+		"ghcr.io/devcontainers-extra/features/bash-command:1": {
 			"command": "apt-get update && apt-get install -y rlwrap"
 		},
 		"ghcr.io/rocker-org/devcontainer-features/quarto-cli:1": {},
@@ -24,9 +24,7 @@
 			},
 			"extensions": 
 			[
-				"vscjava.vscode-java-pack",
 				"betterthantomorrow.calva",
-				"djblue.portal",
 				"eamodio.gitlens",
 				"zhaouv.vscode-markdown-everywhere"
 			]
