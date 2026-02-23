@@ -1,5 +1,5 @@
 ;; # Hyperparameter Tuning with Gridsearch and evaluate-pipelines
-;;
+
 ;; An interactive tutorial demonstrating hyperparameter optimization in metamorph.ml
 
 ^{:kindly/hide-code true}
@@ -12,24 +12,26 @@
             [scicloj.metamorph.ml.metrics :as metrics]
             [tablecloth.api :as tc]
             [tech.v3.dataset :as ds]
+            [scicloj.ml.smile.classification]
             [tech.v3.dataset.modelling :as ds-mod]
             [tech.v3.dataset.metamorph :as ds-mm]
+            
             [tech.v3.dataset.column-filters :as cf]
-            [scicloj.kindly.v4.kind :as kind]))
+            [scicloj.kindly.v4.kind :as kind]
+            [tech.v3.dataset.categorical :as ds-cat]))
 
 ;; ## Introduction
-;;
+
 ;; This tutorial demonstrates how to use **metamorph.ml**'s powerful tools for
 ;; hyperparameter optimization:
-;;
+
 ;; - **`evaluate-pipelines`**: Evaluates ML pipelines across train/test splits
 ;; - **`sobol-gridsearch`**: Generates hyperparameter combinations using efficient Sobol sequences
-;;
+
 ;; Together, they enable systematic exploration of hyperparameter spaces to find
 ;; optimal model configurations.
 
-;; ## Part 1: Loading and Exploring Data
-;;
+
 ;; Let's start with the classic Iris dataset:
 
 (def iris-ds
@@ -64,13 +66,12 @@
              :color {:field :species :type :nominal}}
   :width 400
   :height 300})
-
 ;; ## Part 2: Basic Pipeline Evaluation
-;;
-;; First, let's evaluate a single pipeline to understand the workflow.
 
-;; ### Create Train/Test Splits
+;; First, let's evaluate a single pipeline to understand the workflow.
 ;;
+;; ### Create Train/Test Splits
+;; 
 ;; We'll use 5-fold cross-validation:
 
 (def iris-splits
@@ -83,7 +84,7 @@
 (keys (first iris-splits))
 
 ;; ### Define a Simple Pipeline
-;;
+;; 
 ;; A metamorph pipeline chains data transformations and model training:
 
 (def simple-pipeline
@@ -94,7 +95,7 @@
    {:metamorph/id :model}
    (ml/model {:model-type :smile.classification/random-forest
               :max-depth 10
-              :num-trees 50})))
+              :trees 50})))
 
 ;; ### Evaluate the Pipeline
 
@@ -158,8 +159,8 @@
 
 (def example-search-space
   {:model-type :smile.classification/random-forest
-   :max-depth (gs/linear 5 20 10)          ; 10 values from 5 to 20
-   :num-trees (gs/linear 10 200 10)        ; 10 values from 10 to 200
+   :max-depth (gs/linear 5 20 10 :int16)          ; 10 values from 5 to 20
+   :trees (gs/linear 10 200 10 :int16)        ; 10 values from 10 to 200
    :split-rule (gs/categorical [:gini :entropy])})
 
 ;; ### Generate Parameter Combinations
@@ -210,9 +211,9 @@
 
 (def rf-search-space
   {:model-type :smile.classification/random-forest
-   :max-depth (gs/linear 5 30 8)           ; 8 depth values
-   :num-trees (gs/linear 50 300 8)         ; 8 tree count values
-   :mtry (gs/linear 1 4 4)                 ; 4 values for features per split
+   :max-depth (gs/linear 5 30 8 :int16)           ; 8 depth values
+   :trees (gs/linear 50 300 8 :int16)         ; 8 tree count values
+   :mtry (gs/linear 1 4 4 :int16)                 ; 4 values for features per split
    :split-rule (gs/categorical [:gini :entropy])  ; 2 options
    :sample-rate (gs/linear 0.6 1.0 5)})    ; 5 subsample rates
 
@@ -374,10 +375,13 @@
 ;; ### Compare Predictions with True Labels
 
 (def prediction-comparison
-  (tc/dataset
-   {:true-species (vec (:species test-samples))
-    :predicted-species (vec (:species predictions))
-    :correct? (map = (:species test-samples) (:species predictions))}))
+  (let [prediction-reversed-cat (-> predictions ds-cat/reverse-map-categorical-xforms)]
+    (tc/dataset
+     {:true-species (vec (:species test-samples))
+      :predicted-species (vec (:species prediction-reversed-cat))
+      :correct? (map = (:species test-samples) 
+                     (:species prediction-reversed-cat))})))
+
 
 ^{:kindly/hide-code false}
 (kind/table
@@ -404,9 +408,8 @@
 
 (def svm-search
   {:model-type :smile.classification/svm
-   :kernel (gs/categorical [:linear :gaussian :polynomial])
    :C (gs/linear 0.1 10.0 8)
-   :epsilon (gs/linear 0.01 0.5 5)})
+   :tol (gs/linear 0.01 0.5 5)})
 
 (def logistic-search
   {:model-type :smile.classification/logistic-regression
@@ -417,7 +420,7 @@
 (def all-model-params
   (concat
    (take 15 (gs/sobol-gridsearch rf-search-space))
-   (take 15 (gs/sobol-gridsearch svm-search))
+   ;(take 15 (gs/sobol-gridsearch svm-search))
    (take 10 (gs/sobol-gridsearch logistic-search))))
 
 (count all-model-params)
@@ -520,21 +523,28 @@
    {:return-best-pipeline-only false
     :return-best-crossvalidation-only false
     :other-metrics
-    {:f1-macro (fn [y-true y-pred]
-                 (metrics/f1-score y-true y-pred :average :macro))
-     :precision (fn [y-true y-pred]
-                  (metrics/precision y-true y-pred :average :macro))
-     :recall (fn [y-true y-pred]
-               (metrics/recall y-true y-pred :average :macro))}}))
+    [
+     {
+      :name :precision 
+      :metric-fn
+      (fn [y-true y-pred]
+        (metrics/precision y-true y-pred))}
+     {:name :recall 
+      :metric-fn
+      (fn [y-true y-pred]
+                (metrics/recall y-true y-pred))}]
+    }))
 
 ;; Extract metrics from first fold:
 (def fold-metrics
   (let [result (-> multi-metric-results first first :test-transform)]
+    (def result result)
     {:accuracy (:metric result)
      :f1-macro (get-in result [:other-metrics :f1-macro])
      :precision (get-in result [:other-metrics :precision])
      :recall (get-in result [:other-metrics :recall])}))
 
+(-> result :other-metrics)
 ^{:kindly/hide-code false}
 (kind/table
  (map (fn [[k v]] {:metric (name k) :value (format "%.4f" v)})
