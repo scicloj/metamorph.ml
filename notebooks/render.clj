@@ -11,7 +11,8 @@
 
 (clay/make! {:format [:quarto :html]
              :base-source-path "notebooks/"
-             :source-path ["supervised-ml-intro.clj"]
+             :source-path ["supervised-ml-intro.clj"
+                           ]
              :base-target-path "docs"
              :book {:title "metamorph.ml topics"}
              :clean-up-target-dir false
