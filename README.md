@@ -234,14 +234,14 @@ and custom ones can be created easily.
 
 ## Further tutorials / example
 
-Several code examples for metamorph are available in this repository: [metamorph-examples](https://github.com/scicloj/metamorph-examples)
+- [Introducion to supervised ML with metamorph.ml](https://scicloj.github.io/metamorph.ml/supervised_ml_intro.html)
+- [metamorph examples](https://github.com/scicloj/metamorph-examples)
+- [Tutorial of data science topics](https://scicloj.github.io/clojure-data-tutorials/)
+- [noj documenttaion, partialy using metamorph.ml](https://github.com/scicloj/noj) 
 
-Here we have some [tutorials](https://scicloj.github.io/clojure-data-tutorials/) of data science topics , some use metamorph.ml.
 
-[noj](https://github.com/scicloj/noj) is as well using metamorph.ml and has a cookbook [here](https://scicloj.github.io/noj/)
+ 
 
-We have as well a (very unpolished) collection of [notebooks](https://scicloj.github.io/metamorph.ml/)  showcasing
-only metamorph.ml functionality.
 
 
 <!--  LocalWords:  metamorph
