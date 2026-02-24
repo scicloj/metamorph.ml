@@ -6,7 +6,7 @@
 
 # metamorph.ml
 
-Machine learning functions for [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) and [metamorph](https://github.com/scicloj/metamorph).
+Machine learning functions based on  [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) and [metamorph](https://github.com/scicloj/metamorph).
 
 
 ## Main idea
