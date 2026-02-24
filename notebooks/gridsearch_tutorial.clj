@@ -11,11 +11,8 @@
             [scicloj.metamorph.ml.rdatasets :as rdatasets]
             [scicloj.metamorph.ml.metrics :as metrics]
             [tablecloth.api :as tc]
-            [tech.v3.dataset :as ds]
             [tech.v3.dataset.modelling :as ds-mod]
-            [tech.v3.dataset.metamorph :as ds-mm]
-            [tech.v3.dataset.column-filters :as cf]
-            [scicloj.kindly.v4.kind :as kind]))
+            [tech.v3.dataset.metamorph :as ds-mm]))
 
 ;; ## Introduction
 ;;
@@ -66,7 +63,7 @@
   :height 300})
 
 ;; ## Part 2: Basic Pipeline Evaluation
-;;
+;; 
 ;; First, let's evaluate a single pipeline to understand the workflow.
 
 ;; ### Create Train/Test Splits
@@ -83,7 +80,7 @@
 (keys (first iris-splits))
 
 ;; ### Define a Simple Pipeline
-;;
+;; 
 ;; A metamorph pipeline chains data transformations and model training:
 
 (def simple-pipeline
