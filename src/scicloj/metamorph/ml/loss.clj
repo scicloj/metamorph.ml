@@ -6,7 +6,15 @@
             [tech.v3.datatype.argops :as argops]))
 
 (defn mse
-  "mean squared error"
+  "Calculates mean squared error between predictions and labels.
+
+  `predictions` - Sequence of predicted values
+  `labels` - Sequence of actual/ground truth values
+
+  Returns the average of squared differences between predictions and labels.
+  Lower values indicate better model fit. Commonly used for regression models.
+
+  See also: `rmse`, `mae`"
   ^double [predictions labels]
   (assert (= (count predictions) (count labels)))
   (let [n (count predictions)]
@@ -18,14 +26,34 @@
 
 
 (defn rmse
-  "root mean squared error"
+  "Calculates root mean squared error between predictions and labels.
+
+  `predictions` - Sequence of predicted values
+  `labels` - Sequence of actual/ground truth values
+
+  Returns the square root of mean squared error. RMSE is in the same units as
+  the target variable, making it more interpretable than MSE. Lower values
+  indicate better model fit.
+
+  See also: `mse`, `mae`"
   ^double [predictions labels]
   (-> (mse predictions labels)
       (Math/sqrt)))
 
 
 (defn mae
-  "mean absolute error"
+  "Calculates mean absolute error between predictions and labels.
+
+  `predictions` - Sequence of predicted values
+  `labels` - Sequence of actual/ground truth values
+
+  Returns the average of absolute differences between predictions and labels.
+  MAE is more robust to outliers than MSE/RMSE and shares the same units as the
+  target variable. Lower values indicate better model fit.
+
+  Commonly used as the default loss function for regression in `evaluate-pipelines`.
+
+  See also: `mse`, `rmse`"
   ^double [predictions labels]
   (assert (= (count predictions) (count labels)))
   (let [n (count predictions)]
@@ -53,11 +81,19 @@
  
 
 (defn classification-accuracy
-  "correct/total.
-Model output is a sequence of probability distributions.
-label-seq is a sequence of values.  The answer is considered correct
-if the key highest probability in the model output entry matches
-that label."
+  "Calculates classification accuracy as the proportion of correct predictions.
+
+  `lhs` - Sequence of predicted class labels (without categorical map metadata)
+  `rhs` - Sequence of actual/ground truth class labels (without categorical map metadata)
+
+  Returns accuracy as a double in [0, 1] where 1.0 is perfect classification.
+  Computes the ratio of correct predictions to total predictions. Both inputs
+  must have the same length and be either both numeric or both non-numeric.
+
+  Note: Categorical maps should be removed from columns before calling this function.
+  See the link in error messages for details on categorical map handling.
+
+  See also: `classification-loss`, `scicloj.metamorph.ml.metrics/accuracy`"
   ^double [lhs rhs]
   (validate-accuracy-inputs lhs rhs)
   (/ (dtype/ecount (argops/binary-argfilter :tech.numerics/eq lhs rhs))
@@ -65,16 +101,40 @@ that label."
 
 
 (defn classification-loss
-  "1.0 - classification-accuracy."
+  "Calculates classification loss as the proportion of incorrect predictions.
+
+  `lhs` - Sequence of predicted class labels (without categorical map metadata)
+  `rhs` - Sequence of actual/ground truth class labels (without categorical map metadata)
+
+  Returns classification error rate as a double in [0, 1] where 0.0 is perfect
+  classification. Computed as 1.0 minus classification accuracy. Lower values
+  indicate better model performance.
+
+  Commonly used as the default loss function for classification in `evaluate-pipelines`.
+
+  See also: `classification-accuracy`, `scicloj.metamorph.ml.metrics/error-rate`"
   ^double [lhs rhs]
   (- 1.0
      (classification-accuracy lhs rhs)))
 
 
 (defn auc
-  "Calculates area under the ROC curve. Uses AUC formula from R's 'mlr' package.
-  (sum(r[i]) - n.pos * (n.pos + 1) / 2) / (n.pos * n.neg)
-  See https://github.com/mlr-org/mlr/blob/main/R/measures.R"
+  "Calculates area under the ROC curve for binary classification.
+
+  `predictions` - Sequence of predicted scores/probabilities (numeric)
+  `labels` - Sequence of binary labels (must be 0 or 1)
+
+  Returns the AUC score as a double in [0, 1]. Values above 0.5 indicate the
+  model performs better than random guessing. AUC of 1.0 is perfect classification.
+
+  Uses the Mann-Whitney U statistic formula from R's 'mlr' package:
+  `(sum(r[i]) - n.pos * (n.pos + 1) / 2) / (n.pos * n.neg)`
+
+  Both inputs must have equal length, and labels must contain only 0 and 1 values.
+
+  Reference: https://github.com/mlr-org/mlr/blob/main/R/measures.R
+
+  See also: `classification-accuracy`"
   ^double [predictions labels]
   (assert (= (count predictions) (count labels)))
   (assert (= (set labels) #{0 1}))

@@ -16,9 +16,29 @@
 
 
 (defn  ensemble-pipe
-  "Creates an ensemble pipeline function out of various pipelines. The different predictions
-   get combined via majority voting.
-   Can be used in the same way as any other pipeline."
+  "Creates an ensemble pipeline from multiple pipelines using majority voting.
+
+  `pipes` - Sequence of metamorph pipeline functions
+
+  Returns a single metamorph pipeline function that trains all sub-pipelines
+  in :fit mode and combines their predictions via majority voting in :transform
+  mode. Each pipeline is trained independently on the same data.
+
+  In :fit mode, stores all fitted pipeline contexts. In :transform mode, runs
+  predictions from all pipelines and selects the most common prediction for
+  each observation.
+
+  The ensemble pipeline can be used anywhere a regular pipeline is accepted
+  (e.g., in `evaluate-pipelines`).
+
+  metamorph                            | .
+  -------------------------------------|----------------------------------------------------------------------------
+  Behaviour in mode :fit               | Fits all sub-pipelines and stores their contexts
+  Behaviour in mode :transform         | Runs all sub-pipelines and combines predictions by majority vote
+  Reads keys from ctx                  | In `:transform`: reads fitted sub-pipeline contexts
+  Writes keys to ctx                   | In `:fit`: stores all fitted contexts; In `:transform`: writes final prediction
+
+  See also: `scicloj.metamorph.ml/evaluate-pipelines`"
   [pipes]
   (morph/pipeline
    {:metamorph/id :ensemble}

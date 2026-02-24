@@ -66,22 +66,31 @@
 
 
 (defn transform-one-hot
+  "Metamorph transformer that maps categorical variables to one-hot encoded columns.
 
-  "Transformer which mapps categorical variables to numbers. Each value of the
-  column gets its won column in one-hot-encoding.
+  Each unique value of the categorical column becomes its own binary column in
+  the one-hot encoding.
 
-  To handle different levls of a variable between train an test data, three
-  strategies are available:
+  `column-selector` - Tablecloth column selector (keyword, fn, or selector spec)
+  `strategy` - Strategy for handling train/test level differences:
+               * `:full` - Levels retrieved from dataset at `:metamorph.ml/full-ds` in context
+               * `:independent` - One-hot columns fitted and transformed independently
+               * `:fit` - Mapping from :fit mode used in :transform (assumes all levels present in fit)
+  `options` - Optional map with:
+              * `:table-args` - Precise mapping as sequence of [val idx] pairs or sorted values
+              * `:result-datatype` - Datatype of the one-hot-mapping columns
 
-  * `:full`  The levels are retrieved from a dataset at key :metamorph.ml/full-ds in the context
-  * `:independent`  One-hot columns are fitted and transformed independently for train and test  data
-  * `:fit` The mapping fitted in mode :fit is used in :transform, and it is assumed that all levels are present in the data during :fit
+  Returns a metamorph step function that transforms the data in both :fit and
+  :transform modes.
 
-  `options` can be:
-  *  `:table-args` allows to specify the precise mapping as a sequence of pairs of [val idx] or as a sorted seq of values.
-  *  `:result-datatype`  Datatype of the one-hot-mapping column
+  metamorph                            | .
+  -------------------------------------|----------------------------------------------------------------------------
+  Behaviour in mode :fit               | Fits one-hot encoding and applies it to `:metamorph/data`
+  Behaviour in mode :transform         | Applies fitted encoding to `:metamorph/data`
+  Reads keys from ctx                  | In `:transform`: reads fitted encoding from `:metamorph/id`
+  Writes keys to ctx                   | In `:fit`: stores fitted encoding in `:metamorph/id`
 
-  "
+  See also: `tech.v3.dataset.categorical/fit-one-hot`, `tech.v3.dataset/categorical->one-hot`"
   ([column-selector strategy] (transform-one-hot column-selector strategy nil))
   ([column-selector strategy options]
    (malli/instrument-mm

@@ -43,10 +43,21 @@
 
 
 (defn linear
-  "Create a gridsearch definition which does a linear search.
+  "Creates a linear grid search definition for hyperparameter tuning.
 
-  * res-dtype-or-space map be either a datatype keyword or a vector
-    of categorical values."
+  `start` - Starting value of the range
+  `end` - Ending value of the range
+  `n-steps` - Number of evenly-spaced steps (default: 100)
+  `res-dtype-or-space` - Either a datatype keyword (`:float64`, `:int32`, etc.)
+                         or a vector of categorical values (default: `:float64`)
+
+  Returns a grid search definition map that can be used with `sobol-gridsearch`.
+
+  When `res-dtype-or-space` is a vector, values are mapped to categorical options
+  by index. For example, `[:small :medium :large]` with 3 steps generates those
+  three categorical values.
+
+  See also: `categorical`, `sobol-gridsearch`"
   ([start end n-steps res-dtype-or-space]
    (let [start (double start)
          end (double end)
@@ -63,7 +74,18 @@
 
 
 (defn categorical
-  "Given a vector a categorical values create a gridsearch definition."
+  "Creates a categorical grid search definition from a vector of values.
+
+  `value-vec` - Vector of categorical values to search over
+
+  Returns a grid search definition map that will enumerate all values in the
+  vector during grid search. This is a convenience wrapper around `linear` for
+  categorical parameters.
+
+  Example: `(categorical [:adam :sgd :rmsprop])` creates a definition that will
+  try all three optimizers.
+
+  See also: `linear`, `sobol-gridsearch`"
   [value-vec]
   (let [n-elems (count value-vec)]
     (linear 0 (dec n-elems) n-elems value-vec)))

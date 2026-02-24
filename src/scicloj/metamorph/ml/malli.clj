@@ -1,4 +1,5 @@
 (ns scicloj.metamorph.ml.malli
+  {:no-doc true}
   (:require
    [malli.core :as m]
    [malli.dev.pretty :as pretty]

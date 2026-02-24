@@ -690,8 +690,19 @@
   (.newLine w))
 
 (defn tidy->libsvm!
-  "Writes a tfidf dataset to a writer in the 
-   svmlib text format"
+  "Writes a TF-IDF dataset to LIBSVM text format.
+
+  `tfidf-ds` - Dataset with TF-IDF features (from `->tfidf`) including `:meta`, `:token-idx`, and value columns
+  `writer` - BufferedWriter for output
+  `column` - Column name containing feature values (e.g., `:tfidf`)
+
+  Writes the dataset in LIBSVM sparse format: `<label> <index>:<value> <index>:<value> ...`
+  where label comes from the `:meta` column. Groups by `:document` and writes
+  one line per document with tokens sorted by index.
+
+  The writer is automatically closed after writing.
+
+  See also: `->tfidf`, `libsvm->tidy`"
   [tfidf-ds ^BufferedWriter writer column]
   (let [grouped
         (-> tfidf-ds
@@ -721,16 +732,21 @@
     acc))
 
 (defn libsvm->tidy
-  "Takes a reader (of a file usualy) and
-   reads it as libsvm formated data. 
+  "Reads LIBSVM format data into a tidy dataset.
 
-   Returns a dataset with columns
-   :instance
-   :label 
-   :index 
-   :value
-   
-   "
+  `reader` - Reader (typically from a file) containing LIBSVM formatted text
+
+  Returns a dataset with columns:
+  * `:instance` - Document/instance ID (0-indexed)
+  * `:label` - Class label from the LIBSVM file
+  * `:index` - Feature index
+  * `:value` - Feature value
+
+  Each line in LIBSVM format is parsed: `<label> <index>:<value> ...`
+
+  The reader is automatically closed after reading.
+
+  See also: `tidy->libsvm!`, `->tidy-text`"
   [reader]
   (->
    (process-file reader

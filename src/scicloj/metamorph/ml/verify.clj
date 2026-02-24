@@ -1,4 +1,5 @@
 (ns scicloj.metamorph.ml.verify
+  {:no-doc true}
   (:require
    [clojure.test :refer [is]]
    [scicloj.metamorph.ml :as ml]

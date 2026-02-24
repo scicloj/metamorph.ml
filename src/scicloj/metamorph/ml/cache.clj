@@ -66,7 +66,14 @@
                                              (format "%s/%s.nippy" cache-dir key)
                                              value))}))
 
-(defn disable-cache! []
+(defn disable-cache!
+  "Disables caching of train/predict calls.
+
+  Resets the cache configuration to a disabled state. After calling this,
+  train and predict operations will not use any caching mechanism.
+
+  See also: `enable-atom-cache!`, `enable-disk-cache!`, `enable-redis-cache!`"
+  []
   (reset! ml/train-predict-cache {:use-cache false
                                   :get-fn nil
                                   :set-fn nil}))

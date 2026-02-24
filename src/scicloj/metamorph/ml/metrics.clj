@@ -6,15 +6,34 @@
             [tech.v3.datatype.functional :as dfn]))
 
 (defn wrongs
-  "Given `y` array of ground truth labels and `y_hat` classifier predictions,
-  returns array with 1.0 values where `y` does not equal `y_hat`."
+  "Identifies incorrect predictions in binary classification.
+
+  `y` - Array of ground truth labels
+  `y_hat` - Array of classifier predictions
+
+  Returns an array with 1.0 where predictions don't match ground truth, 0.0 where
+  they match. Arrays must have the same shape.
+
+  Useful for computing error rates and analyzing misclassification patterns.
+
+  See also: `error-rate`, `accuracy`"
   [y y_hat]
   {:pre [(= (dtype/shape y) (dtype/shape y_hat))]}
   (dfn/not-eq y y_hat))
 
 (defn error-rate
-  "First argument `y` is the true class, `y_hat` is the predicted value.
-  Returns the percentage error rate."
+  "Calculates the proportion of incorrect predictions.
+
+  `y` - Array of true class labels
+  `y_hat` - Array of predicted class values
+
+  Returns the error rate as a float in [0, 1], where 0 indicates perfect
+  classification and 1 indicates all predictions are wrong. Computed as the
+  number of misclassifications divided by total predictions.
+
+  Arrays must have the same shape.
+
+  See also: `accuracy`, `wrongs`"
   [y y_hat]
   {:pre [(= (dtype/shape y) (dtype/shape y_hat))]}
   (let [wrong (dfn/sum (wrongs y y_hat))
@@ -22,38 +41,101 @@
     (/ wrong len)))
 
 (defn accuracy
-  "First argument `y` is the true class, `y_hat` is the predicted value.
-  Returns the percentage correct."
+  "Calculates the proportion of correct predictions.
+
+  `y` - Array of true class labels
+  `y_hat` - Array of predicted class values
+
+  Returns the accuracy as a float in [0, 1], where 1.0 indicates perfect
+  classification. Computed as 1.0 minus the error rate, equivalent to the
+  number of correct predictions divided by total predictions.
+
+  Arrays must have the same shape.
+
+  See also: `error-rate`, `precision`, `recall`"
   [y y_hat]
   {:pre [(= (dtype/shape y) (dtype/shape y_hat))]}
   (- 1.0 (error-rate y y_hat)))
 
 (defn false-positives
-  "Returns array with 1. values assigned to false positives."
+  "Identifies false positive predictions in binary classification.
+
+  `y` - Array of true binary labels (0 or 1)
+  `y_hat` - Array of predicted binary values (0 or 1)
+
+  Returns an array with 1.0 for false positives (predicted 1, actual 0) and 0.0
+  elsewhere. Arrays must have the same shape.
+
+  False positives are also known as Type I errors.
+
+  See also: `false-negatives`, `true-positives`, `true-negatives`, `fpr`"
   [y y_hat]
   {:pre [(= (dtype/shape y) (dtype/shape y_hat))]}
   (dfn/eq 1 (dfn/- y_hat y)))
 
 (defn false-negatives
-  "Returns array with 1. values assigned to false negatives."
+  "Identifies false negative predictions in binary classification.
+
+  `y` - Array of true binary labels (0 or 1)
+  `y_hat` - Array of predicted binary values (0 or 1)
+
+  Returns an array with 1.0 for false negatives (predicted 0, actual 1) and 0.0
+  elsewhere. Arrays must have the same shape.
+
+  False negatives are also known as Type II errors.
+
+  See also: `false-positives`, `true-positives`, `true-negatives`, `fnr`"
   [y y_hat]
   {:pre [(= (dtype/shape y) (dtype/shape y_hat))]}
   (dfn/eq 1 (dfn/- y y_hat)))
 
 (defn true-positives
-  "Returns array with 1. values assigned to true positives."
+  "Identifies true positive predictions in binary classification.
+
+  `y` - Array of true binary labels (0 or 1)
+  `y_hat` - Array of predicted binary values (0 or 1)
+
+  Returns an array with 1.0 for true positives (predicted 1, actual 1) and 0.0
+  elsewhere. Arrays must have the same shape.
+
+  True positives represent correctly identified positive cases.
+
+  See also: `true-negatives`, `false-positives`, `false-negatives`, `tpr`"
   [y y_hat]
   {:pre [(= (dtype/shape y) (dtype/shape y_hat))]}
   (dfn/* y y_hat))
 
 (defn true-negatives
-  "Returns array with 1. values assigned to true negatives."
+  "Identifies true negative predictions in binary classification.
+
+  `y` - Array of true binary labels (0 or 1)
+  `y_hat` - Array of predicted binary values (0 or 1)
+
+  Returns an array with 1.0 for true negatives (predicted 0, actual 0) and 0.0
+  elsewhere. Arrays must have the same shape.
+
+  True negatives represent correctly identified negative cases.
+
+  See also: `true-positives`, `false-positives`, `false-negatives`"
   [y y_hat]
   {:pre [(= (dtype/shape y) (dtype/shape y_hat))]}
   (dfn/eq 0 (dfn/+ y y_hat)))
 
 (defn recall
-  "Returns recall for a binary classifier, a measure of false negative rate"
+  "Calculates recall (sensitivity, true positive rate) for binary classification.
+
+  `y` - Array of true binary labels (0 or 1)
+  `y_hat` - Array of predicted binary values (0 or 1)
+
+  Returns recall as a double in [0, 1], computed as true positives divided by
+  total actual positives (TP / (TP + FN)). Recall measures the proportion of
+  actual positive cases that were correctly identified.
+
+  High recall means few false negatives. Arrays must have the same shape.
+
+  Also known as sensitivity, hit rate, or true positive rate.
+
+  See also: `precision`, `tpr`, `fnr`"
   [y y_hat]
   {:pre [(= (dtype/shape y) (dtype/shape y_hat))]}
   (let [true-count (dfn/sum y)
@@ -61,7 +143,18 @@
     (/ (double true-pos-count) true-count)))
 
 (defn precision
-  "Returns precision for a binary classifier, a measure of false positive rate"
+  "Calculates precision (positive predictive value) for binary classification.
+
+  `y` - Array of true binary labels (0 or 1)
+  `y_hat` - Array of predicted binary values (0 or 1)
+
+  Returns precision as a float in [0, 1], computed as true positives divided by
+  total predicted positives (TP / (TP + FP)). Precision measures the proportion
+  of positive predictions that were correct.
+
+  High precision means few false positives. Arrays must have the same shape.
+
+  See also: `recall`, `fpr`"
   [y y_hat]
   {:pre [(= (dtype/shape y) (dtype/shape y_hat))]}
   (let [true-pos-count (dfn/sum (true-positives y y_hat))
@@ -69,33 +162,86 @@
     (/ true-pos-count (float (+ true-pos-count false-pos-count)))))
 
 (defn fpr
-  "The false negative rate, using the strict ROC definition."
+  "Calculates false positive rate for binary classification.
+
+  `y` - Array of true binary labels (0 or 1)
+  `y_hat` - Array of predicted binary values (0 or 1)
+
+  Returns FPR as a double in [0, 1], computed as false positives divided by
+  total predicted negatives (FP / (FP + TN)). Uses the strict ROC definition.
+
+  FPR measures the proportion of actual negatives incorrectly classified as
+  positive. Lower values are better. Arrays must have the same shape.
+
+  See also: `tpr`, `false-positives`, `precision`"
   [y y_hat]
   {:pre [(= (dtype/shape y) (dtype/shape y_hat))]}
   (/ (dfn/sum (false-positives y y_hat))
      (dfn/sum (dfn/not-eq 1 y_hat))))
 
 (defn tpr
-  "The true positive rate, using the strict ROC definition."
+  "Calculates true positive rate (sensitivity, recall) for binary classification.
+
+  `y` - Array of true binary labels (0 or 1)
+  `y_hat` - Array of predicted binary values (0 or 1)
+
+  Returns TPR as a double in [0, 1], computed as true positives divided by
+  total predicted positives (TP / (TP + FP)). Uses the strict ROC definition.
+
+  TPR measures the proportion of positive predictions that are true positives.
+  Higher values are better. Arrays must have the same shape.
+
+  Also known as recall or sensitivity.
+
+  See also: `fpr`, `fnr`, `recall`, `true-positives`"
   [y y_hat]
   {:pre [(= (dtype/shape y) (dtype/shape y_hat))]}
   (/ (dfn/sum (true-positives y y_hat))
      (dfn/sum y_hat)))
 
 (defn fnr
-  "The false negative rate, using the strict ROC definition."
+  "Calculates false negative rate for binary classification.
+
+  `y` - Array of true binary labels (0 or 1)
+  `y_hat` - Array of predicted binary values (0 or 1)
+
+  Returns FNR as a double in [0, 1], computed as 1 minus the true positive rate.
+  Uses the strict ROC definition.
+
+  FNR measures the proportion of actual positives incorrectly classified as
+  negative. Lower values are better. Arrays must have the same shape.
+
+  See also: `tpr`, `false-negatives`, `recall`"
   [y y_hat]
   {:pre [(= (dtype/shape y) (dtype/shape y_hat))]}
   (- 1 (tpr y y_hat)))
 
 (defn threshold
-  "Return a binary mask of all values above threshold."
+  "Creates a binary mask by thresholding estimated probabilities.
+
+  `y_est` - Array of estimated probabilities or scores
+  `thresh` - Threshold value for binarization
+
+  Returns an array where values >= thresh are true/1 and values < thresh are false/0.
+
+  Used to convert probability outputs into binary predictions for ROC curve
+  analysis and threshold optimization.
+
+  See also: `roc-curve`, `equal-error-point`"
   [y_est thresh]
   (dfn/>= y_est thresh))
 
 (defn unit-space
-  "Returns an array with divs+1 values that evenly divide a space from 0.0 to
-  1.0, inclusive."
+  "Generates evenly-spaced values in the unit interval [0.0, 1.0].
+
+  `divs` - Number of divisions (bins) to create
+
+  Returns an array with `divs + 1` values evenly distributed from 0.0 to 1.0,
+  inclusive. For example, `divs=4` produces [0.0 0.25 0.5 0.75 1.0].
+
+  Used internally for generating threshold values in ROC curve computation.
+
+  See also: `roc-curve`"
   [divs]
   (dfn/* (/ 1.0 (double divs)) (range (inc divs))))
 
@@ -113,11 +259,22 @@
           triplet-seq))
 
 (defn roc-curve
-  "Compute an ROC curve with `bins` level of discretization for threshold values
-  between 0.0 and 1.0 to compute true and false positive rates for.
+  "Computes an ROC (Receiver Operating Characteristic) curve for binary classification.
 
-  This is not at all an ideal implementation, just a stand in that is useful
-  for certain problems until a real alternative is provided."
+  `y` - Array of true binary labels (0 or 1)
+  `y_est` - Array of estimated probabilities or scores
+  `bins` - Number of threshold discretization levels (default: 100)
+
+  Returns a sequence of [fpr tpr threshold] triplets, de-duplicated to include
+  only boundary points where FPR or TPR changes. Thresholds range from 0.0 to 1.0.
+
+  The ROC curve visualizes the trade-off between true positive rate and false
+  positive rate across different classification thresholds.
+
+  Note: This is a basic implementation. Consider using dedicated libraries for
+  production ROC analysis.
+
+  See also: `tpr`, `fpr`, `threshold`, `equal-error-point`, `eer-accuracy`"
   ([y y_est] (roc-curve y y_est 100))
   ([y y_est bins]
    (let [threshold-space (unit-space bins)
@@ -132,9 +289,17 @@
      (roc-dedupe (map vector fprs tprs thresholds)))))
 
 (defn equal-error-point
-  "Given y and the continuous, normalized output of a predictor's estimates of
-  binary class predictions corresponding to y_hat, select the threshold which
-  minimizes the difference between true and false positive rates."
+  "Finds the classification threshold that minimizes the difference between FPR and (1 - TPR).
+
+  `y` - Array of true binary labels (0 or 1)
+  `y_est` - Array of continuous estimated probabilities or scores (normalized)
+  `bins` - Number of threshold discretization levels (default: 100)
+
+  Returns the threshold value where false positive rate and false negative rate
+  are approximately equal. This is the equal error rate (EER) operating point,
+  commonly used in biometric verification systems.
+
+  See also: `eer-accuracy`, `roc-curve`"
   ([y y_est] (equal-error-point y y_est 100))
   ([y y_est bins]
    (->> (roc-curve y y_est bins)
@@ -146,9 +311,20 @@
 
 
 (defn eer-accuracy
-  "Returns the accuracy where TPR and FPR are balanced, as well as the
-  threshold value where this balance is obtained. ROC-EER is the standard
-  accuracy measurement in facial recognition."
+  "Calculates accuracy at the equal error rate (EER) operating point.
+
+  `y` - Array of true binary labels (0 or 1)
+  `y_est` - Array of continuous estimated probabilities or scores
+  `bins` - Number of threshold discretization levels (default: 100)
+
+  Returns a map with:
+  - `:accuracy` - Classification accuracy at the EER threshold
+  - `:threshold` - The threshold value where TPR and FPR are balanced
+
+  EER accuracy is the standard metric in biometric systems (e.g., facial
+  recognition) where false accept and false reject errors are equally weighted.
+
+  See also: `equal-error-point`, `accuracy`"
   ([y y_est] (eer-accuracy y y_est 100))
   ([y y_est bins]
    (let [thresh (equal-error-point y y_est bins)

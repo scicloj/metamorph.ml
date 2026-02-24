@@ -12,10 +12,22 @@
       1))
 
 (defn confusion-map
-  "Creates a confusion-matrix in map form. Can be either as raw counts or normalized.
-  `normalized` when :all (default) it is normalized
-                    :none otherwise
-   "
+  "Creates a confusion matrix in nested map form for classification evaluation.
+
+  `predicted-labels` - Sequence of predicted class labels
+  `labels` - Sequence of actual class labels
+  `normalize` - Normalization mode (default: `:all`)
+                * `:all` - Normalize by row (proportion of actual class)
+                * `:none` - Raw counts
+
+  Returns a nested sorted map where `{actual-class {predicted-class value}}`.
+  When normalized, values represent proportions; otherwise, they are counts.
+
+  Example: `{:setosa {:setosa 0.95 :versicolor 0.05} :versicolor {:versicolor 1.0}}`
+
+  Use `confusion-map->ds` to convert to dataset format for display.
+
+  See also: `confusion-map->ds`, `scicloj.metamorph.ml.viz/confusion-matrix`"
   ([predicted-labels labels normalize]
 
    (let [answer-counts (frequencies labels)]
@@ -31,9 +43,9 @@
                                  (case normalize
                                    :all  (double (/ v (get answer-counts k)))
                                    :none v)]))
-                                   
 
-                                 
+
+
                          (into (sorted-map)))]))
           (into (sorted-map)))))
   ([predicted-labels labels]
@@ -42,7 +54,17 @@
 
 
 (defn confusion-map->ds
-  "Converts the confusion-matrix map obtained via `confusion-mpo` into a dataset representation"
+  "Converts a confusion matrix map to dataset representation for display.
+
+  `conf-matrix-map` - Confusion matrix map from `confusion-map`
+
+  Returns a dataset with actual classes as rows (`:column-name`) and predicted
+  classes as columns. Cell values show counts or proportions depending on how
+  the confusion map was generated.
+
+  The dataset format is suitable for printing, analysis, or visualization.
+
+  See also: `confusion-map`, `scicloj.metamorph.ml.viz/confusion-matrix`"
   [conf-matrix-map]
   (let [
         conf-matrix-map conf-matrix-map

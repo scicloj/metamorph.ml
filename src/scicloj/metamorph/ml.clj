@@ -519,13 +519,31 @@
 
 
 (defn model-definition-names
-  "Return a list of all registered model defintion names."
+  "Returns a list of all registered model definition names.
+
+  Returns a sequence of keywords representing all model types that have been
+  registered via `define-model!`. These can be used as the `:model-type` value
+  when training models.
+
+  Example: `[:metamorph.ml/dummy-classifier ...]`
+
+  See also: `define-model!`, `options->model-def`"
   []
   (keys @model-definitions*))
 
 
 (defn options->model-def
-  "Return the model definition that corresponse to the :model-type option"
+  "Retrieves the model definition corresponding to the `:model-type` option.
+
+  `options` - Map containing at minimum a `:model-type` keyword
+
+  Returns the model definition map registered for the given `:model-type`.
+  Throws an exception if the model type is not found, suggesting a missing
+  namespace require.
+
+  Used internally to look up train/predict functions and model metadata.
+
+  See also: `define-model!`, `model-definition-names`, `hyperparameters`"
   [options]
   {:pre [(contains? options :model-type)]}
   (if-let [model-def (get @model-definitions* (:model-type options))]
@@ -534,7 +552,17 @@
 
 
 (defn hyperparameters
-  "Get the hyperparameters for this model definition"
+  "Retrieves the hyperparameters definition for a model type.
+
+  `model-kwd` - Keyword identifying the model type (e.g., `:smile.classification/random-forest`)
+
+  Returns the hyperparameters map specified during model registration, or nil
+  if no hyperparameters were defined. Hyperparameters describe tunable options
+  for the model.
+
+  Used for introspection and hyperparameter tuning/grid search.
+
+  See also: `define-model!`, `options->model-def`"
   [model-kwd]
   (:hyperparameters (options->model-def {:model-type model-kwd})))
 
@@ -648,10 +676,20 @@
 
 
 (defn thaw-model
-  "Thaw a model.  Model's returned from train may be 'frozen' meaning a 'thaw'
-  operation is needed in order to use the model.  This happens for you during predict
-  but you may also cached the 'thawed' model on the model map under the
-  ':thawed-model'  keyword in order to do fast predictions on small datasets."
+  "Thaws a frozen model for use in predictions.
+
+  Models returned from `train` may be 'frozen' (serialized) for storage efficiency.
+  A 'thaw' operation deserializes the model for use. This happens automatically
+  during `predict`, but you can manually thaw and cache the model under
+  `:thawed-model` for faster repeated predictions on small datasets.
+
+  `model` - Model map from `train` containing `:model-data`
+  `opts` - Optional map with `:thaw-fn` to override the model's thaw function
+
+  Returns the thawed model data ready for prediction. If already thawed and
+  cached, returns the cached version.
+
+  See also: `train`, `predict`"
   {:malli/schema [:function
                   [:=> [:cat [:map [:model-data any?]] map?] map?]
                   [:=> [:cat [:map [:model-data any?]]] map?]]}

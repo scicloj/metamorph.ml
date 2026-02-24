@@ -1,3 +1,6 @@
+unreleased
+- improved docstring with Claude Code
+
 1.3.0
 
 - upgraded deps
