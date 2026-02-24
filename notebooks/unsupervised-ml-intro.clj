@@ -14,6 +14,8 @@
 ;; to discover hidden patterns, group similar observations, or reduce
 ;; dimensionality for visualization and preprocessing.
 
+;; BROKEN 
+
 (ns unsupervised-ml-intro
   (:require [scicloj.clay.v2.api :as clay]
             [tablecloth.api :as tc]
