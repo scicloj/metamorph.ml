@@ -1,8 +1,9 @@
-unreleased
+1.3.0
+
 - upgraded deps
 - added missing Java classes from former tmd-smile support
 - more clear error message for accuray of categorical maps
-- made  internal functions private
+- made some internal functions private
    - scicloj.metamorph.ml.rdatasets
      - clean-R-relevant
      - doc-url->md
