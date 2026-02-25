@@ -17,19 +17,20 @@
 ;; BROKEN 
 
 (ns unsupervised-ml-intro
-  (:require [scicloj.clay.v2.api :as clay]
-            [tablecloth.api :as tc]
-            [tech.v3.dataset :as ds]
-            [tech.v3.dataset.metamorph :as ds-mm]
-            [tech.v3.dataset.column-filters :as cf]
-            [tech.v3.datatype.functional :as dfn]
-            [scicloj.metamorph.core :as mm]
-            [scicloj.metamorph.ml :as ml]
-            [scicloj.metamorph.ml.preprocessing :as prep]
-            [scicloj.metamorph.ml.rdatasets :as rdatasets]
-            [scicloj.ml.smile.projections]
-            [scicloj.ml.smile.clustering]
-            [scicloj.ml.smile.manifold]))
+  (:require
+   [clojure.string :as str]
+   [tablecloth.api :as tc]
+   [tablecloth.pipeline :as tc-mm]
+   [tech.v3.dataset :as ds]
+   [tech.v3.dataset.column-filters :as cf]
+   [tech.v3.datatype.functional :as dfn]
+   [scicloj.metamorph.core :as mm]
+   [scicloj.metamorph.ml :as ml]
+   [scicloj.metamorph.ml.preprocessing :as prep]
+   [scicloj.metamorph.ml.rdatasets :as rdatasets]
+   [scicloj.ml.smile.projections :as projections]
+   [scicloj.ml.smile.clustering :as clustering]
+   [scicloj.ml.smile.manifold]))
 
 ;; ## Part 1: Clustering with K-Means
 ;;
@@ -45,12 +46,12 @@
   (-> (rdatasets/datasets-iris)
       (ds/drop-columns [:rownames :species])))  ; Remove labels for unsupervised learning
 
-^:kind/md
-["**Iris dataset (unlabeled):**"]
+
+;; **Iris dataset (unlabeled):**
 
 (tc/head iris-ds 5)
 
-^:kind/md
+^{:kind/md true :kindly/hide-code true}
 (str "**Dataset shape:** "
      (first (ds/shape iris-ds)) " rows × "
      (second (ds/shape iris-ds)) " columns")
@@ -80,14 +81,14 @@
 (def scaled-iris
   (:metamorph/data fitted-preproc-ctx))
 
-^:kind/md
+^{:kind/md true :kindly/hide-code true}
 ["**Scaled data (first 5 rows):**"]
 
 (tc/head scaled-iris 5)
 
 ;; Check that scaling worked (mean ≈ 0, std ≈ 1):
 
-^:kind/md
+^{:kind/md true :kindly/hide-code true}
 ["**Scaled data statistics:**"]
 
 (ds/descriptive-stats scaled-iris)
@@ -103,13 +104,11 @@
    ;; K-means clustering
    {:metamorph/id :model}
    (ml/model {:model-type :fastmath.cluster/k-means
-              :clustering-method-args [3 100 1e-4]
-              ;; :k 3                    ; Number of clusters
-              ;; :max-iter 100            ; Maximum iterations
-              ;; :tolerance 1e-4
-              }
-             
-             )))      ; Convergence tolerance
+              :clustering-method-args [3 100 1e-4]})))
+
+;; * :k 3            -> Number of clusters
+;; * :max-iter 100   -> Maximum iterations
+;; * :tolerance 1e-4 -> Convergence tolerance
 
 ;; Fit the clustering model:
 
@@ -123,8 +122,10 @@
 (def kmeans-model
   (-> kmeans-result :model :model-data))
 
-^:kind/md
-["**K-means clustering complete!**"]
+^kind/println
+(-> kmeans-model :obj str)
+
+;; **K-means clustering complete!**
 
 ;; ### 1.4 Analyzing Cluster Assignments
 ;;
@@ -134,7 +135,7 @@
   (-> kmeans-model :clustering))
 
 
-^:kind/md
+^{:kind/md true :kindly/hide-code true}
 (str "**Number of unique clusters found:** "
      (count (distinct cluster-assignments)))
 
@@ -143,7 +144,7 @@
 (def iris-with-clusters
   (tc/add-column iris-ds :cluster cluster-assignments))
 
-^:kind/md
+^{:kind/md true :kindly/hide-code true}
 ["**Data with cluster assignments:**"]
 
 (tc/head iris-with-clusters 10)
@@ -183,40 +184,29 @@
    ;; Standardize features (required for PCA)
    (prep/std-scale numeric-cols {:mean? true :stddev? true})
    ;; PCA
-   {:metamorph/id :model}
-   (ml/model {:model-type :smile.projections/pca-cov 
-              :algorithm :pca-cov
-              :cnames numeric-cols
-              :target-dims 2})))          ; Reduce to 2 dimensions
+   {:metamorph/id :pca}
+   (projections/reduce-dimensions :pca-cov 2 numeric-cols {})))          ; Reduce to 2 dimensions
 
 ;; Fit PCA:
 
-(def pca-result
-  (pca-pipeline
-   {:metamorph/data iris-ds
-    :metamorph/mode :fit}))
+(def pca-result (mm/fit-pipe iris-ds pca-pipeline))
 
-(-> 
- (mm/transform-pipe iris-ds pca-pipeline pca-result)
- :model
- :model-data
- :dataset
- keys
- )
+
 
 (def pca-transformed
-  (:metamorph/data )
-  )
+  (-> pca-result
+      :metamorph/data
+      (tc/select-columns ["pca-cov-0" "pca-cov-1"])))
 
-(-> pca-result keys)
-^:kind/md
+
+^{:kind/md true :kindly/hide-code true}
 ["**PCA transformation complete!**"]
 
-^:kind/md
-(str "**Original dimensions:** " (second (ds/shape iris-ds)))
+^{:kind/md true :kindly/hide-code true}
+(str "**Original dimensions:** " (first (ds/shape iris-ds)))
 
-^:kind/md
-(str "**Reduced dimensions:** " (second (ds/shape pca-transformed)))
+^{:kind/md true :kindly/hide-code true}
+(str "**Reduced dimensions:** " (first (ds/shape pca-transformed)))
 
 ;; View the transformed data:
 
@@ -228,10 +218,14 @@
 ;; captures the most variance, the second captures the second most, etc.
 
 (def pca-model
-  (-> pca-result :model :model-data))
+  (-> pca-result :pca :fit-result :model))
 
-^:kind/md
-"The PCA model contains information about explained variance and component loadings."
+;; The PCA model contains information about explained variance and component loadings.
+
+(-> pca-model bean keys)
+
+;; ex. cummulative variance proportion:
+(-> pca-model .getCumulativeVarianceProportion vec)
 
 ;; ### 2.3 Combining PCA with Clustering
 ;;
@@ -241,29 +235,31 @@
 (def pca-kmeans-pipeline
   (mm/pipeline
    ;; Standardize
-   (ds-mm/std-scale cf/numeric {:mean? true :stddev? true})
+   (prep/std-scale numeric-cols {:mean? true :stddev? true})
    ;; Reduce dimensions
    {:metamorph/id :pca}
-   (ml/model {:model-type :smile.manifold/pca
-              :dimension 2})
+   (projections/reduce-dimensions :pca-cov 2 numeric-cols {})
+
+   (tc-mm/select-columns ["pca-cov-0" "pca-cov-1"])
+
    ;; Cluster in reduced space
    {:metamorph/id :kmeans}
-   (ml/model {:model-type :smile.clustering/kmeans
-              :k 3
-              :max-iter 100})))
+   (clustering/cluster :k-means [3 100 1e-4] :clustering)))
+
 
 (def pca-kmeans-result
-  (pca-kmeans-pipeline
-   {:metamorph/data iris-ds
-    :metamorph/mode :fit}))
+  (mm/fit-pipe iris-ds pca-kmeans-pipeline))
 
-^:kind/md
-"**PCA + K-means pipeline complete!**"
+
+
+
+;; **PCA + K-means pipeline complete!**
 
 ;; Get cluster assignments from the combined pipeline:
 
+
 (def pca-clusters
-  (:cluster-id (:metamorph/data pca-kmeans-result)))
+  (-> pca-kmeans-result :metamorph/data :clustering seq))
 
 (def iris-pca-clusters
   (tc/add-column iris-ds :pca-cluster pca-clusters))
@@ -278,33 +274,33 @@
 ;; Hierarchical clustering builds a tree (dendrogram) of clusters, allowing
 ;; exploration at different granularities.
 
-(def hclust-pipeline
-  (mm/pipeline
-   (ds-mm/std-scale cf/numeric {:mean? true :stddev? true})
-   {:metamorph/id :model}
-   (ml/model {:model-type :smile.clustering/hierarchical
-              :k 3                      ; Cut tree to get 3 clusters
-              :linkage :complete})))    ; Linkage method: :single, :complete, :average, :ward
+;; (def hclust-pipeline
+;;   (mm/pipeline
+;;    (prep/std-scale cf/numeric {:mean? true :stddev? true})
+;;    {:metamorph/id :model}
+;;    (ml/model {:model-type :smile.clustering/hierarchical
+;;               :k 3                      ; Cut tree to get 3 clusters
+;;               :linkage :complete})))    ; Linkage method: :single, :complete, :average, :ward
 
-(def hclust-result
-  (hclust-pipeline
-   {:metamorph/data iris-ds
-    :metamorph/mode :fit}))
+;; (def hclust-result
+;;   (hclust-pipeline
+;;    {:metamorph/data iris-ds
+;;     :metamorph/mode :fit}))
 
-(def hclust-assignments
-  (:cluster-id (:metamorph/data hclust-result)))
+;; (def hclust-assignments
+;;   (:cluster-id (:metamorph/data hclust-result)))
 
-(def iris-hclust
-  (tc/add-column iris-ds :hclust-cluster hclust-assignments))
+;; (def iris-hclust
+;;   (tc/add-column iris-ds :hclust-cluster hclust-assignments))
 
-^:kind/md
-"**Hierarchical clustering results:**"
+;; ^{:kind/md true :kindly/hide-code true}
+;; "**Hierarchical clustering results:**"
 
-(-> iris-hclust
-    (tc/group-by [:hclust-cluster])
-    (tc/aggregate {:count tc/row-count
-                   :mean-petal-length #(dfn/mean (% :petal-length))})
-    (tc/order-by [:hclust-cluster]))
+;; (-> iris-hclust
+;;     (tc/group-by [:hclust-cluster])
+;;     (tc/aggregate {:count tc/row-count
+;;                    :mean-petal-length #(dfn/mean (% :petal-length))})
+;;     (tc/order-by [:hclust-cluster]))
 
 ;; ## Part 4: Feature Engineering and Preprocessing
 ;;
@@ -314,13 +310,13 @@
 
 (def std-scaled-ds
   (-> (mm/pipeline
-       (ds-mm/std-scale cf/numeric {:mean? true :stddev? true}))
+       (prep/std-scale numeric-cols {:mean? true :stddev? true}))
       (apply [{:metamorph/data iris-ds
                :metamorph/mode :fit}])
       :metamorph/data))
 
-^:kind/md
-"**Standard scaling:** Transforms features to have mean=0 and std=1"
+
+;; **Standard scaling:** Transforms features to have mean=0 and std=1
 
 (ds/descriptive-stats std-scaled-ds [:mean :standard-deviation])
 
@@ -328,13 +324,13 @@
 
 (def minmax-scaled-ds
   (-> (mm/pipeline
-       (ds-mm/min-max-scale cf/numeric {:min -1 :max 1}))
+       (prep/min-max-scale numeric-cols {:min -1 :max 1}))
       (apply [{:metamorph/data iris-ds
                :metamorph/mode :fit}])
       :metamorph/data))
 
-^:kind/md
-"**Min-max scaling:** Transforms features to a specific range (here: -1 to 1)"
+
+;; **Min-max scaling:** Transforms features to a specific range (here: -1 to 1)
 
 (ds/descriptive-stats minmax-scaled-ds [:min :max])
 
@@ -359,8 +355,8 @@
                       "supervised learning needs labels"
                       "My favorite food is sushi"]}))
 
-^:kind/md
-"**Text documents:**"
+
+;; **Text documents:**
 
 documents-ds
 
@@ -369,7 +365,6 @@ documents-ds
 ;; First, we need to tokenize text and compute TF-IDF features:
 
 (require '[scicloj.metamorph.ml.text :as text])
-(require '[clojure.string :as str])
 
 ;; Tokenize documents:
 
@@ -383,8 +378,8 @@ documents-ds
                  :tokens
                  (map simple-tokenize (:text documents-ds))))
 
-^:kind/md
-"**Tokenized documents:**"
+^{:kind/md true :kindly/hide-code true}
+["**Tokenized documents:**"]
 
 (tc/select-columns tokenized-docs [:doc-id :tokens])
 
@@ -399,8 +394,8 @@ documents-ds
                   (:tokens row)))
            (ds/mapseq-reader tokenized-docs))))
 
-^:kind/md
-"**Tidy text format (sample):**"
+
+;; **Tidy text format (sample):**
 
 (tc/head tidy-docs 10)
 
@@ -411,8 +406,8 @@ documents-ds
       (tc/group-by [:doc-id :token])
       (tc/aggregate {:n tc/row-count})))
 
-^:kind/md
-"**Term counts (sample):**"
+
+;; **Term counts (sample):**
 
 (tc/head term-counts 10)
 
@@ -421,10 +416,10 @@ documents-ds
 ;; After TF-IDF vectorization, we can cluster documents based on their
 ;; semantic similarity.
 
-^:kind/md
-"**Note:** Full TF-IDF clustering requires converting the term-document matrix
+^{:kind/md true :kindly/hide-code true}
+["**Note:** Full TF-IDF clustering requires converting the term-document matrix
 to a format suitable for clustering. The `scicloj.metamorph.ml.text` namespace
-provides functions for this."
+provides functions for this."]
 
 ;; ## Part 6: Evaluation Metrics for Unsupervised Learning
 ;;
@@ -447,12 +442,12 @@ provides functions for this."
 ;; Silhouette score measures how similar a point is to its own cluster
 ;; compared to other clusters. Ranges from -1 to 1, higher is better.
 
-^:kind/md
-"**Common evaluation approaches:**
+^{:kind/md true :kindly/hide-code true}
+["**Common evaluation approaches:**
 - **Elbow method:** Plot WCSS vs. number of clusters, look for the 'elbow'
 - **Silhouette analysis:** Compute silhouette score for each point
 - **Gap statistic:** Compare within-cluster dispersion to null reference
-- **Domain validation:** Check if clusters make sense in your domain"
+- **Domain validation:** Check if clusters make sense in your domain"]
 
 ;; ## Part 7: The Elbow Method for Choosing K
 ;;
@@ -460,13 +455,12 @@ provides functions for this."
 
 (defn fit-kmeans-for-k [ds k]
   (let [pipeline (mm/pipeline
-                  (ds-mm/std-scale cf/numeric {:mean? true :stddev? true})
+                  (prep/std-scale numeric-cols {:mean? true :stddev? true})
                   {:metamorph/id :model}
-                  (ml/model {:model-type :smile.clustering/kmeans
-                             :k k
-                             :max-iter 100}))
+                  (ml/model {:model-type :fastmath.cluster/k-means
+                             :clustering-method-args [k 100]}))
         result (pipeline {:metamorph/data ds
-                         :metamorph/mode :fit})]
+                          :metamorph/mode :fit})]
     {:k k
      :model (-> result :model :model-data)
      :result result}))
@@ -475,77 +469,80 @@ provides functions for this."
 
 (def k-values [2 3 4 5 6 7 8])
 
-^:kind/md
-"**Testing different values of K...**"
+^{:kind/md true :kindly/hide-code true}
+["**Testing different values of K...**"]
 
 (def elbow-results
   (mapv #(fit-kmeans-for-k iris-ds %) k-values))
 
-^:kind/md
+^{:kind/md true :kindly/hide-code true}
 (str "**Tried K values:** " k-values)
 
-^:kind/md
-"To find the optimal K, plot WCSS vs K and look for an 'elbow' where the
-rate of decrease slows down."
 
+;; To find the optimal K, plot WCSS vs K and look for an 'elbow' where the rate of decrease slows down.
+
+
+;;elbow-results
 ;; ## Part 8: Complete Unsupervised Workflow
 ;;
 ;; Here's a complete workflow combining preprocessing, dimensionality
 ;; reduction, and clustering:
 
-(defn unsupervised-workflow [dataset n-components n-clusters]
+(defn unsupervised-workflow
   "Complete unsupervised learning workflow"
+  [dataset n-components n-clusters]
+
   (let [;; Build the pipeline
         pipeline (mm/pipeline
                   ;; Step 1: Standardize features
-                  (ds-mm/std-scale cf/numeric {:mean? true :stddev? true})
+                  (prep/std-scale numeric-cols {:mean? true :stddev? true})
 
                   ;; Step 2: Dimensionality reduction with PCA
                   {:metamorph/id :pca}
-                  (ml/model {:model-type :smile.manifold/pca
-                             :dimension n-components})
+                  (projections/reduce-dimensions :pca-cov n-components numeric-cols {})
 
+                  (tc-mm/drop-columns [:sepal-length :sepal-width :petal-length :petal-width])
                   ;; Step 3: Cluster in reduced space
                   {:metamorph/id :kmeans}
-                  (ml/model {:model-type :smile.clustering/kmeans
-                             :k n-clusters
-                             :max-iter 100}))
+                  (clustering/cluster :k-means [n-clusters 100 1e-4] :clustering))
 
         ;; Fit the pipeline
-        result (pipeline {:metamorph/data dataset
-                         :metamorph/mode :fit})
+        fitted (mm/fit-pipe dataset pipeline)
 
-        ;; Extract results
-        transformed-data (:metamorph/data result)
-        pca-model (-> result :pca :model-data)
-        kmeans-model (-> result :kmeans :model-data)
-        cluster-assignments (:cluster-id transformed-data)]
+
+        ;; transform dataset
+
+        pca-model (-> fitted :pca :model-data)
+        kmeans-model (-> fitted :kmeans :model-data)
+
+        cluster-assignments (-> fitted :kmeans :clustering)]
+
+
 
     {:pipeline pipeline
-     :context result
-     :transformed-data transformed-data
      :cluster-assignments cluster-assignments
      :pca-model pca-model
      :kmeans-model kmeans-model
-     :add-clusters-to-original
-     (fn [original-ds]
-       (tc/add-column original-ds :cluster cluster-assignments))}))
+     :fitted-ctx fitted}))
 
-;; Use the workflow:
+
 
 (def workflow-result
   (unsupervised-workflow iris-ds 2 3))
 
-^:kind/md
-"**Complete workflow executed!**"
+;; workflow-result
+
+(-> workflow-result keys)
+;; **Complete workflow executed!**
 
 ;; Add clusters to original data:
 
 (def iris-final
-  ((:add-clusters-to-original workflow-result) iris-ds))
+  (-> iris-ds
+      (tc/add-column :cluster (:cluster-assignments workflow-result))))
 
-^:kind/md
-"**Final clustered data:**"
+
+;; **Final clustered data:**
 
 (tc/head iris-final 10)
 
@@ -566,27 +563,29 @@ rate of decrease slows down."
 
 ;; Create some new data (using a sample from the original):
 
-(def new-data
-  (tc/sample iris-ds 10 {:seed 123}))
 
-^:kind/md
-"**New data to transform:**"
+(def new-data
+  (tc/random iris-ds 80))
+
+
+;; **New data to transform:**
 
 (tc/head new-data 5)
 
 ;; Apply the trained pipeline:
 
+
 (def new-data-transformed
-  (-> ((:pipeline workflow-result)
-       (merge (:context workflow-result)
-              {:metamorph/data new-data
-               :metamorph/mode :transform}))
+  (-> (mm/transform-pipe
+       new-data
+       (:pipeline workflow-result)
+       (:fitted-ctx workflow-result))
       :metamorph/data))
 
-^:kind/md
-"**Transformed new data with cluster assignments:**"
 
-(tc/select-columns new-data-transformed [:cluster-id])
+;; **Transformed new data with cluster assignments:**
+
+(-> new-data-transformed :clustering frequencies)
 
 ;; ## Part 10: Advanced Topics
 
@@ -594,61 +593,61 @@ rate of decrease slows down."
 ;;
 ;; DBSCAN can find clusters of arbitrary shape and identify outliers.
 
-(def dbscan-pipeline
-  (mm/pipeline
-   (ds-mm/std-scale cf/numeric {:mean? true :stddev? true})
-   {:metamorph/id :model}
-   (ml/model {:model-type :smile.clustering/dbscan
-              :min-pts 5                ; Minimum points for a cluster
-              :radius 0.5})))           ; Neighborhood radius
+;; (def dbscan-pipeline
+;;   (mm/pipeline
+;;    (ds-mm/std-scale cf/numeric {:mean? true :stddev? true})
+;;    {:metamorph/id :model}
+;;    (ml/model {:model-type :smile.clustering/dbscan
+;;               :min-pts 5                ; Minimum points for a cluster
+;;               :radius 0.5})))           ; Neighborhood radius
 
-(def dbscan-result
-  (dbscan-pipeline
-   {:metamorph/data iris-ds
-    :metamorph/mode :fit}))
+;; (def dbscan-result
+;;   (dbscan-pipeline
+;;    {:metamorph/data iris-ds
+;;     :metamorph/mode :fit}))
 
-^:kind/md
-"**DBSCAN clustering:** Can detect outliers (labeled as cluster -1)"
+^{:kind/md true :kindly/hide-code true}
+["**DBSCAN clustering:** Can detect outliers (labeled as cluster -1)"]
 
-(def dbscan-clusters
-  (:cluster-id (:metamorph/data dbscan-result)))
+;; (def dbscan-clusters
+;;   (:cluster-id (:metamorph/data dbscan-result)))
 
-(-> (tc/add-column iris-ds :dbscan-cluster dbscan-clusters)
-    (tc/group-by [:dbscan-cluster])
-    (tc/aggregate {:count tc/row-count})
-    (tc/order-by [:dbscan-cluster]))
+;; (-> (tc/add-column iris-ds :dbscan-cluster dbscan-clusters)
+;;     (tc/group-by [:dbscan-cluster])
+;;     (tc/aggregate {:count tc/row-count})
+;;     (tc/order-by [:dbscan-cluster]))
 
 ;; ### 10.2 Different Linkage Methods in Hierarchical Clustering
 
-^:kind/md
-"**Hierarchical clustering linkage methods:**
+^{:kind/md true :kindly/hide-code true}
+["**Hierarchical clustering linkage methods:**
 - `:single` - Minimum distance between clusters (can create long chains)
 - `:complete` - Maximum distance between clusters (creates tight clusters)
 - `:average` - Average distance between all pairs
-- `:ward` - Minimizes within-cluster variance (often best results)"
+- `:ward` - Minimizes within-cluster variance (often best results)"]
 
-(defn try-linkage [linkage-method]
-  (let [pipeline (mm/pipeline
-                  (ds-mm/std-scale cf/numeric {:mean? true :stddev? true})
-                  {:metamorph/id :model}
-                  (ml/model {:model-type :smile.clustering/hierarchical
-                             :k 3
-                             :linkage linkage-method}))
-        result (pipeline {:metamorph/data iris-ds
-                         :metamorph/mode :fit})]
-    {:linkage linkage-method
-     :clusters (:cluster-id (:metamorph/data result))}))
+;; (defn try-linkage [linkage-method]
+;;   (let [pipeline (mm/pipeline
+;;                   (ds-mm/std-scale cf/numeric {:mean? true :stddev? true})
+;;                   {:metamorph/id :model}
+;;                   (ml/model {:model-type :smile.clustering/hierarchical
+;;                              :k 3
+;;                              :linkage linkage-method}))
+;;         result (pipeline {:metamorph/data iris-ds
+;;                           :metamorph/mode :fit})]
+;;     {:linkage linkage-method
+;;      :clusters (:cluster-id (:metamorph/data result))}))
 
-(def linkage-comparison
-  (map try-linkage [:single :complete :average :ward]))
+;; (def linkage-comparison
+;;   (map try-linkage [:single :complete :average :ward]))
 
-^:kind/md
-"**Compared 4 different linkage methods**"
+
+;; **Compared 4 different linkage methods**
 
 ;; ## Part 11: Best Practices for Unsupervised Learning
 
-^:kind/md
-"### Best Practices
+^{:kind/md true :kindly/hide-code true}
+["### Best Practices
 
 1. **Always scale your features** - Most algorithms are sensitive to feature scales
    - Use standard scaling (mean=0, std=1) for most cases
@@ -682,7 +681,7 @@ rate of decrease slows down."
    - Distance metrics
    - Linkage methods (for hierarchical)
    - PCA components
-   - Use the elbow method and silhouette analysis"
+   - Use the elbow method and silhouette analysis"]
 
 ;; ## Summary
 ;;
@@ -711,6 +710,7 @@ rate of decrease slows down."
 ;; - [Smile ML Library](https://haifengl.github.io/)
 ;; - [Scicloj Community](https://scicloj.github.io)
 
-^:kind/md
-"---
-**Tutorial complete!** You now have a solid foundation for unsupervised machine learning with metamorph.ml."
+
+^{:kind/md true :kindly/hide-code true}
+["---
+**Tutorial complete!** You now have a solid foundation for unsupervised machine learning with metamorph.ml."]

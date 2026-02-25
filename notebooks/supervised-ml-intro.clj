@@ -51,8 +51,7 @@
 
 (ds/shape iris-ds)
 
-^:kind/md
-^:kindly/hide-code
+^{:kind/md true :kindly/hide-code true}
 (str "**Dataset dimensions:** "
      (first (ds/shape iris-ds)) " rows × "
      (second (ds/shape iris-ds)) " columns")
