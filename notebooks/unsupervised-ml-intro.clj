@@ -227,6 +227,7 @@
 ;; ex. cummulative variance proportion:
 (-> pca-model .getCumulativeVarianceProportion vec)
 
+
 ;; ### 2.3 Combining PCA with Clustering
 ;;
 ;; A common pattern is to use PCA for dimensionality reduction, then cluster
