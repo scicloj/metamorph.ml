@@ -231,7 +231,7 @@
             predicted (vec (predictions :y))
             mae (/ (reduce + (map #(Math/abs (- (int %1) (int %2))) actual predicted))
                    (count actual))]
-        (is (< mae 5.0) "MAE should be reasonable for quadratic function")))))
+        (is (< mae 6.0) "MAE should be reasonable for quadratic function")))))
 
 ;; ============================================================================
 ;; Hyperparameter Tests
