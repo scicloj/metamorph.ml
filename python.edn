@@ -1,0 +1,3 @@
+{
+ :python-executable ".venv/bin/python3"
+ }
