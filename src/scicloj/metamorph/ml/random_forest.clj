@@ -4,6 +4,7 @@
             [tech.v3.dataset :as ds]
             [tech.v3.dataset.modelling :as ds-mod]))
 
+(set! *unchecked-math* :warn-on-boxed)
 ;; ============================================================================
 ;; Helper Functions
 ;; ============================================================================
@@ -14,7 +15,7 @@
   (cond
     (= max-features :sqrt) (int (Math/floor (Math/sqrt n-features)))
     (= max-features :log2) (int (Math/floor (/ (Math/log n-features) (Math/log 2))))
-    (number? max-features) (min max-features n-features)
+    (number? max-features) (min ^long max-features ^long n-features)
     :else n-features))
 
 (defn- my-shuffle
@@ -63,10 +64,10 @@
                              (let [idx (aget indices i)
                                    class (nth y idx)]
                                (recur (inc i)
-                                      (assoc! counts class (inc (get counts class 0)))))
+                                      (assoc! counts class (inc ^long (get counts class 0)))))
                              (persistent! counts)))
             n-double (double n)
-            sum-squares (reduce (fn [^double acc [_ cnt]]
+            ^double sum-squares  (reduce (fn [^double acc [_ cnt]]
                                  (let [p (/ (double cnt) n-double)]
                                    (+ acc (* p p))))
                                0.0
@@ -80,12 +81,12 @@
     (if (zero? n)
       0.0
       (let [n-double (double n)
-            sum (loop [i 0 s 0.0]
+            ^double sum (loop [i 0 s 0.0]
                   (if (< i n)
                     (recur (inc i) (+ s (double (nth y (aget indices i)))))
                     s))
             mean (/ sum n-double)
-            sum-squared-diffs (loop [i 0 ss 0.0]
+            ^double sum-squared-diffs (loop [i 0 ss 0.0]
                                 (if (< i n)
                                   (let [val (double (nth y (aget indices i)))
                                         diff (- val mean)]
@@ -111,10 +112,11 @@
   (let [thresh (double threshold)
         n (alength indices)
         ;; First pass: count left and right
-        counts (loop [i 0 n-left 0]
+        ^long counts (loop [i 0 
+                      n-left 0]
                  (if (< i n)
                    (let [idx (aget indices i)
-                         val (get-feature-value feature-columns feature-idx idx)]
+                         ^double val (get-feature-value feature-columns feature-idx idx)]
                      (recur (inc i) (if (<= val thresh) (inc n-left) n-left)))
                    n-left))
         n-left counts
@@ -123,10 +125,12 @@
         left (int-array n-left)
         right (int-array n-right)
         ;; Second pass: fill arrays
-        _ (loop [i 0 left-pos 0 right-pos 0]
+        _ (loop [i 0 
+                 left-pos 0 
+                 right-pos 0]
             (when (< i n)
               (let [idx (aget indices i)
-                    val (get-feature-value feature-columns feature-idx idx)]
+                    ^double val (get-feature-value feature-columns feature-idx idx)]
                 (if (<= val thresh)
                   (do (aset left left-pos idx)
                       (recur (inc i) (inc left-pos) right-pos))
@@ -142,9 +146,9 @@
         n-right (count right-indices)]
     (if (or (zero? n-left) (zero? n-right))
       0.0
-      (let [parent-impurity (calculate-impurity-indexed y indices task)
-            left-impurity (calculate-impurity-indexed y left-indices task)
-            right-impurity (calculate-impurity-indexed y right-indices task)
+      (let [^double parent-impurity (calculate-impurity-indexed y indices task)
+            ^double left-impurity (calculate-impurity-indexed y left-indices task)
+            ^double right-impurity (calculate-impurity-indexed y right-indices task)
             n-double (double n)
             left-weight (/ (double n-left) n-double)
             right-weight (/ (double n-right) n-double)
@@ -207,8 +211,8 @@
         {:gain best-gain :threshold best-threshold}
         (let [thresh (first thresholds)
               {:keys [left right]} (split-indices feature-columns feature-idx thresh indices)
-              gain (calculate-split-gain-indexed y indices left right task)]
-          (if (> gain best-gain)
+              ^double gain (calculate-split-gain-indexed y indices left right task)]
+          (if (> gain ^double best-gain)
             ;; Early stopping: if gain > 0.99, we have a near-perfect split
             (if (>= gain 0.99)
               {:gain gain :threshold thresh}
@@ -226,7 +230,8 @@
                   (pmap find-fn feature-indices)
                   (map find-fn feature-indices))
         best (reduce (fn [best current]
-                      (if (> (:gain current) (:gain best))
+                      (if (> ^double (:gain current) 
+                             ^double (:gain best))
                         current
                         best))
                     {:feature-idx nil :gain 0.0 :threshold nil}
@@ -248,7 +253,7 @@
                            (if (< i n-samples)
                              (let [class (nth y (aget indices i))]
                                (recur (inc i)
-                                      (assoc! counts class (inc (get counts class 0)))))
+                                      (assoc! counts class (inc ^long (get counts class 0)))))
                              (persistent! counts)))
             majority-class (key (apply max-key val class-counts))]
         {:type :leaf
@@ -257,26 +262,26 @@
          :n-samples n-samples})
 
       :regression
-      (let [sum (loop [i 0 s 0.0]
-                  (if (< i n-samples)
+      (let [sum  (loop [i 0 s 0.0]
+                  (if (< ^long i n-samples)
                     (recur (inc i) (+ s (double (nth y (aget indices i)))))
                     s))
-            mean (/ sum (double (max 1 n-samples)))]
+            mean (/ ^double sum (double (max 1 n-samples)))]
         {:type :leaf
          :value mean
          :n-samples n-samples}))))
 
 (defn- should-stop-split?
   "Check if we should stop splitting (works with int array indices)."
-  [y ^ints indices depth max-depth min-samples-split min-samples-leaf task]
+  [y ^ints indices depth  max-depth min-samples-split min-samples-leaf task]
   (let [n-samples (alength indices)]
     (or
      ;; Reached max depth
-     (and max-depth (>= depth max-depth))
+     (and max-depth (>= ^long depth ^long max-depth))
      ;; Too few samples to split
-     (< n-samples min-samples-split)
+     (< n-samples ^long min-samples-split)
      ;; Would create too-small leaves
-     (and min-samples-leaf (< n-samples (* 2 min-samples-leaf)))
+     (and ^long min-samples-leaf (< n-samples (* 2 ^long min-samples-leaf)))
      ;; Pure node (classification only)
      (and (= task :classification)
           (or (<= n-samples 1)
@@ -305,15 +310,15 @@
                                                                   feature-indices task parallel-features?)]
 
         ;; If no valid split found, create leaf
-        (if (or (nil? feature-idx) (<= gain 0.0))
+        (if (or (nil? feature-idx) (<= ^double gain 0.0))
           (create-leaf-indexed y indices task)
 
           ;; Create split node
           (let [{:keys [left right]} (split-indices feature-columns feature-idx threshold indices)
-                left-child (build-tree-indexed feature-columns y left (inc depth) max-depth
+                left-child (build-tree-indexed feature-columns y left (inc ^long depth) max-depth
                                               min-samples-split min-samples-leaf max-features-per-split
                                               task rng parallel-features?)
-                right-child (build-tree-indexed feature-columns y right (inc depth) max-depth
+                right-child (build-tree-indexed feature-columns y right (inc ^long depth) max-depth
                                                min-samples-split min-samples-leaf max-features-per-split
                                                task rng parallel-features?)]
             {:type :split
@@ -368,7 +373,7 @@
                                  trees)]
         (mapv (fn [sample-idx]
                 (let [predictions (mapv #(nth % sample-idx) all-predictions)
-                      sum (reduce + predictions)]
+                      ^double sum (reduce + predictions)]
                   (/ sum (double n-trees))))
               (range n-samples))))))
 
@@ -513,7 +518,7 @@
         (fn traverse [node]
           (when (= (:type node) :split)
             (let [feature-idx (:feature-idx node)
-                  n-samples (:n-samples node)
+                  ^long n-samples (:n-samples node)
                   left (:left node)
                   right (:right node)
                   ;; Importance contribution is weighted by samples
