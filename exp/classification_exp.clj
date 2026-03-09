@@ -10,10 +10,8 @@
    [tech.v3.dataset.column-filters :as cf]
    [tablecloth.api :as tc]
    [scicloj.sklearn-clj.ml]
-   [libpython-clj2.python]
-   ))
+   [libpython-clj2.python]))
 
-(apply tc/concat-copying (repeat 10 (datasets/openintro-birds)))
 
 (def data
   (->
@@ -26,7 +24,6 @@
    (tc/drop-missing)
    (ds-mod/set-inference-target :effect)))
 
-(-> data :effect frequencies)
 (defn train [model-opts]
   (let [;; Create simple iris-like dataset
         
@@ -38,10 +35,8 @@
         model (ml/train  (:train (first split))
                          model-opts)
 
-        _ (def model model)
         ;; Predict
         predictions (ml/predict (-> split first :test cf/feature) model)
-        _ (def predictions predictions)
         end (System/currentTimeMillis)
         actual (vec (-> split first :test :effect))
         predicted (map int (vec (predictions :effect)))
@@ -51,23 +46,18 @@
 
     {:model-opts model-opts
      :accuracy accuracy
-     :time (/ (- end start) 1000.0)
-     }))
-(println 
+     :time (/ (- end start) 1000.0)}))
+
+(println
  (tc/dataset
-  [
-   (train {:model-type :metamorph.ml/dummy-classifier})
-   (train {:model-type :metamorph.ml/random-forest
-           :n-trees 100
-           :parallel true
-           :max-depth 20
-           })
-   (train
-    {:model-type :smile.classification/random-forest
-     :trees 100})
+  [(train {:model-type :metamorph.ml/dummy-classifier})
+   (train {:model-type :metamorph.ml/random-forest})
+   (train {:model-type :smile.classification/random-forest})
    (train {:model-type :smile.classification/logistic-regression})
    (train {:model-type :smile.classification/ada-boost})
    (train {:model-type :sklearn.classification/decision-tree-classifier})
-   (train {:model-type :sklearn.classification/random-forest-classifier :n-jobs -1})
-   ]))
+   ;(train {:model-type :sklearn.classification/random-forest-classifier})
+   ])
 
+
+ )
