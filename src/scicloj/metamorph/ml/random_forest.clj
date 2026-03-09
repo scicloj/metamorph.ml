@@ -5,6 +5,7 @@
             [tech.v3.dataset.modelling :as ds-mod]))
 
 (set! *unchecked-math* :warn-on-boxed)
+(set! *warn-on-reflection* true)
 ;; ============================================================================
 ;; Helper Functions
 ;; ============================================================================
@@ -63,15 +64,15 @@
                            (if (< i n)
                              (let [idx (aget indices i)
                                    class (nth y idx)]
-                               (recur (inc i)
-                                      (assoc! counts class (inc ^long (get counts class 0)))))
+                               (recur (unchecked-inc i)
+                                      (assoc! counts class (unchecked-inc (long (get counts class 0))))))
                              (persistent! counts)))
             n-double (double n)
-            ^double sum-squares  (reduce (fn [^double acc [_ cnt]]
-                                 (let [p (/ (double cnt) n-double)]
-                                   (+ acc (* p p))))
-                               0.0
-                               class-counts)]
+            sum-squares  (double (reduce (fn [^double acc [_ cnt]]
+                                                   (let [p (/ (double cnt) n-double)]
+                                                     (+ acc (* p p))))
+                                                 0.0
+                                                 class-counts))]
         (- 1.0 sum-squares)))))
 
 (defn- mse-indexed
@@ -81,17 +82,17 @@
     (if (zero? n)
       0.0
       (let [n-double (double n)
-            ^double sum (loop [i 0 s 0.0]
-                  (if (< i n)
-                    (recur (inc i) (+ s (double (nth y (aget indices i)))))
-                    s))
+            sum (double (loop [i 0 s 0.0]
+                          (if (< i n)
+                            (recur (unchecked-inc i) (+ s (double (nth y (aget indices i)))))
+                            s)))
             mean (/ sum n-double)
-            ^double sum-squared-diffs (loop [i 0 ss 0.0]
-                                (if (< i n)
-                                  (let [val (double (nth y (aget indices i)))
-                                        diff (- val mean)]
-                                    (recur (inc i) (+ ss (* diff diff))))
-                                  ss))]
+            sum-squared-diffs (double (loop [i 0 ss 0.0]
+                                               (if (< i n)
+                                                 (let [val (double (nth y (aget indices i)))
+                                                       diff (- val mean)]
+                                                   (recur (unchecked-inc i) (+ ss (* diff diff))))
+                                                 ss)))]
         (/ sum-squared-diffs n-double)))))
 
 (defn- calculate-impurity-indexed
@@ -112,13 +113,13 @@
   (let [thresh (double threshold)
         n (alength indices)
         ;; First pass: count left and right
-        ^long counts (loop [i 0 
-                      n-left 0]
-                 (if (< i n)
-                   (let [idx (aget indices i)
-                         ^double val (get-feature-value feature-columns feature-idx idx)]
-                     (recur (inc i) (if (<= val thresh) (inc n-left) n-left)))
-                   n-left))
+        counts (long (loop [i 0 
+                            n-left 0]
+                       (if (< i n)
+                         (let [idx (aget indices i)
+                               val (double (get-feature-value feature-columns feature-idx idx))]
+                           (recur (unchecked-inc i) (if (<= val thresh) (unchecked-inc n-left) n-left)))
+                         n-left)))
         n-left counts
         n-right (- n n-left)
         ;; Allocate arrays
@@ -130,12 +131,12 @@
                  right-pos 0]
             (when (< i n)
               (let [idx (aget indices i)
-                    ^double val (get-feature-value feature-columns feature-idx idx)]
+                    val (double (get-feature-value feature-columns feature-idx idx))]
                 (if (<= val thresh)
                   (do (aset left left-pos idx)
-                      (recur (inc i) (inc left-pos) right-pos))
+                      (recur (unchecked-inc i) (unchecked-inc left-pos) right-pos))
                   (do (aset right right-pos idx)
-                      (recur (inc i) left-pos (inc right-pos)))))))]
+                      (recur (unchecked-inc i) left-pos (unchecked-inc right-pos)))))))]
     {:left left :right right}))
 
 (defn- calculate-split-gain-indexed
@@ -146,9 +147,9 @@
         n-right (count right-indices)]
     (if (or (zero? n-left) (zero? n-right))
       0.0
-      (let [^double parent-impurity (calculate-impurity-indexed y indices task)
-            ^double left-impurity (calculate-impurity-indexed y left-indices task)
-            ^double right-impurity (calculate-impurity-indexed y right-indices task)
+      (let [parent-impurity (double (calculate-impurity-indexed y indices task))
+            left-impurity (double (calculate-impurity-indexed y left-indices task))
+            right-impurity (doble (calculate-impurity-indexed y right-indices task))
             n-double (double n)
             left-weight (/ (double n-left) n-double)
             right-weight (/ (double n-right) n-double)
@@ -164,7 +165,7 @@
         ;; Collect unique values in a set, then sort into a vector
         unique-vals (loop [i 0 vals (transient #{})]
                       (if (< i n)
-                        (recur (inc i)
+                        (recur (unchecked-inc)
                                (conj! vals (get-feature-value feature-columns
                                                              feature-idx
                                                              (aget indices i))))
@@ -193,10 +194,10 @@
                result (transient [])]
           (if (< i max-thresholds)
             (let [idx (long (* (double i) step))
-                  idx-next (min (inc idx) (dec n-values))
+                  idx-next (min (unchecked-inc idx) (dec n-values))
                   a (double (nth values idx))
                   b (double (nth values idx-next))]
-              (recur (inc i)
+              (recur (unchecked-inc i)
                      (conj! result (* 0.5 (+ a b)))))
             (persistent! result)))))))
 
@@ -211,7 +212,7 @@
         {:gain best-gain :threshold best-threshold}
         (let [thresh (first thresholds)
               {:keys [left right]} (split-indices feature-columns feature-idx thresh indices)
-              ^double gain (calculate-split-gain-indexed y indices left right task)]
+              gain (double (calculate-split-gain-indexed y indices left right task))]
           (if (> gain ^double best-gain)
             ;; Early stopping: if gain > 0.99, we have a near-perfect split
             (if (>= gain 0.99)
@@ -230,8 +231,8 @@
                   (pmap find-fn feature-indices)
                   (map find-fn feature-indices))
         best (reduce (fn [best current]
-                      (if (> ^double (:gain current) 
-                             ^double (:gain best))
+                      (if (> (double (:gain current)) 
+                             (double (:gain best)))
                         current
                         best))
                     {:feature-idx nil :gain 0.0 :threshold nil}
