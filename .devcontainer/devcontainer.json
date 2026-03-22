@@ -8,11 +8,12 @@
 
     "features": {
     	"ghcr.io/devcontainers-extra/features/clojure-asdf:2": {},
-		"ghcr.io/devcontainers-extra/features/bash-command:1": {},
+		"ghcr.io/devcontainers-extra/features/bash-command:1": {
+			"command": "apt-get update && apt-get install -y rlwrap"
+		},
 		"ghcr.io/rocker-org/devcontainer-features/quarto-cli:1": {},
 		"ghcr.io/itsmechlark/features/redis-server:1": {},
-		"ghcr.io/rocker-org/devcontainer-features/pandoc:1": {},
-		"ghcr.io/devcontainer-community/devcontainer-features/astral.sh-uv:1": {}
+		"ghcr.io/rocker-org/devcontainer-features/pandoc:1": {}
 
 
 },
