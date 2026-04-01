@@ -69,7 +69,7 @@
   
   :exp {:jvm-opts ["-Djdk.attach.allowAttachSelf" "-Xmx8G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
         :extra-paths ["exp" "test"]
-        :extra-deps {com.taoensso/carmine {:mvn/version "3.6.0"}}}
+        :extra-deps {com.taoensso/carmine {:mvn/version "3.5.0"}}}
 
   :smoke-test {:jvm-opts ["-Djdk.attach.allowAttachSelf" "-Xmx1G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
       :extra-paths ["exp"]

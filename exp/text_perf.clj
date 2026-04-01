@@ -15,7 +15,7 @@
 
 
 
-(defn load-reviews [max-lines]
+(defn- load-reviews [max-lines]
   (-> (text/->tidy-text
        (io/reader "bigdata/repeatedAbstrcats_3.7m_.txt")
        line-seq

@@ -1,5 +1,6 @@
 (ns scicloj.metamorph.ml.text
   (:require
+   [clj-memory-meter.core :as mm]
    [clojure.java.shell :as shell]
    [clojure.string :as str]
    [ham-fisted.api :as hf]
@@ -23,7 +24,7 @@
 
 
 (defn- create-token->idf-map [tidy-text]
-  ;(tools/debug :create-token->idf-map)
+  (tools/debug :create-token->idf-map)
   (let [N
         (float
          (->
@@ -40,16 +41,17 @@
      {:idf (reductions/reducer :document
                                (fn [] (LongOpenHashSet.))
                                (fn [acc ^long document]
-                                 ;(when (zero? (rem document 10000))
-                                 ;  (tools/debug :reduce-idf document))
+                                 (when (zero? (rem document 10000))
+                                   (tools/debug :reduce-idf document))
                                  (.add ^LongOpenHashSet acc document)
                                  acc)
 
                                (fn [^LongOpenHashSet documents-1 ^LongOpenHashSet documents-2]
-                                 ;(tools/debug :merge-idf)
+                                 (tools/debug :merge-idf)
                                  (.addAll documents-1 documents-2))
                                (fn [documents]
-                                 ;(tools/debug :finalize-idf) 
+                                 (when (zero? (rem (count documents) 10000))
+                                  (tools/debug :finalize-idf)) 
                                  (let [n-uniq-docs (int (.size ^LongOpenHashSet documents))]
                                    (func/log10  (/  N n-uniq-docs)))))}
      tidy-text)))
@@ -182,8 +184,8 @@
            :document nil})
    (fn [acc ^long document ^long token-idx]
      ;(tools/debug :reduce-tfidf document)
-     ;(when (and (zero? (rem document 10000)) (zero? ^long (:token-counter acc)))
-     ;  (tools/debug :reduce-tfidf document))
+     (when (and (zero? (rem document 10000)) (zero? ^long (:token-counter acc)))
+       (tools/debug :reduce-tfidf document))
 
      (.addTo ^Long2IntOpenHashMap  (:token-counts acc) token-idx 1)
      {:token-counts (:token-counts acc)
@@ -195,8 +197,8 @@
    (fn [{:keys [token-counts ^long token-counter ^long document]}]
 
      ;(tools/debug :finalize-tfidf document)
-     ;(when (zero? (rem  document 10000))
-     ;  (tools/debug :finalize-tfidf document))
+     (when (zero? (rem  document 10000))
+       (tools/debug :finalize-tfidf document))
 
 
 
@@ -650,13 +652,13 @@
           (ds/add-column ds col-meta)
           ds)]
 
-    ;; (tools/debug :count--token->index-map (count token->index-map))
-    ;; (tools/debug :measure--token->index-map (mm/measure  token->index-map))
-    ;; (tools/debug :measure-col-token-index (mm/measure col-token-index))
-    ;; (tools/debug :measure-col-token-pos (mm/measure col-token-pos))
-    ;; (tools/debug :measure-col-document-idx (mm/measure col-document))
-    ;; (tools/debug :measure-col-metas (mm/measure col-meta))
-    ;; (tools/debug :measure-ds (mm/measure ds-withmetas))
+    (tools/debug :count--token->index-map (count token->index-map))
+    (tools/debug :measure--token->index-map (mm/measure  token->index-map))
+    (tools/debug :measure-col-token-index (mm/measure col-token-index))
+    (tools/debug :measure-col-token-pos (mm/measure col-token-pos))
+    (tools/debug :measure-col-document-idx (mm/measure col-document))
+    (tools/debug :measure-col-metas (mm/measure col-meta))
+    (tools/debug :measure-ds (mm/measure ds-withmetas))
 
 
 
