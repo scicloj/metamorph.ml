@@ -77,7 +77,7 @@
                 org.mapdb/mapdb {:mvn/version "3.1.0"}}}
   :runner {:main-opts ["-m" "kaocha.runner"]}
   
-  :exp {:jvm-opts ["-Djdk.attach.allowAttachSelf" "-Xmx14G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
+  :exp {:jvm-opts ["-Djdk.attach.allowAttachSelf" "-Xmx12G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
         :extra-paths ["exp" "test"]
         :extra-deps {com.taoensso/carmine {:mvn/version "3.5.0"}}}
 
