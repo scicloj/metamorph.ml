@@ -598,7 +598,7 @@
 
         process-line-fn process-line
         ;fill-lookup-from-line
-
+        
         acc
         (tools/process-file
          lines-source
@@ -652,13 +652,14 @@
           (ds/add-column ds col-meta)
           ds)]
 
-    (tools/debug :count--token->index-map (count token->index-map))
-    (tools/debug :measure--token->index-map (mm/measure  token->index-map))
-    (tools/debug :measure-col-token-index (mm/measure col-token-index))
-    (tools/debug :measure-col-token-pos (mm/measure col-token-pos))
-    (tools/debug :measure-col-document-idx (mm/measure col-document))
-    (tools/debug :measure-col-metas (mm/measure col-meta))
-    (tools/debug :measure-ds (mm/measure ds-withmetas))
+    (when @tools/*debug-enabled*
+      (tools/debug :count--token->index-map (count token->index-map))
+      (tools/debug :measure--token->index-map (mm/measure  token->index-map))
+      (tools/debug :measure-col-token-index (mm/measure col-token-index))
+      (tools/debug :measure-col-token-pos (mm/measure col-token-pos))
+      (tools/debug :measure-col-document-idx (mm/measure col-document))
+      (tools/debug :measure-col-metas (mm/measure col-meta))
+      (tools/debug :measure-ds (mm/measure ds-withmetas)))
 
 
 

@@ -67,6 +67,7 @@
   "Atom tracking the last debug timestamp for duration calculations."
   (atom (java.time.LocalTime/now)))
 
+(def ^:dynamic *debug-enabled* (atom false))
 (defn debug
   "Prints formatted debug messages with timestamp and elapsed time.
 
@@ -77,16 +78,17 @@
 
   Example output: `  (5) HH:mm:ss.SSSS - Debug message here`"
   [& s]
-  (let [duration
-        (.toSeconds
-         (java.time.Duration/between
-          @prevoius-debug-time
-          (java.time.LocalTime/now)))]
+  (when @*debug-enabled*
+    (let [duration
+          (.toSeconds
+           (java.time.Duration/between
+            @prevoius-debug-time
+            (java.time.LocalTime/now)))]
 
-    (reset! prevoius-debug-time (java.time.LocalTime/now))
-    (println (format "  (%s) " duration))
-    (apply print (.format ^java.text.SimpleDateFormat time-format
-                          (java.util.Date.)) " - " s)))
+      (reset! prevoius-debug-time (java.time.LocalTime/now))
+      (println (format "  (%s) " duration))
+      (apply print (.format ^java.text.SimpleDateFormat time-format
+                            (java.util.Date.)) " - " s))))
 
 
 
