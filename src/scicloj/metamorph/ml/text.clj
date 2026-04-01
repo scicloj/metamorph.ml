@@ -301,7 +301,7 @@
 (defn- make-col-container--concat-buffers [map-fn container-type res-dataype  datas]
   (let [col-datas
         (->>
-         (apply map map-fn datas)
+         (apply dt/emap map-fn nil datas)
          (remove empty?))] ; prevents 'buffer type class clojure.lang.PersistentList$EmptyList is not convertible to buffer'
 
 
@@ -311,7 +311,7 @@
 (defn- make-col-container--coalesce-blocks! [map-fn  container-type res-dataype  datas]
   (let [col-datas
         (->>
-         (apply map map-fn datas)
+         (apply dt/emap map-fn nil datas)
          (remove empty?)) ; prevents 'buffer type class clojure.lang.PersistentList$EmptyList is not convertible to buffer'
 
         col-size (or (func/reduce-+ (map count col-datas)) 0)
@@ -684,7 +684,7 @@
         " "
         (-> document-ds
             (tc/order-by :token-idx)
-            (tc/map-columns :pair :string [:token-idx column]
+            (tc/map-columns :pair [:token-idx column]
                             (fn [token-idx value] (str token-idx ":" value)))
             :pair))))
 

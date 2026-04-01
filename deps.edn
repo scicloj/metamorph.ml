@@ -5,7 +5,7 @@
         ;{:mvn/version "7.067"}   
         
         {:git/url "https://github.com/behrica/tablecloth" 
-         :git/sha "a0a80fe538bfa0043d1ff1a9bbda7711867c5b4e"}
+         :git/sha "e6331a6f1685fa4ab4e778af4e6e8764afedb074"}
 
         
         metosin/malli               {:mvn/version "0.20.0"}
