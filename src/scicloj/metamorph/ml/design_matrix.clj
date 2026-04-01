@@ -83,7 +83,7 @@
               (cljwalk/postwalk-replace col-sym-m spec))
         f (eval fnn)]
 
-    (tc/map-columns ds new-column cols f)))
+    (tc/map-columns ds new-column :object cols f)))
 
 
 (defn create-design-matrix

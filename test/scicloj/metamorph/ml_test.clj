@@ -12,6 +12,7 @@
    [scicloj.metamorph.ml.metrics]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
+   [tech.v3.dataset.io.nippy]
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.categorical :as ds-cat]
    [tech.v3.dataset.metamorph :as ds-mm]

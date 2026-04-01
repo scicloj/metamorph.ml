@@ -1,7 +1,12 @@
 {:deps {org.clojure/clojure         {:mvn/version "1.12.4"}
         scicloj/metamorph           {:mvn/version "0.2.4"}
         pppmap/pppmap               {:mvn/version "1.0.0"}
-        scicloj/tablecloth          {:mvn/version "7.067"}
+        scicloj/tablecloth          
+        ;{:mvn/version "7.067"}   
+        
+        {:git/url "https://github.com/behrica/tablecloth" 
+         :git/sha "a0a80fe538bfa0043d1ff1a9bbda7711867c5b4e"}
+
         
         metosin/malli               {:mvn/version "0.20.0"}
         generateme/fastmath         {:mvn/version "3.0.0-alpha4"}
@@ -31,7 +36,7 @@
 
  :paths ["src" "resources"]
 
-        
+ 
  :aliases
  {
 
@@ -49,10 +54,15 @@
 
 
   :dev
-  {:jvm-opts ["-Djava.awt.headless=true"] 
+  {:jvm-opts ["-Djava.awt.headless=true"]
    :extra-deps {io.github.nextjournal/clerk {:mvn/version "0.18.1158"}
                 org.scicloj/clay {:mvn/version "2.0.11"}
-                org.scicloj/scicloj.ml.smile  {:mvn/version "7.5.3"}
+                org.scicloj/scicloj.ml.smile
+                {:git/url "https://github.com/scicloj/scicloj.ml.smile"
+                 :git/sha "85f2509c4f2a90b618e3dbe5ce75623ef35c858e"}
+
+                ;{:mvn/version "7.5.3"}
+                
                 org.scicloj/tableplot {:mvn/version "1-beta10.2"}
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
                 ch.qos.logback/logback-classic {:mvn/version "1.5.32"}
@@ -67,13 +77,13 @@
                 org.mapdb/mapdb {:mvn/version "3.1.0"}}}
   :runner {:main-opts ["-m" "kaocha.runner"]}
   
-  :exp {:jvm-opts ["-Djdk.attach.allowAttachSelf" "-Xms12G"  "-Xmx12G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
+  :exp {:jvm-opts ["-Djdk.attach.allowAttachSelf" "-Xmx14G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
         :extra-paths ["exp" "test"]
         :extra-deps {com.taoensso/carmine {:mvn/version "3.5.0"}}}
 
   :smoke-test {:jvm-opts ["-Djdk.attach.allowAttachSelf" "-Xmx1G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
-      :extra-paths ["exp"]
-      :extra-deps {org.clojure/data.csv        {:mvn/version "1.1.1"}}}
+               :extra-paths ["exp"]
+               :extra-deps {org.clojure/data.csv        {:mvn/version "1.1.1"}}}
   
   :outdated {;; Note that it is `:deps`, not `:extra-deps`
              :deps {com.github.liquidz/antq {:mvn/version "RELEASE"}}
