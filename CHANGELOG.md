@@ -1,6 +1,6 @@
 unreleased
 - improved docstring with Claude Code
-- use TMD 8.x
+- use TMD 8.016
 
 1.3.0
 
