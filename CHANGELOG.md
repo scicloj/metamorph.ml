@@ -1,4 +1,4 @@
-unreleased
+1.3.1
 - improved docstring with Claude Code
 - use TMD 8.016
 
