@@ -1,6 +1,6 @@
 (ns scicloj.metamorph.ml.text
   (:require
-   [clj-memory-meter.core :as mm]
+   ;[clj-memory-meter.core :as mm]
    [clojure.java.shell :as shell]
    [clojure.string :as str]
    [ham-fisted.api :as hf]
@@ -652,14 +652,14 @@
           (ds/add-column ds col-meta)
           ds)]
 
-    (when @tools/*debug-enabled*
-      (tools/debug :count--token->index-map (count token->index-map))
-      (tools/debug :measure--token->index-map (mm/measure  token->index-map))
-      (tools/debug :measure-col-token-index (mm/measure col-token-index))
-      (tools/debug :measure-col-token-pos (mm/measure col-token-pos))
-      (tools/debug :measure-col-document-idx (mm/measure col-document))
-      (tools/debug :measure-col-metas (mm/measure col-meta))
-      (tools/debug :measure-ds (mm/measure ds-withmetas)))
+    ;; (when @tools/*debug-enabled*
+    ;;   (tools/debug :count--token->index-map (count token->index-map))
+    ;;   (tools/debug :measure--token->index-map (mm/measure  token->index-map))
+    ;;   (tools/debug :measure-col-token-index (mm/measure col-token-index))
+    ;;   (tools/debug :measure-col-token-pos (mm/measure col-token-pos))
+    ;;   (tools/debug :measure-col-document-idx (mm/measure col-document))
+    ;;   (tools/debug :measure-col-metas (mm/measure col-meta))
+    ;;   (tools/debug :measure-ds (mm/measure ds-withmetas)))
 
 
 

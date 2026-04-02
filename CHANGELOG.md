@@ -1,3 +1,5 @@
+1.3.2
+ - removed clj-memory-meter from src-code 
 1.3.1
 - improved docstring with Claude Code
 - use TMD 8.016
