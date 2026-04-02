@@ -21,10 +21,78 @@
    [tech.v3.datatype.functional :as dfn]
    [tech.v3.datatype :as dt])
   (:import
+   ml.dmlc.xgboost4j.java.DMatrix
    java.util.UUID))
 
 
 (exporter/export-symbols scicloj.metamorph.ml.ensemble ensemble-pipe)
+
+(defprotocol Trainable
+  (features [data])
+  (pre-validate [data])
+  (pre-validate-supervised [data])
+  (target [data])
+  (feature-column-names [data])
+  (target-column-names [data])
+  (data-types [data])
+  (dataset->categorical-xforms [data])
+  (select-columns [data column-names])
+  (reverse-map-categorical-xforms [data])
+  (first-prediction-column--float [data])
+  (first-target-column--float [data]))
+
+
+(extend-type tech.v3.dataset.impl.dataset.Dataset
+  Trainable
+  (features [data] (cf/feature data))
+  (pre-validate [data]
+    (errors/when-not-error (> (ds/row-count (cf/feature data)) 0)
+                           "No features provided"))
+  (pre-validate-supervised [data]
+    (errors/when-not-error (> (ds/row-count (cf/target data)) 0) "No target columns provided, see tech.v3.dataset.modelling/set-inference-target"))
+  (target [data]
+    (cf/target data))
+  (feature-column-names [data] (ds/column-names (cf/feature data)))
+  (target-column-names [data] (ds/column-names (cf/target data)))
+  (data-types [data]
+    (zipmap
+     (keys data)
+     (->>
+      (vals data)
+      (map meta)
+      (map :datatype))))
+  (dataset->categorical-xforms [data]
+    (ds-mod/dataset->categorical-xforms data))
+  (select-columns [data column-names]
+    (ds/select-columns data column-names))
+  (reverse-map-categorical-xforms [data]
+    (ds-cat/reverse-map-categorical-xforms data))
+  (first-prediction-column--float [data]
+    (map float (-> data cf/prediction first val vec)))
+  (first-target-column--float [data]
+    (map float (-> data cf/target first val vec))))
+
+
+(extend-type DMatrix
+  Trainable
+  (features [data] data)
+  (pre-validate [data])
+  (pre-validate-supervised [data])
+  (target [data] data)
+  (feature-column-names [data] nil)
+  (target-column-names [data] nil)
+  (data-types [data] nil)
+  (dataset->categorical-xforms [data] nil)
+  (select-columns [data column-names] data)
+  (reverse-map-categorical-xforms [data]
+    data)
+  (first-prediction-column--float [data]
+    (.getLabel data))
+  (first-target-column--float [data]
+    (.getLabel data)))
+
+
+
 
 (def train-predict-cache
   "Controls , if train/predict invocations are cached.
@@ -46,10 +114,10 @@
 (defn- strict-type-check [trueth-col predictions-col]
   (when (not (=
               (-> trueth-col meta :datatype)
-              (-> predictions-col meta :datatype)))))
-    ;; (println (format
-    ;;           "trueth-col and prediction-col do not have same datatype. trueth-col: %s prediction-col: %s"
-    ;;           trueth-col predictions-col))
+              (-> predictions-col meta :datatype)))
+    (println (format
+              "trueth-col and prediction-col do not have same datatype. trueth-col: %s prediction-col: %s"
+              trueth-col predictions-col))))
 
 
 
@@ -57,21 +125,34 @@
   (let [predict-cat-map (-> prediction-ds (get  target-column-name) meta :categorical-map)
         trueth-cat-map (-> trueth-ds (get  target-column-name) meta :categorical-map)]
     (when (not (= trueth-cat-map predict-cat-map)))))
-      ;; (println
-      ;;  "trueth-ds and prediction-ds do not have same categorical-map for target-column '%s'. trueth-ds-cat-map: %s prediction-ds-cat-map: %s"
-      ;;  target-column-name (into {} trueth-cat-map) (into {} predict-cat-map))
+;; (println
+;;  "trueth-ds and prediction-ds do not have same categorical-map for target-column '%s'. trueth-ds-cat-map: %s prediction-ds-cat-map: %s"
+;;  target-column-name (into {} trueth-cat-map) (into {} predict-cat-map))
 
 
 
 (defn- score [predictions-ds trueth-ds target-column-name metric-fn other-metrics]
-  (let [predictions-col (get (ds-cat/reverse-map-categorical-xforms predictions-ds)
-                             target-column-name)
-        trueth-col (get (ds-cat/reverse-map-categorical-xforms trueth-ds)
-                        target-column-name)
+  (def predictions-ds predictions-ds)
+  (def trueth-ds trueth-ds)
+  (def target-column-name target-column-name)
+  (def metric-fn metric-fn)
+  (def other-metrics other-metrics)
 
+  (let [predictions-col (-> predictions-ds
+                            (reverse-map-categorical-xforms)
+                            (first-prediction-column--float))
+        trueth-col (-> trueth-ds
+                       (reverse-map-categorical-xforms)
+                       (first-target-column--float))
+
+        _ (def predictions-col  predictions-col)
+        _ (def trueth-col trueth-col)
+        _ (def metric-fn metric-fn)
         _ (strict-type-check trueth-col predictions-col)
+        
         metric (metric-fn trueth-col predictions-col)
 
+        
         other-metrics-result
         (map
          (fn [{:keys [metric-fn] :as m}]
@@ -89,6 +170,7 @@
         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
         end-transform (System/currentTimeMillis)
 
+        _ (def predicted-ctx predicted-ctx)
         predictions-ds (cf/prediction (:metamorph/data predicted-ctx))
 
         _ (errors/when-not-error predictions-ds "No column in prediction result was marked as 'prediction' ")
@@ -97,14 +179,20 @@
         _ (errors/when-not-error trueth-ds (str  "Pipeline context need to have the true prediction target as a dataset at key path: "
                                                  :model ::target-ds " Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
 
-        target-column-names (ds/column-names trueth-ds)
-        _ (errors/when-not-error (= 1 (count target-column-names)) "Only 1 target column is supported")
+        _ (def trueth-ds trueth-ds)
+
+
+        _ (def predictions-ds predictions-ds)
+
+        target-column-names (target-column-names trueth-ds)
+        ;_ (def target-column-names target-column-names)
+        ;_ (errors/when-not-error (= 1 (count target-column-names)) "Only 1 target column is supported")
 
 
         target-column-name (first target-column-names)
 
-        _ (errors/when-not-error (get predictions-ds target-column-name) (format "Prediction dataset need to have column name: %s " target-column-name))
-        _ (check-categorical-maps trueth-ds predictions-ds target-column-name)
+        ;_ (errors/when-not-error (get predictions-ds target-column-name) (format "Prediction dataset need to have column name: %s " target-column-name))
+        ;_ (check-categorical-maps trueth-ds predictions-ds target-column-name)
 
 
         scores (score predictions-ds trueth-ds target-column-name metric-fn other-metrics)
@@ -384,8 +472,8 @@
       [:sequential [:or vector? fn?]]
       [:sequential [:map {:closed true}
                     [:split-uid {:optional true} string?]
-                    [:train [:fn dataset?]]
-                    [:test  {:optional true} [:fn dataset?]]]]
+                    [:train [:fn malli/compatible-data?]]
+                    [:test  {:optional true} [:fn malli/compatible-data?]]]]
       fn?
       [:enum :accuracy :loss]]
 
@@ -395,8 +483,8 @@
       [:sequential [:or vector? fn?]]
       [:sequential [:map {:closed true}
                     [:split-uid {:optional true} string?]
-                    [:train [:fn dataset?]]
-                    [:test {:optional true} [:fn dataset?]]]]
+                    [:train [:fn malli/compatible-data?]]
+                    [:test {:optional true} [:fn malli/compatible-data?]]]]
       fn?
       [:enum :accuracy :loss]
       ::options]
@@ -576,20 +664,19 @@
                        (me/humanize)))))))
 
 (defn- assert-categorical-consistency [dataset]
-    (let [distinc-datatypes
+  (let [distinc-datatypes
         (->> dataset ds-cat/dataset->categorical-maps
              (map #(->> % :lookup-table vals (map dt/datatype)))
              flatten
              distinct)]
-    (assert (contains? #{0 1} 
+    (assert (contains? #{0 1}
                        (count distinc-datatypes)) (str "Non uniform cat map " (->> dataset ds-cat/dataset->categorical-maps vec)))
     (assert
      (or
       (empty? distinc-datatypes)
       (contains? #{:int :int32 :int64}
                  (first distinc-datatypes)))
-     (str "Non :int cat map " (->> dataset ds-cat/dataset->categorical-maps vec))))
-  )
+     (str "Non :int cat map " (->> dataset ds-cat/dataset->categorical-maps vec)))))
 
 
 
@@ -617,11 +704,12 @@
    
    to construct its prediction dataset so that its matches with the train data target column.
    "
-  {:malli/schema [:=> [:cat [:fn dataset?] map?]
+  {:malli/schema [:=> [:cat [:fn malli/compatible-data?] map?]
                   [map?]]}
   [dataset options]
 
-  (assert-categorical-consistency dataset)
+  (when (dataset? dataset)
+    (assert-categorical-consistency dataset))
 
 
   (let [model-options (options->model-def options)
@@ -636,25 +724,20 @@
     (if cached
       cached
       (let [{:keys [train-fn unsupervised?]} model-options
-            feature-ds (cf/feature  dataset)
-            _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
-                                     "No features provided")
+            feature-ds (features  dataset)
+            _ (pre-validate dataset)
             target-ds (if unsupervised?
                         nil
                         (do
-                          (errors/when-not-error (> (ds/row-count (cf/target dataset)) 0) "No target columns provided, see tech.v3.dataset.modelling/set-inference-target")
-                          (cf/target dataset)))
+                          (pre-validate-supervised dataset)
+                          (target dataset)))
             model-data (train-fn feature-ds target-ds
                                  options)
-        ;; _ (errors/when-not-error (:model-as-bytes model-data)  "train-fn need to return a map with key :model-as-bytes")
+            ;; _ (errors/when-not-error (:model-as-bytes model-data)  "train-fn need to return a map with key :model-as-bytes")
             targets-datatypes
-            (zipmap
-             (keys target-ds)
-             (->>
-              (vals target-ds)
-              (map meta)
-              (map :datatype)))
-            cat-maps (ds-mod/dataset->categorical-xforms target-ds)
+            (data-types target-ds)
+
+            cat-maps (dataset->categorical-xforms target-ds)
 
             model
             (merge
@@ -662,8 +745,8 @@
               :options options
               :train-input-hash combined-hash
               :id (UUID/randomUUID)
-              :feature-columns (vec (ds/column-names feature-ds))
-              :target-columns (vec (ds/column-names target-ds))
+              :feature-columns (vec (feature-column-names feature-ds))
+              :target-columns (vec (target-column-names target-ds))
               :target-datatypes targets-datatypes}
              (when-not (== 0 (count cat-maps))
                {:target-categorical-maps cat-maps}))]
@@ -730,7 +813,7 @@
         inverse-predicted-map (-> target-cat-maps-from-predict vals first :lookup-table set/map-invert)]
 
 
-      ;; should not throw  
+    ;; should not throw  
     (when target-cat-maps-from-train
       (ds-cat/reverse-map-categorical-xforms pred-ds))
 
@@ -803,7 +886,7 @@
    ml/train passes the needed information of the train target column to the model implementaion to do this.
 
    "
-  {:malli/schema [:=> [:cat [:fn dataset?]
+  {:malli/schema [:=> [:cat [:fn malli/compatible-data?]
                        [:map [:options map?]
                         [:feature-columns sequential?]
                         [:target-columns sequential?]]]
@@ -812,7 +895,8 @@
 
   [dataset {:keys [feature-columns options train-input-hash]
             :as model}]
-  (assert-categorical-consistency dataset)
+  (when (ds/dataset? dataset)
+    (assert-categorical-consistency dataset))
   (let [predict-hash (when (:use-cache @train-predict-cache) (str train-input-hash "--" (hash dataset)))
         cached (when predict-hash ((:get-fn @train-predict-cache) predict-hash))
 
@@ -821,7 +905,7 @@
           cached
 
           (let [{:keys [predict-fn] :as model-def} (options->model-def options)
-                feature-ds (ds/select-columns dataset feature-columns)
+                feature-ds (select-columns dataset feature-columns)
                 thawed-model (thaw-model model model-def)
                 pred-ds (predict-fn feature-ds
                                     thawed-model
@@ -1018,8 +1102,8 @@
                          (update
                           id
                           assoc
-                          ::feature-ds (cf/feature data)
-                          ::target-ds (cf/target data))
+                          ::feature-ds (features data)
+                          ::target-ds (target data))
                          (assoc
                           :metamorph/data (predict data (get ctx id)))))))))
 

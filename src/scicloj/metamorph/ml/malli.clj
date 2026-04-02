@@ -7,6 +7,11 @@
    [malli.util :as mu]
    [tech.v3.dataset.impl.dataset :refer [dataset?]]))
 
+(defn compatible-data? [x]
+  (or (dataset? x)
+      (= "ml.dmlc.xgboost4j.java.DMatrix" (-> x class .getName))))
+
+
 (defn instrument-mm
   "Instruments a metamorph function with input validation via Malli schema.
 
@@ -28,7 +33,7 @@
      {:report (pretty/thrower) :scope #{:input}
       :schema [:=> [:cat [:map
                           [:metamorph/id any?]
-                          [:metamorph/data [:fn dataset?]]
+                          [:metamorph/data [:fn compatible-data?]]
                           [:metamorph/mode [:enum :fit :transform]]]]
 
                map?]}
