@@ -19,7 +19,8 @@
    [tech.v3.datatype.errors :as errors]
    [tech.v3.datatype.export-symbols :as exporter]
    [tech.v3.datatype.functional :as dfn]
-   [tech.v3.datatype :as dt])
+   [tech.v3.datatype :as dt]
+   [tablecloth.api :as tc])
   (:import
    ml.dmlc.xgboost4j.java.DMatrix
    java.util.UUID))
@@ -80,8 +81,8 @@
   (pre-validate-supervised [data])
   (target [data] data)
   (feature-column-names [data] nil)
-  (target-column-names [data] nil)
-  (data-types [data] nil)
+  (target-column-names [data] [:label])
+  (data-types [data] [:float])
   (dataset->categorical-xforms [data] nil)
   (select-columns [data column-names] data)
   (reverse-map-categorical-xforms [data]

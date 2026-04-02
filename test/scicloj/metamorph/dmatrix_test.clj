@@ -20,11 +20,17 @@
 
 (deftest dmatrix
   (let [model-from-dm (ml/train dm {:model-type :xgboost/classification
-                                    :num-class 4})]
+                                    :num-class 4})
+        prediction (ml/predict dm model-from-dm)
+        ]
+    
+    (def model-from-dm model-from-dm)
+    (def prediction prediction)
+    (tc/column-names prediction)
     (is (ish? 0.7866
               (metrics/accuracy
                (.getLabel dm)
-               (map float (get (ml/predict dm model-from-dm) nil)))))))
+               (map float (get prediction :label)))))))
 
 (deftest dataset
   (let [ds (-> (datasets/datasets-iris)
