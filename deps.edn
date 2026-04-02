@@ -53,11 +53,7 @@
   {:jvm-opts ["-Djava.awt.headless=true"]
    :extra-deps {io.github.nextjournal/clerk {:mvn/version "0.18.1158"}
                 org.scicloj/clay {:mvn/version "2.0.11"}
-                org.scicloj/scicloj.ml.smile
-                {:git/url "https://github.com/scicloj/scicloj.ml.smile"
-                 :git/sha "85f2509c4f2a90b618e3dbe5ce75623ef35c858e"}
-
-                ;{:mvn/version "7.5.3"}
+                org.scicloj/scicloj.ml.smile {:mvn/version "7.6.2"}
                 
                 org.scicloj/tableplot {:mvn/version "1-beta10.2"}
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
