@@ -24,9 +24,6 @@
         prediction (ml/predict dm model-from-dm)
         ]
     
-    (def model-from-dm model-from-dm)
-    (def prediction prediction)
-    (tc/column-names prediction)
     (is (ish? 0.7866
               (metrics/accuracy
                (.getLabel dm)
