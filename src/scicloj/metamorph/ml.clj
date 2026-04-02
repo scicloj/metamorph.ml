@@ -626,9 +626,9 @@
                         ]
                        map?]
                   [map?]]}
-  [dataset options]
+  [data options]
 
-  (assert-categorical-consistency dataset)
+  (assert-categorical-consistency data)
 
 
   (let [model-options (options->model-def options)
@@ -636,22 +636,22 @@
             (validate-options model-options options))
 
         combined-hash (when (:use-cache @train-predict-cache)
-                        (str  (hash dataset) "___"  (hash options)))
+                        (str  (hash data) "___"  (hash options)))
 
         cached (when combined-hash ((:get-fn @train-predict-cache) combined-hash))]
 
     (if cached
       cached
       (let [{:keys [train-fn unsupervised?]} model-options
-            model (cond (dataset? dataset)
-                        (let [feature-ds (cf/feature  dataset)
+            model (cond (dataset? data)
+                        (let [feature-ds (cf/feature  data)
                               _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
                                                        "No features provided")
                               target-ds (if unsupervised?
                                           nil
                                           (do
-                                            (errors/when-not-error (> (ds/row-count (cf/target dataset)) 0) "No target columns provided, see tech.v3.dataset.modelling/set-inference-target")
-                                            (cf/target dataset)))
+                                            (errors/when-not-error (> (ds/row-count (cf/target data)) 0) "No target columns provided, see tech.v3.dataset.modelling/set-inference-target")
+                                            (cf/target data)))
                               model-data (train-fn feature-ds target-ds options)
 
                               targets-datatypes
@@ -681,8 +681,8 @@
                           model
                           )
                         
-                        (= (-> dataset class .getName) "ml.dmlc.xgboost4j.java.DMatrix")
-                        (let [model-data (train-fn dataset options)]
+                        (= (-> data class .getName) "ml.dmlc.xgboost4j.java.DMatrix")
+                        (let [model-data (train-fn data nil options)]
                           {:model-data model-data
                            :options options
                            :feature-columns []
@@ -691,8 +691,8 @@
                           )
                         
                         
-                        :else (throw (ex-info (format "Unexpected dataset class: %s" (class dataset))
-                                              {:dataset dataset}
+                        :else (throw (ex-info (format "Unexpected dataset class: %s" (class data))
+                                              {:dataset data}
                                               ))
                         )
 

@@ -3,6 +3,7 @@
    [clj-memory-meter.core :as mm]
    [scicloj.metamorph.core :as morph]
    [scicloj.metamorph.ml :as ml]
+   [scicloj.metamorph.ml.evaluation-handler :as eval-handler]
    [scicloj.metamorph.ml.loss :as loss]
    [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [scicloj.ml.smile.classification]
@@ -25,10 +26,10 @@
         pipe-fn-seq (repeat n-pipes pipe-fn)
 
         _ (println "dissoc: " dissoc)
-        _ (println "seq: " (if (true? dissoc)  scicloj.metamorph.ml/default-result-dissoc-in-seq []))
+        _ (println "seq: " (if (true? dissoc)  eval-handler/default-result-dissoc-in-seq []))
         tune-options
         {
-         :result-dissoc-in-seq (if dissoc  scicloj.metamorph.ml/default-result-dissoc-in-seq [])
+         :result-dissoc-in-seq (if dissoc  eval-handler/default-result-dissoc-in-seq [])
 
          :return-best-pipeline-only return-best-pipeline-only
          :return-best-crossvalidation-only return-best-crossvalidation-only}

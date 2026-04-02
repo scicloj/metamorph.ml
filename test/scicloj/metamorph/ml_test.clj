@@ -19,7 +19,9 @@
    [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [tech.v3.dataset.modelling :as ds-mod]
    [scicloj.metamorph.ml.tools :refer [keys-in]]
-   [scicloj.metamorph.ml.cache :as cache])
+   [scicloj.metamorph.ml.cache :as cache]
+   [scicloj.ml.xgboost]
+   )
   (:import
    [ml.dmlc.xgboost4j.java DMatrix]
    (clojure.lang ExceptionInfo)
@@ -709,31 +711,38 @@
                   :dummy-strategy :fixed-class
                   :fixed-class 3}))))
 
+(defn- argmax [v]
+  (first (apply max-key second (map-indexed vector v))))
+
 (deftest train-dmatrix
   (let [dmatrix (DMatrix. "test/data/iris.libsvm.txt?format=libsvm")
         model (ml/train dmatrix
                         {:num-class 4
                          :model-type :xgboost/classification})
-        _ (def model model)
         prediction (ml/predict
                     (ds/->dataset
                      {:0 [0.388889 -0.5]
                       :1 [-0.333333 0.166667]
                       :2 [0.288136 -0.864407]
                       :3 [0.0833333 -0.916667]})
-                    model)]
-    (is (= [3 1] (-> prediction (get nil) vec)))))
+                    model)
+        booster (ml/thaw-model model)
 
-(def booster (ml/thaw-model model))
+        prediction-freqs
+        (frequencies
+         (map
+          argmax
+          (vec (.predict booster dmatrix))))
+        ]
+    (is (= [3 1] (-> prediction (get nil) vec)))
+    (is (= {1 50, 2 50, 3 50} prediction-freqs))
+    ))
 
-(defn argmax [v]
-  (first (apply max-key second (map-indexed vector v))))
 
-(map
- argmax
- (vec (.predict booster dmatrix))
- 
- )
+
+
+
+
 (comment
   (require '[scicloj.ml.smile.classification])
 

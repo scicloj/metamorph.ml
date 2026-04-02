@@ -66,9 +66,9 @@
    :extra-paths ["test"]
    :extra-deps {
                 org.scicloj/scicloj.ml.xgboost 
-                {:local/root  "/sources/scicloj.ml.xgboost"}
-                ;; {:git/url "https://github.com/scicloj/scicloj.ml.xgboost"
-                ;;  :git/sha "fba25f4e306cbf54cf407aa30fbe23b9b5c48950"}
+                ;{:local/root  "/sources/scicloj.ml.xgboost"}
+                 {:git/url "https://github.com/scicloj/scicloj.ml.xgboost"
+                  :git/sha "baa51897cf5e238c40a00e003ba8251005b8a684"}
                 ;; ;{:mvn/version "6.4.0"}
 
                 lambdaisland/kaocha {:mvn/version "1.91.1392"}
