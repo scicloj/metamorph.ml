@@ -16,3 +16,4 @@ measures.csv
 dump.rdb
 .portal/vs-code.edn
 .claude/settings.local.json
+classes
