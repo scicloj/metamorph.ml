@@ -130,15 +130,15 @@
 ;;  "trueth-ds and prediction-ds do not have same categorical-map for target-column '%s'. trueth-ds-cat-map: %s prediction-ds-cat-map: %s"
 ;;  target-column-name (into {} trueth-cat-map) (into {} predict-cat-map))
 
-
+(-> predictions-ds
+    (reverse-map-categorical-xforms)
+    (first-prediction-column--float)
+    )
 
 (defn- score [predictions-ds trueth-ds target-column-name metric-fn other-metrics]
   (def predictions-ds predictions-ds)
   (def trueth-ds trueth-ds)
-  (def target-column-name target-column-name)
-  (def metric-fn metric-fn)
-  (def other-metrics other-metrics)
-
+  
   (let [predictions-col (-> predictions-ds
                             (reverse-map-categorical-xforms)
                             (first-prediction-column--float))
@@ -146,9 +146,8 @@
                        (reverse-map-categorical-xforms)
                        (first-target-column--float))
 
-        _ (def predictions-col  predictions-col)
+        _ (def predictions-col predictions-col)
         _ (def trueth-col trueth-col)
-        _ (def metric-fn metric-fn)
         _ (strict-type-check trueth-col predictions-col)
         
         metric (metric-fn trueth-col predictions-col)
@@ -171,7 +170,6 @@
         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
         end-transform (System/currentTimeMillis)
 
-        _ (def predicted-ctx predicted-ctx)
         predictions-ds (cf/prediction (:metamorph/data predicted-ctx))
 
         _ (errors/when-not-error predictions-ds "No column in prediction result was marked as 'prediction' ")
@@ -179,11 +177,6 @@
         trueth-ds (get-in predicted-ctx [:model ::target-ds])
         _ (errors/when-not-error trueth-ds (str  "Pipeline context need to have the true prediction target as a dataset at key path: "
                                                  :model ::target-ds " Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
-
-        _ (def trueth-ds trueth-ds)
-
-
-        _ (def predictions-ds predictions-ds)
 
         target-column-names (target-column-names trueth-ds)
         ;_ (def target-column-names target-column-names)
