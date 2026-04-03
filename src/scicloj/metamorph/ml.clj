@@ -610,15 +610,12 @@
     [:n-elems :int]]))
 
 (def probability-column-meta-schema
-  (atom 
+  (atom
    [:map {:closed true}
-    [:name [:or :keyword :string]]
+    [:name [:or :keyword :string :int]]
     [:datatype [:enum :float32 :float64]]
     [:n-elems :int]
-    [:column-type [:enum :probability-distribution]]
-    ]
-   )
-  )
+    [:column-type [:enum :probability-distribution]]]))
 
 (defn- validate-col-meta! [ds schema model-type]
   (assert pos? (ds/column-count ds))
