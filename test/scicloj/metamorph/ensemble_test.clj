@@ -1,6 +1,7 @@
 (ns scicloj.metamorph.ensemble-test
   (:require
    [clojure.test :as t :refer [deftest is]]
+   [scicloj.metamorph.common]
    [scicloj.metamorph.core :as morph]
    [scicloj.metamorph.ml :as ml]
    [scicloj.metamorph.ml.ensemble :as ensemble]

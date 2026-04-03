@@ -1,5 +1,6 @@
 (ns scicloj.metamorph.text-test
   (:require
+   [scicloj.metamorph.common]
    [clojure.data.csv :as csv]
    [clojure.edn :as edn]
    [clojure.java.io :as io]

@@ -1,6 +1,7 @@
 (ns scicloj.metamorph.classification-test
   (:require [scicloj.metamorph.ml.classification :refer [confusion-map confusion-map->ds]]
             [clojure.test :refer [deftest is]]
+            [scicloj.metamorph.common]
             [scicloj.metamorph.ml :as ml]
             [scicloj.metamorph.ml.loss :as loss]
             [scicloj.metamorph.core :as mm]
@@ -11,7 +12,7 @@
             [scicloj.metamorph.ml.toydata :as toydata]
             [scicloj.ml.smile.classification]))
 
-
+(reset! scicloj.metamorph.ml/enable-strict-prediction-validations true)
 
 (deftest test-normalized
   (is (=

@@ -2,6 +2,7 @@
   (:require
    [scicloj.ml.smile.classification]
    [scicloj.metamorph.ml.rdatasets :as rdatasets]
+   [scicloj.metamorph.common]
    ))
   
 

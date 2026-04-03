@@ -2,6 +2,7 @@
   (:require
    [scicloj.metamorph.ml.classification]
    [clojure.test :as t :refer [deftest is]]
+   [scicloj.metamorph.common]
    [malli.core :as m]
    [scicloj.metamorph.core :as morph]
    [scicloj.metamorph.ml :as ml]

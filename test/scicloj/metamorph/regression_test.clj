@@ -1,6 +1,7 @@
 (ns scicloj.metamorph.regression-test 
   (:require
    [clojure.test :refer [deftest is]]
+   [scicloj.metamorph.common]
    [scicloj.metamorph.ml :as ml]
    [tablecloth.api :as tc]
    [tech.v3.dataset.modelling :as ds-mod]))

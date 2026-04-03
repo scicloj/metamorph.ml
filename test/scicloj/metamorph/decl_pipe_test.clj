@@ -1,5 +1,6 @@
 (ns scicloj.metamorph.decl-pipe-test
   (:require
+   [scicloj.metamorph.common]
    [clojure.string :as str]
    [clojure.test :refer [deftest is] :as t]
    [scicloj.metamorph.core :as mm]
@@ -8,6 +9,8 @@
    [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]))
+
+(reset! scicloj.metamorph.ml/enable-strict-prediction-validations true)
 
 (def data
   (rdatasets/datasets-iris))

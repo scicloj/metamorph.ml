@@ -2,21 +2,20 @@
   (:require
    [clojure.test :as t]
    [scicloj.metamorph.core :as mm]
-   [scicloj.metamorph.ml]
+   [scicloj.metamorph.ml :as ml]
    [scicloj.metamorph.ml.learning-curve :as lc]
-   [scicloj.metamorph.ml.loss]
    [scicloj.metamorph.ml.loss :as loss]
    [scicloj.ml.smile.classification]
    [tablecloth.api :as tc]
    [tablecloth.pipeline :as tc-mm]
-   [tech.v3.dataset]
-   [tech.v3.dataset.metamorph :as mds]))
+   [tech.v3.dataset :as ds]
+   [tech.v3.dataset.metamorph :as mds]) )
 
 
 
 (def titanic-train
   (->
-   (tech.v3.dataset/->dataset "https://github.com/scicloj/metamorph-examples/raw/main/data/titanic/train.csv"
+   (ds/->dataset "https://github.com/scicloj/metamorph-examples/raw/main/data/titanic/train.csv"
                               {:key-fn keyword})
    (tc/shuffle {:seed 1234})))
 
@@ -33,7 +32,7 @@
    {:metamorph/id :model}
    (scicloj.metamorph.ml/model {:model-type :smile.classification/random-forest})))
 
-(t/deftest test-learnining-curve []
+(t/deftest test-learnining-curve 
   (let [lc
         (lc/learning-curve titanic-train
                            pipe-fn

@@ -1,5 +1,6 @@
 (ns scicloj.metamorph.linear-regression-test
   (:require
+   [scicloj.metamorph.common]
    [clojure.pprint :as pp]
    [clojure.set :as set]
    [clojure.test :refer [deftest is]]

@@ -1,6 +1,7 @@
 (ns scicloj.metamorph.categorical-test
   (:require
    [clojure.test :refer [deftest is]]
+   [scicloj.metamorph.common]
    [scicloj.metamorph.core :as mm]
    [scicloj.metamorph.ml :as ml]
    [scicloj.metamorph.ml.categorical :as cat]
@@ -9,7 +10,7 @@
    [tech.v3.dataset.modelling :as ds-mod]))
 
 
-
+(reset! scicloj.metamorph.ml/enable-strict-prediction-validations true)
 
 (deftest independent
   (let [pipe-fn

@@ -4,7 +4,6 @@
    [clojure.string :as str]
    [pppmap.core :as ppp]
    [scicloj.metamorph.core :as mm]
-   [scicloj.metamorph.ml.ensemble]
    [scicloj.metamorph.ml.evaluation-handler :as eval-handler]
    [scicloj.metamorph.ml.loss :as loss]
    [malli.core :as m]
@@ -591,8 +590,62 @@
      (str "Non :int cat map " (->> dataset ds-cat/dataset->categorical-maps vec))))
   )
 
+(defn- verify-train-fn-result! [model-data]
+  ;(assert (some? model-data))
+  )
+
+(def prediction-column-meta-schema
+  (atom
+   [:map {:closed true}
+    [:categorical? {:optional true} :boolean]
+    [:column-type [:enum :prediction]]
+    [:categorical-map {:optional true}
+     [:maybe
+      [:map {:closed true}
+       [:lookup-table :map]
+       [:src-column [:or :keyword :string]]
+       [:result-datatype [:enum :int :int16 :int32 :int64 :float32 :float64]]]]]
+    [:name [:or :keyword :string]]
+    [:datatype [:enum :int :int16 :int32 :int64 :float32 :float64 :string :keyword]]
+    [:n-elems :int]]))
+
+(def probability-column-meta-schema
+  (atom 
+   [:map {:closed true}
+    [:name [:or :keyword :string]]
+    [:datatype [:enum :float32 :float64]]
+    [:n-elems :int]
+    [:column-type [:enum :probability-distribution]]
+    ]
+   )
+  )
+
+(defn- validate-col-meta! [ds schema model-type]
+  (assert pos? (ds/column-count ds))
+  (run!
+   #(let [column-meta (meta %)
+          explanation
+          (m/explain schema column-meta)]
+      (when explanation
+        (throw (ex-info (format "invalid model result of model type: %s" model-type)
+                        {:column-meta column-meta
+                         :malli-error (me/humanize explanation)}))))
+   (ds/columns ds))) 
 
 
+  
+(defn- validate-predict-fn-result! [pred-ds model-type]
+  (assert (ds/dataset? pred-ds))
+  (assert (pos? (ds/column-count pred-ds)))
+
+
+  (validate-col-meta!
+   (cf/prediction pred-ds)
+   @prediction-column-meta-schema model-type)
+
+  (validate-col-meta!
+   (cf/probability-distribution pred-ds)
+   @probability-column-meta-schema model-type))
 
 
 
@@ -646,7 +699,8 @@
                           (cf/target dataset)))
             model-data (train-fn feature-ds target-ds
                                  options)
-        ;; _ (errors/when-not-error (:model-as-bytes model-data)  "train-fn need to return a map with key :model-as-bytes")
+            _ (verify-train-fn-result! model-data)
+
             targets-datatypes
             (zipmap
              (keys target-ds)
@@ -826,6 +880,7 @@
                 pred-ds (predict-fn feature-ds
                                     thawed-model
                                     model)]
+            (validate-predict-fn-result! pred-ds (:model-type options))
             (validate-inconsistent-maps model pred-ds)
 
             (when predict-hash

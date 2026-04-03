@@ -1,12 +1,14 @@
 (ns scicloj.metamorph.perf
   (:require
    [clj-memory-meter.core :as mm]
+   [scicloj.metamorph.common]
    [scicloj.metamorph.core :as morph]
    [scicloj.metamorph.ml :as ml]
    [scicloj.metamorph.ml.loss :as loss]
    [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [scicloj.ml.smile.classification]
    [tablecloth.api :as tc]
+   [scicloj.metamorph.ml.evaluation-handler]
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.metamorph :as ds-mm]))
 
@@ -25,10 +27,10 @@
         pipe-fn-seq (repeat n-pipes pipe-fn)
 
         _ (println "dissoc: " dissoc)
-        _ (println "seq: " (if (true? dissoc)  scicloj.metamorph.ml/default-result-dissoc-in-seq []))
+        _ (println "seq: " (if (true? dissoc)  scicloj.metamorph.ml.evaluation-handler/default-result-dissoc-in-seq []))
         tune-options
         {
-         :result-dissoc-in-seq (if dissoc  scicloj.metamorph.ml/default-result-dissoc-in-seq [])
+         :result-dissoc-in-seq (if dissoc  scicloj.metamorph.ml.evaluation-handler/default-result-dissoc-in-seq [])
 
          :return-best-pipeline-only return-best-pipeline-only
          :return-best-crossvalidation-only return-best-crossvalidation-only}

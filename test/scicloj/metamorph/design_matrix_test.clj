@@ -1,5 +1,6 @@
 (ns scicloj.metamorph.design-matrix-test
   (:require  [clojure.test :as t :refer [deftest is]]
+             [scicloj.metamorph.common]
              [tablecloth.api :as tc]
              [tablecloth.column.api]
              [tech.v3.dataset.tensor :as tensor]

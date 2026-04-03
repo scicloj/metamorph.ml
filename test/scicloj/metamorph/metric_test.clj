@@ -1,5 +1,6 @@
 (ns scicloj.metamorph.metric-test
   (:require  [clojure.test :refer [is deftest]]
+             [scicloj.metamorph.common]
              [scicloj.metamorph.ml.metrics :as m]
              [tech.v3.datatype.functional :as fun]))
 
