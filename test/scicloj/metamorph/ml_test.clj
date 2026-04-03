@@ -549,7 +549,7 @@
            (-> (ml/predict (ds/->dataset {:x [0]}) model) :species)))))
 
 (defn- do-score [predict-col trueth-col metric-fn]
-  (#'ml/score
+  (#'ml/score-prediction
    (ds/new-dataset  [predict-col])
    (ds/new-dataset  [trueth-col])
    :species
@@ -658,7 +658,7 @@
         [{:name :m-1, :metric-fn loss/classification-accuracy :metric 0.6666666666666667}
          {:name :m-2, :metric-fn loss/classification-loss :metric 0.33333333333333326}]}
 
-       (#'ml/score
+       (#'ml/score-prediction
         (ds/->dataset  {:x [:a :a :a]})
         (ds/->dataset {:x [:a :b :a]})
         :x

@@ -63,7 +63,7 @@
 
 
 
-(defn- score [predictions-ds trueth-ds target-column-name metric-fn other-metrics]
+(defn- score-prediction [predictions-ds trueth-ds target-column-name metric-fn other-metrics]
   (let [predictions-col (get (ds-cat/reverse-map-categorical-xforms predictions-ds)
                              target-column-name)
         trueth-col (get (ds-cat/reverse-map-categorical-xforms trueth-ds)
@@ -107,7 +107,7 @@
         _ (check-categorical-maps trueth-ds predictions-ds target-column-name)
 
 
-        scores (score predictions-ds trueth-ds target-column-name metric-fn other-metrics)
+        scores (score-prediction predictions-ds trueth-ds target-column-name metric-fn other-metrics)
 
 
         eval-result
@@ -840,6 +840,23 @@
             pred-ds))]
     pred-ds))
 
+
+(defn score 
+  [model scoring-data]
+  (let [score-fn
+        (get
+         (options->model-def (:options model))
+         :score-fn)]
+    (score-fn scoring-data))
+  )
+
+(defn pre-metric-standarisation
+  [model prediction-data truth-data discrete-or-continous]
+  (let [pre-metric-standarisation-fn
+        (get
+         (options->model-def (:options model))
+         :pre-metric-standarisation-fn)]
+    (pre-metric-standarisation-fn prediction-data truth-data discrete-or-continous)))
 
 
 (defn loglik
