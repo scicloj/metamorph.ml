@@ -477,6 +477,7 @@
                                               [:augment-fn {:optional true} fn?]
                                               [:glance-fn {:optional true} fn?]
                                               [:score-fn {:optional true} fn?]
+                                              [:pre-metric-standarisation-fn {:optional true} fn?]
                                               [:options {:optional true} vector?]
                                               [:documentation {:optional true} [:map
                                                                                 [:javadoc {:optional true} [:maybe string?]]
@@ -493,6 +494,7 @@
                                          glance-fn
                                          augment-fn
                                          score-fn
+                                         pre-metric-standarisation-fn
                                          options
                                          documentation
                                          unsupervised?]
@@ -511,6 +513,7 @@
                                              :loglik-fn loglik-fn
                                              :glance-fn glance-fn
                                              :score-fn score-fn
+                                             :pre-metric-standarisation-fn pre-metric-standarisation-fn
                                              :tidy-fn tidy-fn
                                              :augment-fn augment-fn
                                              :options options
