@@ -468,7 +468,7 @@
   "Create a model definition.  An ml model is a function that takes a dataset and an
   options map and returns a model.  A model is something that, combined with a dataset,
   produces a inferred dataset."
-  {:malli/schema [:=> [:cat :keyword fn? fn? [:map
+  {:malli/schema [:=> [:cat :keyword fn? fn? [:map {:closed true}
                                               [:hyperparameters {:optional true} [:maybe map?]]
                                               [:thaw-fn {:optional true} fn?]
                                               [:explain-fn {:optional true} fn?]
@@ -476,6 +476,7 @@
                                               [:tidy-fn {:optional true} fn?]
                                               [:augment-fn {:optional true} fn?]
                                               [:glance-fn {:optional true} fn?]
+                                              [:score-fn {:optional true} fn?]
                                               [:options {:optional true} vector?]
                                               [:documentation {:optional true} [:map
                                                                                 [:javadoc {:optional true} [:maybe string?]]
@@ -491,6 +492,7 @@
                                          tidy-fn
                                          glance-fn
                                          augment-fn
+                                         score-fn
                                          options
                                          documentation
                                          unsupervised?]
@@ -508,6 +510,7 @@
                                              :explain-fn explain-fn
                                              :loglik-fn loglik-fn
                                              :glance-fn glance-fn
+                                             :score-fn score-fn
                                              :tidy-fn tidy-fn
                                              :augment-fn augment-fn
                                              :options options
