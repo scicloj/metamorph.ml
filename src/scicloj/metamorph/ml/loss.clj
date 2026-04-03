@@ -3,7 +3,12 @@
   (:require [tech.v3.datatype.functional :as dfn]
             [tech.v3.datatype :as dtype]
             [tech.v3.datatype.errors :as errors]
-            [tech.v3.datatype.argops :as argops]))
+            [tech.v3.datatype.argops :as argops]
+            [tech.v3.dataset.column-filters :as cf]
+            [tech.v3.dataset.column :as ds-col]
+            [tech.v3.dataset.categorical :as ds-cat]
+            [tech.v3.dataset :as ds]
+            ))
 
 (defn mse
   "Calculates mean squared error between predictions and labels.
@@ -150,6 +155,42 @@
           (* n-pos (inc n-pos) 1/2))
        (* n-pos n-neg))))
 
+
+(defn- do-harmonize [ds variable-type filter-fn]
+  (let [column (-> ds
+                   filter-fn
+                   (ds-cat/reverse-map-categorical-xforms)
+                   (ds/columns)
+                   first)]
+    (assert (some? column)
+            (format "No column found matching filter: %s\nmeta of ds columns: %s"
+                    filter-fn
+                    (mapv meta (ds/columns ds))))
+    (case variable-type
+      :discrete
+      (case (-> column meta :datatype)
+        :keyword (vec column)
+        :int64 (vec column)
+        :string (vec column)
+        :boolean (vec column)
+        :float64 (int-array column))
+
+      :continous (ds-col/to-double-array column))))
+
+
+
+(defn- do-harmonize-trueth [ds discrete-or-continous]
+  (do-harmonize ds discrete-or-continous cf/target))
+
+(defn- do-harmonize-prediction [ds discrete-or-continous]
+  (do-harmonize ds discrete-or-continous cf/prediction))
+
+
+(defn default-pre-metric-standardise
+  [prediction-ds trueth-ds discrete-or-continous]
+
+  {:prediction (do-harmonize-prediction prediction-ds discrete-or-continous)
+   :trueth (do-harmonize-trueth trueth-ds discrete-or-continous)})
 
 
 (comment

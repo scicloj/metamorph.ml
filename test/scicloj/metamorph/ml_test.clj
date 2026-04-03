@@ -53,7 +53,8 @@
 
         predict-ds))
 
-    {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
+    {:pre-metric-standarisation-fn loss/default-pre-metric-standardise
+     :explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
                    {:coefficients {:petal_width [0]}})}))
 
 (defn- validate-simple-pipeline []
@@ -70,7 +71,10 @@
         pipe-fn-seq [pipe-fn]
 
         evaluations
-        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss {:evaluation-handler-fn identity})
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss 
+                               {:evaluation-handler-fn identity
+                                :target-variable-type :discrete
+                                })
 
 
         best-fitted-context  (-> evaluations first first :fit-ctx)
@@ -143,7 +147,8 @@
         pipe-fn-seq [pipe-fn]
 
         evaluations
-        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss {:evaluation-handler-fn identity})
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss {:evaluation-handler-fn identity
+                                                                                           :target-variable-type :discrete})
 
         best-fitted-context  (-> evaluations first first :fit-ctx)
         best-pipe-fn         (-> evaluations first first :pipe-fn)]
@@ -168,7 +173,7 @@
         pipe-fn-seq [pipe-fn]
 
         evaluations
-        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)]
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss {:target-variable-type :discrete})]
 
 
     (is (nil? (-> evaluations first first :train-transform :ctx :model :model-data :model-as-bytes)))
@@ -197,15 +202,18 @@
 
         evaluations-1
         (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss
-                               {:return-best-crossvalidation-only false})
+                               {:return-best-crossvalidation-only false
+                                :target-variable-type :discrete})
         evaluations-2
         (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss
                                {:return-best-crossvalidation-only false
-                                :return-best-pipeline-only false})
+                                :return-best-pipeline-only false
+                                :target-variable-type :discrete})
 
         evaluations-3
         (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss
-                               {:return-best-pipeline-only false})]
+                               {:return-best-pipeline-only false
+                                :target-variable-type :discrete})]
 
 
 
@@ -239,7 +247,7 @@
                      train-split-seq (tc/split->seq iris :holdout)
                      pipe-fn-seq [pipe-fn]]
 
-                 (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)))))
+                 (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss {:target-variable-type :discrete})))))
 
 
 
@@ -262,7 +270,9 @@
          :loss
          {:evaluation-handler-fn
           ;(fn [result] (def result result) result)
-          eval/metrics-keep-fn})]
+          eval/metrics-keep-fn
+          :target-variable-type :discrete
+          })]
     (is (=
          [[:train-transform]
           [:train-transform :metric]
@@ -294,7 +304,8 @@
          loss/classification-loss
          :loss
          {:evaluation-handler-fn
-          eval/metrics-and-options-keep-fn})]
+          eval/metrics-and-options-keep-fn
+          :target-variable-type :discrete})]
     (is (=
          [[:train-transform]
           [:train-transform :metric]
@@ -373,7 +384,8 @@
                             (tc/split->seq iris)
                             loss/classification-accuracy
                             :accuracy
-                            {:evaluation-handler-fn nippy-handler})]
+                            {:evaluation-handler-fn nippy-handler
+                             :target-variable-type :discrete})]
            (fit-pipe-in-new-ns (first @files) iris)))))
 
 
@@ -392,7 +404,8 @@
          (tc/split->seq iris)
          loss/classification-accuracy
          :accuracy
-         {:evaluation-handler-fn eval/result-dissoc-in-seq--all-fn})]
+         {:evaluation-handler-fn eval/result-dissoc-in-seq--all-fn
+          :target-variable-type :discrete})]
 
     (is (=
          [[:train-transform]
@@ -431,7 +444,9 @@
          :accuracy
          {:evaluation-handler-fn (fn [_]
                                    {:train-transform {:metric 1}
-                                    :test-transform {:metric 1}})})]
+                                    :test-transform {:metric 1}})
+          :target-variable-type :discrete
+          })]
 
 
 
@@ -454,7 +469,10 @@
          :accuracy
          {:other-metrics [{:name :acc-2  :metric-fn loss/classification-accuracy}
                           {:name :fscore :metric-fn (fn [_ _] 0)}
-                          {:name :acc    :metric-fn scicloj.metamorph.ml.metrics/accuracy}]})]
+                          {:name :acc    :metric-fn scicloj.metamorph.ml.metrics/accuracy}]
+          
+          :target-variable-type :discrete
+          })]
 
     (is (pos? (-> evaluation-result first first :train-transform :other-metrics first :metric)))
     (is (zero? (-> evaluation-result first first :train-transform :other-metrics second :metric)))
@@ -481,7 +499,8 @@
          pipes split
          loss/classification-accuracy
          :accuracy
-         {:result-dissoc-in-seq []
+         {:target-variable-type :discrete
+          :result-dissoc-in-seq []
           :return-best-crossvalidation-only false
           :return-best-pipeline-only false
           :attach-fn-sources {:ns (find-ns 'clojure.core)
@@ -552,12 +571,14 @@
   (#'ml/score-prediction
    (ds/new-dataset  [predict-col])
    (ds/new-dataset  [trueth-col])
-   :species
+   :discrete
    metric-fn
-   {}))
+   {}
+   {:options {:model-type :test-model}}
+   ))
 
 
-(defn is-accuracy [predict-col trueth-col metric-fn expected-acc]
+(defn- is-accuracy [predict-col trueth-col metric-fn expected-acc]
   (is (= {:metric expected-acc, :other-metrics-result []}
          (do-score predict-col trueth-col metric-fn))))
 
@@ -568,15 +589,17 @@
                           metric-fn]
   (do-score
    (ds/new-column  :species predict-col-seq
-                   (when predict-a-b-table
-                     {:categorical-map
-                      {:lookup-table predict-a-b-table
-                       :src-column :species}}))
+                   (merge {:column-type :prediction}
+                          (when predict-a-b-table
+                            {:categorical-map
+                             {:lookup-table predict-a-b-table
+                              :src-column :species}})))
    (ds/new-column  :species trueth-col-seq
-                   (when trueth-a-b-table
-                     {:categorical-map
-                      {:lookup-table trueth-a-b-table
-                       :src-column :species}}))
+                   (merge {:inference-target? true}
+                          (when trueth-a-b-table
+                            {:categorical-map
+                             {:lookup-table trueth-a-b-table
+                              :src-column :species}})))
    metric-fn))
 
 (defn is-mapped-columns-accuracy [predict-col-seq predict-a-b-table
@@ -595,15 +618,14 @@
 (deftest test-score
 
   (is-accuracy
-   (ds/new-column  :species [1 1 1 1 1 1] nil)
-   (ds/new-column  :species [1 1 1 0 0 0] nil)
+   (ds/new-column  :species [1 1 1 1 1 1] {:column-type :prediction})
+   (ds/new-column  :species [1 1 1 0 0 0] {:inference-target? true})
    loss/classification-accuracy
    0.5)
-
-
+  
   (is-accuracy
-   (ds/new-column  :species [:a :a] nil)
-   (ds/new-column  :species [:a :b] nil)
+   (ds/new-column  :species [:a :a] {:column-type :prediction})
+   (ds/new-column  :species [:a :b] {:inference-target? true})
    loss/classification-accuracy
    0.5)
 
@@ -659,14 +681,22 @@
          {:name :m-2, :metric-fn loss/classification-loss :metric 0.33333333333333326}]}
 
        (#'ml/score-prediction
-        (ds/->dataset  {:x [:a :a :a]})
-        (ds/->dataset {:x [:a :b :a]})
-        :x
+        (-> 
+         (ds/->dataset  {:x [:a :a :a]})
+         (ds/assoc-metadata [:x]  :column-type :prediction)
+         )
+        (-> 
+         (ds/->dataset {:x [:a :b :a]})
+         (ds/assoc-metadata [:x]  :inference-target? true)
+         )
+        :discrete
         loss/classification-accuracy
         [{:name :m-1
           :metric-fn loss/classification-accuracy}
          {:name :m-2
-          :metric-fn loss/classification-loss}]))))
+          :metric-fn loss/classification-loss}]
+        {:options {:model-type :test-model}}
+        ))))
 
 (deftest define-model-schema
   (ml/define-model! :test-model--options
@@ -691,7 +721,7 @@
         :model-data))))
 
 (deftest non-consistent-cat-map []
-  (is ( thrown?  Exception
+  (is (thrown?  Exception
        (ml/train
         (->
          (ds/new-dataset [(ds/new-column :x [0 1 2 3]

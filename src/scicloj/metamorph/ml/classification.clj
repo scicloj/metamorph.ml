@@ -2,7 +2,8 @@
   (:require [tech.v3.dataset :as ds]
             [tech.v3.dataset.modelling :as ds-mod]
             [tech.v3.datatype.pprint :as dtype-pp]
-            [scicloj.metamorph.ml :as ml]))
+            [scicloj.metamorph.ml :as ml]
+            [scicloj.metamorph.ml.loss :as loss]))
             
             
 (defn- safe-inc
@@ -131,6 +132,7 @@
                                                                        :categorical-map (get target-categorical-maps target-column-name)})])))
      
   {:glance-fn (fn [_] (ds/->dataset {:npar 0}))
+   :pre-metric-standarisation-fn loss/default-pre-metric-standardise
    :options
    [:map {:closed true}
     [:dummy-strategy

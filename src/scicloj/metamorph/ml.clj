@@ -63,7 +63,7 @@
 
 
 
-(defn- score-prediction [predictions-ds trueth-ds target-column-name metric-fn other-metrics]
+(defn- score-prediction_old [predictions-ds trueth-ds target-column-name metric-fn other-metrics]
   (let [predictions-col (get (ds-cat/reverse-map-categorical-xforms predictions-ds)
                              target-column-name)
         trueth-col (get (ds-cat/reverse-map-categorical-xforms trueth-ds)
@@ -81,14 +81,90 @@
     {:metric metric
      :other-metrics-result other-metrics-result}))
 
+(defonce ^{:doc "Map of model kwd to model definition"} model-definitions* (atom nil))
 
 
-(defn- supervised-eval-pipeline [pipeline-fn fitted-ctx metric-fn ds other-metrics]
+(defn model-definition-names
+  "Returns a list of all registered model definition names.
+
+  Returns a sequence of keywords representing all model types that have been
+  registered via `define-model!`. These can be used as the `:model-type` value
+  when training models.
+
+  Example: `[:metamorph.ml/dummy-classifier ...]`
+
+  See also: `define-model!`, `options->model-def`"
+  []
+  (keys @model-definitions*))
+
+
+(defn options->model-def
+  "Retrieves the model definition corresponding to the `:model-type` option.
+
+  `options` - Map containing at minimum a `:model-type` keyword
+
+  Returns the model definition map registered for the given `:model-type`.
+  Throws an exception if the model type is not found, suggesting a missing
+  namespace require.
+
+  Used internally to look up train/predict functions and model metadata.
+
+  See also: `define-model!`, `model-definition-names`, `hyperparameters`"
+  [options]
+  {:pre [(contains? options :model-type)]}
+  (if-let [model-def (get @model-definitions* (:model-type options))]
+    model-def
+    (errors/throwf "Failed to find model %s.  Is a require missing?" (:model-type options))))
+
+
+
+
+(defn pre-metric-standarisation
+  [model prediction-data truth-data discrete-or-continous]
+  (let [pre-metric-standarisation-fn
+        (get
+         (options->model-def (:options model))
+         :pre-metric-standarisation-fn)]
+    (pre-metric-standarisation-fn prediction-data truth-data discrete-or-continous)))
+
+
+(defn- score-prediction [predictions-ds trueth-ds target-variable-type metric-fn other-metrics model]
+  
+  (let [pre-metric-standarisation-fn
+        (get
+         (options->model-def (:options model))
+         :pre-metric-standarisation-fn)
+        
+        _ (assert (some? pre-metric-standarisation-fn)
+                  (format "Model `%s` has no :pre-metric-standarisation-fn option, so cannot participate in `evalate-pipeline`"
+                   (-> options->model-def (:options model) :options :model-type)
+                   )
+                  )
+        standardised (pre-metric-standarisation-fn predictions-ds trueth-ds target-variable-type)
+        metric (metric-fn (:trueth standardised)
+                          (:prediction standardised))
+        other-metrics-result
+        (map
+         (fn [{:keys [metric-fn] :as m}]
+           (assoc m
+                  :metric (metric-fn (:trueth standardised)
+                                     (:prediction standardised))))
+         other-metrics)]
+    {:metric metric
+     :other-metrics-result other-metrics-result})
+  
+
+  )
+
+
+
+(defn- supervised-eval-pipeline [pipeline-fn fitted-ctx metric-fn ds other-metrics target-variable-type]
 
   (let [start-transform (System/currentTimeMillis)
         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
         end-transform (System/currentTimeMillis)
 
+        
         predictions-ds (cf/prediction (:metamorph/data predicted-ctx))
 
         _ (errors/when-not-error predictions-ds "No column in prediction result was marked as 'prediction' ")
@@ -107,7 +183,8 @@
         _ (check-categorical-maps trueth-ds predictions-ds target-column-name)
 
 
-        scores (score-prediction predictions-ds trueth-ds target-column-name metric-fn other-metrics)
+        scores (score-prediction predictions-ds trueth-ds target-variable-type metric-fn other-metrics 
+                                 (-> predicted-ctx  :model))
 
 
         eval-result
@@ -119,7 +196,7 @@
     eval-result))
 
 
-(defn- eval-pipeline [pipeline-fn fitted-ctx metric-fn ds other-metrics]
+(defn- eval-pipeline [pipeline-fn fitted-ctx metric-fn ds other-metrics target-variable-type]
 
   (if  (-> fitted-ctx :model ::unsupervised?)
     {:other-metrics []
@@ -127,10 +204,10 @@
      :ctx {}
      :metric (metric-fn fitted-ctx)}
 
-    (supervised-eval-pipeline pipeline-fn fitted-ctx metric-fn ds other-metrics)))
+    (supervised-eval-pipeline pipeline-fn fitted-ctx metric-fn ds other-metrics target-variable-type)))
 
 
-(defn- calc-metric [pipeline-fn metric-fn train-ds test-ds tune-options]
+(defn- calc-metric [pipeline-fn metric-fn train-ds test-ds options]
   (try
     (let [start-fit (System/currentTimeMillis)
           fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
@@ -140,13 +217,13 @@
           #_(errors/when-not-error (:model fitted-ctx) "Pipeline contexts under evaluation need to have the model operation with id :model")
 
 
-          eval-pipeline-result-train (eval-pipeline pipeline-fn fitted-ctx metric-fn train-ds (:other-metrics tune-options))
+          eval-pipeline-result-train (eval-pipeline pipeline-fn fitted-ctx metric-fn train-ds (:other-metrics options) (:target-variable-type options))
           eval-pipeline-result-test (if (-> fitted-ctx :model ::unsupervised?)
                                       {:other-metrics []
                                        :timing 0
                                        :ctx fitted-ctx
                                        :metric 0}
-                                      (eval-pipeline pipeline-fn fitted-ctx metric-fn test-ds (:other-metrics tune-options)))]
+                                      (eval-pipeline pipeline-fn fitted-ctx metric-fn test-ds (:other-metrics options) (:target-variable-type options)))]
 
 
 
@@ -196,7 +273,7 @@
 
 
 
-(defn- evaluate-one-pipeline [pipeline-decl-or-fn train-test-split-seq metric-fn loss-or-accuracy tune-options]
+(defn- evaluate-one-pipeline [pipeline-decl-or-fn train-test-split-seq metric-fn loss-or-accuracy options]
 
   (let [pipeline-fn (if (fn? pipeline-decl-or-fn)
                       pipeline-decl-or-fn
@@ -209,7 +286,7 @@
          (for [train-test-split train-test-split-seq]
            (let [{:keys [train test split-uid]} train-test-split
                  complete-result
-                 (assoc (calc-metric pipeline-fn metric-fn train test tune-options)
+                 (assoc (calc-metric pipeline-fn metric-fn train test options)
                         :split-uid split-uid
                         :loss-or-accuracy loss-or-accuracy
                         :metric-fn metric-fn
@@ -217,10 +294,10 @@
                         :pipe-fn pipeline-fn
                         :source-information
                         (get-nice-source-info pipeline-decl
-                                              (get-in tune-options [:attach-fn-sources :ns])
-                                              (get-in tune-options [:attach-fn-sources :pipe-fns-clj-file])))
+                                              (get-in options [:attach-fn-sources :ns])
+                                              (get-in options [:attach-fn-sources :pipe-fns-clj-file])))
 
-                 reduced-result ((tune-options :evaluation-handler-fn) complete-result)]
+                 reduced-result ((options :evaluation-handler-fn) complete-result)]
              reduced-result)))
 
 
@@ -245,7 +322,7 @@
          (sort-by (comp :metric :test-transform) <))
 
         result
-        (if (tune-options :return-best-crossvalidation-only)
+        (if (options :return-best-crossvalidation-only)
           (case loss-or-accuracy
             :loss (->> evaluations  (take 1))
             :accuracy (->> evaluations  (take-last 1)))
@@ -329,6 +406,7 @@
    [:function
     {:registry
      {::options [:or empty? [:map
+                             [:target-variable-type [:enum :discrete :continous]]
                              [:return-best-pipeline-only {:optional true} boolean?]
                              [:return-best-crossvalidation-only {:optional true} boolean?]
                              [:map-fn {:optional true} [:enum :map :pmap :mapv :ppmap]]
@@ -461,7 +539,6 @@
 
 
 
-(defonce ^{:doc "Map of model kwd to model definition"} model-definitions* (atom nil))
 
 
 (defn define-model!
@@ -522,39 +599,6 @@
 
 
   :ok)
-
-
-(defn model-definition-names
-  "Returns a list of all registered model definition names.
-
-  Returns a sequence of keywords representing all model types that have been
-  registered via `define-model!`. These can be used as the `:model-type` value
-  when training models.
-
-  Example: `[:metamorph.ml/dummy-classifier ...]`
-
-  See also: `define-model!`, `options->model-def`"
-  []
-  (keys @model-definitions*))
-
-
-(defn options->model-def
-  "Retrieves the model definition corresponding to the `:model-type` option.
-
-  `options` - Map containing at minimum a `:model-type` keyword
-
-  Returns the model definition map registered for the given `:model-type`.
-  Throws an exception if the model type is not found, suggesting a missing
-  namespace require.
-
-  Used internally to look up train/predict functions and model metadata.
-
-  See also: `define-model!`, `model-definition-names`, `hyperparameters`"
-  [options]
-  {:pre [(contains? options :model-type)]}
-  (if-let [model-def (get @model-definitions* (:model-type options))]
-    model-def
-    (errors/throwf "Failed to find model %s.  Is a require missing?" (:model-type options))))
 
 
 (defn hyperparameters
@@ -850,13 +894,6 @@
     (score-fn scoring-data))
   )
 
-(defn pre-metric-standarisation
-  [model prediction-data truth-data discrete-or-continous]
-  (let [pre-metric-standarisation-fn
-        (get
-         (options->model-def (:options model))
-         :pre-metric-standarisation-fn)]
-    (pre-metric-standarisation-fn prediction-data truth-data discrete-or-continous)))
 
 
 (defn loglik
