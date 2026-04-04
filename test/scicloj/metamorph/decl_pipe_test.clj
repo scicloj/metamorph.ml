@@ -7,7 +7,9 @@
    [scicloj.metamorph.ml.loss :as loss]
    [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [tablecloth.api :as tc]
-   [tech.v3.dataset :as ds]))
+   [tech.v3.dataset :as ds]
+   [tech.v3.dataset.categorical :as ds-cat]
+   [tech.v3.dataset.column-filters :as cf]))
 
 (def data
   (rdatasets/datasets-iris))
@@ -98,7 +100,23 @@
                                          :categorical-map (get target-categorical-maps target-column-name)})])))
 
       
-    {}))
+    {:score-fn (fn [prediction-ds trueth-ds metric-fn]
+                 (let [predictions-col
+                       (-> prediction-ds
+                           ds-cat/reverse-map-categorical-xforms
+                           cf/prediction
+                           ds/columns
+                           first)
+     
+                       trueth-col
+                       (-> trueth-ds
+                           ds-cat/reverse-map-categorical-xforms
+                           cf/target
+                           ds/columns
+                           first)
+                       metric (metric-fn trueth-col predictions-col)]
+     
+                   metric))}))
 
 
 

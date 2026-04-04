@@ -6,6 +6,7 @@
    [scicloj.metamorph.ml.loss :as loss]
    [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [scicloj.ml.smile.classification]
+   [scicloj.metamorph.ml.evaluation-handler]
    [tablecloth.api :as tc]
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.metamorph :as ds-mm]))
@@ -25,10 +26,10 @@
         pipe-fn-seq (repeat n-pipes pipe-fn)
 
         _ (println "dissoc: " dissoc)
-        _ (println "seq: " (if (true? dissoc)  scicloj.metamorph.ml/default-result-dissoc-in-seq []))
+        _ (println "seq: " (if (true? dissoc)  scicloj.metamorph.ml.evaluation-handler/default-result-dissoc-in-seq []))
         tune-options
         {
-         :result-dissoc-in-seq (if dissoc  scicloj.metamorph.ml/default-result-dissoc-in-seq [])
+         :result-dissoc-in-seq (if dissoc scicloj.metamorph.ml.evaluation-handler/default-result-dissoc-in-seq [])
 
          :return-best-pipeline-only return-best-pipeline-only
          :return-best-crossvalidation-only return-best-crossvalidation-only}

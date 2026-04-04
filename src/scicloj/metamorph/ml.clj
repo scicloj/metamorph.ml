@@ -19,7 +19,8 @@
    [tech.v3.datatype.errors :as errors]
    [tech.v3.datatype.export-symbols :as exporter]
    [tech.v3.datatype.functional :as dfn]
-   [tech.v3.datatype :as dt])
+   [tech.v3.datatype :as dt]
+   )
   (:import
    java.util.UUID))
 
@@ -61,26 +62,37 @@
       ;;  "trueth-ds and prediction-ds do not have same categorical-map for target-column '%s'. trueth-ds-cat-map: %s prediction-ds-cat-map: %s"
       ;;  target-column-name (into {} trueth-cat-map) (into {} predict-cat-map))
 
+(declare score options->model-def)
 
+(defn basic-score-fn [prediction-ds trueth-ds metric-fn]
+  (let [predictions-col
+        (-> prediction-ds
+            ds-cat/reverse-map-categorical-xforms
+            cf/prediction
+            ds/columns
+            first)
 
-(defn- score-prediction [predictions-ds trueth-ds target-column-name metric-fn other-metrics]
-  (let [predictions-col (get (ds-cat/reverse-map-categorical-xforms predictions-ds)
-                             target-column-name)
-        trueth-col (get (ds-cat/reverse-map-categorical-xforms trueth-ds)
-                        target-column-name)
+        trueth-col
+        (-> trueth-ds
+            ds-cat/reverse-map-categorical-xforms
+            cf/target
+            ds/columns
+            first)
+        metric (metric-fn trueth-col predictions-col)]
 
-        _ (strict-type-check trueth-col predictions-col)
-        metric (metric-fn trueth-col predictions-col)
+    metric))
 
+(defn- score-prediction [predictions-ds trueth-ds metric-fn other-metrics model-type]
+  (let [metric (score {:options {:model-type model-type}} predictions-ds trueth-ds metric-fn)
         other-metrics-result
         (map
          (fn [{:keys [metric-fn] :as m}]
            (assoc m
-                  :metric (metric-fn trueth-col predictions-col)))
+                  :metric (score {:options {:model-type model-type}} predictions-ds trueth-ds metric-fn)
+                  ))
          other-metrics)]
     {:metric metric
      :other-metrics-result other-metrics-result}))
-
 
 
 (defn- supervised-eval-pipeline [pipeline-fn fitted-ctx metric-fn ds other-metrics]
@@ -89,6 +101,7 @@
         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
         end-transform (System/currentTimeMillis)
 
+        
         predictions-ds (cf/prediction (:metamorph/data predicted-ctx))
 
         _ (errors/when-not-error predictions-ds "No column in prediction result was marked as 'prediction' ")
@@ -107,7 +120,7 @@
         _ (check-categorical-maps trueth-ds predictions-ds target-column-name)
 
 
-        scores (score-prediction predictions-ds trueth-ds target-column-name metric-fn other-metrics)
+        scores (score-prediction predictions-ds trueth-ds metric-fn other-metrics (-> predicted-ctx :model :options :model-type))
 
 
         eval-result
@@ -841,22 +854,19 @@
     pred-ds))
 
 
-(defn score 
-  [model scoring-data]
+(defn score
+  [model prediction truth metric-fn]
   (let [score-fn
-        (get
-         (options->model-def (:options model))
-         :score-fn)]
-    (score-fn scoring-data))
-  )
+        (or (get
+             (options->model-def (:options model))
+             :score-fn)
+            basic-score-fn
+            )]
+    ;; (assert (some? score-fn)
+    ;;           (format "Model type: `%s` has no :score-fn" (-> model :options :model-type)))
+    
+    (score-fn prediction truth metric-fn)))
 
-(defn pre-metric-standarisation
-  [model prediction-data truth-data discrete-or-continous]
-  (let [pre-metric-standarisation-fn
-        (get
-         (options->model-def (:options model))
-         :pre-metric-standarisation-fn)]
-    (pre-metric-standarisation-fn prediction-data truth-data discrete-or-continous)))
 
 
 (defn loglik

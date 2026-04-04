@@ -2,17 +2,18 @@
   (:require
    [clojure.test :as t]
    [scicloj.metamorph.core :as mm]
-   [scicloj.metamorph.ml]
+   [scicloj.metamorph.ml :as ml]
    [scicloj.metamorph.ml.learning-curve :as lc]
-   [scicloj.metamorph.ml.loss]
    [scicloj.metamorph.ml.loss :as loss]
    [scicloj.ml.smile.classification]
    [tablecloth.api :as tc]
    [tablecloth.pipeline :as tc-mm]
-   [tech.v3.dataset]
-   [tech.v3.dataset.metamorph :as mds]))
+   [tech.v3.dataset :as ds]
+   [tech.v3.dataset.metamorph :as mds]
+   [tech.v3.dataset.modelling :as ds-mod]
+   [tech.v3.dataset.column-filters :as cf]))
 
-
+(require '[scicloj.ml.smile.classification])
 
 (def titanic-train
   (->
@@ -49,3 +50,26 @@
 
     (t/is (= {"1" 3, "2" 3, "0" 3}
              (frequencies (:train-size-index lc))))))
+
+(def titanic-train-modelled
+  (-> titanic-train
+      (ds/select-columns [:Pclass :Survived :Embarked :Sex])
+      (ds/categorical->number [:Pclass :Survived :Embarked :Sex])
+      (ds-mod/set-inference-target :Survived)))
+
+(def model (ml/train
+            titanic-train-modelled
+            
+            {:model-type :smile.classification/random-forest}))
+
+(def prediction (ml/predict titanic-train-modelled model))
+
+(loss/auc
+ (ds/rowvecs
+  (cf/probability-distribution prediction))
+ (-> (cf/prediction prediction)
+     ds/columns
+     first
+     vec
+     )
+ )

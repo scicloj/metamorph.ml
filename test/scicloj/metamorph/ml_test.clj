@@ -43,7 +43,7 @@
                     :smile-df-used [:blub]}})
     (fn predict
       [feature-ds _ {:keys [target-columns
-                                       target-categorical-maps]}]
+                            target-categorical-maps]}]
 
 
       (let [predic-col (ds/new-column :species (repeat (tc/row-count feature-ds) 1)
@@ -54,7 +54,24 @@
         predict-ds))
 
     {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
-                   {:coefficients {:petal_width [0]}})}))
+                   {:coefficients {:petal_width [0]}})
+     :score-fn (fn [prediction-ds trueth-ds metric-fn]
+                 (let [predictions-col
+                       (-> prediction-ds
+                           ds-cat/reverse-map-categorical-xforms
+                           cf/prediction
+                           ds/columns
+                           first)
+
+                       trueth-col
+                       (-> trueth-ds
+                           ds-cat/reverse-map-categorical-xforms
+                           cf/target
+                           ds/columns
+                           first)
+                       metric (metric-fn trueth-col predictions-col)]
+
+                   metric))}))
 
 (defn- validate-simple-pipeline []
   (let [pipe-fn
@@ -552,9 +569,9 @@
   (#'ml/score-prediction
    (ds/new-dataset  [predict-col])
    (ds/new-dataset  [trueth-col])
-   :species
    metric-fn
-   {}))
+   {}
+   :test-model))
 
 
 (defn is-accuracy [predict-col trueth-col metric-fn expected-acc]
@@ -568,15 +585,17 @@
                           metric-fn]
   (do-score
    (ds/new-column  :species predict-col-seq
-                   (when predict-a-b-table
-                     {:categorical-map
-                      {:lookup-table predict-a-b-table
-                       :src-column :species}}))
+                   (merge {:column-type :prediction}
+                          (when predict-a-b-table
+                            {:categorical-map
+                             {:lookup-table predict-a-b-table
+                              :src-column :species}})))
    (ds/new-column  :species trueth-col-seq
-                   (when trueth-a-b-table
-                     {:categorical-map
-                      {:lookup-table trueth-a-b-table
-                       :src-column :species}}))
+                   (merge {:inference-target? true}
+                          (when trueth-a-b-table
+                            {:categorical-map
+                             {:lookup-table trueth-a-b-table
+                              :src-column :species}})))
    metric-fn))
 
 (defn is-mapped-columns-accuracy [predict-col-seq predict-a-b-table
@@ -595,15 +614,15 @@
 (deftest test-score
 
   (is-accuracy
-   (ds/new-column  :species [1 1 1 1 1 1] nil)
-   (ds/new-column  :species [1 1 1 0 0 0] nil)
+   (ds/new-column  :species [1 1 1 1 1 1] {:column-type :prediction})
+   (ds/new-column  :species [1 1 1 0 0 0] {:inference-target? true})
    loss/classification-accuracy
    0.5)
 
 
   (is-accuracy
-   (ds/new-column  :species [:a :a] nil)
-   (ds/new-column  :species [:a :b] nil)
+   (ds/new-column  :species [:a :a] {:column-type :prediction})
+   (ds/new-column  :species [:a :b] {:inference-target? true})
    loss/classification-accuracy
    0.5)
 
@@ -652,6 +671,7 @@
 
 
 (deftest score-other-metrics
+  (do-define-model)
   (is (=
        {:metric 0.6666666666666667,
         :other-metrics-result
@@ -659,14 +679,15 @@
          {:name :m-2, :metric-fn loss/classification-loss :metric 0.33333333333333326}]}
 
        (#'ml/score-prediction
-        (ds/->dataset  {:x [:a :a :a]})
-        (ds/->dataset {:x [:a :b :a]})
-        :x
+        (ds/new-dataset [(ds/new-column :x [:a :a :a] {:column-type :prediction})])
+        (ds/new-dataset [(ds/new-column :x [:a :b :a] {:inference-target? true})])
         loss/classification-accuracy
         [{:name :m-1
           :metric-fn loss/classification-accuracy}
          {:name :m-2
-          :metric-fn loss/classification-loss}]))))
+          :metric-fn loss/classification-loss}]
+        :test-model
+        ))))
 
 (deftest define-model-schema
   (ml/define-model! :test-model--options

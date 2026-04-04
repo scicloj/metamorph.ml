@@ -1,8 +1,11 @@
 (ns scicloj.metamorph.ml.classification
-  (:require [tech.v3.dataset :as ds]
-            [tech.v3.dataset.modelling :as ds-mod]
-            [tech.v3.datatype.pprint :as dtype-pp]
-            [scicloj.metamorph.ml :as ml]))
+  (:require
+   [scicloj.metamorph.ml :as ml]
+   [tech.v3.dataset :as ds]
+   [tech.v3.dataset.categorical :as ds-cat]
+   [tech.v3.dataset.column-filters :as cf]
+   [tech.v3.dataset.modelling :as ds-mod]
+   [tech.v3.datatype.pprint :as dtype-pp]))
             
             
 (defn- safe-inc
@@ -139,6 +142,8 @@
      [:enum :majority-class :fixed-class :random-class]]
     [:fixed-class {:optional true
                    :description "The fixed class to use when strategy is :fixed-class"}
-     number?]]})
+     number?]]
+   :score-fn ml/basic-score-fn
+   })
 
 

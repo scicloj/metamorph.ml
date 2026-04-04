@@ -162,6 +162,16 @@
             :test-transform
             :metric)))))
 
+(deftest score 
+  (is (= 0.36
+         (let [iris-ds (toydata/iris-ds)
+               train-test-split (first (tc/split->seq iris-ds :holdout {:seed 123}))
+               model (ml/train (:train train-test-split)
+                               {:model-type :metamorph.ml/dummy-classifier
+                                :dummy-strategy :fixed-class
+                                :fixed-class 0})
+               prediction (ml/predict (:test train-test-split) model)]
+           (ml/score model prediction (:test train-test-split) loss/classification-accuracy)))))
 
 
 
