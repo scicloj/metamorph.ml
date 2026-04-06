@@ -806,8 +806,8 @@
 
       (throw (Exception.
               (format
-               "target categorical maps do not match between train an predict. \n train: %s \n predict: %s "
-               target-cat-maps-from-train target-cat-maps-from-predict))))
+               "target categorical maps do not match between train and predict for model '%s' . \n train: %s \n predict: %s "
+               (:model-type model) target-cat-maps-from-train target-cat-maps-from-predict))))
 
 
 
