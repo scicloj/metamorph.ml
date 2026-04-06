@@ -1,4 +1,4 @@
-(ns column-metrices-test
+(ns scicloj.metamorph.column-metrices-test
   (:require
    [clojure.test :refer [deftest is]]
    [fastmath.core :as m]
