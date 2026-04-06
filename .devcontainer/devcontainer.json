@@ -13,11 +13,11 @@
 		},
 		"ghcr.io/rocker-org/devcontainer-features/quarto-cli:1": {},
 		"ghcr.io/itsmechlark/features/redis-server:1": {},
-		"ghcr.io/rocker-org/devcontainer-features/pandoc:1": {}
+		"ghcr.io/rocker-org/devcontainer-features/pandoc:1": {},
+		"ghcr.io/devcontainer-community/devcontainer-features/astral.sh-uv:1": {}
 
 
 },
-    "forwardPorts": ["12345","7777"],
 	"customizations": {
 		"vscode": {
 			"settings": { 
