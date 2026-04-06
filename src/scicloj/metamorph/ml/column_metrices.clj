@@ -218,7 +218,8 @@
        :fscore (ConfusionMetrics/fscore metric-target cm (:beta options))
        :precision (ConfusionMetrics/precision metric-target cm)
        :recall  (ConfusionMetrics/recall metric-target cm))))
-  ([y-true y-pred metric averaging-strategy] (classification-metric y-true y-pred metric averaging-strategy {})))
+  ([y-true y-pred metric averaging-strategy] (classification-metric y-true y-pred metric averaging-strategy {}))
+  ([y-true y-pred metric] (classification-metric y-true y-pred metric :micro {})))
 
 
 
