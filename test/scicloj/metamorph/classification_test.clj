@@ -1,16 +1,18 @@
 (ns scicloj.metamorph.classification-test
-  (:require [scicloj.metamorph.ml.classification :refer [confusion-map confusion-map->ds]]
-            [clojure.test :refer [deftest is]]
-            [scicloj.metamorph.common]
-            [scicloj.metamorph.ml :as ml]
-            [scicloj.metamorph.ml.loss :as loss]
-            [scicloj.metamorph.core :as mm]
-            [tech.v3.dataset :as ds]
-            [tech.v3.dataset.modelling :as ds-mod]
-            [tech.v3.dataset.categorical :as ds-cat]
-            [tablecloth.api :as tc]
-            [scicloj.metamorph.ml.toydata :as toydata]
-            [scicloj.ml.smile.classification]))
+  (:require
+   [clojure.test :refer [deftest is]]
+   [scicloj.metamorph.common]
+   [scicloj.metamorph.core :as mm]
+   [scicloj.metamorph.ml :as ml]
+   [scicloj.metamorph.ml.classification :refer [confusion-map
+                                                confusion-map->ds]]
+   [scicloj.metamorph.ml.column-metrices :as col-metric]
+   [scicloj.metamorph.ml.toydata :as toydata]
+   [scicloj.ml.smile.classification]
+   [tablecloth.api :as tc]
+   [tech.v3.dataset :as ds]
+   [tech.v3.dataset.categorical :as ds-cat]
+   [tech.v3.dataset.modelling :as ds-mod]))
 
 (reset! scicloj.metamorph.ml/enable-strict-prediction-validations true)
 
@@ -153,7 +155,11 @@
         eval-results (ml/evaluate-pipelines
                       [pipe-fn]
                       [data-split]
-                      loss/classification-accuracy
+                      {:model-type :classification
+                       :metric :fscore
+                       :averaging :micro
+                       :options {:beta 1}
+                       }
                       :accuracy)]
     (is (= 0.6608187134502924
            (->

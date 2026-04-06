@@ -25,26 +25,47 @@
 
   (is (thrown? RuntimeException
                (->
-                (ml/evaluate-pipelines [decl-pipe] (tc/split->seq data :holdout) loss/classification-accuracy :accuracy)
+                (ml/evaluate-pipelines [decl-pipe] (tc/split->seq data :holdout) 
+                                       {:model-type :classification
+                                        :metric :accuracy
+                                        :averaging :micro
+                                        :options {}}
+                                       :accuracy)
                 (nth 0) (nth 0) :train-transform :metric))))
 
 
 
 (defn eval-pipe [decl-pipe]
   (->
-   (ml/evaluate-pipelines [decl-pipe] (tc/split->seq data :holdout) loss/classification-accuracy :accuracy)
+   (ml/evaluate-pipelines [decl-pipe] 
+                          (tc/split->seq data :holdout) 
+                          {:model-type :classification
+                           :metric :accuracy
+                           :averaging :micro
+                           :options {}}
+                          :accuracy)
    first first :train-transform :metric))
 
 (defn is-pos-metric [decl-pipe]
   (t/is (pos?
          (->
-          (ml/evaluate-pipelines [decl-pipe] (tc/split->seq data :holdout) loss/classification-accuracy :accuracy)
+          (ml/evaluate-pipelines [decl-pipe] (tc/split->seq data :holdout) 
+                                 {:model-type :classification
+                                  :metric :accuracy
+                                  :averaging :micro
+                                  :options {}}
+                                 :accuracy)
           first first :train-transform :metric))))
 
 (defn is-zero-metric [decl-pipe]
   (t/is (zero?
          (->
-          (ml/evaluate-pipelines [decl-pipe] (tc/split->seq data :holdout) loss/classification-accuracy :accuracy)
+          (ml/evaluate-pipelines [decl-pipe] (tc/split->seq data :holdout) 
+                                 {:model-type :classification
+                                  :metric :accuracy
+                                  :averaging :micro
+                                  :options {}}
+                                 :accuracy)
           first first :train-transform :metric))))
 
 (defn identity-1 []

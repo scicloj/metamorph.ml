@@ -38,7 +38,10 @@
                            pipe-fn
                            (range 0.3 1 0.3)
                            {:k 3
-                            :metric-fn loss/classification-accuracy
+                            :metric-fn {:model-type :classification
+                                        :metric :accuracy
+                                        :averaging :micro
+                                        :options {}}
                             :loss-or-accuracy :accuracy})]
 
 

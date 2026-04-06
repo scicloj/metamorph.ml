@@ -73,7 +73,13 @@
         pipe-fn-seq [pipe-fn]
 
         evaluations
-        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss {:evaluation-handler-fn identity})
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq 
+                               {:model-type :classification
+                                :metric :accuracy
+                                :averaging :micro
+                                :options {}}
+                               :loss 
+                               {:evaluation-handler-fn identity})
 
 
         best-fitted-context  (-> evaluations first first :fit-ctx)
@@ -146,7 +152,12 @@
         pipe-fn-seq [pipe-fn]
 
         evaluations
-        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss {:evaluation-handler-fn identity})
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq 
+                               {:model-type :classification
+                                :metric :accuracy
+                                :averaging :micro
+                                :options {}} 
+                               :loss {:evaluation-handler-fn identity})
 
         best-fitted-context  (-> evaluations first first :fit-ctx)
         best-pipe-fn         (-> evaluations first first :pipe-fn)]
@@ -171,7 +182,11 @@
         pipe-fn-seq [pipe-fn]
 
         evaluations
-        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)]
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq {:model-type :classification
+                                                            :metric :accuracy
+                                                            :averaging :micro
+                                                            :options {}}
+                               :loss)]
 
 
     (is (nil? (-> evaluations first first :train-transform :ctx :model :model-data :model-as-bytes)))
@@ -199,15 +214,24 @@
         pipe-fn-seq [pipe-fn pipe-fn]
 
         evaluations-1
-        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq {:model-type :classification
+                                                            :metric :accuracy
+                                                            :averaging :micro
+                                                            :options {}} :loss
                                {:return-best-crossvalidation-only false})
         evaluations-2
-        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq {:model-type :classification
+                                                            :metric :accuracy
+                                                            :averaging :micro
+                                                            :options {}} :loss
                                {:return-best-crossvalidation-only false
                                 :return-best-pipeline-only false})
 
         evaluations-3
-        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss
+        (ml/evaluate-pipelines pipe-fn-seq train-split-seq {:model-type :classification
+                                                            :metric :accuracy
+                                                            :averaging :micro
+                                                            :options {}} :loss
                                {:return-best-pipeline-only false})]
 
 
@@ -242,7 +266,10 @@
                      train-split-seq (tc/split->seq iris :holdout)
                      pipe-fn-seq [pipe-fn]]
 
-                 (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss)))))
+                 (ml/evaluate-pipelines pipe-fn-seq train-split-seq {:model-type :classification
+                                                                     :metric :accuracy
+                                                                     :averaging :micro
+                                                                     :options {}} :loss)))))
 
 
 
@@ -261,7 +288,10 @@
         (ml/evaluate-pipelines
          pipe-fn-seq
          train-split-seq
-         loss/classification-loss
+         {:model-type :classification
+          :metric :accuracy
+          :averaging :micro
+          :options {}}
          :loss
          {:evaluation-handler-fn
           ;(fn [result] (def result result) result)
@@ -294,7 +324,10 @@
         (ml/evaluate-pipelines
          pipe-fn-seq
          train-split-seq
-         loss/classification-loss
+         {:model-type :classification
+          :metric :accuracy
+          :averaging :micro
+          :options {}}
          :loss
          {:evaluation-handler-fn
           eval/metrics-and-options-keep-fn})]
@@ -374,7 +407,10 @@
                _ (ml/evaluate-pipelines
                             [base-pipe-declr]
                             (tc/split->seq iris)
-                            loss/classification-accuracy
+                            {:model-type :classification
+                             :metric :accuracy
+                             :averaging :micro
+                             :options {}}
                             :accuracy
                             {:evaluation-handler-fn nippy-handler})]
            (fit-pipe-in-new-ns (first @files) iris)))))
@@ -393,7 +429,10 @@
         (ml/evaluate-pipelines
          [base-pipe-declrss]
          (tc/split->seq iris)
-         loss/classification-accuracy
+         {:model-type :classification
+          :metric :accuracy
+          :averaging :micro
+          :options {}}
          :accuracy
          {:evaluation-handler-fn eval/result-dissoc-in-seq--all-fn})]
 
@@ -430,7 +469,10 @@
         (ml/evaluate-pipelines
          [base-pipe-declrss]
          (tc/split->seq iris)
-         loss/classification-accuracy
+         {:model-type :classification
+          :metric :accuracy
+          :averaging :micro
+          :options {}}
          :accuracy
          {:evaluation-handler-fn (fn [_]
                                    {:train-transform {:metric 1}
@@ -452,15 +494,27 @@
         evaluation-result
         (ml/evaluate-pipelines
          [base-pipe-declrss]
-         (tc/split->seq iris)
-         loss/classification-accuracy
+         (tc/split->seq iris :holdout {:seed 123})
+         {:model-type :classification
+          :metric :accuracy
+          :averaging :micro
+          :options {}}
          :accuracy
-         {:other-metrics [{:name :acc-2  :metric-fn loss/classification-accuracy}
-                          {:name :fscore :metric-fn (fn [_ _] 0)}
-                          {:name :acc    :metric-fn scicloj.metamorph.ml.metrics/accuracy}]})]
+         {:other-metrics [{:name :acc-2  :metric-fn {:model-type :classification
+                                                     :metric :accuracy
+                                                     :averaging :micro
+                                                     :options {}}}
+                          {:name :fscore :metric-fn {:model-type :classification
+                                                     :metric :accuracy
+                                                     :averaging :micro
+                                                     :options {}}}
+                          {:name :acc    :metric-fn {:model-type :classification
+                                                     :metric :accuracy
+                                                     :averaging :micro
+                                                     :options {}}}]})]
 
     (is (pos? (-> evaluation-result first first :train-transform :other-metrics first :metric)))
-    (is (zero? (-> evaluation-result first first :train-transform :other-metrics second :metric)))
+    (is (= 0.3 (-> evaluation-result first first :train-transform :other-metrics second :metric)))
     (is (some? (-> evaluation-result first first :train-transform :other-metrics (nth 2) :metric)))))
 
 
@@ -482,7 +536,10 @@
         evaluation-result
         (ml/evaluate-pipelines
          pipes split
-         loss/classification-accuracy
+         {:model-type :classification
+          :metric :accuracy
+          :averaging :micro
+          :options {}}
          :accuracy
          {:result-dissoc-in-seq []
           :return-best-crossvalidation-only false
@@ -555,7 +612,6 @@
   (#'ml/score
    (ds/new-dataset  [predict-col])
    (ds/new-dataset  [trueth-col])
-   :species
    metric-fn
    {}))
 
@@ -571,15 +627,17 @@
                           metric-fn]
   (do-score
    (ds/new-column  :species predict-col-seq
-                   (when predict-a-b-table
-                     {:categorical-map
-                      {:lookup-table predict-a-b-table
-                       :src-column :species}}))
+                   (merge {:column-type :prediction}
+                          (when predict-a-b-table
+                            {:categorical-map
+                             {:lookup-table predict-a-b-table
+                              :src-column :species}})))
    (ds/new-column  :species trueth-col-seq
-                   (when trueth-a-b-table
-                     {:categorical-map
-                      {:lookup-table trueth-a-b-table
-                       :src-column :species}}))
+                   (merge {:inference-target? true}
+                          (when trueth-a-b-table
+                            {:categorical-map
+                             {:lookup-table trueth-a-b-table
+                              :src-column :species}})))
    metric-fn))
 
 (defn is-mapped-columns-accuracy [predict-col-seq predict-a-b-table
@@ -598,48 +656,72 @@
 (deftest test-score
 
   (is-accuracy
-   (ds/new-column  :species [1 1 1 1 1 1] nil)
-   (ds/new-column  :species [1 1 1 0 0 0] nil)
-   loss/classification-accuracy
+   (ds/new-column  :species [1 1 1 1 1 1] {:column-type :prediction})
+   (ds/new-column  :species [1 1 1 0 0 0] {:inference-target? true})
+   {:model-type :classification
+    :metric :accuracy
+    :averaging :micro
+    :options {}}
    0.5)
 
 
   (is-accuracy
-   (ds/new-column  :species [:a :a] nil)
-   (ds/new-column  :species [:a :b] nil)
-   loss/classification-accuracy
+   (ds/new-column  :species [:a :a] {:column-type :prediction})
+   (ds/new-column  :species [:a :b] {:inference-target? true})
+   {:model-type :classification
+    :metric :accuracy
+    :averaging :micro
+    :options {}}
    0.5)
 
   (is-mapped-columns-accuracy [0 1] {:a 0 :b 1}
                               [0 1] {:a 0 :b 1}
-                              loss/classification-accuracy
+                              {:model-type :classification
+                               :metric :accuracy
+                               :averaging :micro
+                               :options {}}
                               1.0)
 
   (is-mapped-columns-accuracy [0 1] {:a 0 :b 1}
                               [1 0] {:a 1 :b 0}
-                              loss/classification-accuracy
+                              {:model-type :classification
+                               :metric :accuracy
+                               :averaging :micro
+                               :options {}}
                               1.0)
 
   (is-mapped-columns-accuracy [:a :b] nil
                               [1 0] {:a 1 :b 0}
-                              loss/classification-accuracy
+                              {:model-type :classification
+                               :metric :accuracy
+                               :averaging :micro
+                               :options {}}
                               1.0)
 
   (is-mapped-columns-accuracy [:a :b] nil
                               [:a :b] nil
-                              loss/classification-accuracy
+                              {:model-type :classification
+                               :metric :accuracy
+                               :averaging :micro
+                               :options {}}
                               1.0)
 
   (is-mapped-columns-accuracy [0.0 1.0] {:a 0 :b 1}
                               [0.0 1.0] {:a 0 :b 1}
-                              loss/classification-accuracy
+                              {:model-type :classification
+                               :metric :accuracy
+                               :averaging :micro
+                               :options {}}
                               1.0)
 
 
 
   (is-mapped-columns-accuracy [0 1] {:a 0 :b 1}
                               [1 0] {:a 0 :b 1}
-                              loss/classification-accuracy
+                              {:model-type :classification
+                               :metric :accuracy
+                               :averaging :micro
+                               :options {}}
                               0.0))
 
 (deftest score-failing
@@ -656,20 +738,34 @@
 
 (deftest score-other-metrics
   (is (=
-       {:metric 0.6666666666666667,
+       {:metric 0.6666666666666666,
         :other-metrics-result
-        [{:name :m-1, :metric-fn loss/classification-accuracy :metric 0.6666666666666667}
-         {:name :m-2, :metric-fn loss/classification-loss :metric 0.33333333333333326}]}
+        [{:name :m-1, :metric-fn {:model-type :classification
+                                  :metric :accuracy
+                                  :averaging :micro
+                                  :options {}} :metric 0.6666666666666666}
+         {:name :m-2, :metric-fn {:model-type :classification
+                                  :metric :loss
+                                  :averaging :micro
+                                  :options {}} :metric 0.33333333333333337}]}
 
        (#'ml/score
-        (ds/->dataset  {:x [:a :a :a]})
-        (ds/->dataset {:x [:a :b :a]})
-        :x
-        loss/classification-accuracy
+        (ds/new-dataset [(ds/new-column :x [:a :a :a] {:column-type :prediction})])
+        (ds/new-dataset [(ds/new-column :x [:a :b :a] {:inference-target? true})])
+        {:model-type :classification
+         :metric :accuracy
+         :averaging :micro
+         :options {}}
         [{:name :m-1
-          :metric-fn loss/classification-accuracy}
+          :metric-fn {:model-type :classification
+                      :metric :accuracy
+                      :averaging :micro
+                      :options {}}}
          {:name :m-2
-          :metric-fn loss/classification-loss}]))))
+          :metric-fn {:model-type :classification
+                      :metric :loss
+                      :averaging :micro
+                      :options {}}}]))))
 
 (deftest define-model-schema
   (ml/define-model! :test-model--options

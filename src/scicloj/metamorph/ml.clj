@@ -18,7 +18,8 @@
    [tech.v3.datatype.errors :as errors]
    [tech.v3.datatype.export-symbols :as exporter]
    [tech.v3.datatype.functional :as dfn]
-   [tech.v3.datatype :as dt])
+   [tech.v3.datatype :as dt]
+   [scicloj.metamorph.ml.column-metrices :as col-metric])
   (:import
    java.util.UUID))
 
@@ -42,40 +43,21 @@
 
 
 
-(defn- strict-type-check [trueth-col predictions-col]
-  (when (not (=
-              (-> trueth-col meta :datatype)
-              (-> predictions-col meta :datatype)))))
-    ;; (println (format
-    ;;           "trueth-col and prediction-col do not have same datatype. trueth-col: %s prediction-col: %s"
-    ;;           trueth-col predictions-col))
 
+(defn- score [predictions-ds trueth-ds metric-fn other-metrics]
+  (let [{:keys [model-type metric averaging options]} metric-fn
 
-
-(defn- check-categorical-maps [trueth-ds prediction-ds target-column-name]
-  (let [predict-cat-map (-> prediction-ds (get  target-column-name) meta :categorical-map)
-        trueth-cat-map (-> trueth-ds (get  target-column-name) meta :categorical-map)]
-    (when (not (= trueth-cat-map predict-cat-map)))))
-      ;; (println
-      ;;  "trueth-ds and prediction-ds do not have same categorical-map for target-column '%s'. trueth-ds-cat-map: %s prediction-ds-cat-map: %s"
-      ;;  target-column-name (into {} trueth-cat-map) (into {} predict-cat-map))
-
-
-
-(defn- score [predictions-ds trueth-ds target-column-name metric-fn other-metrics]
-  (let [predictions-col (get (ds-cat/reverse-map-categorical-xforms predictions-ds)
-                             target-column-name)
-        trueth-col (get (ds-cat/reverse-map-categorical-xforms trueth-ds)
-                        target-column-name)
-
-        _ (strict-type-check trueth-col predictions-col)
-        metric (metric-fn trueth-col predictions-col)
+        metric (case model-type
+                 :classification (col-metric/classification-metric trueth-ds predictions-ds metric averaging options))
 
         other-metrics-result
         (map
          (fn [{:keys [metric-fn] :as m}]
-           (assoc m
-                  :metric (metric-fn trueth-col predictions-col)))
+           (let [{:keys [model-type metric averaging options]} metric-fn
+                 metric (case model-type
+                          :classification (col-metric/classification-metric trueth-ds predictions-ds metric averaging options))]
+             (assoc m
+                    :metric metric)))
          other-metrics)]
     {:metric metric
      :other-metrics-result other-metrics-result}))
@@ -96,17 +78,9 @@
         _ (errors/when-not-error trueth-ds (str  "Pipeline context need to have the true prediction target as a dataset at key path: "
                                                  :model ::target-ds " Maybe a `scicloj.metamorph.ml/model` step is missing in the pipeline."))
 
-        target-column-names (ds/column-names trueth-ds)
-        _ (errors/when-not-error (= 1 (count target-column-names)) "Only 1 target column is supported")
 
 
-        target-column-name (first target-column-names)
-
-        _ (errors/when-not-error (get predictions-ds target-column-name) (format "Prediction dataset need to have column name: %s " target-column-name))
-        _ (check-categorical-maps trueth-ds predictions-ds target-column-name)
-
-
-        scores (score predictions-ds trueth-ds target-column-name metric-fn other-metrics)
+        scores (score predictions-ds trueth-ds metric-fn other-metrics)
 
 
         eval-result
@@ -335,7 +309,7 @@
                              [:evaluation-handler-fn {:optional true} fn?]
                              [:other-metrics {:optional true} [:sequential [:map
                                                                             [:name keyword?]
-                                                                            [:metric-fn fn?]]]]
+                                                                            [:metric-fn :map]]]]
                              [:attach-fn-sources {:optional true} [:map [:ns any?]
                                                                    [:pipe-fns-clj-file string?]]]]]
       ::evaluation-result
@@ -349,7 +323,7 @@
          [:train-transform [:map {:closed true}
                             [:other-metrics [:sequential [:map {:closed true}
                                                           [:name keyword?]
-                                                          [:metric-fn fn?]
+                                                          [:metric-fn :map]
                                                           [:metric float?]]]]
                             [:timing int?]
                             [:metric float?]
@@ -361,7 +335,7 @@
          [:test-transform [:map {:closed true}
                            [:other-metrics [:sequential [:map {:closed true}
                                                          [:name keyword?]
-                                                         [:metric-fn fn?]
+                                                         [:metric-fn :map]
                                                          [:metric float?]]]]
                            [:timing int?]
                            [:metric float?]
@@ -371,7 +345,7 @@
                            [:max float?]
                            [:ctx map?]]]
          [:loss-or-accuracy [:enum :accuracy :loss]]
-         [:metric-fn fn?]
+         [:metric-fn :map]
          [:pipe-decl [:maybe sequential?]]
          [:pipe-fn fn?]
          [:source-information [:maybe [:map [:classpath [:sequential string?]]
@@ -385,7 +359,7 @@
                     [:split-uid {:optional true} string?]
                     [:train [:fn dataset?]]
                     [:test  {:optional true} [:fn dataset?]]]]
-      fn?
+      :map
       [:enum :accuracy :loss]]
 
      ::evaluation-result]
@@ -396,7 +370,7 @@
                     [:split-uid {:optional true} string?]
                     [:train [:fn dataset?]]
                     [:test {:optional true} [:fn dataset?]]]]
-      fn?
+      :map
       [:enum :accuracy :loss]
       ::options]
 
