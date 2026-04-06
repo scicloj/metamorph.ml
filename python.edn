@@ -1,0 +1,5 @@
+{:python-version "3.14.0"
+ :python-deps ["scikit-learn==1.8"
+               "matplotlib==3.10.8"]
+ :python-executable ".venv/bin/python" 
+ :pre-initialize-fn libpython-clj-uv.sync/sync-python-setup!}

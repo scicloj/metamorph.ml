@@ -17,3 +17,5 @@ dump.rdb
 .portal/vs-code.edn
 .claude/settings.local.json
 classes
+pyproject.toml
+uv.lock
