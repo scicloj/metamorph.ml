@@ -632,8 +632,23 @@
 
   
 (defn- validate-predict-fn-result! [pred-ds model-type]
-  (assert (ds/dataset? pred-ds))
-  (assert (pos? (ds/column-count pred-ds)))
+  (assert (ds/dataset? pred-ds)
+          (format "Prediction result should be 'dataset', but is: %s " (type pred-ds)) 
+          )
+  (assert (pos? (ds/column-count pred-ds))
+          (format "Prediction result should have pos? nr of columns, but has: %s " (ds/column-count pred-ds)) 
+          )
+
+  (assert
+   (pos?
+    (-> pred-ds
+        cf/prediction
+        ds/column-count
+        ))
+   (format "Prediction result should have pos? nr of 'prediction' columns, but has none ") 
+
+   
+   )
 
 
   (validate-col-meta!
