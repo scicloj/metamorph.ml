@@ -61,7 +61,7 @@
      `(when-not ~x
         (throw (new AssertionError (str "Assert failed: " ~message "\n" (pr-str '~x))))))))
 
-(defn insist-no-NaN! [cols]
+(defn- insist-no-NaN! [cols]
   (run!
    (fn [col]
      (let [no-nan (not-any?
@@ -74,7 +74,7 @@
    cols
    ))
 
-(defn insist-uniform! [cols]
+(defn- insist-uniform! [cols]
   (let [dtypes
         (map dt/datatype
              (apply concat cols))
@@ -84,7 +84,7 @@
     (insist (= 1 (count dtypes-freq))
             (format "Requires uniform elements, but found several: %s" dtypes-freq))))
 
-(defn insist-discrete! [cols]
+(defn- insist-discrete! [cols]
   (run!
    #(let [datatype
           (dt/datatype %)]
@@ -94,7 +94,7 @@
               (format "Requires `integer` datatype, but found: %s" datatype)))
    (apply concat cols)))
 
-(defn insist-continous! [cols]
+(defn- insist-continous! [cols]
   (run!
    #(let [datatype
           (dt/datatype %)]
@@ -102,7 +102,7 @@
               (format "Requires `float` datatype, but found: %s" datatype)))
    (apply concat cols)))
 
-(defn insist-dataset! [y-true y-pred]
+(defn- insist-dataset! [y-true y-pred]
   (insist (ds/dataset? y-true)
           (format "Type of 'y-true' is not 'dataset', but '%s' " (type y-true)))
   (insist (ds/dataset? y-pred)
@@ -110,25 +110,25 @@
 
 
 
-(defn ->prediction-cols [y-pred]
+(defn- ->prediction-cols [y-pred]
   (->
    (ds-cat/reverse-map-categorical-xforms y-pred)
    (cf/prediction)
    (ds/columns)))
 
 
-(defn ->truth-cols [y-true]
+(defn- ->truth-cols [y-true]
   (-> y-true
       (ds-cat/reverse-map-categorical-xforms)
       (cf/target)
       (ds/columns)))
 
-(defn insist-single-label! [cols name]
+(defn- insist-single-label! [cols name]
   (insist (= 1 (count cols))
           (format "Function require '1' '%s' column, but found: '%s' " name (count cols) )))
 
 
-(defn insist-no-missing!
+(defn- insist-no-missing!
   ([cols]
    (run!
     (fn [col] (insist (empty? (col/missing col))
@@ -137,7 +137,7 @@
                               (col/missing col))))
     cols)))
 
-(defn insist-same-row-number!
+(defn- insist-same-row-number!
   ([cols]
 
    (let [distinct-element-counts
@@ -145,7 +145,7 @@
      (insist (= 1 (count distinct-element-counts))
              (format "Expect all columns to have same element count, but found %s" distinct-element-counts)))))
 
-(defn convert-and-validate [y-true y-pred data-constraint-validators]
+(defn- convert-and-validate [y-true y-pred data-constraint-validators]
   (run!
    #(% y-pred y-true)
    (:dataset data-constraint-validators))
