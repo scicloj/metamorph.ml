@@ -617,15 +617,17 @@
     [:n-elems :int]
     [:column-type [:enum :probability-distribution]]]))
 
-(defn- validate-col-meta! [ds schema model-type]
+(defn- validate-col-meta! [ds type schema model-type]
   (assert pos? (ds/column-count ds))
   (run!
    #(let [column-meta (meta %)
           explanation
           (m/explain schema column-meta)]
       (when explanation
-        (throw (ex-info (format "invalid model result of model type: %s" model-type)
+        (throw (ex-info (format "invalid model result schema of model type: %s" model-type)
                         {:column-meta column-meta
+                         :type type
+                         :schema schema
                          :malli-error (me/humanize explanation)}))))
    (ds/columns ds))) 
 
@@ -633,30 +635,26 @@
   
 (defn- validate-predict-fn-result! [pred-ds model-type]
   (assert (ds/dataset? pred-ds)
-          (format "Prediction result should be 'dataset', but is: %s " (type pred-ds)) 
-          )
+          (format "Prediction result should be 'dataset', but is: %s " (type pred-ds)))
   (assert (pos? (ds/column-count pred-ds))
-          (format "Prediction result should have pos? nr of columns, but has: %s " (ds/column-count pred-ds)) 
-          )
+          (format "Prediction result should have pos? nr of columns, but has: %s " (ds/column-count pred-ds)))
 
   (assert
    (pos?
     (-> pred-ds
         cf/prediction
-        ds/column-count
-        ))
-   (format "Prediction result should have pos? nr of 'prediction' columns, but has none ") 
-
-   
-   )
+        ds/column-count))
+   (format "Prediction result should have pos? nr of 'prediction' columns, but has none "))
 
 
   (validate-col-meta!
    (cf/prediction pred-ds)
+   "prediction"
    @prediction-column-meta-schema model-type)
 
   (validate-col-meta!
    (cf/probability-distribution pred-ds)
+   "probability-distribution"
    @probability-column-meta-schema model-type))
 
 
