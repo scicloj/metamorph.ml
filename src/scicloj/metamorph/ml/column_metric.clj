@@ -9,7 +9,10 @@
    [tech.v3.dataset.column :as col]
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.datatype :as dt]
-   [tech.v3.datatype.casting :as casting])
+   [tech.v3.datatype.casting :as casting]
+   [fastmath.stats :as stats]
+   [fastmath.core :as m]
+   )
   (:import
    [org.tribuo Prediction]
    [org.tribuo.classification Label LabelFactory]
@@ -18,6 +21,27 @@
    [org.tribuo.evaluation.metrics MetricTarget]
    [org.tribuo.evaluation.metrics EvaluationMetric$Average]
    [org.tribuo.impl ArrayExample]))
+;; todo: take from fastmath
+
+(defn fastmath-multiclass-measure
+  ([actual prediction] (fastmath-multiclass-measure actual prediction nil))
+  ([actual prediction {:keys [average ^double beta metric weighted?]
+                       :or {average stats/mean beta 0.5 metric :f1-score weighted? false}}]
+   (let [all-labels (distinct (concat actual prediction))
+         measures (->> all-labels
+                       (map (fn [label] (let [all-bin-measures (stats/binary-measures-all actual prediction #{label})
+                                              res (get all-bin-measures  metric)
+                                              _ (assert res (format "binary measure not existing '%s' " metric ))
+                                              ]
+                                          (if (fn? res) (res beta) res))))
+                       (map (fn [^double v] (if (m/nan? v) 0.0 v))))]
+     (cond
+       (not average) (zipmap all-labels measures)
+       (= average :micro) (m// (stats/L0 actual prediction) (double (count actual)))
+       weighted? (let [weights (map (frequencies actual) all-labels)]
+                   (average measures weights))
+       :else (average measures)))))
+
 
 (def *insist* (atom true))
 
@@ -271,6 +295,30 @@
     (case averaging-method
       nil aucs
       :macro (tc-col/mean aucs))))
+
+
+(defn classification-metric-fm
+  ([y-true y-pred metric averaging options]
+
+   (let [[prediction-col-0 truth-col-0]
+         (convert-and-validate y-true
+                               y-pred
+                               {:dataset [insist-dataset!]
+                                :predict-cols [insist-single-label!]
+                                :truth-cols [insist-single-label!]
+                                :every-col [insist-no-NaN!
+                                            insist-no-missing!
+                                            insist-discrete!
+                                            insist-uniform!
+                                            insist-same-row-number!]})]
+     (fastmath-multiclass-measure truth-col-0
+                                  prediction-col-0
+                                  {:metric metric
+                                   :average (case averaging
+                                              :macro stats/mean
+                                              :micro :micro)
+                                   :beta (:beta options)})))
+  ([y-true y-pred metric averaging] (classification-metric-fm y-true y-pred metric averaging {})))
 
 
 (defn regression-metric [y-true y-pred metric-fn]

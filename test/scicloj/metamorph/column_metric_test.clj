@@ -7,7 +7,8 @@
    [scicloj.metamorph.ml.column-metric :as col-metric]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
-   [tech.v3.dataset.column :as col]))
+   [tech.v3.dataset.column :as col]
+   [fastmath.stats :as stats]))
 
 (py/initialize!)
 (deftest accuracy-score-invalid
@@ -33,6 +34,9 @@
           (ds/new-dataset [(col/new-column :my-target [:a :c :b] {:inference-target? true})])
           (ds/new-dataset [(col/new-column :pred [:a :b :c] {:column-type :prediction})])))))
 
+
+
+
 (deftest f1-invalid
   (is (thrown? AssertionError
                (col-metric/classification-metric
@@ -42,6 +46,7 @@
                 :f1
                 :macro)))
 
+  
   (is (thrown? AssertionError
                (col-metric/classification-metric
                 (ds/new-dataset [(col/new-column :my-target [0, 1, 2, 0, 1, 2] {:inference-target? true})])
@@ -56,8 +61,40 @@
                (col-metric/classification-metric [0, 1, 2, 0, 1, 2] [0, 2, 1, 0, 0, 1]
                                                  :f1 :macro))))
 
-(deftest f1-valid
 
+(deftest classification-metrix-fastmath
+  (let [y-true (ds/new-dataset [(col/new-column :my-target [0, 1, 2, 0, 1, 2] {:inference-target? true})])
+        y-pred (ds/new-dataset [(col/new-column :pred [0, 2, 1, 0, 0, 1] {:column-type :prediction})])]
+
+    (is (= 0.2666666666666667 (col-metric/classification-metric-fm y-true y-pred :f1-score :macro)))
+    (is (= 0.3333333333333333 (col-metric/classification-metric-fm y-true y-pred :f1-score :micro)))
+
+
+    (is (= 0.3333333333333333 (col-metric/classification-metric-fm y-true y-pred :accuracy :micro)))
+    (is (= 0.5555555555555556 (col-metric/classification-metric-fm y-true y-pred :accuracy :macro)))
+    
+
+    (is (=
+         [1.3333333333333333
+          1.3333333333333333
+          0.6666666666666667
+          2.6666666666666665
+          0.2666666666666667
+          0.2222222222222222
+          0.33333333333333337]
+
+         [(col-metric/classification-metric-fm y-true y-pred :fn :macro)
+          (col-metric/classification-metric-fm y-true y-pred :fp :macro)
+          (col-metric/classification-metric-fm y-true y-pred :tp :macro)
+          (col-metric/classification-metric-fm y-true y-pred :tn :macro)
+          (col-metric/classification-metric-fm y-true y-pred :f-beta :macro {:beta 1.0})
+          (col-metric/classification-metric-fm y-true y-pred :precision :macro)
+          (col-metric/classification-metric-fm y-true y-pred :recall :macro)]))))
+
+
+
+
+(deftest classification-metrix-tribuo-valid
   (let [y-true (ds/new-dataset [(col/new-column :my-target [0, 1, 2, 0, 1, 2] {:inference-target? true})])
         y-pred (ds/new-dataset [(col/new-column :pred [0, 2, 1, 0, 0, 1] {:column-type :prediction})])]
     (is (= 0.26666666666666666 (col-metric/classification-metric y-true y-pred :f1 :macro)))
