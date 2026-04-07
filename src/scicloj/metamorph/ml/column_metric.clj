@@ -117,7 +117,7 @@
    (ds/columns)))
 
 
-(defn- ->truth-cols [y-true]
+(defn- ->target-cols [y-true]
   (-> y-true
       (ds-cat/reverse-map-categorical-xforms)
       (cf/target)
@@ -151,7 +151,8 @@
    (:dataset data-constraint-validators))
 
   (let [prediction-cols (->prediction-cols y-pred)
-        trueth-cols (->truth-cols y-true)
+        trueth-cols (->target-cols y-true)
+
         _
         (run!
          #(% prediction-cols "predict")
@@ -264,7 +265,8 @@
   ;; uses ovr
   (assert (= :ovr multi-class-handling))
   (insist-dataset! y-true y-pred)
-  (let [target-cols (ds/columns (cf/target y-true))
+  
+  (let [target-cols (->target-cols y-true)
         probability-columns (ds/columns (cf/probability-distribution y-pred))
         ]
     

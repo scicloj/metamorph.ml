@@ -46,7 +46,7 @@
                 :f1
                 :macro)))
 
-  
+
   (is (thrown? AssertionError
                (col-metric/classification-metric
                 (ds/new-dataset [(col/new-column :my-target [0, 1, 2, 0, 1, 2] {:inference-target? true})])
@@ -72,7 +72,7 @@
 
     (is (= 0.3333333333333333 (col-metric/classification-metric-fm y-true y-pred :accuracy :micro)))
     (is (= 0.5555555555555556 (col-metric/classification-metric-fm y-true y-pred :accuracy :macro)))
-    
+
 
     (is (=
          [1.3333333333333333
@@ -225,4 +225,46 @@ roc_auc_ovr_macro = roc_auc_score(
                 (ds/new-dataset [(col/new-column :my-target-1 [1.0] {:inference-target? true})])
                 (ds/new-dataset [(col/new-column :pred [3.0] {:column-type :prediction})])
                 :non-existing-fm-fn))))
+
+
+(deftest classification--cat-maps
+  (is (= 1.0
+         (col-metric/classification-metric-fm
+          (ds/new-dataset [(col/new-column :x [1 2 3 4] {:inference-target? true})])
+          (ds/new-dataset [(col/new-column :y [1 2 3 4] {:column-type :prediction})])
+          :accuracy
+          :macro)))
+
+  (is (= 1.0
+         (col-metric/classification-metric-fm
+          (ds/new-dataset [(col/new-column :x [3 2 1 0] ; :b :a :c :d
+                                           {:inference-target? true
+                                            :categorical-map {:lookup-table {:d 0, :c 1, :a 2, :b 3},
+                                                              :src-column :x, :result-datatype :int64}
+                                            :categorical? true})])
+          (ds/new-dataset [(col/new-column :y [0 2 1 3]
+                                           {:column-type :prediction
+                                            :categorical-map {:lookup-table {:d 3, :c 1, :a 2, :b 0},
+                                                              :src-column :y, :result-datatype :int64}
+                                            :categorical? true})])
+          :accuracy
+          :macro)))
+  (is (= 1.0
+         (col-metric/classification-metric-fm
+          (ds/new-dataset [(col/new-column :x [3 2 1 0] ; :b :a :c :d
+                                           {:inference-target? true
+                                            :categorical-map {:lookup-table {:d 0 :c 1 :a 2 :b 3}
+                                                              :src-column :x, :result-datatype :int64}
+                                            :categorical? true})])
+          (ds/new-dataset [(col/new-column :y [0.0 2.0 1.0 3.0] ; :b :a :c :d
+                                           {:column-type :prediction
+                                            :categorical-map {:lookup-table {:d 3 :c 1 :a 2 :b 0}
+                                                              :src-column :y :result-datatype :float64}
+                                            :categorical? true})])
+          :accuracy
+          :macro))))
+
+
+
+
 
