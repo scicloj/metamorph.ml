@@ -14,7 +14,7 @@
 
 (deftest accuracy-score-valid
   (is (= 0.3333333333333333
-         (col-metric/classification-metric-fastmath
+         (col-metric/classification-metric--fastmath
           (ds/new-dataset [(col/new-column :my-target [1 3 2] {:inference-target? true})])
           (ds/new-dataset [(col/new-column :pred [1 2 3] {:column-type :prediction})])
           :classification
@@ -51,12 +51,12 @@
   (let [y-true (ds/new-dataset [(col/new-column :my-target [0, 1, 2, 0, 1, 2] {:inference-target? true})])
         y-pred (ds/new-dataset [(col/new-column :pred [0, 2, 1, 0, 0, 1] {:column-type :prediction})])]
 
-    (is (= 0.2666666666666667 (col-metric/classification-metric-fastmath y-true y-pred :f1-score :macro)))
-    (is (= 0.3333333333333333 (col-metric/classification-metric-fastmath y-true y-pred :f1-score :micro)))
+    (is (= 0.2666666666666667 (col-metric/classification-metric--fastmath y-true y-pred :f1-score :macro)))
+    (is (= 0.3333333333333333 (col-metric/classification-metric--fastmath y-true y-pred :f1-score :micro)))
 
 
-    (is (= 0.3333333333333333 (col-metric/classification-metric-fastmath y-true y-pred :accuracy :micro)))
-    (is (= 0.5555555555555556 (col-metric/classification-metric-fastmath y-true y-pred :accuracy :macro)))
+    (is (= 0.3333333333333333 (col-metric/classification-metric--fastmath y-true y-pred :accuracy :micro)))
+    (is (= 0.5555555555555556 (col-metric/classification-metric--fastmath y-true y-pred :accuracy :macro)))
 
 
     (is (=
@@ -68,13 +68,13 @@
           0.2222222222222222
           0.33333333333333337]
 
-         [(col-metric/classification-metric-fastmath y-true y-pred :fn :macro)
-          (col-metric/classification-metric-fastmath y-true y-pred :fp :macro)
-          (col-metric/classification-metric-fastmath y-true y-pred :tp :macro)
-          (col-metric/classification-metric-fastmath y-true y-pred :tn :macro)
-          (col-metric/classification-metric-fastmath y-true y-pred :f-beta :macro {:beta 1.0})
-          (col-metric/classification-metric-fastmath y-true y-pred :precision :macro)
-          (col-metric/classification-metric-fastmath y-true y-pred :recall :macro)]))))
+         [(col-metric/classification-metric--fastmath y-true y-pred :fn :macro)
+          (col-metric/classification-metric--fastmath y-true y-pred :fp :macro)
+          (col-metric/classification-metric--fastmath y-true y-pred :tp :macro)
+          (col-metric/classification-metric--fastmath y-true y-pred :tn :macro)
+          (col-metric/classification-metric--fastmath y-true y-pred :f-beta :macro {:beta 1.0})
+          (col-metric/classification-metric--fastmath y-true y-pred :precision :macro)
+          (col-metric/classification-metric--fastmath y-true y-pred :recall :macro)]))))
 
 
 
@@ -214,14 +214,14 @@ roc_auc_ovr_macro = roc_auc_score(
 
 (deftest classification--cat-maps
   (is (= 1.0
-         (col-metric/classification-metric-fastmath
+         (col-metric/classification-metric--fastmath
           (ds/new-dataset [(col/new-column :x [1 2 3 4] {:inference-target? true})])
           (ds/new-dataset [(col/new-column :y [1 2 3 4] {:column-type :prediction})])
           :accuracy
           :macro)))
 
   (is (= 1.0
-         (col-metric/classification-metric-fastmath
+         (col-metric/classification-metric--fastmath
           (ds/new-dataset [(col/new-column :x [3 2 1 0] ; :b :a :c :d
                                            {:inference-target? true
                                             :categorical-map {:lookup-table {:d 0, :c 1, :a 2, :b 3},
@@ -235,7 +235,7 @@ roc_auc_ovr_macro = roc_auc_score(
           :accuracy
           :macro)))
   (is (= 1.0
-         (col-metric/classification-metric-fastmath
+         (col-metric/classification-metric--fastmath
           (ds/new-dataset [(col/new-column :x [3 2 1 0] ; :b :a :c :d
                                            {:inference-target? true
                                             :categorical-map {:lookup-table {:d 0 :c 1 :a 2 :b 3}

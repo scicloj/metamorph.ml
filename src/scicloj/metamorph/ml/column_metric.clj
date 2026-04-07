@@ -154,7 +154,7 @@
      (insist (= 1 (count distinct-element-counts))
              (format "Expect all columns to have same element count, but found %s" distinct-element-counts)))))
 
-(defn- cat-revert-and-validate [y-true y-pred data-constraint-validators pre-validate-fn]
+(defn- cat-revert-and-validate [y-true y-pred pre-validate-fn data-constraint-validators]
   (run!
    #(% y-pred y-true)
    (:dataset data-constraint-validators))
@@ -163,8 +163,6 @@
         trueth-cols (->target-cols y-true)
 
         [prediction-cols trueth-cols] (pre-validate-fn prediction-cols trueth-cols)
-        _ (def prediction-cols prediction-cols)
-        _ (def trueth-cols trueth-cols)
         _
         (run!
          #(% prediction-cols "predict")
@@ -191,6 +189,7 @@
    (let [[prediction-col-0 truth-col-0]
          (cat-revert-and-validate y-true
                                y-pred
+                                (fn [x y] [x y])
                                {:dataset [insist-dataset!]
                                 :predict-cols [insist-single-label!]
                                 :truth-cols [insist-single-label!]
@@ -198,7 +197,7 @@
                                             insist-discrete!
                                             insist-uniform!
                                             insist-same-row-number!]}
-                                  (fn [x y] [x y])
+                                  
                                   )
          label-factory (LabelFactory.)
          labels
@@ -287,7 +286,7 @@
       nil aucs
       :macro (tc-col/mean aucs))))
 
-(defn cols->int [prediction-cols trueth-cols]
+(defn- cols->int [prediction-cols trueth-cols]
   ;; fastmath need numbers
   (let [values
         (distinct
@@ -302,12 +301,13 @@
     [(map #(map remap-map %) prediction-cols)
      (map #(map remap-map %) trueth-cols)]))
 
-(defn classification-metric-fastmath
+(defn classification-metric--fastmath
   ([y-true y-pred metric averaging options]
 
    (let [[prediction-col-0 truth-col-0]
          (cat-revert-and-validate y-true
                                   y-pred
+                                  cols->int
                                   {:dataset [insist-dataset!]
                                    :predict-cols [insist-single-label!]
                                    :truth-cols [insist-single-label!]
@@ -316,7 +316,7 @@
                                                insist-discrete--integer!
                                                insist-uniform!
                                                insist-same-row-number!]}
-                                  cols->int)]
+                                  )]
 
      (fastmath-multiclass-measure truth-col-0
                                   prediction-col-0
@@ -325,29 +325,28 @@
                                               :macro stats/mean
                                               :micro :micro)
                                    :beta (:beta options)})))
-  ([y-true y-pred metric averaging] (classification-metric-fastmath y-true y-pred metric averaging {})))
+  ([y-true y-pred metric averaging] (classification-metric--fastmath y-true y-pred metric averaging {})))
 
 
 (defn regression-metric--fastmath [y-true y-pred metric-fn]
 
   (let [[prediction-col-0 truth-col-0]
         (cat-revert-and-validate y-true
-                              y-pred
-                              {:dataset [insist-dataset!]
-                               :predict-cols [insist-single-label!]
-                               :truth-cols [insist-single-label!]
-                               :every-col [insist-no-NaN!
-                                           insist-no-missing!
-                                           insist-continous!
-                                           insist-uniform!
-                                           insist-same-row-number!]}
+                                 y-pred
                                  (fn [x y] [x y])
-                                 )
+                                 {:dataset [insist-dataset!]
+                                  :predict-cols [insist-single-label!]
+                                  :truth-cols [insist-single-label!]
+                                  :every-col [insist-no-NaN!
+                                              insist-no-missing!
+                                              insist-continous!
+                                              insist-uniform!
+                                              insist-same-row-number!]})
         fastmath-stats-fn (requiring-resolve
                            (symbol (format "fastmath.stats/%s" (name metric-fn))))]
     (insist
      (some? fastmath-stats-fn)
-     (format "Function '%s' does not existin in fastmat." (format "fastmath.stats/%s" (name metric-fn))))
+     (format "Function '%s' does not exist in fastmat." (format "fastmath.stats/%s" (name metric-fn))))
     (fastmath-stats-fn
      truth-col-0 prediction-col-0)))
 
