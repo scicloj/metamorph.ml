@@ -1,4 +1,4 @@
-(ns scicloj.metamorph.ml.column-metrices
+(ns scicloj.metamorph.ml.column-metric
   (:require
    [clojure.set :as set]
    [scicloj.metamorph.ml.classification]
@@ -37,6 +37,18 @@
      `(when-not ~x
         (throw (new AssertionError (str "Assert failed: " ~message "\n" (pr-str '~x))))))))
 
+(defn insist-no-NaN! [cols]
+  (run!
+   (fn [col]
+     (let [no-nan (not-any?
+                   #(and (double? %)
+                         (.isNaN %))
+                    col)]
+       (insist
+        no-nan
+        "Column should not have any Double/NaN")))
+   cols
+   ))
 
 (defn insist-uniform! [cols]
   (let [dtypes
@@ -224,13 +236,14 @@
 
 
 
-(defn roc_auc-score [y-true y-score multi-class average]
+(defn roc_auc-score [y-true y-pred multi-class-handling averaging-method]
   ;; uses ovr
-  (assert (= :ovr multi-class))
-  (insist-dataset! y-true y-score)
+  (assert (= :ovr multi-class-handling))
+  (insist-dataset! y-true y-pred)
   (let [target-cols (ds/columns (cf/target y-true))
-        probability-columns (ds/columns (cf/probability-distribution y-score))
+        probability-columns (ds/columns (cf/probability-distribution y-pred))
         ]
+    
     (insist-no-missing! target-cols)
     (insist-uniform! target-cols)
     (insist-single-label! target-cols "y_true")
@@ -241,22 +254,44 @@
 
 
   (let [label-column-name (first (ds/column-names y-true))
-        col-names (into #{} (-> y-score ds/column-names))
+        col-names (into #{} (-> y-pred ds/column-names))
         one-vs-rest
         (map
          #(hash-map  :one %
                      :rest (set/difference col-names #{%}))
-         (-> y-score ds/column-names))
+         (-> y-pred ds/column-names))
         aucs (map
               (fn [{:keys [one rest]}]
 
                 (let [binarized-labels
                       (ds/categorical->one-hot y-true [label-column-name])
-                      probs-one  (get y-score one)]
+                      probs-one  (get y-pred one)]
                   (loss/auc probs-one (get binarized-labels (keyword (format "%s-%s" (name label-column-name) one))))))
               one-vs-rest)]
-    (case average
+    (case averaging-method
       nil aucs
       :macro (tc-col/mean aucs))))
+
+
+(defn regression-metric [y-true y-pred metric-fn]
+
+  (let [[prediction-col-0 truth-col-0]
+        (convert-and-validate y-true
+                              y-pred
+                              {:dataset [insist-dataset!]
+                               :predict-cols [insist-single-label!]
+                               :truth-cols [insist-single-label!]
+                               :every-col [insist-no-NaN!
+                                           insist-no-missing!
+                                           insist-continous!
+                                           insist-uniform!
+                                           insist-same-row-number!]})
+        fastmath-stats-fn (requiring-resolve
+                           (symbol (format "fastmath.stats/%s" (name metric-fn))))]
+    (insist
+     (some? fastmath-stats-fn)
+     (format "Function '%s' does not existin i fastmat." (format "fastmath.stats/%s" (name metric-fn))))
+    (fastmath-stats-fn
+     truth-col-0 prediction-col-0)))
 
 

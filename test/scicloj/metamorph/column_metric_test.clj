@@ -1,14 +1,13 @@
-(ns scicloj.metamorph.column-metrices-test
+(ns scicloj.metamorph.column-metric-test
   (:require
    [clojure.test :refer [deftest is]]
    [fastmath.core :as m]
    [fastmath.vector :as v]
    [libpython-clj2.python :as py]
-   [scicloj.metamorph.ml.column-metrices :as col-metric]
+   [scicloj.metamorph.ml.column-metric :as col-metric]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
-   [tech.v3.dataset.column :as col]
-   [tablecloth.column.api :as tc-col]))
+   [tech.v3.dataset.column :as col]))
 
 (py/initialize!)
 (deftest accuracy-score-invalid
@@ -58,13 +57,12 @@
                                                  :f1 :macro))))
 
 (deftest f1-valid
-  
+
   (let [y-true (ds/new-dataset [(col/new-column :my-target [0, 1, 2, 0, 1, 2] {:inference-target? true})])
-        y-pred (ds/new-dataset [(col/new-column :pred [0, 2, 1, 0, 0, 1] {:column-type :prediction})])
-        ]
+        y-pred (ds/new-dataset [(col/new-column :pred [0, 2, 1, 0, 0, 1] {:column-type :prediction})])]
     (is (= 0.26666666666666666 (col-metric/classification-metric y-true y-pred :f1 :macro)))
     (is (= 0.3333333333333333 (col-metric/classification-metric y-true y-pred :f1 :micro)))
-    
+
 
     (is (= 0.3333333333333333 (col-metric/classification-metric y-true y-pred :accuracy :micro)))
     (is (= 0.3333333333333333 (col-metric/classification-metric y-true y-pred :accuracy :macro)))
@@ -77,20 +75,14 @@
           0.26666666666666666
           0.2222222222222222
           0.3333333333333333]
-         
+
          [(col-metric/classification-metric y-true y-pred :fn :macro)
           (col-metric/classification-metric y-true y-pred :fp :macro)
           (col-metric/classification-metric y-true y-pred :tp :macro)
           (col-metric/classification-metric y-true y-pred :tn :macro)
           (col-metric/classification-metric y-true y-pred :fscore :macro {:beta 1.0})
           (col-metric/classification-metric y-true y-pred :precision :macro)
-          (col-metric/classification-metric y-true y-pred :recall :macro)]))
-
-    
-    )
-  
-  
-  )
+          (col-metric/classification-metric y-true y-pred :recall :macro)]))))
 
 
 
@@ -171,5 +163,29 @@ roc_auc_ovr_macro = roc_auc_score(
          (col-metric/roc_auc-score y-true y-score :ovr :macro)))))
 
 
+(deftest regression-metric
+  (is (= 0.375
+         (col-metric/regression-metric
+          (ds/new-dataset [(col/new-column :my-target-1 [3 -0.5 2 7] {:inference-target? true})])
+          (ds/new-dataset [(col/new-column :pred [2.5 0.0 2 8] {:column-type :prediction})])
+          :mse)))
+  (is (= 0.6123724356957945
+         (col-metric/regression-metric
+          (ds/new-dataset [(col/new-column :my-target-1 [3 -0.5 2 7] {:inference-target? true})])
+          (ds/new-dataset [(col/new-column :pred [2.5 0.0 2 8] {:column-type :prediction})])
+          :rmse))))
 
+(deftest regression-metric-invalid
+  (is (thrown? AssertionError
+               (col-metric/regression-metric
+                (ds/new-dataset [(col/new-column :my-target-1 [1 2 3] {:inference-target? true})])
+                (ds/new-dataset [(col/new-column :pred [1 2 3] {:column-type :prediction})])
+                :rme)))
+
+
+  (is (thrown? AssertionError
+               (col-metric/regression-metric
+                (ds/new-dataset [(col/new-column :my-target-1 [1.0] {:inference-target? true})])
+                (ds/new-dataset [(col/new-column :pred [3.0] {:column-type :prediction})])
+                :non-existing-fm-fn))))
 

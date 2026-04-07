@@ -9,7 +9,8 @@
    [scicloj.metamorph.ml.toydata :as data]
    [taoensso.nippy :as nippy]
    [tech.v3.dataset :as ds]
-   [tech.v3.dataset.modelling :as ds-mod]))
+   [tech.v3.dataset.modelling :as ds-mod]
+   [tech.v3.dataset.column-filters :as cf]))
 
 
 (defn approx? [x0 x1]
@@ -24,24 +25,12 @@
        (every? true?)))
 
 (defn validate-model--linear-regression-mtcars-fm-ols [ ds model]
-  ;;(def ds ds)
-  ;;(def model model)
 
-  (let [
-        glance (-> (ml/glance model) (ds/rows :as-map) first)
+  (let [glance (-> (ml/glance model) (ds/rows :as-map) first)
         tidy (ml/tidy model)
         augment (ml/augment model ds)
-        prediction (:mpg (ml/predict ds model))
-
-
-        ]
-;;     (def glance glance)
-;;     (def tidy tidy)
-;;     (def augment augment)
-;;     (def prediction prediction)
-    
-
-    
+        prediction-ds (ml/predict ds model)
+        prediction (:mpg prediction-ds)]
 
     (is (approx?   0.8066423189909859 (-> glance :adj.r.squared)))
     (is (approx?   0.8690157644777647   (:r.squared glance)))
@@ -56,7 +45,7 @@
     (is (=    32 (:n glance)))
     (is (=    21 (:df.residual glance)))
     (is (approx?    13.932463690208833 (:statistic glance)))
-    
+
     (is (all-approx? [22.599505761262364
                       22.11188607935665
                       26.25064408479878
@@ -90,9 +79,9 @@
                       13.941118382059862
                       24.368267683243772]
                      prediction))
-    
-    
-    
+
+
+
     (is (= [:mpg :cyl :disp :hp :drat :wt :qsec :vs :am :gear :carb] (-> tidy :term)))
     (is (all-approx? [12.303374155996154
                       -0.11144047788686227
@@ -210,8 +199,7 @@
                       19.693828154474765
                       13.941118382059862
                       24.368267683243772]
-                     (augment :.fitted)))
-    )
+                     (augment :.fitted))))
   
   )
 
