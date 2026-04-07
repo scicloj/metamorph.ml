@@ -21,9 +21,9 @@
    [org.tribuo.evaluation.metrics MetricTarget]
    [org.tribuo.evaluation.metrics EvaluationMetric$Average]
    [org.tribuo.impl ArrayExample]))
-;; todo: take from fastmath
 
-(defn fastmath-multiclass-measure
+;; todo: take from fastmath
+(defn- fastmath-multiclass-measure
   ([actual prediction] (fastmath-multiclass-measure actual prediction nil))
   ([actual prediction {:keys [average ^double beta metric weighted?]
                        :or {average stats/mean beta 0.5 metric :f1-score weighted? false}}]
@@ -91,8 +91,17 @@
       (insist (or (tech.v3.datatype.casting/integer-type? datatype)
                   (= :keyword datatype)
                   (= :string datatype))
+              (format "Requires `integer or :keyword or :string` datatype, but found: %s" datatype)))
+   (apply concat cols)))
+
+(defn- insist-discrete--integer! [cols]
+  (run!
+   #(let [datatype
+          (dt/datatype %)]
+      (insist (tech.v3.datatype.casting/integer-type? datatype)
               (format "Requires `integer` datatype, but found: %s" datatype)))
    (apply concat cols)))
+
 
 (defn- insist-continous! [cols]
   (run!
@@ -145,7 +154,7 @@
      (insist (= 1 (count distinct-element-counts))
              (format "Expect all columns to have same element count, but found %s" distinct-element-counts)))))
 
-(defn- convert-and-validate [y-true y-pred data-constraint-validators]
+(defn- cat-revert-and-validate [y-true y-pred data-constraint-validators pre-validate-fn]
   (run!
    #(% y-pred y-true)
    (:dataset data-constraint-validators))
@@ -153,6 +162,9 @@
   (let [prediction-cols (->prediction-cols y-pred)
         trueth-cols (->target-cols y-true)
 
+        [prediction-cols trueth-cols] (pre-validate-fn prediction-cols trueth-cols)
+        _ (def prediction-cols prediction-cols)
+        _ (def trueth-cols trueth-cols)
         _
         (run!
          #(% prediction-cols "predict")
@@ -171,38 +183,13 @@
         first-truth-col-0 (first trueth-cols)]
     [prediction-col-0 first-truth-col-0]))
 
-(defn accuracy-score [y-true y-pred]
 
-  (let [[prediction-col-0 truth-col-0] 
-        (convert-and-validate y-true 
-                              y-pred
-                              {:dataset [insist-dataset!]
-                               :predict-cols [insist-single-label!]
-                               :truth-cols [insist-single-label!]
-                               :every-col [insist-no-missing!
-                                           insist-discrete!
-                                           insist-uniform!
-                                           insist-same-row-number!]}
-                              )]
-
-
-    (double
-     (/
-      (apply +
-             (map #(if
-                    (= %1 %2)
-                     1
-                     0)
-                  prediction-col-0
-                  truth-col-0))
-      (count prediction-col-0)))))
-
-(defn classification-metric
+(defn classification-metric--tribuo
   ([y-true y-pred metric averaging-strategy options]
 
 
    (let [[prediction-col-0 truth-col-0]
-         (convert-and-validate y-true
+         (cat-revert-and-validate y-true
                                y-pred
                                {:dataset [insist-dataset!]
                                 :predict-cols [insist-single-label!]
@@ -210,7 +197,9 @@
                                 :every-col [insist-no-missing!
                                             insist-discrete!
                                             insist-uniform!
-                                            insist-same-row-number!]})
+                                            insist-same-row-number!]}
+                                  (fn [x y] [x y])
+                                  )
          label-factory (LabelFactory.)
          labels
          (into #{}
@@ -255,8 +244,8 @@
        :fscore (ConfusionMetrics/fscore metric-target cm (:beta options))
        :precision (ConfusionMetrics/precision metric-target cm)
        :recall  (ConfusionMetrics/recall metric-target cm))))
-  ([y-true y-pred metric averaging-strategy] (classification-metric y-true y-pred metric averaging-strategy {}))
-  ([y-true y-pred metric] (classification-metric y-true y-pred metric :micro {})))
+  ([y-true y-pred metric averaging-strategy] (classification-metric--tribuo y-true y-pred metric averaging-strategy {}))
+  ([y-true y-pred metric] (classification-metric--tribuo y-true y-pred metric :micro {})))
 
 
 
@@ -298,21 +287,37 @@
       nil aucs
       :macro (tc-col/mean aucs))))
 
+(defn cols->int [prediction-cols trueth-cols]
+  ;; fastmath need numbers
+  (let [values
+        (distinct
+         (concat
+          (apply concat trueth-cols)
+          (apply concat prediction-cols)))
+        remap-map
+        (zipmap
 
-(defn classification-metric-fm
+         values
+         (range))]
+    [(map #(map remap-map %) prediction-cols)
+     (map #(map remap-map %) trueth-cols)]))
+
+(defn classification-metric-fastmath
   ([y-true y-pred metric averaging options]
 
    (let [[prediction-col-0 truth-col-0]
-         (convert-and-validate y-true
-                               y-pred
-                               {:dataset [insist-dataset!]
-                                :predict-cols [insist-single-label!]
-                                :truth-cols [insist-single-label!]
-                                :every-col [insist-no-NaN!
-                                            insist-no-missing!
-                                            insist-discrete!
-                                            insist-uniform!
-                                            insist-same-row-number!]})]
+         (cat-revert-and-validate y-true
+                                  y-pred
+                                  {:dataset [insist-dataset!]
+                                   :predict-cols [insist-single-label!]
+                                   :truth-cols [insist-single-label!]
+                                   :every-col [insist-no-NaN!
+                                               insist-no-missing!
+                                               insist-discrete--integer!
+                                               insist-uniform!
+                                               insist-same-row-number!]}
+                                  cols->int)]
+
      (fastmath-multiclass-measure truth-col-0
                                   prediction-col-0
                                   {:metric metric
@@ -320,13 +325,13 @@
                                               :macro stats/mean
                                               :micro :micro)
                                    :beta (:beta options)})))
-  ([y-true y-pred metric averaging] (classification-metric-fm y-true y-pred metric averaging {})))
+  ([y-true y-pred metric averaging] (classification-metric-fastmath y-true y-pred metric averaging {})))
 
 
-(defn regression-metric [y-true y-pred metric-fn]
+(defn regression-metric--fastmath [y-true y-pred metric-fn]
 
   (let [[prediction-col-0 truth-col-0]
-        (convert-and-validate y-true
+        (cat-revert-and-validate y-true
                               y-pred
                               {:dataset [insist-dataset!]
                                :predict-cols [insist-single-label!]
@@ -335,12 +340,14 @@
                                            insist-no-missing!
                                            insist-continous!
                                            insist-uniform!
-                                           insist-same-row-number!]})
+                                           insist-same-row-number!]}
+                                 (fn [x y] [x y])
+                                 )
         fastmath-stats-fn (requiring-resolve
                            (symbol (format "fastmath.stats/%s" (name metric-fn))))]
     (insist
      (some? fastmath-stats-fn)
-     (format "Function '%s' does not existin i fastmat." (format "fastmath.stats/%s" (name metric-fn))))
+     (format "Function '%s' does not existin in fastmat." (format "fastmath.stats/%s" (name metric-fn))))
     (fastmath-stats-fn
      truth-col-0 prediction-col-0)))
 
