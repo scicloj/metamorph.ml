@@ -605,14 +605,14 @@
        [:lookup-table :map]
        [:src-column [:or :keyword :string]]
        [:result-datatype [:enum :int :int16 :int32 :int64 :float32 :float64]]]]]
-    [:name [:or :keyword :string]]
+    [:name :any]
     [:datatype [:enum :int :int16 :int32 :int64 :float32 :float64 :string :keyword]]
     [:n-elems :int]]))
 
 (def probability-column-meta-schema
   (atom
    [:map {:closed true}
-    [:name [:or :keyword :string :int]]
+    [:name :any]
     [:datatype [:enum :float32 :float64]]
     [:n-elems :int]
     [:column-type [:enum :probability-distribution]]]))
