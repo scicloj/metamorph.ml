@@ -20,7 +20,9 @@
    [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [tech.v3.dataset.modelling :as ds-mod]
    [scicloj.metamorph.ml.tools :refer [keys-in]]
-   [scicloj.metamorph.ml.cache :as cache])
+   [scicloj.metamorph.ml.cache :as cache]
+   [scicloj.metamorph.ml.column-metric :as metric]
+   [libpython-clj2.python :as py])
   (:import
    (clojure.lang ExceptionInfo)
    (java.util UUID)))
@@ -708,6 +710,59 @@
         {:model-type :metamorph.ml/dummy-classifier
          :dummy-strategy :fixed-class
          :fixed-class 3}))))
+
+
+(deftest train-predi-validate 
+  (require '[scicloj.ml.smile.classification])
+  
+  (let [data
+        (-> iris
+            (ds/categorical->number [:species])
+            (ds-mod/set-inference-target :species))]
+    
+
+
+    (is (= [0.9802469135802468 0.9703630507978335 1.0]
+           (let [{:keys [train test]} (first (tc/split->seq data :holdout {:seed 123
+                                                                           :ratio [0.1 0.9]}))
+                 logreg (ml/train train {:model-type :smile.classification/logistic-regression})
+                 prediction (ml/predict test logreg)
+                 ]
+             [
+              (metric/classification-metric--fastmath test prediction :accuracy :macro)
+              (metric/classification-metric--fastmath test prediction :f1-score :macro)
+              (metric/roc_auc-score test prediction :ovr :macro)]
+
+             ))))
+  
+  ;;=> [0.9802469135802468 0.9703630507978335 1.0]
+  
+
+
+  
+  )
+ 
+
+(comment 
+  (require '[libpython-clj2.python :as py])
+  
+  (py/from-import sklearn.metrics roc_auc_score)
+  
+
+  (roc_auc_score
+   (py/->py-list
+    (map
+     (fn [_] (rand-int 3))
+     (-> data-split :test cf/target ds/columns first vec)))
+   
+   (-> prediction cf/probability-distribution ds/rowvecs py/->python)
+   :multi_class :ovr
+   :average nil)
+  )
+
+
+
+
 
 
 (comment 
