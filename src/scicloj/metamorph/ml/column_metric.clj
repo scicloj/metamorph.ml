@@ -11,15 +11,7 @@
    [tech.v3.datatype :as dt]
    [tech.v3.datatype.casting :as casting]
    [fastmath.stats :as stats]
-   [fastmath.core :as m])
-  (:import
-   [org.tribuo Prediction]
-   [org.tribuo.classification Label LabelFactory]
-   [org.tribuo.classification.evaluation LabelConfusionMatrix]
-   [org.tribuo.classification.evaluation ConfusionMetrics]
-   [org.tribuo.evaluation.metrics MetricTarget]
-   [org.tribuo.evaluation.metrics EvaluationMetric$Average]
-   [org.tribuo.impl ArrayExample]))
+   [fastmath.core :as m]))
 
 ;; todo: take from fastmath
 (defn- fastmath-multiclass-measure
@@ -197,72 +189,6 @@
         truth-col-0 (first trueth-cols)]
     {:prediction-col prediction-col-0
      :truth-col truth-col-0}))
-
-
-(defn classification-metric--tribuo
-  ([y-true y-pred metric averaging-strategy options]
-
-
-   (let [{:keys [prediction-col truth-col]}
-         (datasets->single-cols y-true
-                                y-pred
-                                identity
-                                {:dataset [insist-dataset!]
-                                 :predict-cols [insist-single-label!]
-                                 :truth-cols [insist-single-label!]
-                                 :every-col [insist-no-missing!
-                                             insist-discrete!
-                                             insist-uniform!
-                                             insist-same-row-number!]}
-                                
-                                )
-         label-factory (LabelFactory.)
-         labels
-         (into #{}
-               (concat prediction-col truth-col))
-
-         mutable-output-info (.generateInfo label-factory)
-         label-map
-         (zipmap
-          labels
-          (map
-           #(Label. (str %))
-           labels))
-         _
-         (run!
-          #(.observe mutable-output-info %)
-          (vals label-map))
-
-
-         imuutable-output-info (.generateImmutableOutputInfo  mutable-output-info)
-
-         predictions
-         (map
-          #(Prediction. (get label-map %1)
-                        0
-                        (ArrayExample. (get label-map %2)))
-          prediction-col
-          truth-col)
-
-         cm (LabelConfusionMatrix. imuutable-output-info predictions)
-         metric-target (MetricTarget. (case averaging-strategy
-                                        :macro EvaluationMetric$Average/MACRO
-                                        x           :micro EvaluationMetric$Average/MICRO))]
-
-     (case metric
-       :accuracy (ConfusionMetrics/accuracy metric-target cm)
-       :f1 (ConfusionMetrics/f1 metric-target cm)
-       :balanced-error-rate (ConfusionMetrics/balancedErrorRate metric-target)
-       :fn (ConfusionMetrics/fn metric-target cm)
-       :fp (ConfusionMetrics/fp metric-target cm)
-       :tn (ConfusionMetrics/tn metric-target cm)
-       :tp (ConfusionMetrics/tp metric-target cm)
-       :fscore (ConfusionMetrics/fscore metric-target cm (:beta options))
-       :precision (ConfusionMetrics/precision metric-target cm)
-       :recall  (ConfusionMetrics/recall metric-target cm))))
-  ([y-true y-pred metric averaging-strategy] (classification-metric--tribuo y-true y-pred metric averaging-strategy {}))
-  ([y-true y-pred metric] (classification-metric--tribuo y-true y-pred metric :micro {})))
-
 
 
 

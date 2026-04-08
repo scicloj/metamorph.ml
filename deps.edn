@@ -27,9 +27,7 @@
         org.clojure/data.json {:mvn/version "0.2.6"}
 
         com.taoensso/nippy {:mvn/version "3.6.0"}
-        com.vladsch.flexmark/flexmark-html2md-converter {:mvn/version "0.64.8"}
-        org.tribuo/tribuo-classification-core   {:mvn/version "4.3.2"}
-        org.tribuo/tribuo-regression-core       {:mvn/version "4.3.2"}}
+        com.vladsch.flexmark/flexmark-html2md-converter {:mvn/version "0.64.8"}}
 
  :paths ["src" "resources"]
 
@@ -53,7 +51,7 @@
    :extra-deps {io.github.nextjournal/clerk {:mvn/version "0.18.1158"}
                 org.scicloj/clay {:mvn/version "2.0.11"}
                 org.scicloj/scicloj.ml.smile {:mvn/version "7.6.2"}
-                
+
                 org.scicloj/tableplot {:mvn/version "1-beta10.2"}
                 datacraft-sciences/confuse {:mvn/version "0.1.1"}
                 ch.qos.logback/logback-classic {:mvn/version "1.5.32"}
@@ -61,18 +59,15 @@
                 com.clojure-goes-fast/clj-memory-meter {:mvn/version "0.4.0"}
                 clj-python/libpython-clj {:mvn/version "2.026"}
                 libpython-clj-uv/libpython-clj-uv {:git/url "https://github.com/behrica/libpython-clj-uv"
-                                                    :git/sha "3db70e1988b0f0fba4f0ef6631723d4d4dfe0a17"}
-                
-                }}
+                                                   :git/sha "3db70e1988b0f0fba4f0ef6631723d4d4dfe0a17"}}}
 
   :test
-  {:jvm-opts ["-Djdk.attach.allowAttachSelf","-Xmx14G" "--add-opens=java.base/java.io=ALL-UNNAMED" ]
+  {:jvm-opts ["-Djdk.attach.allowAttachSelf","-Xmx14G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
    :extra-paths ["test"]
-   :extra-deps {
-                lambdaisland/kaocha {:mvn/version "1.91.1392"}
+   :extra-deps {lambdaisland/kaocha {:mvn/version "1.91.1392"}
                 org.mapdb/mapdb {:mvn/version "3.1.0"}}}
   :runner {:main-opts ["-m" "kaocha.runner"]}
-  
+
   :exp {:jvm-opts ["-Djdk.attach.allowAttachSelf" "-Xmx12G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
         :extra-paths ["exp" "test"]
         :extra-deps {com.taoensso/carmine {:mvn/version "3.5.0"}}}
@@ -80,10 +75,7 @@
   :smoke-test {:jvm-opts ["-Djdk.attach.allowAttachSelf" "-Xmx1G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
                :extra-paths ["exp"]
                :extra-deps {org.clojure/data.csv        {:mvn/version "1.1.1"}}}
-  
+
   :outdated {;; Note that it is `:deps`, not `:extra-deps`
              :deps {com.github.liquidz/antq {:mvn/version "RELEASE"}}
-             :main-opts ["-m" "antq.core"]}
-
-  
-  }}
+             :main-opts ["-m" "antq.core"]}}}
