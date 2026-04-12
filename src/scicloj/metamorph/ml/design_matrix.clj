@@ -86,6 +86,12 @@
     (tc/map-columns ds new-column cols f)))
 
 
+
+(defn- expand-keyword-to-identity [col-spec]
+  (if (keyword? col-spec)
+    (vector col-spec (list  'clojure.core/identity col-spec))
+    col-spec))
+
 (defn create-design-matrix
   "Converts the given dataset into a full numeric dataset.
    
@@ -139,12 +145,14 @@
   (require '[tech.v3.dataset :as ds]
            '[tablecloth.api :as tc]
            '[tablecloth.column.api :as tcc])
-  
-  (let [ds-columns (tc/column-names ds)
+
+  (let [enhanced-features-specs
+        (map expand-keyword-to-identity features-specs)
+        ds-columns (tc/column-names ds)
 
         mapping-specs-cols
         (concat targets-specs
-                (->> features-specs
+                (->> enhanced-features-specs
                      (map first)
                      (remove nil?)))
 
@@ -160,7 +168,7 @@
                                         (first e2)
                                         (second e2)))
          ds
-         features-specs)
+         enhanced-features-specs)
 
         all-cols (tc/column-names transformed-ds)
 

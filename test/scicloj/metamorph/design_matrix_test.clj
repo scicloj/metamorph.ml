@@ -4,7 +4,9 @@
              [tablecloth.api :as tc]
              [tablecloth.column.api]
              [tech.v3.dataset.tensor :as tensor]
-             [scicloj.metamorph.ml.design-matrix :as dm]))
+             [scicloj.metamorph.ml.rdatasets]
+             [scicloj.metamorph.ml.design-matrix :as dm]
+             [scicloj.metamorph.ml.rdatasets :as rdatasets]))
 
 
 
@@ -126,6 +128,15 @@
             {:a [{:x 1 "y" 2}
                  {:x 3 "y" 4}]}) :a)))))
 
-
-
+(deftest auto-identity
+  (is (= 
+       (:cyl (dm/create-design-matrix (rdatasets/datasets-mtcars)
+                                      [:mpg]
+                                      [[:cyl '(clojure.core/identity :cyl)]]))
+       (:cyl 
+        (dm/create-design-matrix (rdatasets/datasets-mtcars)
+                                 [:mpg]
+                                 [:cyl])))
+      
+      ))
 
