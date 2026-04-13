@@ -61,7 +61,10 @@
 
 (defn- train-fm-ols [feature-ds target-ds options]
   (let [clean-options
-        (dissoc options :model-type)
+        (-> options
+            (dissoc :model-type)
+            (assoc :names (vec (tc/column-names feature-ds)))
+            )
         xss
         (->
          feature-ds
@@ -75,8 +78,8 @@
         model (fm-reg/lm ys xss clean-options)]
     
     (assoc model
-     :analysis
-     (-> model :analysis deref))
+           :analysis
+           (-> model :analysis deref))
     
     ))
 
