@@ -34,6 +34,9 @@
         prediction-ds (ml/predict ds model)
         prediction (:mpg prediction-ds)]
 
+    (is (= 
+         ["Intercept" :cyl :disp :hp :drat :wt :qsec :vs :am :gear :carb]
+         (-> model :model-data :names)))
     (is (approx?   0.8066423189909859 (-> glance :adj.r.squared)))
     (is (approx?   0.8690157644777647   (:r.squared glance)))
     (is (approx?   147.49443001665065 (-> glance :rss)))
@@ -201,7 +204,9 @@
                       19.693828154474765
                       13.941118382059862
                       24.368267683243772]
-                     (augment :.fitted))))
+                     (augment :.fitted)))
+    
+    )
   
   )
 
@@ -227,6 +232,7 @@
          (ds-mod/set-inference-target :mpg))
 
         model (ml/train ds {:model-type :fastmath/ols})
+        _ (def model model)
 
         
         frozen-model (nippy/freeze-to-string model)
@@ -238,6 +244,9 @@
 
 
     ))
+
+
+
 ;; => #'scicloj.metamorph.linear-regression-test/linear-regression-mtcars
 
 

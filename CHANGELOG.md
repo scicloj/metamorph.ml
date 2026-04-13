@@ -2,6 +2,7 @@ unreleased
  - validate predit-fn results
  - new ns scicloj.metamorph.ml.column-metric with metric-fns operating on datasets, not seq-of-numbers
  - TMD's of rdatasets get doc-url as dataset name, ready for clicking [#36](https://github.com/scicloj/metamorph.ml/issues/36)
+ - added model names to fastmath/ols [#24](https://github.com/scicloj/metamorph.ml/issues/24)
 
 1.3.2
  - removed clj-memory-meter from src-code 
