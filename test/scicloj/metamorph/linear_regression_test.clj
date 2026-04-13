@@ -1,16 +1,18 @@
 (ns scicloj.metamorph.linear-regression-test
   (:require
-   [scicloj.metamorph.common]
    [clojure.pprint :as pp]
    [clojure.set :as set]
    [clojure.test :refer [deftest is]]
+   [scicloj.metamorph.common]
+   [scicloj.metamorph.core :as mm]
    [scicloj.metamorph.ml :as ml]
+   [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [scicloj.metamorph.ml.regression]
    [scicloj.metamorph.ml.toydata :as data]
+   [tablecloth.api :as tc]
    [taoensso.nippy :as nippy]
    [tech.v3.dataset :as ds]
-   [tech.v3.dataset.modelling :as ds-mod]
-   [tech.v3.dataset.column-filters :as cf]))
+   [tech.v3.dataset.modelling :as ds-mod]))
 
 
 (defn approx? [x0 x1]
@@ -540,3 +542,58 @@
     (validate-model--ols model ds)
     ;(validate-model--ols model-unfrozen ds)
     ))
+
+
+(comment 
+  (require '[fastmath.ml.regression.contrast :as contrast]
+           '[fastmath.core :as m])
+  
+
+  (def prestige
+    (->
+     (rdatasets/carData-Prestige)
+     (tc/drop-missing)
+     (tc/select-columns [:prestige :type :education :income])
+     (ds-mod/set-inference-target :prestige)))
+  
+
+  (def type-contrast (contrast/dummy ["bc" "prof" "wc"]))
+  
+
+  (defn prestige-transformer
+
+    ([[type ^double education ^long income]]
+     (let [[^long typeprof ^long typewc] ((:mapping type-contrast) type)
+           lincome (m/log income)]
+       [typeprof typewc education lincome
+        (* typeprof education)
+        (* typewc education)
+        (* typeprof lincome)
+        (* typewc lincome)]))
+    
+    )
+  
+
+  (def pipe-fn
+    (mm/pipeline
+     {:metamorph/id :model}
+     (ml/model {:model-type :fastmath/ols
+                :transformer prestige-transformer
+                })
+     
+     ))
+  
+
+  (def model
+    (mm/fit-pipe
+     prestige
+     pipe-fn))
+
+  (mm/transform-pipe 
+   (-> prestige
+       (tc/drop-columns [:prestige])
+       )
+   pipe-fn
+   model
+   )
+  )
