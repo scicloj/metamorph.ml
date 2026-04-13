@@ -12,7 +12,8 @@
              [fastmath.ml.regression :as regr]
              [tech.v3.dataset.column-filters :as cf]
              [scicloj.metamorph.ml :as ml]
-             [tablecloth.column.api :as tcc]))
+             [tablecloth.column.api :as tcc]
+             [fastmath.ml.regression :as regr]))
 
 
 
@@ -145,100 +146,102 @@
                                  [:cyl])))))
 
 
-(comment 
-  (require '[fastmath.ml.regression :as regr])
+
+(defn- lm [data target-specs feature-specs]
+  (def data data)
+  (let [dm
+        (dm/create-design-matrix data target-specs feature-specs)]
+    (def dm dm)
+    (regr/lm
+     (->
+      (cf/target dm)
+      (ds/columns)
+      first
+      vec)
+     (->
+      (cf/feature dm)
+      (ds/rowvecs))
+     {:intercept? true
+      :names (vec 
+              
+              (ds/column-names (cf/feature dm))
+              )})))
   
+(deftest interactions-test
+
+  (is (=
+       [-10.731981967960817 5.360877730563882]
+       ;lm(formula = prestige ~ education, data = Prestige)
+       (->>
+        (lm (rdatasets/carData-Prestige) [:prestige] [:education])
+        :coefficients
+        (map :estimate))))
+
+
+  (is (=
+       [-110.96582408762559 3.730507828371897 13.43822306488778 0.04689513774526512]
+       (->>
+        (lm (rdatasets/carData-Prestige)
+            ;;lm(formula = prestige ~ education + log (income) + women, data = Prestige)
+            [:prestige]
+            [:education
+             [:income '(tcc/log :income)]
+             :women])
+        :coefficients
+        (map :estimate))))
 
 
 
-  (defn lm [data target-specs feature-specs]
-    (let [dm
-          (dm/create-design-matrix data target-specs feature-specs)]
-      (regr/lm
-       (->
-        (cf/target dm)
-        (ds/columns)
-        first
-        vec)
-       (->
-        (cf/feature dm)
-        (ds/rowvecs))
-       {:intercept? true})))
-  
-  ;;=> [[13.11 9.421492310438014 0] [12.26 10.161187107991946 0] [12.77 9.134646527606982 0] [11.42 9.089866218508309 0] [14.62 9.036344063928219 0] [15.64 9.308374112247549 0] [15.09 9.018937706446035 0] [15.44 9.558388209214396 0] [14.52 9.339349052539717 0] [14.64 9.307739277963316 0] [12.39 8.683046555502886 0] [12.3 8.862058677395472 0] [13.83 9.038958755220563 0] [14.44 8.993303139093733 0] [14.36 8.909910726701899 0] [14.21 8.754002933494261 0] [15.77 9.865941436462158 0] [14.15 8.718009330846357 0] [15.22 9.168788944817948 0] [14.5 8.452334619067742 0] [15.97 9.43188264192342 0] [13.62 8.639056779173078 0] [15.08 8.991437814919227 0] [15.96 10.138875830266775 0] [15.94 9.585895949678203 0] [14.71 9.76984186766621 0] [12.46 8.4368504387337 0] [9.45 8.156223323194624 1] [13.62 8.535425959677298 0] [15.21 9.252633284166434 0] [12.79 8.55256033525353 0] [11.09 8.731820582962108 0] [12.71 8.930890984450878 0] [11.44 9.012620873002131 nil] [11.59 8.3030093814735 0] [11.49 8.054522609537294 0] [11.32 8.3774712482411 0] [10.64 7.803026643632217 0] [11.36 8.373322820996535 0] [9.17 8.46821300919452 0]]
-  
-;lm(formula = prestige ~ education, data = Prestige)
-  (:coefficients
-   (lm (rdatasets/carData-Prestige) [:prestige] [:education]))
-  
-  ;;=> [{:estimate -10.731981967960817,
-  ;;     :stderr 3.67708825945616,
-  ;;     :t-value -2.918608749834053,
-  ;;     :p-value 0.00434344305776686,
-  ;;     :confidence-interval [-18.027220345259906 -3.4367435906617256]}
-  ;;    {:estimate 5.360877730563882,
-  ;;     :stderr 0.33198819438515376,
-  ;;     :t-value 16.147796280805387,
-  ;;     :p-value 0.0,
-  ;;     :confidence-interval [4.70222260846817 6.0195328526595935]}]
-  
-  ;;lm (formula = prestige ~education + log (income) + women, data = Prestige)
-  (:coefficients
-   (lm (rdatasets/carData-Prestige)
-       [:prestige]
-       [:education
-        [:income '(tcc/log :income)]
-        :women]))
-  
-  ;;=> [{:estimate -110.96582408762559,
-  ;;     :stderr 14.842928096709219,
-  ;;     :t-value -7.4760063085010495,
-  ;;     :p-value 3.2697743336911236E-11,
-  ;;     :confidence-interval [-140.42113182301307 -81.51051635223811]}
-  ;;    {:estimate 3.730507828371897,
-  ;;     :stderr 0.35438304106466245,
-  ;;     :t-value 10.526767356486483,
-  ;;     :p-value 0.0,
-  ;;     :confidence-interval [3.0272462170004606 4.433769439743333]}
-  ;;    {:estimate 13.43822306488778,
-  ;;     :stderr 1.9137567826916404,
-  ;;     :t-value 7.021907478748334,
-  ;;     :p-value 2.895566009186723E-10,
-  ;;     :confidence-interval [9.640435014067467 17.23601111570809]}
-  ;;    {:estimate 0.04689513774526512,
-  ;;     :stderr 0.029898863571755207,
-  ;;     :t-value 1.5684588691045072,
-  ;;     :p-value 0.1199974417266807,
-  ;;     :confidence-interval [-0.012438183935358609 0.10622845942588885]}]
-  
+  (let [prestige
+        (->
+         (rdatasets/carData-Prestige)
+         (tc/drop-missing)
+         (ds/categorical->one-hot [:type]))]
+    (is (=
+         [-81.20186676367538 3.2844857908366167 10.487471390281774 -1.4394028590407122 6.7508872629242]
 
-  ;;lm(formula = prestige ~ education + log(income) + type, data = Prestige)
-  (->
-   (rdatasets/carData-Prestige)
-   (tc/drop-missing)
-   (lm
-    [:prestige]
-    [:education
-     [:income '(tcc/log :income)]
-     :type
-     ])
-   (select-keys [:names :coefficients])
-   )
-  
+         (->>
+          (lm
+           ;;lm(formula = prestige ~ education + log(income) + type, data = Prestige)
+           prestige
+           [:prestige]
+           [:education
+            [:income '(tcc/log :income)]
+       ;:type-bc  ;; autodropped by R...this is because of dummy-contrasts
+            :type-wc
+            :type-prof])
+          :coefficients
+          (map :estimate))))
 
-;model.matrix (prestige ~ type * (education + log (income)), data = carData::Prestige)
-  (dm/create-design-matrix
-   (->
-    (rdatasets/carData-Prestige)
-    (tc/drop-missing)
-    (ds/categorical->one-hot [:type]))
-   [:prestige]
-   [:education
-    [:log-income '(tcc/log :income)]
-    [:education+log-income '(tcc/+ :education :log-income)]
-    [nil '(tcc/* :education+log-income :type-bc)]
-    [nil '(tcc/* :education+log-income :type-wc)]
-    [nil '(tcc/* :education+log-income :type-prof)]
-    ])
-  )
-  
+    (is (=
+         {"(tcc/* :type-prof :education)" 0.6973988905060939,
+          "(tcc/* :type-wc :education)" 3.6400383797567244,
+          "Intercept" -120.04591326225307,
+          "(tcc/* :type-prof :log-income)" -9.428817876039425,
+          :type-prof 85.16012507441735,
+          "(tcc/* :type-wc :log-income)" -8.155610127178688,
+          :education 2.3356724126745942,
+          :type-wc 30.241187147883345,
+          :log-income 15.982481922371733}
+
+
+         (->
+          (lm
+           prestige
+           ;model.matrix (prestige ~ type * (education + log (income)), data = carData::Prestige)
+           [:prestige]
+           [:type-prof
+            :type-wc
+            :education
+            [:log-income '(tcc/log :income)]
+            [nil '(tcc/* :type-prof :education)]
+            [nil '(tcc/* :type-wc :education)]
+            ;:type-bc removed in R
+            [nil '(tcc/* :type-prof :log-income)]
+            [nil '(tcc/* :type-wc :log-income)]])
+
+          ((fn [res]
+             (zipmap
+              (:names res)
+              (map :estimate (:coefficients res))))))))))
+
