@@ -1,5 +1,5 @@
 unreleased
- - valid predit-fn results
+ - validate predit-fn results
  - new ns scicloj.metamorph.ml.column-metric with metric-fns operating on datasets, not seq-of-numbers
 
 1.3.2
