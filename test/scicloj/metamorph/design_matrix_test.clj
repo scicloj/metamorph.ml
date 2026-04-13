@@ -4,16 +4,11 @@
              [tablecloth.api :as tc]
              [tablecloth.column.api]
              [tech.v3.dataset.tensor :as tensor]
-             [scicloj.metamorph.ml.rdatasets]
              [scicloj.metamorph.ml.design-matrix :as dm]
              [scicloj.metamorph.ml.rdatasets :as rdatasets]
-             [tech.v3.dataset.categorical :as ds-cat]
              [tech.v3.dataset :as ds]
              [fastmath.ml.regression :as regr]
-             [tech.v3.dataset.column-filters :as cf]
-             [scicloj.metamorph.ml :as ml]
-             [tablecloth.column.api :as tcc]
-             [fastmath.ml.regression :as regr]))
+             [tech.v3.dataset.column-filters :as cf]))
 
 
 
@@ -119,7 +114,7 @@
 (deftest test-map-column->columns--keyword
   (is (= [:a-x :a-y]
          (tc/column-names
-          (dm/map-column->columns
+          (tc/map-column->columns
            (tc/dataset
             {:a [{:x 1 :y 2}
                  {:x 3 :y 4}]}) :a))))
@@ -127,14 +122,14 @@
 
   (is (= ["a-x" "a-y"]
          (tc/column-names
-          (dm/map-column->columns
+          (tc/map-column->columns
            (tc/dataset
             {"a" [{:x 1 :y 2}
                   {:x 3 :y 4}]}) "a"))))
 
   (is (= [:a-x :a-y]
          (tc/column-names
-          (dm/map-column->columns
+          (tc/map-column->columns
            (tc/dataset
             {:a [{:x 1 "y" 2}
                  {:x 3 "y" 4}]}) :a)))))

@@ -7,53 +7,6 @@
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.modelling :as ds-mod]))
 
-(defn- combine-with-dash [arg1 arg2]
-  (let [to-string (fn [x]
-                    (cond
-                      (string? x) x
-                      (keyword? x) (name x)
-                      (symbol? x) (name x)
-                      :else (str x)))
-        combined-str (str (to-string arg1) "-" (to-string arg2))]
-    (cond
-      (keyword? arg1) (keyword combined-str)
-      (symbol? arg1) (symbol combined-str)
-      (string? arg1) combined-str
-      :else combined-str)))  
-
-(defn map-column->columns
-  "Expands a column containing maps into multiple separate columns.
-
-  `ds` - Dataset
-  `src-col` - Column name containing map values
-
-  Returns a new dataset where the map column is replaced with individual columns
-  for each map key. New column names are formed by combining the source column
-  name with each map key using dashes (e.g., `:src-key1`, `:src-key2`).
-
-  Example: Column `:stats` with `{:mean 5 :std 2}` becomes `:stats-mean` and
-  `:stats-std` columns.
-
-  Used for feature expansion in design matrix creation."
-  [ds src-col]
-  (let [columns-ds
-        (tc/dataset (get ds src-col))
-
-        new-col-names
-        (map #(combine-with-dash src-col %)
-             (tc/column-names columns-ds))
-
-        renamed-columns-ds
-        (tc/rename-columns columns-ds
-                           (zipmap
-                            (tc/column-names columns-ds)
-                            new-col-names))]
-    (->
-     (ds/append-columns ds (tc/columns renamed-columns-ds))
-     (ds/remove-column src-col))))
-
-
-
 (defn- create-design-matrix-column [ds new-column spec]
   (let [new-column (if (nil? new-column)
                      (str spec)
