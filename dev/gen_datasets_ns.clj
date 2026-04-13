@@ -5,8 +5,8 @@
    [clojure.pprint :as pprint]
    [clojure.string :as str]
    [tablecloth.api :as tc] ;[scicloj.metamorph.ml.rdatasets :as rdatasets]
-)
-  
+   )
+
   (:import
    [com.vladsch.flexmark.html2md.converter FlexmarkHtmlConverter]
    [java.io Writer]))
@@ -115,7 +115,17 @@
 
 
             (format-code
-             '(defn _fetch-dataset [csv]
+             '(defn _fetch-dataset
+  "Memoized dataset fetching function.
+
+  Takes a `csv` URL or file path and loads it as a tech.ml.dataset, converting
+  column names to kebab-case keywords (e.g., \"Some.Column\" becomes `:some-column`).
+
+  Results are cached via memoization for efficient repeated access.
+
+  Example: `(fetch-dataset \"https://example.com/data.csv\")`"
+
+                [csv doc]
                 (-> csv
 
                     (tc/dataset {:key-fn
@@ -123,7 +133,8 @@
                                    (-> s
                                        (str/replace
                                         #"\." "-")
-                                       csk/->kebab-case-keyword))})))))
+                                       csk/->kebab-case-keyword))})
+                    (tc/set-dataset-name doc)))))
   (writeln! writer
 
             (format-code
@@ -149,7 +160,7 @@
                               ;md-text
 
                                       []
-                                      (list 'fetch-dataset csv))))))
+                                      (list 'fetch-dataset csv doc))))))
    (take num-packages
          (tc/rows datasets-info :as-maps)))
 
