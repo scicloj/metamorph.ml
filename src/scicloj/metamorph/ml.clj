@@ -314,7 +314,19 @@
   {:malli/schema
    [:function
     {:registry
-     {::options [:or empty? [:map
+     {
+      ::train-test-split-seq [:sequential [:map {:closed true}
+                                           [:split-uid {:optional true} string?]
+                                           [:train [:fn dataset?]]
+                                           [:test {:optional true} [:fn dataset?]]]]
+      ::metric [:map  {:closed true}
+                [:model-type [:enum :classification :regression]]
+                [:metric :keyword]
+                [:averaging [:enum :micro :macro]]
+                [:options {:optional true} :map]
+                [:loss-or-accuracy [:enum :loss :accuracy]]]
+
+      ::options [:or empty? [:map
                              [:return-best-pipeline-only {:optional true} boolean?]
                              [:return-best-crossvalidation-only {:optional true} boolean?]
                              [:map-fn {:optional true} [:enum :map :pmap :mapv :ppmap]]
@@ -362,27 +374,24 @@
          [:pipe-fn fn?]
          [:source-information [:maybe [:map [:classpath [:sequential string?]]
                                        [:fn-sources [:map-of :qualified-symbol [:map [:source-form any?]
-                                                                                [:source-str string?]]]]]]]]]]}}
+                                                                                [:source-str string?]]]]]]]]]]}
+
+     }
+
+
 
     [:=>
      [:cat
       [:sequential [:or vector? fn?]]
-      [:sequential [:map {:closed true}
-                    [:split-uid {:optional true} string?]
-                    [:train [:fn dataset?]]
-                    [:test  {:optional true} [:fn dataset?]]]]
-      :map
-      ]
+      ::train-test-split-seq
+      ::metric]
 
      ::evaluation-result]
     [:=>
      [:cat
       [:sequential [:or vector? fn?]]
-      [:sequential [:map {:closed true}
-                    [:split-uid {:optional true} string?]
-                    [:train [:fn dataset?]]
-                    [:test {:optional true} [:fn dataset?]]]]
-      :map
+      ::train-test-split-seq
+      ::metric
       ::options]
 
      ::evaluation-result]]}
