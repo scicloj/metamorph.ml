@@ -230,20 +230,13 @@
          (data/mtcars-ds)
          (ds/drop-columns [:model])
          (ds-mod/set-inference-target :mpg))
-
         model (ml/train ds {:model-type :fastmath/ols})
-        _ (def model model)
 
-        
+
         frozen-model (nippy/freeze-to-string model)
-        unfrozen-model (thaw-fm-ols frozen-model)
-        ]
+        unfrozen-model (thaw-fm-ols frozen-model)]
     (validate-model--linear-regression-mtcars-fm-ols ds model)
-    (validate-model--linear-regression-mtcars-fm-ols ds unfrozen-model)
-
-
-
-    ))
+    (validate-model--linear-regression-mtcars-fm-ols ds unfrozen-model)))
 
 
 
@@ -534,8 +527,6 @@
   )
 
 (deftest metamorph.ml-ols
-
-
   (let [ds
         (->
          (data/mtcars-ds)
@@ -546,11 +537,25 @@
         ;; cannot be persisted, as not serializable
         ;model-frozen (nippy/freeze model)
         ;model-unfrozen (nippy/thaw model-frozen)
-
         ]
     (validate-model--ols model ds)
     ;(validate-model--ols model-unfrozen ds)
     ))
+
+
+(let [ds
+      (->
+       (data/mtcars-ds)
+       (ds/drop-columns [:model])
+       (ds-mod/set-inference-target :mpg))
+      model (ml/train ds {:model-type :fastmath/glm})]
+  model
+  )
+
+
+
+
+
 
 
 (comment 
