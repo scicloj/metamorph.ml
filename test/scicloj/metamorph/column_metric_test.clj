@@ -7,8 +7,7 @@
    [scicloj.metamorph.ml.column-metric :as col-metric]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
-   [tech.v3.dataset.column :as col]
-   [fastmath.stats :as stats]))
+   [tech.v3.dataset.column :as col]))
 
 (py/initialize!)
 
@@ -17,7 +16,7 @@
          (col-metric/classification-metric--fastmath
           (ds/new-dataset [(col/new-column :my-target [1 3 2] {:inference-target? true})])
           (ds/new-dataset [(col/new-column :pred [1 2 3] {:column-type :prediction})])
-          :classification
+          :accuracy
           :micro))))
 
 

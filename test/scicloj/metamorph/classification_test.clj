@@ -6,7 +6,6 @@
    [scicloj.metamorph.ml :as ml]
    [scicloj.metamorph.ml.classification :refer [confusion-map
                                                 confusion-map->ds]]
-   [scicloj.metamorph.ml.column-metrices :as col-metric]
    [scicloj.metamorph.ml.toydata :as toydata]
    [scicloj.ml.smile.classification]
    [tablecloth.api :as tc]
@@ -156,7 +155,7 @@
                       [pipe-fn]
                       [data-split]
                       {:model-type :classification
-                       :metric :fscore
+                       :metric :f-measure
                        :averaging :micro
                        :options {:beta 1}
                        }

@@ -504,7 +504,7 @@
                                                      :metric :accuracy
                                                      :averaging :micro
                                                      :options {}}}
-                          {:name :fscore :metric-fn {:model-type :classification
+                          {:name :f-measure :metric-fn {:model-type :classification
                                                      :metric :accuracy
                                                      :averaging :micro
                                                      :options {}}}
@@ -745,9 +745,9 @@
                                   :averaging :micro
                                   :options {}} :metric 0.6666666666666666}
          {:name :m-2, :metric-fn {:model-type :classification
-                                  :metric :loss
-                                  :averaging :micro
-                                  :options {}} :metric 0.33333333333333337}]}
+                                  :metric :precision
+                                  :averaging :macro
+                                  :options {}} :metric 0.3333333333333333}]}
 
        (#'ml/score
         (ds/new-dataset [(ds/new-column :x [:a :a :a] {:column-type :prediction})])
@@ -763,8 +763,8 @@
                       :options {}}}
          {:name :m-2
           :metric-fn {:model-type :classification
-                      :metric :loss
-                      :averaging :micro
+                      :metric :precision
+                      :averaging :macro
                       :options {}}}]))))
 
 (deftest define-model-schema

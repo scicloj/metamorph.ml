@@ -1,7 +1,6 @@
 (ns scicloj.metamorph.ml.column-metric
   (:require
    [clojure.set :as set]
-   [scicloj.metamorph.ml.classification]
    [scicloj.metamorph.ml.loss :as loss]
    [tablecloth.column.api :as tc-col]
    [tech.v3.dataset :as ds]
@@ -20,12 +19,12 @@
                        :or {average stats/mean beta 0.5 metric :f1-score weighted? false}}]
    (let [all-labels (distinct (concat actual prediction))
          measures (->> all-labels
-                       (map (fn [label] (let [all-bin-measures (stats/binary-measures-all actual prediction #{label})
+                       (mapv (fn [label] (let [all-bin-measures (stats/binary-measures-all actual prediction #{label})
                                               res (get all-bin-measures  metric)
-                                              _ (assert res (format "binary measure not existing in fastmath : '%s' " metric ))
+                                              _ (assert (some? res) (format "binary measure not existing in fastmath : '%s' " metric ))
                                               ]
                                           (if (fn? res) (res beta) res))))
-                       (map (fn [^double v] (if (m/nan? v) 0.0 v))))]
+                       (mapv (fn [^double v] (if (m/nan? v) 0.0 v))))]
      (cond
        (not average) (zipmap all-labels measures)
        (= average :micro) (m// (stats/L0 actual prediction) (double (count actual)))
@@ -287,6 +286,11 @@
                                               insist-discrete--integer!
                                               insist-uniform!
                                               insist-same-row-number!]})]
+     (def metric metric)
+     (def averaging averaging)
+     (def truth-col truth-col)
+     (def prediction-col prediction-col)
+     (def options options)
      (fastmath-multiclass-measure truth-col
                                   prediction-col
                                   {:metric metric

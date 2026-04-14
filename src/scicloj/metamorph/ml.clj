@@ -19,7 +19,7 @@
    [tech.v3.datatype.export-symbols :as exporter]
    [tech.v3.datatype.functional :as dfn]
    [tech.v3.datatype :as dt]
-   [scicloj.metamorph.ml.column-metrices :as col-metric])
+   [scicloj.metamorph.ml.column-metric :as col-metric])
   (:import
    java.util.UUID))
 
@@ -48,14 +48,14 @@
   (let [{:keys [model-type metric averaging options]} metric-fn
 
         metric (case model-type
-                 :classification (col-metric/classification-metric trueth-ds predictions-ds metric averaging options))
+                 :classification (col-metric/classification-metric--fastmath trueth-ds predictions-ds metric averaging options))
 
         other-metrics-result
         (map
          (fn [{:keys [metric-fn] :as m}]
            (let [{:keys [model-type metric averaging options]} metric-fn
                  metric (case model-type
-                          :classification (col-metric/classification-metric trueth-ds predictions-ds metric averaging options))]
+                          :classification (col-metric/classification-metric--fastmath trueth-ds predictions-ds metric averaging options))]
              (assoc m
                     :metric metric)))
          other-metrics)]
