@@ -32,7 +32,7 @@
 
 
 
-(defn- augment-fm-fn [model data]
+(defn- augment-fm-ols [model data]
   (let [residuals (-> model :model-data :residuals)]
     (-> data
         (tc/add-columns {:.resid (:raw residuals)
@@ -59,12 +59,11 @@
 
 
 
-(defn- train-fm-ols [feature-ds target-ds options]
+(defn- train-fm [fn feature-ds target-ds options]
   (let [clean-options
         (-> options
             (dissoc :model-type)
-            (assoc :names (vec (tc/column-names feature-ds)))
-            )
+            (assoc :names (vec (tc/column-names feature-ds))))
         xss
         (->
          feature-ds
@@ -75,15 +74,14 @@
             cf/target
             first
             second)
-        model (fm-reg/lm ys xss clean-options)]
-    
+        model (fn ys xss clean-options)]
+
     (assoc model
            :analysis
-           (-> model :analysis deref))
-    
-    ))
+           (-> model :analysis deref))))
 
-(defn- predict-fm-ols [feature-ds thawed-model model]
+
+(defn predict-fm [feature-ds thawed-model model]
   (let [prediction (map
                     (:model-data model)
                     (-> feature-ds ds/rowvecs))
@@ -93,6 +91,14 @@
                      (ds/new-column target-column-name
                                     prediction
                                     {:column-type :prediction})])))
+
+  
+(defn- train-fm-ols [feature-ds target-ds options]
+  (train-fm fm-reg/lm feature-ds target-ds options))
+
+
+(defn- train-fm-glm [feature-ds target-ds options]
+  (train-fm fm-reg/glm feature-ds target-ds options))
 
 
 (defn- tidy-ols [model]
@@ -200,11 +206,17 @@
 
 (ml/define-model! :fastmath/ols
   train-fm-ols
-  predict-fm-ols
+  predict-fm
   {
    :tidy-fn tidy-fm-ols
    :glance-fn glance-fm-ols
-   :augment-fn augment-fm-fn})
+   :augment-fn augment-fm-ols})
+
+(ml/define-model! :fastmath/glm
+  train-fm-glm
+  predict-fm
+  {})
+
 
 (ml/define-model! :metamorph.ml/dummy-regressor
   (fn [feature-ds target-ds options]
