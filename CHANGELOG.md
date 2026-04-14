@@ -5,6 +5,7 @@ unreleased
  - added model names to fastmath/ols [#24](https://github.com/scicloj/metamorph.ml/issues/24)
  - add support for fastmath GLM model [46](https://github.com/scicloj/metamorph.ml/issues/46)
  - breaking change: replace metric-fn in `evaluate-pipelines` with map of metric description
+      - moved :loos-or-accuracy into metric map
 
 1.3.2
  - removed clj-memory-meter from src-code 

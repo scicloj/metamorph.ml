@@ -157,9 +157,9 @@
                       {:model-type :classification
                        :metric :f-measure
                        :averaging :micro
-                       :options {:beta 1}
-                       }
-                      :accuracy)]
+                       :loss-or-accuracy :accuracy
+
+                       :options {:beta 1}})]
     (is (= 0.6608187134502924
            (->
             eval-results

@@ -169,7 +169,7 @@
 
 
 
-(defn- evaluate-one-pipeline [pipeline-decl-or-fn train-test-split-seq metric-fn loss-or-accuracy tune-options]
+(defn- evaluate-one-pipeline [pipeline-decl-or-fn train-test-split-seq metric-fn tune-options]
 
   (let [pipeline-fn (if (fn? pipeline-decl-or-fn)
                       pipeline-decl-or-fn
@@ -184,7 +184,6 @@
                  complete-result
                  (assoc (calc-metric pipeline-fn metric-fn train test tune-options)
                         :split-uid split-uid
-                        :loss-or-accuracy loss-or-accuracy
                         :metric-fn metric-fn
                         :pipe-decl pipeline-decl
                         :pipe-fn pipeline-fn
@@ -219,10 +218,10 @@
 
         result
         (if (tune-options :return-best-crossvalidation-only)
-          (case loss-or-accuracy
+          (case (:loss-or-accuracy metric-fn)
             :loss (->> evaluations  (take 1))
             :accuracy (->> evaluations  (take-last 1)))
-          (case loss-or-accuracy
+          (case (:loss-or-accuracy metric-fn)
             :loss evaluations
             :accuracy (-> evaluations  reverse)))]
     result))
@@ -344,7 +343,6 @@
                            [:mean float?]
                            [:max float?]
                            [:ctx map?]]]
-         [:loss-or-accuracy [:enum :accuracy :loss]]
          [:metric-fn :map]
          [:pipe-decl [:maybe sequential?]]
          [:pipe-fn fn?]
@@ -360,7 +358,7 @@
                     [:train [:fn dataset?]]
                     [:test  {:optional true} [:fn dataset?]]]]
       :map
-      [:enum :accuracy :loss]]
+      ]
 
      ::evaluation-result]
     [:=>
@@ -371,13 +369,12 @@
                     [:train [:fn dataset?]]
                     [:test {:optional true} [:fn dataset?]]]]
       :map
-      [:enum :accuracy :loss]
       ::options]
 
      ::evaluation-result]]}
   ;;
 
-  ([pipeline-fn-or-decl-seq train-test-split-seq metric-fn loss-or-accuracy options]
+  ([pipeline-fn-or-decl-seq train-test-split-seq metric-fn options]
    (let [used-options (merge {:map-fn :map
                               :return-best-pipeline-only true
                               :return-best-crossvalidation-only true
@@ -401,7 +398,6 @@
              pipeline-fn-or-decl
              train-test-split-seq
              metric-fn
-             loss-or-accuracy
              used-options))
           pipeline-fn-or-decl-seq)
 
@@ -419,18 +415,18 @@
 
          result-pipeline-evals
          (if (used-options :return-best-pipeline-only)
-           (case loss-or-accuracy
+           (case (:loss-or-accuracy metric-fn )
              :loss     (->> pipeline-eval-means  (take 1) (map :pipe-eval))
              :accuracy (->> pipeline-eval-means  (take-last 1) (map :pipe-eval)))
-           (case loss-or-accuracy
+           (case (:loss-or-accuracy metric-fn)
              :loss     (->> pipeline-eval-means  (map :pipe-eval))
              :accuracy (->> pipeline-eval-means  reverse (mapv :pipe-eval))))]
 
 
      result-pipeline-evals))
 
-  ([pipeline-fn-seq train-test-split-seq metric-fn loss-or-accuracy]
-   (evaluate-pipelines pipeline-fn-seq train-test-split-seq metric-fn loss-or-accuracy {})))
+  ([pipeline-fn-seq train-test-split-seq metric-fn]
+   (evaluate-pipelines pipeline-fn-seq train-test-split-seq metric-fn {})))
 
 
 

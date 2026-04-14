@@ -77,8 +77,8 @@
                                {:model-type :classification
                                 :metric :accuracy
                                 :averaging :micro
+                                :loss-or-accuracy :loss
                                 :options {}}
-                               :loss 
                                {:evaluation-handler-fn identity})
 
 
@@ -107,7 +107,7 @@
     (is (= #{:min :mean :max :timing :ctx :metric :other-metrics  :probability-distribution}
            (set (-> evaluations first first :train-transform keys))))
     ;; =>
-    (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-fn :timing-fit :loss-or-accuracy :source-information :split-uid])
+    (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-fn :timing-fit :source-information :split-uid])
            (set (keys (first (first evaluations))))))
     (is (contains?   (:fit-ctx (first (first evaluations)))  :metamorph/mode))
     (is (contains?   (:ctx (:train-transform (first (first evaluations))))  :metamorph/mode))
@@ -156,8 +156,10 @@
                                {:model-type :classification
                                 :metric :accuracy
                                 :averaging :micro
+                                :loss-or-accuracy :loss 
                                 :options {}} 
-                               :loss {:evaluation-handler-fn identity})
+                               
+                               {:evaluation-handler-fn identity})
 
         best-fitted-context  (-> evaluations first first :fit-ctx)
         best-pipe-fn         (-> evaluations first first :pipe-fn)]
@@ -185,8 +187,9 @@
         (ml/evaluate-pipelines pipe-fn-seq train-split-seq {:model-type :classification
                                                             :metric :accuracy
                                                             :averaging :micro
-                                                            :options {}}
-                               :loss)]
+                                                            :loss-or-accuracy :loss
+
+                                                            :options {}})]
 
 
     (is (nil? (-> evaluations first first :train-transform :ctx :model :model-data :model-as-bytes)))
@@ -217,13 +220,15 @@
         (ml/evaluate-pipelines pipe-fn-seq train-split-seq {:model-type :classification
                                                             :metric :accuracy
                                                             :averaging :micro
-                                                            :options {}} :loss
+                                                            :loss-or-accuracy :loss
+                                                            :options {}} 
                                {:return-best-crossvalidation-only false})
         evaluations-2
         (ml/evaluate-pipelines pipe-fn-seq train-split-seq {:model-type :classification
                                                             :metric :accuracy
                                                             :averaging :micro
-                                                            :options {}} :loss
+                                                            :loss-or-accuracy :loss
+                                                            :options {}} 
                                {:return-best-crossvalidation-only false
                                 :return-best-pipeline-only false})
 
@@ -231,7 +236,8 @@
         (ml/evaluate-pipelines pipe-fn-seq train-split-seq {:model-type :classification
                                                             :metric :accuracy
                                                             :averaging :micro
-                                                            :options {}} :loss
+                                                            :loss-or-accuracy :loss
+                                                            :options {}} 
                                {:return-best-pipeline-only false})]
 
 
@@ -291,8 +297,8 @@
          {:model-type :classification
           :metric :accuracy
           :averaging :micro
+          :loss-or-accuracy :loss
           :options {}}
-         :loss
          {:evaluation-handler-fn
           ;(fn [result] (def result result) result)
           eval/metrics-keep-fn})]
@@ -327,8 +333,8 @@
          {:model-type :classification
           :metric :accuracy
           :averaging :micro
+          :loss-or-accuracy :loss
           :options {}}
-         :loss
          {:evaluation-handler-fn
           eval/metrics-and-options-keep-fn})]
     (is (=
@@ -410,8 +416,8 @@
                             {:model-type :classification
                              :metric :accuracy
                              :averaging :micro
+                             :loss-or-accuracy :accuracy
                              :options {}}
-                            :accuracy
                             {:evaluation-handler-fn nippy-handler})]
            (fit-pipe-in-new-ns (first @files) iris)))))
 
@@ -432,8 +438,8 @@
          {:model-type :classification
           :metric :accuracy
           :averaging :micro
+          :loss-or-accuracy :accuracy
           :options {}}
-         :accuracy
          {:evaluation-handler-fn eval/result-dissoc-in-seq--all-fn})]
 
     (is (=
@@ -472,8 +478,8 @@
          {:model-type :classification
           :metric :accuracy
           :averaging :micro
+          :loss-or-accuracy :accuracy
           :options {}}
-         :accuracy
          {:evaluation-handler-fn (fn [_]
                                    {:train-transform {:metric 1}
                                     :test-transform {:metric 1}})})]
@@ -498,8 +504,8 @@
          {:model-type :classification
           :metric :accuracy
           :averaging :micro
+          :loss-or-accuracy :accuracy
           :options {}}
-         :accuracy
          {:other-metrics [{:name :acc-2  :metric-fn {:model-type :classification
                                                      :metric :accuracy
                                                      :averaging :micro
@@ -539,8 +545,8 @@
          {:model-type :classification
           :metric :accuracy
           :averaging :micro
+          :loss-or-accuracy :accuracy
           :options {}}
-         :accuracy
          {:result-dissoc-in-seq []
           :return-best-crossvalidation-only false
           :return-best-pipeline-only false

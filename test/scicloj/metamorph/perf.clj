@@ -29,8 +29,7 @@
         _ (println "dissoc: " dissoc)
         _ (println "seq: " (if (true? dissoc)  scicloj.metamorph.ml.evaluation-handler/default-result-dissoc-in-seq []))
         tune-options
-        {
-         :result-dissoc-in-seq (if dissoc  scicloj.metamorph.ml.evaluation-handler/default-result-dissoc-in-seq [])
+        {:result-dissoc-in-seq (if dissoc  scicloj.metamorph.ml.evaluation-handler/default-result-dissoc-in-seq [])
 
          :return-best-pipeline-only return-best-pipeline-only
          :return-best-crossvalidation-only return-best-crossvalidation-only}
@@ -38,7 +37,13 @@
         _ (println "tune-opstions: " tune-options)
         _ (println "class : " (class dissoc))
         evaluations
-        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-accuracy :accuracy tune-options)]
+        (ml/evaluate-pipelines pipe-fn-seq
+                               train-split-seq
+                               {:model-type :classification
+                                :metric :accuracy
+                                :averaging :micro
+                                :loss-or-accuracy :accuracy
+                                :options {}}                               tune-options)]
     
     (mm/measure evaluations)))
 

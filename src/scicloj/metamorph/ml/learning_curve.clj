@@ -19,10 +19,9 @@
   `options`
      `k` At each step a k cross-validation is done
      `metric-fn` the metric to use for evaluation the model
-     `loss-or-accuracy`   If the metric-fn calculates :loss or :accuracy
 
   "
-  [ds pipe-fn train-sizes {:keys [k metric-fn loss-or-accuracy]}]
+  [ds pipe-fn train-sizes {:keys [k metric-fn]}]
   (let [splits (tc/split->seq ds :kfold {:k k :seed 12345})]
     (->>
      (mapv (fn [{:keys [train test]}]
@@ -39,7 +38,6 @@
                     [pipe-fn]
                     train-test-seq
                     metric-fn
-                    loss-or-accuracy
                     {:evaluation-handler-fn identity
                      :return-best-pipeline-only false
                      :return-best-crossvalidation-only false})]

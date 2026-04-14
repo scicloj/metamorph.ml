@@ -41,8 +41,9 @@
                             :metric-fn {:model-type :classification
                                         :metric :accuracy
                                         :averaging :micro
+                                        :loss-or-accuracy :accuracy
                                         :options {}}
-                            :loss-or-accuracy :accuracy})]
+                            })]
 
 
     (t/is (= [:metric-train :metric-test :test-ds-size :train-size-index :train-ds-size]
