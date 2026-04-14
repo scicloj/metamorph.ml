@@ -542,18 +542,38 @@
     ;(validate-model--ols model-unfrozen ds)
     ))
 
-
-(let [ds
-      (->
-       (data/mtcars-ds)
-       (ds/drop-columns [:model])
-       (ds-mod/set-inference-target :mpg))
-      model (ml/train ds {:model-type :fastmath/glm})]
-  model
-  )
-
+(deftest glm
+  (let [ds
+        (->
+         (data/mtcars-ds)
+         (ds/drop-columns [:model])
+         (ds-mod/set-inference-target :mpg))
+        model (ml/train ds {:model-type :fastmath/glm})
+        prediction (ml/predict ds model)]
 
 
+    (is (=
+         [-0.11144047788683648
+          0.013335239913341252
+          -0.021482118989136753
+          0.7871109722361284
+          -3.7153039283274807
+          0.8210407496746381
+          0.31776281418543756
+          2.520226887208448
+          0.6554130170818067
+          -0.19941925485627085]
+
+         (-> model :model-data :beta)))
+
+    (is (=
+         [-0.7226658915045567 -0.49798983506911854 -1.4923733467131395 0.0698149259965109 0.4245087109159228]
+         (->> model :model-data :analysis :residuals :standardized :pearson (take 5))))
+
+    (is (= :prediction (-> prediction :mpg meta :column-type)))
+    (is (=
+         [22.599505761262378 22.111886079356665 26.250644084798793 21.237404546675762 17.69343402869752]
+         (->> prediction :mpg (take 5))))))
 
 
 
@@ -583,9 +603,7 @@
         (* typeprof education)
         (* typewc education)
         (* typeprof lincome)
-        (* typewc lincome)]))
-    
-    )
+            (* typewc lincome)])))
   
 
   (def pipe-fn
