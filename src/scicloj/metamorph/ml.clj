@@ -44,8 +44,8 @@
 
 
 
-(defn- score [predictions-ds trueth-ds metric-fn other-metrics]
-  (let [{:keys [model-type metric averaging options]} metric-fn
+(defn- score [predictions-ds trueth-ds metric other-metrics]
+  (let [{:keys [model-type metric averaging options]} metric
 
         metric (case model-type
                  :classification (col-metric/classification-metric--fastmath trueth-ds predictions-ds metric averaging options))
@@ -64,7 +64,7 @@
 
 
 
-(defn- supervised-eval-pipeline [pipeline-fn fitted-ctx metric-fn ds other-metrics]
+(defn- supervised-eval-pipeline [pipeline-fn fitted-ctx metric ds other-metrics]
 
   (let [start-transform (System/currentTimeMillis)
         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
@@ -80,7 +80,7 @@
 
 
 
-        scores (score predictions-ds trueth-ds metric-fn other-metrics)
+        scores (score predictions-ds trueth-ds metric other-metrics)
 
 
         eval-result
@@ -92,18 +92,18 @@
     eval-result))
 
 
-(defn- eval-pipeline [pipeline-fn fitted-ctx metric-fn ds other-metrics]
+(defn- eval-pipeline [pipeline-fn fitted-ctx metric ds other-metrics]
 
   (if  (-> fitted-ctx :model ::unsupervised?)
     {:other-metrics []
      :timing 0
      :ctx {}
-     :metric (metric-fn fitted-ctx)}
+     :metric (metric fitted-ctx)}
 
-    (supervised-eval-pipeline pipeline-fn fitted-ctx metric-fn ds other-metrics)))
+    (supervised-eval-pipeline pipeline-fn fitted-ctx metric ds other-metrics)))
 
 
-(defn- calc-metric [pipeline-fn metric-fn train-ds test-ds tune-options]
+(defn- calc-metric [pipeline-fn metric train-ds test-ds tune-options]
   (try
     (let [start-fit (System/currentTimeMillis)
           fitted-ctx (pipeline-fn {:metamorph/mode :fit  :metamorph/data train-ds})
@@ -113,13 +113,13 @@
           #_(errors/when-not-error (:model fitted-ctx) "Pipeline contexts under evaluation need to have the model operation with id :model")
 
 
-          eval-pipeline-result-train (eval-pipeline pipeline-fn fitted-ctx metric-fn train-ds (:other-metrics tune-options))
+          eval-pipeline-result-train (eval-pipeline pipeline-fn fitted-ctx metric train-ds (:other-metrics tune-options))
           eval-pipeline-result-test (if (-> fitted-ctx :model ::unsupervised?)
                                       {:other-metrics []
                                        :timing 0
                                        :ctx fitted-ctx
                                        :metric 0}
-                                      (eval-pipeline pipeline-fn fitted-ctx metric-fn test-ds (:other-metrics tune-options)))]
+                                      (eval-pipeline pipeline-fn fitted-ctx metric test-ds (:other-metrics tune-options)))]
 
 
 
@@ -169,7 +169,7 @@
 
 
 
-(defn- evaluate-one-pipeline [pipeline-decl-or-fn train-test-split-seq metric-fn tune-options]
+(defn- evaluate-one-pipeline [pipeline-decl-or-fn train-test-split-seq metric tune-options]
 
   (let [pipeline-fn (if (fn? pipeline-decl-or-fn)
                       pipeline-decl-or-fn
@@ -182,9 +182,9 @@
          (for [train-test-split train-test-split-seq]
            (let [{:keys [train test split-uid]} train-test-split
                  complete-result
-                 (assoc (calc-metric pipeline-fn metric-fn train test tune-options)
+                 (assoc (calc-metric pipeline-fn metric train test tune-options)
                         :split-uid split-uid
-                        :metric-fn metric-fn
+                        :metric-fn metric
                         :pipe-decl pipeline-decl
                         :pipe-fn pipeline-fn
                         :source-information
@@ -218,10 +218,10 @@
 
         result
         (if (tune-options :return-best-crossvalidation-only)
-          (case (:loss-or-accuracy metric-fn)
+          (case (:loss-or-accuracy metric)
             :loss (->> evaluations  (take 1))
             :accuracy (->> evaluations  (take-last 1)))
-          (case (:loss-or-accuracy metric-fn)
+          (case (:loss-or-accuracy metric)
             :loss evaluations
             :accuracy (-> evaluations  reverse)))]
     result))
@@ -251,17 +251,31 @@
    * `train-test-split-seq` need to be a sequence of maps containing the  train and test dataset (being tech.ml.dataset) at keys :train and :test.
     `tablecloth.api/split->seq` produces such splits. Supervised models require both keys (:train and :test), while unsupervised models only use :train
 
-   * `metric-fn` Metric function to use. Typically comming from `tech.v3.ml.loss`. For supervised models the metric-fn receives the trueth
-      and predicted values and should return a single double number.  The metric fns receives a a seq *without* categorical maps. These
-      get reverse-applied to the prediction , if present, before passing the values to the metriic fn.
-      For unsupervised models the function receives the fitted ctx
-      and should return a singel double number as well. This metric will be used to sort and eventualy filter the result, depending on the options
-      (:return-best-pipeline-only   and :return-best-crossvalidation-only). The notion of `best` comes from metric-fn combined with loss-and-accuracy
+   * `metric` Metric function to use. Map of
+
+       * :model-type :classification
+       * :metric :accuracy
+       * :averaging :micro
+       * :options {}
+       * :loss-or-accuracy :accurcay
+   
+       where 
+   
+       * `:model-type`   :classification or :regression
+       * `:metric`       :any metric of `fastmath.stats/binary-measures-all`  
+       * `:averaging`    :macro or :micro averaging of the binary metric to a single value 
+       * `:options`      Optional options of the metric function
+       * `:loss-or-accuracy`: If the metric is a loss or accuracy calculation. Can be :loss or :accuracy. 
+          Decides the notion of `best` model.
+          In case of :loss pipelines with lower metric are better, in case of :accuracy pipelines with higher value are better.
+
+   
+      This metric will be used to sort and eventualy filter the result, depending on the options
+      (:return-best-pipeline-only   and :return-best-crossvalidation-only). 
+      The notion of `best` comes from :metric combined with :loss-and-accuracy
   
 
-   * `loss-or-accuracy` If the metric-fn is a loss or accuracy calculation. Can be :loss or :accuracy. Decided the notion of `best` model.
-      In case of :loss pipelines with lower metric are better, in case of :accuracy pipelines with higher value are better.
-
+   
   * `options` map controls some mainly performance related parameters. These function can potentialy result in a large ammount of data,
     able to bring the JVM into out-of-memory. We can control how many details the function returns by the following parameter: 
      The default are quite aggresive in removing details, and this can be tweaked further into more or less details via:
@@ -374,7 +388,7 @@
      ::evaluation-result]]}
   ;;
 
-  ([pipeline-fn-or-decl-seq train-test-split-seq metric-fn options]
+  ([pipeline-fn-or-decl-seq train-test-split-seq metric options]
    (let [used-options (merge {:map-fn :map
                               :return-best-pipeline-only true
                               :return-best-crossvalidation-only true
@@ -397,7 +411,7 @@
             (evaluate-one-pipeline
              pipeline-fn-or-decl
              train-test-split-seq
-             metric-fn
+             metric
              used-options))
           pipeline-fn-or-decl-seq)
 
@@ -415,10 +429,10 @@
 
          result-pipeline-evals
          (if (used-options :return-best-pipeline-only)
-           (case (:loss-or-accuracy metric-fn )
+           (case (:loss-or-accuracy metric )
              :loss     (->> pipeline-eval-means  (take 1) (map :pipe-eval))
              :accuracy (->> pipeline-eval-means  (take-last 1) (map :pipe-eval)))
-           (case (:loss-or-accuracy metric-fn)
+           (case (:loss-or-accuracy metric)
              :loss     (->> pipeline-eval-means  (map :pipe-eval))
              :accuracy (->> pipeline-eval-means  reverse (mapv :pipe-eval))))]
 
