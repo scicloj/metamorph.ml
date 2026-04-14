@@ -315,6 +315,18 @@
    [:function
     {:registry
      {
+      ::transform [:map {:closed true}
+                   [:other-metrics [:sequential [:map {:closed true}
+                                                 [:name keyword?]
+                                                 [:metric-fn :map]
+                                                 [:metric float?]]]]
+                   [:timing int?]
+                   [:metric float?]
+                   [:probability-distribution  [:maybe [:fn dataset?]]]
+                   [:min float?]
+                   [:mean float?]
+                   [:max float?]
+                   [:ctx map?]]
       ::train-test-split-seq [:sequential [:map {:closed true}
                                            [:split-uid {:optional true} string?]
                                            [:train [:fn dataset?]]
@@ -345,30 +357,8 @@
          [:fit-ctx [:map [:metamorph/mode [:enum :fit :transform]]]]
          [:timing-fit int?]
 
-         [:train-transform [:map {:closed true}
-                            [:other-metrics [:sequential [:map {:closed true}
-                                                          [:name keyword?]
-                                                          [:metric-fn :map]
-                                                          [:metric float?]]]]
-                            [:timing int?]
-                            [:metric float?]
-                            [:probability-distribution  [:maybe [:fn dataset?]]]
-                            [:min float?]
-                            [:mean float?]
-                            [:max float?]
-                            [:ctx map?]]]
-         [:test-transform [:map {:closed true}
-                           [:other-metrics [:sequential [:map {:closed true}
-                                                         [:name keyword?]
-                                                         [:metric-fn :map]
-                                                         [:metric float?]]]]
-                           [:timing int?]
-                           [:metric float?]
-                           [:probability-distribution  [:maybe [:fn dataset?]]]
-                           [:min float?]
-                           [:mean float?]
-                           [:max float?]
-                           [:ctx map?]]]
+         [:train-transform ::transform]
+         [:test-transform ::transform]
          [:metric-fn :map]
          [:pipe-decl [:maybe sequential?]]
          [:pipe-fn fn?]

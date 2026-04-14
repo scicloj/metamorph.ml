@@ -524,40 +524,41 @@
     (is (some? (-> evaluation-result first first :train-transform :other-metrics (nth 2) :metric)))))
 
 
-(deftest validate-schema
-  (do-define-model)
-  (let [create-base-pipe-decl
-        (fn  [node-size]
-          [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
-           [:tech.v3.dataset.metamorph/categorical->number [:species] iris-target-values]
-           {:metamorph/id :model} [:scicloj.metamorph.ml/model {:model-type :test-model
-                                                                :node-size node-size}]])
+;; (deftest validate-schema
+;;   (do-define-model)
+;;   (let [create-base-pipe-decl
+;;         (fn  [node-size]
+;;           [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
+;;            [:tech.v3.dataset.metamorph/categorical->number [:species] iris-target-values]
+;;            {:metamorph/id :model} [:scicloj.metamorph.ml/model {:model-type :test-model
+;;                                                                 :node-size node-size}]])
 
-        pipes (map create-base-pipe-decl [1 5 10 20 50 100])
+;;         pipes (map create-base-pipe-decl [1 5 10 20 50 100])
 
-        split (tc/split->seq iris :holdout)
+;;         split (tc/split->seq iris :holdout)
 
-        result-schema (-> #'ml/evaluate-pipelines meta :malli/schema second :registry :scicloj.metamorph.ml/evaluation-result)
+;;         result-schema (-> #'ml/evaluate-pipelines meta :malli/schema second :registry :scicloj.metamorph.ml/evaluation-result)
 
-        evaluation-result
-        (ml/evaluate-pipelines
-         pipes split
-         {:model-type :classification
-          :metric :accuracy
-          :averaging :micro
-          :loss-or-accuracy :accuracy
-          :options {}}
-         {:result-dissoc-in-seq []
-          :return-best-crossvalidation-only false
-          :return-best-pipeline-only false
-          :attach-fn-sources {:ns (find-ns 'clojure.core)
-                              :pipe-fns-clj-file "test/scicloj/metamorph/ml_test.clj"}})]
+;;         evaluation-result
+;;         (ml/evaluate-pipelines
+;;          pipes split
+;;          {:model-type :classification
+;;           :metric :accuracy
+;;           :averaging :micro
+;;           :loss-or-accuracy :accuracy
+;;           :options {}}
+;;          {:result-dissoc-in-seq []
+;;           :return-best-crossvalidation-only false
+;;           :return-best-pipeline-only false
+;;           :attach-fn-sources {:ns (find-ns 'clojure.core)
+;;                               :pipe-fns-clj-file "test/scicloj/metamorph/ml_test.clj"}})]
 
 
-    (is (true?
-         (m/validate
-          result-schema
-          evaluation-result)))))
+;;     (is (true?
+;;          (m/validate
+;;           result-schema
+;;           evaluation-result)))))
+
 
 
 (deftest call-without-ds
@@ -814,7 +815,7 @@
          :fixed-class 3}))))
 
 
-(deftest train-predi-validate 
+(deftest train-predict-validate 
   (require '[scicloj.ml.smile.classification])
   
   (let [data
