@@ -13,25 +13,6 @@
    [fastmath.stats :as stats]
    [fastmath.core :as m]))
 
-;; todo: take from fastmath
-(defn- fastmath-multiclass-measure
-  ([actual prediction] (fastmath-multiclass-measure actual prediction nil))
-  ([actual prediction {:keys [average ^double beta metric weighted?]
-                       :or {average stats/mean beta 0.5 metric :f1-score weighted? false}}]
-   (let [all-labels (distinct (concat actual prediction))
-         measures (->> all-labels
-                       (map (fn [label] (let [all-bin-measures (stats/binary-measures-all actual prediction #{label})
-                                              res (get all-bin-measures  metric)
-                                              _ (assert res (format "binary measure not existing in fastmath : '%s' " metric ))
-                                              ]
-                                          (if (fn? res) (res beta) res))))
-                       (map (fn [^double v] (if (m/nan? v) 0.0 v))))]
-     (cond
-       (not average) (zipmap all-labels measures)
-       (= average :micro) (m// (stats/L0 actual prediction) (double (count actual)))
-       weighted? (let [weights (map (frequencies actual) all-labels)]
-                   (average measures weights))
-       :else (average measures)))))
 
 
 (def *insist* (atom true))
@@ -270,30 +251,42 @@
          :truth-ds (ds/update-elemwise truth-ds elem->int-map)}))))
 
   
-
+  
 
 (defn classification-metric--fastmath
   ([y-true y-pred metric averaging options]
 
    (let [{:keys [prediction-col truth-col]}
-          (datasets->single-cols y-true
-                                 y-pred
-                                 ds->int-ds
-                                 {:dataset [insist-dataset!]
-                                  :predict-cols [insist-single-label!]
-                                  :truth-cols [insist-single-label!]
-                                  :every-col [insist-no-NaN!
-                                              insist-no-missing!
-                                              insist-discrete--integer!
-                                              insist-uniform!
-                                              insist-same-row-number!]})]
-     (fastmath-multiclass-measure truth-col
-                                  prediction-col
-                                  {:metric metric
-                                   :average (case averaging
-                                              :macro stats/mean
-                                              :micro :micro)
-                                   :beta (:beta options)})))
+         (datasets->single-cols y-true
+                                y-pred
+                                ds->int-ds
+                                {:dataset [insist-dataset!]
+                                 :predict-cols [insist-single-label!]
+                                 :truth-cols [insist-single-label!]
+                                 :every-col [insist-no-NaN!
+                                             insist-no-missing!
+                                             insist-discrete--integer!
+                                             insist-uniform!
+                                             insist-same-row-number!]})]
+     
+     (def truth-col truth-col)
+     (def prediction-col prediction-col)
+     (def averaging averaging)
+     (def options options)
+     (def metric metric)
+     (stats/multilabel-measure
+      (seq truth-col)
+      (seq prediction-col)
+      {:metric metric
+       :average (case averaging
+                  :macro stats/mean
+                  :micro :micro)
+       :beta (get options 0.5)})))
+
+    
+    
+
+
   ([y-true y-pred metric averaging] (classification-metric--fastmath y-true y-pred metric averaging {})))
 
 
