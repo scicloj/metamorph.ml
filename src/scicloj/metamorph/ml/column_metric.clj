@@ -117,7 +117,6 @@
 
 (defn- ->prediction-ds [y-pred-ds]
   (assert (ds/dataset? y-pred-ds))
-
   (->
    (ds-cat/reverse-map-categorical-xforms y-pred-ds)
    (cf/prediction)))
@@ -132,7 +131,6 @@
 (defn- ->prob-ds [y-true-ds]
   (assert (ds/dataset? y-true-ds))
   (-> y-true-ds
-      (ds-cat/reverse-map-categorical-xforms)
       (cf/probability-distribution)))
 
 
@@ -197,7 +195,7 @@
   (assert (= :ovr multi-class-handling))
   (insist-dataset! y-true y-pred)
   
-  (let [target-ds (->target-ds y-true)
+  (let [target-ds (cf/target y-true)
         probability-ds (->prob-ds y-pred)
         ]
     
@@ -222,7 +220,9 @@
                 (fn [{:keys [one rest]}]
 
                   (let [binarized-labels
-                        (ds/categorical->one-hot target-ds [label-column-name])
+                        (ds/categorical->one-hot 
+                         (ds-cat/reverse-map-categorical-xforms target-ds) 
+                         [label-column-name])
                         probs-one  (get y-pred one)
                         labels (get binarized-labels (keyword (format "%s-%s" (name label-column-name) (name one))))
                         ]
