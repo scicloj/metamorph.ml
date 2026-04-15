@@ -79,7 +79,7 @@
 
 
 
-(deftest classification-metrix-tribuo-valid
+(deftest classification-metrix-valid
   (let [y-true (ds/new-dataset [(col/new-column :my-target [0, 1, 2, 0, 1, 2] {:inference-target? true})])
         y-pred (ds/new-dataset [(col/new-column :pred [0, 2, 1, 0, 0, 1] {:column-type :prediction})])]
     (is (= 0.2666666666666667 (col-metric/classification-metric--fastmath y-true y-pred :f1-score :macro)))
