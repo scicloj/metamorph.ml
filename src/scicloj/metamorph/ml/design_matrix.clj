@@ -5,7 +5,10 @@
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.column-filters :as cf]
-   [tech.v3.dataset.modelling :as ds-mod]))
+   [tech.v3.dataset.modelling :as ds-mod]
+   [cheshire.core :as json]
+   [clojure.string :as str]
+   [opencpu-clj.ocpu :as ocpu]))
 
 (defn- combine-with-dash [arg1 arg2]
   (let [to-string (fn [x]
@@ -185,4 +188,51 @@
         (ds/categorical->number cf/categorical))))
 
 
+(defn- object-id [base-url library object-name params]
+  (-> (ocpu/object base-url 
+                   :library library
+                   :R object-name
+                   params)
+      :result
+      first (str/split #"/") (nth 3))
+  )
 
+(defn model-matrix [ds r-formula]
+  (let [base-url "https://cloud.opencpu.org"
+        
+        ds--json
+        (apply merge
+               (map
+                (fn [col]
+                  {col
+                   (json/encode (vec (get ds col)))})
+                (keys ds)))
+        df-object  (-> (object-id base-url :tibble :tibble ds--json))
+        formula-object  (-> (object-id base-url :stats :formula {:x r-formula}))
+
+
+        model-matrix-result
+        (->
+         (ocpu/object base-url :library :stats :R "model.matrix"
+                      {:object formula-object
+                       :data df-object})
+         :result)
+
+        model-matrix-object
+        (-> model-matrix-result
+            first
+            (str/split #"/")
+            (nth 3))
+
+        col-names
+        (->
+         (ocpu/object base-url :library :base :R "colnames"
+                      {:x model-matrix-object} :json)
+         :result)
+
+        model-matrix
+        (ocpu/session base-url (first model-matrix-result) :json)]
+
+    (->
+     (tc/dataset (:result model-matrix))
+     (ds/rename-columns col-names))))

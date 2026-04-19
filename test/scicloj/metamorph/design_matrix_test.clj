@@ -1,10 +1,12 @@
 (ns scicloj.metamorph.design-matrix-test
-  (:require  [clojure.test :as t :refer [deftest is]]
-             [scicloj.metamorph.common]
-             [tablecloth.api :as tc]
-             [tablecloth.column.api]
-             [tech.v3.dataset.tensor :as tensor]
-             [scicloj.metamorph.ml.design-matrix :as dm]))
+  (:require
+   [clojure.test :as t :refer [deftest is]]
+   [scicloj.metamorph.common]
+   [scicloj.metamorph.ml.design-matrix :as dm]
+   [scicloj.metamorph.ml.rdatasets :as rdatasets]
+   [tablecloth.api :as tc]
+   [tablecloth.column.api]
+   [tech.v3.dataset.tensor :as tensor]))
 
 
 
@@ -127,5 +129,21 @@
                  {:x 3 "y" 4}]}) :a)))))
 
 
+(deftest model-matrix 
+  (is (= 
+       [{"(Intercept)" 1, "as.factor(cyl)6" 1, "as.factor(cyl)8" 0, "disp" 160.0, "gear" 4}
+        {"(Intercept)" 1, "as.factor(cyl)6" 1, "as.factor(cyl)8" 0, "disp" 160.0, "gear" 4}
+        {"(Intercept)" 1, "as.factor(cyl)6" 0, "as.factor(cyl)8" 0, "disp" 108.0, "gear" 4}
+        {"(Intercept)" 1, "as.factor(cyl)6" 1, "as.factor(cyl)8" 0, "disp" 258.0, "gear" 3}
+        {"(Intercept)" 1, "as.factor(cyl)6" 0, "as.factor(cyl)8" 1, "disp" 360.0, "gear" 3}]
+
+       
+       (-> 
+        (dm/model-matrix (rdatasets/datasets-mtcars)
+                         "~as.factor(cyl)+disp+gear")
+        (tc/head 5)
+        (tc/rows :as-maps)
+        ))))
+ 
 
 
