@@ -1,14 +1,17 @@
 (ns scicloj.metamorph.ml.design-matrix
   (:require
+   [cemerick.pomegranate :as pom]
+   [cemerick.pomegranate.aether :as aether]
+   [cheshire.core :as json]
    [clojure.set :as set]
+   [clojure.string :as str]
    [clojure.walk :as cljwalk]
+   [opencpu-clj.ocpu :as ocpu]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.modelling :as ds-mod]
-   [cheshire.core :as json]
-   [clojure.string :as str]
-   [opencpu-clj.ocpu :as ocpu]))
+   [tech.v3.datatype :as dt]))
 
 (defn- combine-with-dash [arg1 arg2]
   (let [to-string (fn [x]
@@ -197,7 +200,7 @@
       first (str/split #"/") (nth 3))
   )
 
-(defn model-matrix [ds r-formula]
+(defn model-matrix--ocpu [ds r-formula]
   (let [base-url "https://cloud.opencpu.org"
         
         ds--json
@@ -236,3 +239,66 @@
     (->
      (tc/dataset (:result model-matrix))
      (ds/rename-columns col-names))))
+
+(defn add-renjin-deps []
+
+  (pom/add-dependencies :coordinates '[[org.renjin/renjin-script-engine "3.5-beta76"]]
+                        :repositories (merge aether/maven-central
+                                             {"bedatadriven-public" "https://nexus.bedatadriven.com/content/groups/public/"}))
+  (import '[javax.script ScriptEngine]
+          '[org.renjin.primitives.matrix Matrix]
+          '[org.renjin.sexp ListVector]
+          '[org.renjin.sexp DoubleArrayVector]
+          '[org.renjin.sexp LongArrayVector]
+          '[org.renjin.sexp IntArrayVector]
+          '[org.renjin.sexp StringArrayVector]
+          '[org.renjin.script RenjinScriptEngineFactory]);;=> {:datatype :int64, :lookup-table {1 0, 0 1}, :values [1]}
+  )
+
+(defn model-matrix--renjine [ds r-formula]
+  (add-renjin-deps)
+  
+
+  (let [factory  (RenjinScriptEngineFactory.)
+        engine (.getScriptEngine factory)
+        _ (run!
+           (fn [[k v]]
+             (case (dt/elemwise-datatype v)
+               :keyword (.put engine (name k) (StringArrayVector. (into-array String v)))
+               :string (.put engine (name k) (StringArrayVector. (into-array String v)))
+               :float64 (.put engine (name k) (DoubleArrayVector. (double-array v)))
+               :int16 (.put engine (name k) (IntArrayVector. (int-array v)))))
+           ds)
+
+        _ (.eval engine
+                 (format "mydata=data.frame(%s)"
+                         (->>
+                          ds
+                          keys
+                          (map name)
+                          (str/join ","))))
+
+
+        ^ListVector design-matrix
+        (.eval
+         engine
+         (format "data.frame(model.matrix(%s, mydata))" r-formula))
+        col-names (.. design-matrix
+                      getNames
+                      toArray)]
+
+    (->>
+     (mapv
+      (fn [col]
+        (let [element-vector (.getElementAsVector design-matrix col)
+              values
+              (case (.getName (class element-vector))
+                "org.renjin.sexp.DoubleArrayVector"
+                (.toDoubleArray element-vector))]
+          {col values}))
+      col-names)
+     (apply merge)
+     tc/dataset)))
+  
+
+  

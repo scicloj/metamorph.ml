@@ -28,7 +28,7 @@
 
         com.taoensso/nippy {:mvn/version "3.6.2"}
         com.vladsch.flexmark/flexmark-html2md-converter {:mvn/version "0.64.8"}
-        org.renjin/renjin-script-engine     {:mvn/version "3.5-beta76"}   
+        clj-commons/pomegranate {:mvn/version "1.3.26"}
         clj-http/clj-http {:mvn/version "3.13.1"}
         cheshire/cheshire {:mvn/version "6.2.0"}
         opencpu-clj/opencpu-clj {:mvn/version "0.3.1"}
