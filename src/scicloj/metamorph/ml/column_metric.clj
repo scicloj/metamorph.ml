@@ -226,7 +226,7 @@
   
   
 
-(defn classification-metric--fastmath
+(defn classification-metric
   ([y-true y-pred metric averaging options]
 
    (let [{:keys [prediction-col truth-col]}
@@ -255,10 +255,10 @@
     
 
 
-  ([y-true y-pred metric averaging] (classification-metric--fastmath y-true y-pred metric averaging {})))
+  ([y-true y-pred metric averaging] (classification-metric y-true y-pred metric averaging {})))
 
 
-(defn regression-metric--fastmath [y-true y-pred metric-fn]
+(defn regression-metric [y-true y-pred metric-fn]
 
   (let [{:keys [prediction-col truth-col]}
         (datasets->single-cols y-true

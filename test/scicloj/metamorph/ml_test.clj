@@ -729,8 +729,8 @@
                  prediction (ml/predict test logreg)
                  ]
              [
-              (metric/classification-metric--fastmath test prediction :accuracy :macro)
-              (metric/classification-metric--fastmath test prediction :f1-score :macro)
+              (metric/classification-metric test prediction :accuracy :macro)
+              (metric/classification-metric test prediction :f1-score :macro)
               (metric/roc_auc-score test prediction :macro)]
 
              )))))
