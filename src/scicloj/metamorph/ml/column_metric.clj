@@ -1,17 +1,14 @@
 (ns scicloj.metamorph.ml.column-metric
   (:require
-   [clojure.set :as set]
+   [fastmath.stats :as stats]
+   [fastmath.vector :as v]
    [scicloj.metamorph.ml.classification]
-   [scicloj.metamorph.ml.loss :as loss]
-   [tablecloth.column.api :as tc-col]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.categorical :as ds-cat]
    [tech.v3.dataset.column :as col]
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.datatype :as dt]
-   [tech.v3.datatype.casting :as casting]
-   [fastmath.stats :as stats]
-   [fastmath.core :as m]))
+   [tech.v3.datatype.casting :as casting]))
 
 
 
@@ -171,53 +168,29 @@
 
 
 
-(defn roc_auc-score [y-true y-pred multi-class-handling averaging-method]
-  ;; uses ovr
-  (assert (= :ovr multi-class-handling))
+(defn roc_auc-score [y-true y-pred averaging-method]
   (insist-dataset! y-true y-pred)
-  
+
   (let [target-ds (cf/target y-true)
         probability-ds (->prob-ds y-pred)
-        ]
-    
+        average (case averaging-method
+                  :macro v/average
+                  :micro :micro
+                  nil nil)]
+
     (insist-no-missing! (ds/columns target-ds))
     (insist-uniform! (ds/columns target-ds))
     (insist-single-label! (ds/columns target-ds) "y_true")
     (insist-discrete! (ds/columns target-ds))
     (insist-continous! (ds/columns probability-ds))
     (insist-same-row-number!
-     (concat  (ds/columns target-ds) 
+     (concat  (ds/columns target-ds)
               (ds/columns probability-ds)))
 
-
-    (let [label-column-name (first (ds/column-names target-ds))
-          col-names (into #{} (ds/column-names probability-ds))
-          one-vs-rest
-          (map
-           #(hash-map  :one %
-                       :rest (set/difference col-names #{%}))
-           (-> probability-ds ds/column-names))
-          aucs (map
-                (fn [{:keys [one rest]}]
-
-                  (let [binarized-labels
-                        (ds/categorical->one-hot 
-                         (ds-cat/reverse-map-categorical-xforms target-ds) 
-                         [label-column-name])
-                        probs-one  (get y-pred one)
-                        labels (get binarized-labels (keyword (format "%s-%s" (name label-column-name) (name one))))
-                        ]
-                    
-                    (assert (some? labels)
-                            {:message  "No labels found in `binarized-label`" 
-                             :binaritized-labels binarized-labels
-                             :one one}
-                            )
-                    (loss/auc probs-one labels)))
-                one-vs-rest)]
-      (case averaging-method
-        nil aucs
-        :macro (tc-col/mean aucs)))))
+    (stats/multiclass-auc
+     (-> target-ds ds-cat/reverse-map-categorical-xforms ds/columns first)
+     probability-ds
+     {:average average})))
 
 (defn- ds->int-ds [{:keys [prediction-ds truth-ds]}]
   (assert (ds/dataset? prediction-ds))
@@ -269,12 +242,7 @@
                                              insist-uniform!
                                              insist-same-row-number!]})]
      
-     (def truth-col truth-col)
-     (def prediction-col prediction-col)
-     (def averaging averaging)
-     (def options options)
-     (def metric metric)
-     (stats/multilabel-measure
+     (stats/multiclass-measure
       (seq truth-col)
       (seq prediction-col)
       {:metric metric

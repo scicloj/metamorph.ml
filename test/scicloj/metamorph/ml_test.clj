@@ -712,7 +712,7 @@
          :fixed-class 3}))))
 
 
-(deftest train-predi-validate 
+(deftest train-predict-validate 
   (require '[scicloj.ml.smile.classification])
   
   (let [data
@@ -731,17 +731,13 @@
              [
               (metric/classification-metric--fastmath test prediction :accuracy :macro)
               (metric/classification-metric--fastmath test prediction :f1-score :macro)
-              (metric/roc_auc-score test prediction :ovr :macro)]
+              (metric/roc_auc-score test prediction :macro)]
 
-             ))))
+             )))))
   
-  ;;=> [0.9802469135802468 0.9703630507978335 1.0]
   
-
-
-  
-  )
  
+
 
 (comment 
   (require '[libpython-clj2.python :as py])

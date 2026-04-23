@@ -5,7 +5,7 @@
 
 
         metosin/malli               {:mvn/version "0.20.0"}
-        generateme/fastmath         {:mvn/version "3.0.0-alpha5"}
+        generateme/fastmath         {:mvn/version "3.0.0-alpha6-SNAPSHOT"}
         it.unimi.dsi/fastutil       {:mvn/version "8.5.18"}
         aerial.hanami/aerial.hanami {:mvn/version "0.20.2"
                                      ;; we only need hanami templating

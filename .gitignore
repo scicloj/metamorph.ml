@@ -19,3 +19,5 @@ dump.rdb
 classes
 pyproject.toml
 uv.lock
+.RData
+.Rhistory
