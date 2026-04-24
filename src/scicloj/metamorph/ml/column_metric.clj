@@ -241,7 +241,6 @@
                                              insist-discrete--integer!
                                              insist-uniform!
                                              insist-same-row-number!]})]
-     
      (stats/multiclass-measure
       (seq truth-col)
       (seq prediction-col)
@@ -249,7 +248,8 @@
        :average (case averaging
                   :macro stats/mean
                   :micro :micro)
-       :beta (get options 0.5)})))
+       :beta (get options :beta 0.5)
+       })))
 
     
     
