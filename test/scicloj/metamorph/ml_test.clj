@@ -79,7 +79,7 @@
     {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
                    {:coefficients {:petal_width [0]}})}))
 
-(defn- validate-simple-pipeline []
+(defn- validate-simple-pipeline [eval-fn eval-fn-args]
   (let [pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
@@ -93,8 +93,8 @@
         pipe-fn-seq [pipe-fn]
 
         evaluations
-        (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss {:evaluation-handler-fn identity})
-
+        (apply eval-fn pipe-fn-seq train-split-seq eval-fn-args)
+        
 
         best-fitted-context  (-> evaluations first first :fit-ctx)
         best-pipe-fn         (-> evaluations first first :pipe-fn)
@@ -129,28 +129,44 @@
 
 (deftest evaluate-pipelines-simplest
   (do-define--test-model)
-  (validate-simple-pipeline))
+  (validate-simple-pipeline
+   ml/evaluate-pipelines
+   [loss/classification-loss
+    :loss
+    {:evaluation-handler-fn
+     identity}]
+
+   ))
 
 
 (deftest evaluate-pipelines-simplest-with-atom-cache
   (do-define--test-model)
-  (let [cache-map (atom {})]
+  (let [cache-map (atom {})
+        eval-fn ml/evaluate-pipelines
+        eval-fn-args [loss/classification-loss
+                      :loss
+                      {:evaluation-handler-fn
+                       identity}]
+
+        ]
     (cache/enable-atom-cache! cache-map)
-    (validate-simple-pipeline)
-    (validate-simple-pipeline)
+    (validate-simple-pipeline eval-fn eval-fn-args)
+    (validate-simple-pipeline eval-fn eval-fn-args)
     (cache/disable-cache!)))
 
 (deftest evaluate-pipelines-simplest-with-disk-cache
   (do-define--test-model)
-  (cache/enable-disk-cache! "/tmp/")
-  (validate-simple-pipeline)
-  (validate-simple-pipeline)
-  (cache/disable-cache!))
-
-
-
-
-
+  (let [
+        eval-fn ml/evaluate-pipelines
+        eval-fn-args [loss/classification-loss
+                      :loss
+                      {:evaluation-handler-fn
+                       identity}]]
+    (cache/enable-disk-cache! "/tmp/")
+    (validate-simple-pipeline eval-fn eval-fn-args)
+    (validate-simple-pipeline eval-fn eval-fn-args)
+    (cache/disable-cache!)))
+  
 (deftest test-explain
   (do-define--test-model)
   (let [pipe-fn
@@ -791,6 +807,8 @@
 
              )))))
   
+
+
 (deftest train-predict--dmatrix
 
   (let [dmatrix (DMatrix. "test/data/iris.libsvm.txt?format=libsvm")
@@ -811,67 +829,17 @@
     (is (< 0.80 accurcay))))
 
   
-(deftest optimize-hyperparameter 
-(do-define--test-model)
-  (let [pipe-fn
-        (morph/pipeline
-         (ds-mm/set-inference-target :species)
-         (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/target ds))) iris-target-values :int)
-         (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/feature ds))) {} :float)
-
-         {:metamorph/id :model}
-         (ml/model {:model-type :test-model}))
-
-        train-split-seq (tc/split->seq iris :holdout {:seed 123})
-        pipe-fn-seq [pipe-fn]
-
-        evaluations
-        (ml/optimize-hyperparameter 
-         pipe-fn-seq 
-         train-split-seq 
-          {;:model-type :classification
-          :metric loss/classification-loss
-          ;:averaging :micro
-          :loss-or-accuracy :accuracy
-          ;:options {}
-           }
-         {}
-         )
-
-
-        best-fitted-context  (-> evaluations first first :fit-ctx)
-        best-pipe-fn         (-> evaluations first first :pipe-fn)
-
-        new-ds (->
-                (tc/shuffle iris  {:seed 1234})
-                (tc/head 10))
-
-        predictions
-        (->
-         (best-pipe-fn
-          (merge best-fitted-context
-                 {:metamorph/data new-ds
-                  :metamorph/mode :transform}))
-         (:metamorph/data))
-        ]
-    ;; ;; (ds-mod/column-values->categorical :species)
-
-
-    (is (= (repeat 10 "versicolor")
-           (-> predictions ds-cat/reverse-map-categorical-xforms :species seq)))
-    (is (=  1 (count evaluations)))
-    (is (=  1 (count (first evaluations))))
-
-    (is (= #{:min :mean :max :timing :ctx :metric :other-metrics  :probability-distribution}
-           (set (-> evaluations first first :train-transform keys))))
-    ;; =>
-    (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-fn :timing-fit :loss-or-accuracy :source-information :split-uid])
-           (set (keys (first (first evaluations))))))
-    (is (contains?   (:fit-ctx (first (first evaluations)))  :metamorph/mode))
-    (is (contains?   (:ctx (:train-transform (first (first evaluations))))  :metamorph/mode))
-    (is (contains?   (:ctx (:test-transform (first (first evaluations))))  :metamorph/mode))
-    
-    ))
+(deftest optimize-hyperparameter
+  (do-define--test-model)
+  (let [eval-fn ml/optimize-hyperparameter
+        eval-fn-args [{;:model-type :classification
+                       :metric loss/classification-accuracy
+                                ;:averaging :micro
+                       :loss-or-accuracy :accuracy
+                                ;:options {}
+                       }
+                      {}]]
+    (validate-simple-pipeline eval-fn eval-fn-args)))
 
 
  
