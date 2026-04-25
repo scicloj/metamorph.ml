@@ -9,7 +9,8 @@
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.impl.dataset :refer [dataset?]]
    [tech.v3.datatype.errors :as errors]
-   [tech.v3.datatype.functional :as dfn]))
+   [tech.v3.datatype.functional :as dfn]
+   [scicloj.metamorph.ml.column-metric :as col-metric]))
 
 
 (defn- strict-type-check [trueth-col predictions-col]
@@ -40,14 +41,24 @@
                              target-column-name)
         trueth-col (get (ds-cat/reverse-map-categorical-xforms trueth-ds)
                         target-column-name)
-        metric-fn  (:metric metric) 
+        metric-fn-or-kw  (:metric metric)
 
         _ (def trueth-col trueth-col)
         _ (def predictions-col predictions-col)
-        _ (def metric-fn metric-fn)
+        _ (def metric-fn-or-kw metric-fn-or-kw)
+        _ (def trueth-ds trueth-ds)
+        _ (def predictions-ds predictions-ds)
 
         _ (strict-type-check trueth-col predictions-col)
-        metric-value (metric-fn trueth-col predictions-col)
+        metric-value
+        (if (fn? metric-fn-or-kw)
+          (metric-fn-or-kw trueth-col predictions-col)
+          (col-metric/classification-metric
+           trueth-ds
+           predictions-ds 
+           metric-fn-or-kw 
+           (:averaging metric)
+           ))
 
         other-metrics-result
         (map
