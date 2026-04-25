@@ -4,6 +4,7 @@
    [scicloj.metamorph.common]
    [scicloj.metamorph.core :as morph]
    [scicloj.metamorph.ml :as ml]
+   [scicloj.metamorph.ml.evaluation-handler :as eval-handler]
    [scicloj.metamorph.ml.loss :as loss]
    [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [scicloj.ml.smile.classification]

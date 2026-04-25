@@ -64,7 +64,14 @@
   :test
   {:jvm-opts ["-Djdk.attach.allowAttachSelf","-Xmx14G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
    :extra-paths ["test"]
-   :extra-deps {lambdaisland/kaocha {:mvn/version "1.91.1392"}
+   :extra-deps {
+                org.scicloj/scicloj.ml.xgboost 
+                ;{:local/root  "/sources/scicloj.ml.xgboost"}
+                 {:git/url "https://github.com/scicloj/scicloj.ml.xgboost"
+                  :git/sha "67c1416314fe542d2c861890e4ee45cd01c78e59"}
+                ;; ;{:mvn/version "6.4.0"}
+
+                lambdaisland/kaocha {:mvn/version "1.91.1392"}
                 org.mapdb/mapdb {:mvn/version "3.1.0"}}}
   :runner {:main-opts ["-m" "kaocha.runner"]}
 

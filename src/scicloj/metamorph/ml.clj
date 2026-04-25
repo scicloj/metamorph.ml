@@ -575,19 +575,20 @@
                        (me/humanize)))))))
 
 (defn- assert-categorical-consistency [dataset]
+  (when (dataset? dataset)
     (let [distinc-datatypes
-        (->> dataset ds-cat/dataset->categorical-maps
-             (map #(->> % :lookup-table vals (map dt/datatype)))
-             flatten
-             distinct)]
-    (assert (contains? #{0 1} 
-                       (count distinc-datatypes)) (str "Non uniform cat map " (->> dataset ds-cat/dataset->categorical-maps vec)))
-    (assert
-     (or
-      (empty? distinc-datatypes)
-      (contains? #{:int :int32 :int64}
-                 (first distinc-datatypes)))
-     (str "Non :int cat map " (->> dataset ds-cat/dataset->categorical-maps vec))))
+          (->> dataset ds-cat/dataset->categorical-maps
+               (map #(->> % :lookup-table vals (map dt/datatype)))
+               flatten
+               distinct)]
+      (assert (contains? #{0 1} 
+                         (count distinc-datatypes)) (str "Non uniform cat map " (->> dataset ds-cat/dataset->categorical-maps vec)))
+      (assert
+       (or
+        (empty? distinc-datatypes)
+        (contains? #{:int :int32 :int64}
+                   (first distinc-datatypes)))
+       (str "Non :int cat map " (->> dataset ds-cat/dataset->categorical-maps vec)))))
   )
 
 (defn- verify-train-fn-result! [model-data]
@@ -680,11 +681,17 @@
    
    to construct its prediction dataset so that its matches with the train data target column.
    "
-  {:malli/schema [:=> [:cat [:fn dataset?] map?]
+  {:malli/schema [:=> [:cat 
+                       [:fn (fn [x]
+                              (or (dataset? x)
+                                  (= (-> x class .getName) "ml.dmlc.xgboost4j.java.DMatrix")
+                                  ))
+                        ]
+                       map?]
                   [map?]]}
-  [dataset options]
+  [data options]
 
-  (assert-categorical-consistency dataset)
+  (assert-categorical-consistency data)
 
 
   (let [model-options (options->model-def options)
@@ -692,47 +699,71 @@
             (validate-options model-options options))
 
         combined-hash (when (:use-cache @train-predict-cache)
-                        (str  (hash dataset) "___"  (hash options)))
+                        (str  (hash data) "___"  (hash options)))
 
         cached (when combined-hash ((:get-fn @train-predict-cache) combined-hash))]
 
     (if cached
       cached
       (let [{:keys [train-fn unsupervised?]} model-options
-            feature-ds (cf/feature  dataset)
-            _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
-                                     "No features provided")
-            target-ds (if unsupervised?
-                        nil
-                        (do
-                          (errors/when-not-error (> (ds/row-count (cf/target dataset)) 0) "No target columns provided, see tech.v3.dataset.modelling/set-inference-target")
-                          (cf/target dataset)))
-            model-data (train-fn feature-ds target-ds
-                                 options)
-            _ (verify-train-fn-result! model-data)
+            model (cond (dataset? data)
+                        (let [feature-ds (cf/feature  data)
+                              _ (errors/when-not-error (> (ds/row-count feature-ds) 0)
+                                                       "No features provided")
+                              target-ds (if unsupervised?
+                                          nil
+                                          (do
+                                            (errors/when-not-error (> (ds/row-count (cf/target data)) 0) "No target columns provided, see tech.v3.dataset.modelling/set-inference-target")
+                                            (cf/target data)))
+                              model-data (train-fn feature-ds target-ds options)
+                              _(verify-train-fn-result! model-data)
 
-            targets-datatypes
-            (zipmap
-             (keys target-ds)
-             (->>
-              (vals target-ds)
-              (map meta)
-              (map :datatype)))
-            cat-maps (ds-mod/dataset->categorical-xforms target-ds)
+                              targets-datatypes
+                              (zipmap
+                               (keys target-ds)
+                               (->>
+                                (vals target-ds)
+                                (map meta)
+                                (map :datatype)))
+                              cat-maps (ds-mod/dataset->categorical-xforms target-ds)
+                              
+                              
+                              model
+                              (merge
+                               {:model-data model-data
+                                :options options
+                                :train-input-hash combined-hash
+                                :id (UUID/randomUUID)
+                                :feature-columns (vec (ds/column-names feature-ds))
+                                :target-columns (vec (ds/column-names target-ds))
+                                :target-datatypes targets-datatypes}
+                               (when-not (== 0 (count cat-maps))
+                                 {:target-categorical-maps cat-maps}))
+                              ]
+                          (when combined-hash
+                            ((:set-fn @train-predict-cache) combined-hash model))
+                          model
+                          )
+                        
+                        (= (-> data class .getName) "ml.dmlc.xgboost4j.java.DMatrix")
+                        (let [model-data (train-fn data nil options)]
+                          {:model-data model-data
+                           :options options
+                           :feature-columns []
+                           :target-columns []
+                           }
+                          )
+                        
+                        
+                        :else (throw (ex-info (format "Unexpected dataset class: %s" (class data))
+                                              {:dataset data}
+                                              ))
+                        )
 
-            model
-            (merge
-             {:model-data model-data
-              :options options
-              :train-input-hash combined-hash
-              :id (UUID/randomUUID)
-              :feature-columns (vec (ds/column-names feature-ds))
-              :target-columns (vec (ds/column-names target-ds))
-              :target-datatypes targets-datatypes}
-             (when-not (== 0 (count cat-maps))
-               {:target-categorical-maps cat-maps}))]
-        (when combined-hash
-          ((:set-fn @train-predict-cache) combined-hash model))
+            ;; _ (errors/when-not-error (:model-as-bytes model-data)  "train-fn need to return a map with key :model-as-bytes")
+
+            ]
+        
 
         model))))
 
@@ -879,6 +910,9 @@
   (assert-categorical-consistency dataset)
   (let [predict-hash (when (:use-cache @train-predict-cache) (str train-input-hash "--" (hash dataset)))
         cached (when predict-hash ((:get-fn @train-predict-cache) predict-hash))
+        feature-columns (if (empty? feature-columns) 
+                          (ds/column-names dataset)
+                          feature-columns)
 
         pred-ds
         (if cached
