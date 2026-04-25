@@ -22,6 +22,7 @@
    [scicloj.metamorph.ml.tools :refer [keys-in]]
    [scicloj.metamorph.ml.cache :as cache]
    [scicloj.metamorph.ml.column-metric :as metric]
+   [scicloj.metamorph.ml.impl.hyper-opt :as hyper-opt]
    [scicloj.ml.xgboost]
    )
   (:import
@@ -57,7 +58,7 @@
 (def iris-target-values (-> iris :species distinct sort))
 
 
-(defn do-define-model []
+(defn do-define--test-model []
   (ml/define-model! :test-model
     (fn train
       [_ _ _]
@@ -127,12 +128,12 @@
     (is (contains?   (:ctx (:test-transform (first (first evaluations))))  :metamorph/mode))))
 
 (deftest evaluate-pipelines-simplest
-  (do-define-model)
+  (do-define--test-model)
   (validate-simple-pipeline))
 
 
 (deftest evaluate-pipelines-simplest-with-atom-cache
-  (do-define-model)
+  (do-define--test-model)
   (let [cache-map (atom {})]
     (cache/enable-atom-cache! cache-map)
     (validate-simple-pipeline)
@@ -140,7 +141,7 @@
     (cache/disable-cache!)))
 
 (deftest evaluate-pipelines-simplest-with-disk-cache
-  (do-define-model)
+  (do-define--test-model)
   (cache/enable-disk-cache! "/tmp/")
   (validate-simple-pipeline)
   (validate-simple-pipeline)
@@ -151,7 +152,7 @@
 
 
 (deftest test-explain
-  (do-define-model)
+  (do-define--test-model)
   (let [pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
@@ -176,7 +177,7 @@
 
 
 (deftest test-data-removed
-  (do-define-model)
+  (do-define--test-model)
   (let [pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
@@ -206,7 +207,7 @@
 
 
 (deftest evaluate-pipelines-several-cross
-  (do-define-model)
+  (do-define--test-model)
   (let [pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
@@ -266,7 +267,7 @@
 
 
 (deftest evaluate-pipelines--metric-keep-fn
-  (do-define-model)
+  (do-define--test-model)
   (let [pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
@@ -299,7 +300,7 @@
          (keys-in (-> result first first))))))
 
 (deftest evaluate-pipelines--metric-and-options-keep-fn
-  (do-define-model)
+  (do-define--test-model)
   (let [pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
@@ -373,7 +374,7 @@
 
 
 (deftest round-trip-full-names
-  (do-define-model)
+  (do-define--test-model)
   (is (= {1 50, 0 50, 2 50}
 
          (let [files (atom [])
@@ -402,7 +403,7 @@
 
 
 (deftest dissoc--all-fn
-  (do-define-model)
+  (do-define--test-model)
   (let [base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
          [:tech.v3.dataset.metamorph/categorical->number [:species] iris-target-values]
@@ -439,7 +440,7 @@
 
 
 (deftest remove-all
-  (do-define-model)
+  (do-define--test-model)
   (let [base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
          [:tech.v3.dataset.metamorph/categorical->number [:species] iris-target-values]
@@ -462,7 +463,7 @@
 
 
 (deftest other-metrics
-  (do-define-model)
+  (do-define--test-model)
   (let [base-pipe-declrss
         [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
          [:tech.v3.dataset.metamorph/categorical->number [:species] iris-target-values]
@@ -476,15 +477,20 @@
          :accuracy
          {:other-metrics [{:name :acc-2  :metric-fn loss/classification-accuracy}
                           {:name :fscore :metric-fn (fn [_ _] 0)}
-                          {:name :acc    :metric-fn scicloj.metamorph.ml.metrics/accuracy}]})]
+                          {:name :acc    :metric-fn scicloj.metamorph.ml.metrics/accuracy}]})
+        
+        ]
+
 
     (is (pos? (-> evaluation-result first first :train-transform :other-metrics first :metric)))
     (is (zero? (-> evaluation-result first first :train-transform :other-metrics second :metric)))
-    (is (some? (-> evaluation-result first first :train-transform :other-metrics (nth 2) :metric)))))
+    (is (some? (-> evaluation-result first first :train-transform :other-metrics (nth 2) :metric)))
+    
+    ))
 
 
 (deftest validate-schema
-  (do-define-model)
+  (do-define--test-model)
   (let [create-base-pipe-decl
         (fn  [node-size]
           [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
@@ -510,14 +516,13 @@
                               :pipe-fns-clj-file "test/scicloj/metamorph/ml_test.clj"}})]
 
 
-    (is (true?
-         (m/validate
+    (is (nil?
+         (m/explain
           result-schema
           evaluation-result)))))
 
-
 (deftest call-without-ds
-  (do-define-model)
+  (do-define--test-model)
   (is  (thrown? ExceptionInfo
                 (ml/train ""
                           {:model-type :test-model}))))
@@ -571,11 +576,12 @@
            (-> (ml/predict (ds/->dataset {:x [0]}) model) :species)))))
 
 (defn- do-score [predict-col trueth-col metric-fn]
-  (#'ml/score
+  (#'hyper-opt/score
    (ds/new-dataset  [predict-col])
    (ds/new-dataset  [trueth-col])
    :species
-   metric-fn
+   {:metric metric-fn}
+   
    {}))
 
 
@@ -680,15 +686,15 @@
         [{:name :m-1, :metric-fn loss/classification-accuracy :metric 0.6666666666666667}
          {:name :m-2, :metric-fn loss/classification-loss :metric 0.33333333333333326}]}
 
-       (#'ml/score
+       (#'hyper-opt/score
         (ds/->dataset  {:x [:a :a :a]})
         (ds/->dataset {:x [:a :b :a]})
         :x
-        loss/classification-accuracy
+        {:metric loss/classification-accuracy}
         [{:name :m-1
-          :metric-fn loss/classification-accuracy}
+          :metric-fn {:metric-fn loss/classification-accuracy}}
          {:name :m-2
-          :metric-fn loss/classification-loss}]))))
+          :metric-fn {:metric-fn loss/classification-loss}}]))))
 
 (deftest define-model-schema
   (ml/define-model! :test-model--options
@@ -753,7 +759,11 @@
           argmax
           (vec (.predict booster dmatrix))))
         ]
-    (is (= [3 1] (-> prediction (get nil) vec)))
+    (is (= [3 1] (->
+                  (cf/prediction prediction)
+                  (ds/columns)
+                  (first)
+                  vec)))
     (is (= {1 50, 2 50, 3 50} prediction-freqs))
     ))
 
@@ -800,4 +810,69 @@
                   (mapv int (.getLabel test-dm)))]
     (is (< 0.80 accurcay))))
 
+  
+(deftest optimize-hyperparameter 
+(do-define--test-model)
+  (let [pipe-fn
+        (morph/pipeline
+         (ds-mm/set-inference-target :species)
+         (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/target ds))) iris-target-values :int)
+         (ds-mm/categorical->number (fn [ds] (cf/intersection (cf/categorical ds) (cf/feature ds))) {} :float)
+
+         {:metamorph/id :model}
+         (ml/model {:model-type :test-model}))
+
+        train-split-seq (tc/split->seq iris :holdout {:seed 123})
+        pipe-fn-seq [pipe-fn]
+
+        evaluations
+        (ml/optimize-hyperparameter 
+         pipe-fn-seq 
+         train-split-seq 
+          {;:model-type :classification
+          :metric loss/classification-loss
+          ;:averaging :micro
+          :loss-or-accuracy :accuracy
+          ;:options {}
+           }
+         {}
+         )
+
+
+        best-fitted-context  (-> evaluations first first :fit-ctx)
+        best-pipe-fn         (-> evaluations first first :pipe-fn)
+
+        new-ds (->
+                (tc/shuffle iris  {:seed 1234})
+                (tc/head 10))
+
+        predictions
+        (->
+         (best-pipe-fn
+          (merge best-fitted-context
+                 {:metamorph/data new-ds
+                  :metamorph/mode :transform}))
+         (:metamorph/data))
+        ]
+    ;; ;; (ds-mod/column-values->categorical :species)
+
+
+    (is (= (repeat 10 "versicolor")
+           (-> predictions ds-cat/reverse-map-categorical-xforms :species seq)))
+    (is (=  1 (count evaluations)))
+    (is (=  1 (count (first evaluations))))
+
+    (is (= #{:min :mean :max :timing :ctx :metric :other-metrics  :probability-distribution}
+           (set (-> evaluations first first :train-transform keys))))
+    ;; =>
+    (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-fn :timing-fit :loss-or-accuracy :source-information :split-uid])
+           (set (keys (first (first evaluations))))))
+    (is (contains?   (:fit-ctx (first (first evaluations)))  :metamorph/mode))
+    (is (contains?   (:ctx (:train-transform (first (first evaluations))))  :metamorph/mode))
+    (is (contains?   (:ctx (:test-transform (first (first evaluations))))  :metamorph/mode))
+    
+    ))
+
+
+ 
 
