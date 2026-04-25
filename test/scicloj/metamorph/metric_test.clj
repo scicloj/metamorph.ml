@@ -16,7 +16,3 @@
   (is (= 3.0 (fun/sum (m/true-negatives actual prediction)))))
 
 
-(comment
-  ;;  not sure what this does
-  (m/roc-curve [1 1 1 1 1 1 1 1 0 0 0 0]
-               [0.1 0.2 0.8 0.9 0.8 0.7 0.8 0.9 0.6 0.8 0.8 0.8]))

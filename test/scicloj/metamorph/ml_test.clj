@@ -22,7 +22,7 @@
    [scicloj.metamorph.ml.tools :refer [keys-in]]
    [scicloj.metamorph.ml.cache :as cache]
    [scicloj.metamorph.ml.column-metric :as metric]
-   [libpython-clj2.python :as py])
+   )
   (:import
    (clojure.lang ExceptionInfo)
    (java.util UUID)))
@@ -731,30 +731,13 @@
              [
               (metric/classification-metric test prediction :accuracy :macro)
               (metric/classification-metric test prediction :f1-score :macro)
-              (metric/roc_auc-score test prediction :macro)]
+              (metric/classification-metric test prediction :roc-auc :macro)]
 
              )))))
   
   
  
 
-
-(comment 
-  (require '[libpython-clj2.python :as py])
-  
-  (py/from-import sklearn.metrics roc_auc_score)
-  
-
-  (roc_auc_score
-   (py/->py-list
-    (map
-     (fn [_] (rand-int 3))
-     (-> data-split :test cf/target ds/columns first vec)))
-   
-   (-> prediction cf/probability-distribution ds/rowvecs py/->python)
-   :multi_class :ovr
-   :average nil)
-  )
 
 
 

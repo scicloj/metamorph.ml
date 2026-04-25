@@ -168,29 +168,6 @@
 
 
 
-(defn roc_auc-score [y-true y-pred averaging-method]
-  (insist-dataset! y-true y-pred)
-
-  (let [target-ds (cf/target y-true)
-        probability-ds (->prob-ds y-pred)
-        average (case averaging-method
-                  :macro v/average
-                  :micro :micro
-                  nil nil)]
-
-    (insist-no-missing! (ds/columns target-ds))
-    (insist-uniform! (ds/columns target-ds))
-    (insist-single-label! (ds/columns target-ds) "y_true")
-    (insist-discrete! (ds/columns target-ds))
-    (insist-continous! (ds/columns probability-ds))
-    (insist-same-row-number!
-     (concat  (ds/columns target-ds)
-              (ds/columns probability-ds)))
-
-    (stats/multiclass-auc
-     (-> target-ds ds-cat/reverse-map-categorical-xforms ds/columns first)
-     probability-ds
-     {:average average})))
 
 (defn- ds->int-ds [{:keys [prediction-ds truth-ds]}]
   (assert (ds/dataset? prediction-ds))
@@ -224,41 +201,129 @@
          :truth-ds (ds/update-elemwise truth-ds elem->int-map)}))))
 
   
+(defn- roc_auc-score [y-true y-pred averaging-method]
+  (insist-dataset! y-true y-pred)
+
+  (let [target-ds (cf/target y-true)
+        probability-ds (->prob-ds y-pred)
+        average (case averaging-method
+                  :macro v/average
+                  :micro :micro
+                  nil nil)]
+
+    (insist-no-missing! (ds/columns target-ds))
+    (insist-uniform! (ds/columns target-ds))
+    (insist-single-label! (ds/columns target-ds) "y_true")
+    (insist-discrete! (ds/columns target-ds))
+    (insist-continous! (ds/columns probability-ds))
+    (insist-same-row-number!
+     (concat  (ds/columns target-ds)
+              (ds/columns probability-ds)))
+
+    (stats/multiclass-auc
+     (-> target-ds ds-cat/reverse-map-categorical-xforms ds/columns first)
+     probability-ds
+     {:average average})))
   
 
 (defn classification-metric
+  "Calculates various classification metrics, supporting binary and multiclass data.
+   Return a single float number  
+   
+   * `y-true` A TMD dataset, having the truth
+   * `y-pred` A TMD dataset, having the prediction
+   * `metric` A keyword, supports any metric from: https://generateme.github.io/fastmath/clay/stats.html#binary-classification-metrics
+              and :roc-auc
+   * `averaging` How the mostly binary metrices get averaged, supports :macro and :micro
+   * `options` Options for the :metric-fn
+
+  
+  Multi-label data is so far not supported.
+ 
+  Both datasets need to have columns containing the appropriate column metadata
+  as foreseen by TMD, see here:https://techascent.github.io/tech.ml.dataset/tech.v3.dataset.column-filters.html 
+   , eg:
+   * :column-type being :prediction, :probability-distribution
+   * :inference-target true
+   * :categorical-map column metadata is explicitely supported and get handled properly when present, so gets taken into consideration
+   when comparing columns
+
+   The `ml/predict` fn is producing these type of datasets.
+
+  The function validates various aspects and ev. rejects data which has:
+   * wrong column metadata
+   * missing values or NaNs
+   * non-discrete values in :prediction column
+   * non-uniform datatypes
+   * multi-label data ( having > 1 :inference-target column)
+   * mistmatch in shape between `y-true` and `y-pred`
+   * others
+   
+   This might depend on the concrete metric-fn used.
+   "
   ([y-true y-pred metric averaging options]
 
-   (let [{:keys [prediction-col truth-col]}
-         (datasets->single-cols y-true
-                                y-pred
-                                ds->int-ds
-                                {:dataset [insist-dataset!]
-                                 :predict-cols [insist-single-label!]
-                                 :truth-cols [insist-single-label!]
-                                 :every-col [insist-no-NaN!
-                                             insist-no-missing!
-                                             insist-discrete--integer!
-                                             insist-uniform!
-                                             insist-same-row-number!]})]
-     (stats/multiclass-measure
-      (seq truth-col)
-      (seq prediction-col)
-      {:metric metric
-       :average (case averaging
-                  :macro stats/mean
-                  :micro :micro)
-       :beta (get options :beta 0.5)
-       })))
+   (if (= :roc-auc metric)
+     (roc_auc-score y-true y-pred averaging)
 
-    
-    
+     (let [{:keys [prediction-col truth-col]}
+           (datasets->single-cols y-true
+                                  y-pred
+                                  ds->int-ds
+                                  {:dataset [insist-dataset!]
+                                   :predict-cols [insist-single-label!]
+                                   :truth-cols [insist-single-label!]
+                                   :every-col [insist-no-NaN!
+                                               insist-no-missing!
+                                               insist-discrete--integer!
+                                               insist-uniform!
+                                               insist-same-row-number!]})]
+       (stats/multiclass-measure
+        truth-col
+        prediction-col
+        {:metric metric
+         :average (case averaging
+                    :macro stats/mean
+                    :micro :micro)
+         :beta (get options :beta 0.5)}))))
+
+
+
 
 
   ([y-true y-pred metric averaging] (classification-metric y-true y-pred metric averaging {})))
 
 
-(defn regression-metric [y-true y-pred metric-fn]
+(defn regression-metric 
+    "Calculates various regression metrics and return a single float number  
+     
+     * `y-true` A TMD dataset, having the truth
+     * `y-pred` A TMD dataset, having the prediction
+     * `metric` A keyword, supports any metric from: https://generateme.github.io/fastmath/clay/stats.html#distance-and-similarity-metrics
+  
+    
+   
+    Both datasets need to have columns containing the appropriate column metadata
+    as foreseen by TMD, see here:https://techascent.github.io/tech.ml.dataset/tech.v3.dataset.column-filters.html 
+     , eg:
+     * :column-type being :prediction
+     * :inference-target true
+  
+     The `ml/predict` fn is producing these type of datasets.
+  
+    The function validates various aspects and ev. rejects data which has:
+     * wrong column metadata
+     * missing values or NaNs
+     * non-continous values in :prediction column
+     * non-uniform datatypes
+     * is multi-label data ( having > 1 :inference-target column)
+     * mistmatch in shape between `y-true` and `y-pred`
+     * others
+     
+     This might depend on the concrete metric-fn used.
+     "
+
+  [y-true y-pred metric-fn]
 
   (let [{:keys [prediction-col truth-col]}
         (datasets->single-cols y-true
@@ -276,7 +341,7 @@
                            (symbol (format "fastmath.stats/%s" (name metric-fn))))]
     (insist
      (some? fastmath-stats-fn)
-     (format "Function '%s' does not exist in fastmat." (format "fastmath.stats/%s" (name metric-fn))))
+     (format "Function '%s' does not exist in fastmath.stats." (format "fastmath.stats/%s" (name metric-fn))))
     (fastmath-stats-fn
      truth-col prediction-col)))
 

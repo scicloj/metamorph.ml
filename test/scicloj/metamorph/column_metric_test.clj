@@ -2,13 +2,11 @@
   (:require
    [clojure.test :refer [deftest is]]
    [fastmath.core :as m]
-   [fastmath.vector :as v]
    [libpython-clj2.python :as py]
    [scicloj.metamorph.ml.column-metric :as col-metric]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
-   [tech.v3.dataset.column :as col]
-   [fastmath.stats :as stats]))
+   [tech.v3.dataset.column :as col]))
 
 (py/initialize!)
 
@@ -188,16 +186,16 @@ roc_auc_ovr_micro = roc_auc_score(
 
     (is (=
          {"virginica" 0.7800000000000001, "versicolor" 0.6607999999999999, "setosa" 0.8871999999999999}
-         (col-metric/roc_auc-score y-true y-score nil)))
+         (col-metric/classification-metric  y-true y-score :roc-auc nil)))
 
 
     (is (m/delta=
          0.7760000000000001
-         (col-metric/roc_auc-score y-true y-score :macro)))
+         (col-metric/classification-metric  y-true y-score :roc-auc :macro)))
 
     (is (m/delta=
          0.7698666666666667
-         (col-metric/roc_auc-score y-true y-score :micro)))))
+         (col-metric/classification-metric  y-true y-score :roc-auc :micro)))))
 
 
 (deftest regression-metric
