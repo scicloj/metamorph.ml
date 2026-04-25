@@ -79,7 +79,7 @@
     {:explain-fn (fn  [thawed-model {:keys [feature-columns]} _options]
                    {:coefficients {:petal_width [0]}})}))
 
-(defn- validate-simple-pipeline [eval-fn eval-fn-args]
+(defn- validate-simple-pipeline [eval-fn eval-fn-args excpected-metric-value]
   (let [pipe-fn
         (morph/pipeline
          (ds-mm/set-inference-target :species)
@@ -120,6 +120,10 @@
 
     (is (= #{:min :mean :max :timing :ctx :metric :other-metrics  :probability-distribution}
            (set (-> evaluations first first :train-transform keys))))
+    
+    (is (= excpected-metric-value
+           (-> evaluations first first :train-transform :metric)
+           ))
     ;; =>
     (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-fn :timing-fit :loss-or-accuracy :source-information :split-uid])
            (set (keys (first (first evaluations))))))
@@ -135,7 +139,7 @@
     :loss
     {:evaluation-handler-fn
      identity}]
-
+    0.7
    ))
 
 
@@ -150,8 +154,8 @@
 
         ]
     (cache/enable-atom-cache! cache-map)
-    (validate-simple-pipeline eval-fn eval-fn-args)
-    (validate-simple-pipeline eval-fn eval-fn-args)
+    (validate-simple-pipeline eval-fn eval-fn-args 0.7)
+    (validate-simple-pipeline eval-fn eval-fn-args 0.7)
     (cache/disable-cache!)))
 
 (deftest evaluate-pipelines-simplest-with-disk-cache
@@ -163,8 +167,8 @@
                       {:evaluation-handler-fn
                        identity}]]
     (cache/enable-disk-cache! "/tmp/")
-    (validate-simple-pipeline eval-fn eval-fn-args)
-    (validate-simple-pipeline eval-fn eval-fn-args)
+    (validate-simple-pipeline eval-fn eval-fn-args 0.7)
+    (validate-simple-pipeline eval-fn eval-fn-args 0.7)
     (cache/disable-cache!)))
   
 (deftest test-explain
@@ -829,17 +833,28 @@
     (is (< 0.80 accurcay))))
 
   
-(deftest optimize-hyperparameter
+
+(deftest optimize-hyperparameter--loss-fn
+  (do-define--test-model)
+  (let [eval-fn ml/optimize-hyperparameter
+        eval-fn-args [{
+                       :metric loss/classification-accuracy
+                       :loss-or-accuracy :accuracy
+                       }
+                      {}]]
+    (validate-simple-pipeline eval-fn eval-fn-args 0.3)))
+
+(deftest optimize-hyperparameter--metric-kw
   (do-define--test-model)
   (let [eval-fn ml/optimize-hyperparameter
         eval-fn-args [{;:model-type :classification
-                       :metric loss/classification-accuracy
-                                ;:averaging :micro
+                       :metric :accuracy
+                       :averaging :macro
                        :loss-or-accuracy :accuracy
                                 ;:options {}
                        }
                       {}]]
-    (validate-simple-pipeline eval-fn eval-fn-args)))
+    (validate-simple-pipeline eval-fn eval-fn-args 0.5333333333333333)))
 
 
  

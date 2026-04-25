@@ -43,7 +43,6 @@
   (:require
    [fastmath.stats :as stats]
    [fastmath.vector :as v]
-   [scicloj.metamorph.ml.classification]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.categorical :as ds-cat]
    [tech.v3.dataset.column :as col]
