@@ -17,3 +17,8 @@ dump.rdb
 .portal/vs-code.edn
 .claude/settings.local.json
 classes
+.RData
+.Rhistory
+pyproject.toml
+.gitignore
+uv.lock

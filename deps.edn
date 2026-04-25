@@ -68,7 +68,7 @@
                 org.scicloj/scicloj.ml.xgboost 
                 ;{:local/root  "/sources/scicloj.ml.xgboost"}
                  {:git/url "https://github.com/scicloj/scicloj.ml.xgboost"
-                  :git/sha "baa51897cf5e238c40a00e003ba8251005b8a684"}
+                  :git/sha "67c1416314fe542d2c861890e4ee45cd01c78e59"}
                 ;; ;{:mvn/version "6.4.0"}
 
                 lambdaisland/kaocha {:mvn/version "1.91.1392"}

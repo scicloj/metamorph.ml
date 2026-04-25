@@ -1,3 +1,7 @@
+unreleased
+- allow DMatrix as input
+
+
 1.3.2
  - removed clj-memory-meter from src-code 
 1.3.1
