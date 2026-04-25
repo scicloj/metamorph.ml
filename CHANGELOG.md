@@ -4,7 +4,7 @@ unreleased
  - TMD's of rdatasets get doc-url as dataset name, ready for clicking [#36](https://github.com/scicloj/metamorph.ml/issues/36)
  - added model names to fastmath/ols [#24](https://github.com/scicloj/metamorph.ml/issues/24)
  - add support for fastmath GLM model [46](https://github.com/scicloj/metamorph.ml/issues/46)
-- allow DMatrix as input
+- allow ml.dmlc.xgboost4j.java.DMatrix as input to train/test
 
 
 1.3.2

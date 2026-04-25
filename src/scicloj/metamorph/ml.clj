@@ -620,17 +620,20 @@
 
 (defn- validate-col-meta! [ds type schema model-type]
   (assert pos? (ds/column-count ds))
-  (run!
-   #(let [column-meta (meta %)
-          explanation
-          (m/explain schema column-meta)]
-      (when explanation
-        (throw (ex-info (format "invalid model result schema of model type: %s" model-type)
-                        {:column-meta column-meta
-                         :type type
-                         :schema schema
-                         :malli-error (me/humanize explanation)}))))
-   (ds/columns ds))) 
+  (when 
+   ;TODO : https://github.com/scicloj/scicloj.ml.xgboost/issues/10
+   (not (= model-type :xgboost/classification))
+    (run!
+     #(let [column-meta (meta %)
+            explanation
+            (m/explain schema column-meta)]
+        (when explanation
+          (throw (ex-info (format "invalid model result schema of model type: %s" model-type)
+                          {:column-meta column-meta
+                           :type type
+                           :schema schema
+                           :malli-error (me/humanize explanation)}))))
+     (ds/columns ds)))) 
 
 
   
@@ -831,7 +834,10 @@
 
     (when
      (and @enable-strict-prediction-validations
-          (not (= target-cat-maps-from-predict target-cat-maps-from-train)))
+          (not (= target-cat-maps-from-predict target-cat-maps-from-train))
+          ;TODO : https://github.com/scicloj/scicloj.ml.xgboost/issues/10
+          (not (= :xgboost/classification (-> model :options :model-type)))
+          )
 
       (throw (Exception.
               (format
@@ -844,6 +850,8 @@
 
     (when
      (and @enable-strict-prediction-validations
+          ;TODO : https://github.com/scicloj/scicloj.ml.xgboost/issues/10
+          (not (= :xgboost/classification (-> model :options :model-type)))
           (or
 
            (not (every? some?
