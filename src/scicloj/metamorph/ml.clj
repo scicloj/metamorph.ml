@@ -218,17 +218,30 @@
   
 
   ([pipeline-fn-or-decl-seq train-test-split-seq metric-fn loss-or-accuracy options]
-   (hyper-opt/optimize-hyperparameter
-    pipeline-fn-or-decl-seq
-    train-test-split-seq
-    {:metric metric-fn
-     :loss-or-accuracy loss-or-accuracy}
-    (assoc options :other-metrics
-           (mapv
-            (fn [{:keys [name metric-fn] :as m}]
-              {:name name
-               :metric-fn {:metric-fn metric-fn}})
-            (:other-metrics options)))))
+   (let [result (hyper-opt/optimize-hyperparameter
+                 pipeline-fn-or-decl-seq
+                 train-test-split-seq
+                 {:metric metric-fn
+                  :loss-or-accuracy loss-or-accuracy}
+                 (assoc options :other-metrics
+                        (mapv
+                         (fn [{:keys [name metric-fn] :as m}]
+                           {:name name
+                            :metric-def {:metric metric-fn}})
+                         (:other-metrics options))))]
+     
+     (for [r1 result] 
+       (for [r2 r1]
+         (if (some? (:metric-def r2))
+           (-> r2
+               (assoc :metric-fn (-> r2 :metric-def :metric))
+               (dissoc :metric-def))
+           r2)
+         )
+       )
+     )
+   )
+  
 
   ([pipeline-fn-seq train-test-split-seq metric-fn loss-or-accuracy]
    (evaluate-pipelines pipeline-fn-seq train-test-split-seq metric-fn loss-or-accuracy {})))

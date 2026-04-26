@@ -124,11 +124,10 @@
     (is (= excpected-metric-value
            (-> evaluations first first :train-transform :metric)
            ))
-    (def evaluations evaluations)
     (if (=  ml/evaluate-pipelines eval-fn)
       (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-fn :timing-fit :loss-or-accuracy :source-information :split-uid])
              (set (keys (first (first evaluations))))))
-      (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-fn :timing-fit :loss-or-accuracy :source-information :split-uid])
+      (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-def :timing-fit :loss-or-accuracy :source-information :split-uid])
        (set (keys (first (first evaluations))))))
       
       )
@@ -710,8 +709,12 @@
   (is (=
        {:metric 0.6666666666666667,
         :other-metrics-result
-        [{:name :m-1, :metric-fn loss/classification-accuracy :metric 0.6666666666666667}
-         {:name :m-2, :metric-fn loss/classification-loss :metric 0.33333333333333326}]}
+        [{:name :m-1, 
+          :metric-def {:metric loss/classification-accuracy} 
+          :metric 0.6666666666666667}
+         {:name :m-2, 
+          :metric-def {:metric loss/classification-loss} 
+          :metric 0.33333333333333326}]}
 
        (#'hyper-opt/score
         (ds/->dataset  {:x [:a :a :a]})
@@ -719,9 +722,9 @@
         :x
         {:metric loss/classification-accuracy}
         [{:name :m-1
-          :metric-fn {:metric-fn loss/classification-accuracy}}
+          :metric-def {:metric loss/classification-accuracy}}
          {:name :m-2
-          :metric-fn {:metric-fn loss/classification-loss}}]))))
+          :metric-def {:metric loss/classification-loss}}]))))
 
 (deftest define-model-schema
   (ml/define-model! :test-model--options
@@ -876,40 +879,35 @@
 
  
 
-;; (deftest validate-schema--optimize-hyperparameter
-;;   (do-define--test-model)
-;;   (let [create-base-pipe-decl
-;;         (fn  [node-size]
-;;           [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
-;;            [:tech.v3.dataset.metamorph/categorical->number [:species] iris-target-values]
-;;            {:metamorph/id :model} [:scicloj.metamorph.ml/model {:model-type :test-model
-;;                                                                 :node-size node-size}]])
+(deftest validate-schema--optimize-hyperparameter
+  (do-define--test-model)
+  (let [create-base-pipe-decl
+        (fn  [node-size]
+          [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
+           [:tech.v3.dataset.metamorph/categorical->number [:species] iris-target-values]
+           {:metamorph/id :model} [:scicloj.metamorph.ml/model {:model-type :test-model
+                                                                :node-size node-size}]])
 
-;;         pipes (map create-base-pipe-decl [1 5 10 20 50 100])
+        pipes (map create-base-pipe-decl [1 5 10 20 50 100])
 
-;;         split (tc/split->seq iris :holdout)
+        split (tc/split->seq iris :holdout)
 
-;;         evaluation-result
-;;         (ml/optimize-hyperparameter
-;;          pipes split
-;;          {:metric :accuracy
-;;           :averaging :macro
-;;           :loss-or-accuracy :accuracy}
-;;          {:other-metrics [{:name :m
-;;                            :metric-def
-;;                            {:metric :accuracy
-;;                             :averaging :macro
-;;                             :loss-or-accuracy :accuracy}}]
-;;           }
-;;          )]
+        evaluation-result
+        (ml/optimize-hyperparameter
+         pipes split
+         {:metric :accuracy
+          :averaging :macro
+          :loss-or-accuracy :accuracy}
+         {:other-metrics [{:name :m
+                           :metric-def
+                           {:metric :accuracy
+                            :averaging :macro
+                            :loss-or-accuracy :accuracy}}]})]
 
 
-;;     (def evaluation-result evaluation-result)
-;;      (is (nil?
-;;           (m/explain
-;;            :scicloj.metamorph.ml/optimize-hyperparams--evaluation-result
-;;            evaluation-result)))
-    
-;;     ))
+    (is (nil?
+         (m/explain
+          :scicloj.metamorph.ml/optimize-hyperparams--evaluation-result
+          evaluation-result)))))
 
 

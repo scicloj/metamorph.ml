@@ -119,12 +119,19 @@
               (multi-dissoc-in
                [
                 [:pipe-fn]
-                [:metric-fn]]))
+                [:metric-fn]])
+              (update-in [:metric-def :metric]
+                         (fn [metric]
+                           (if (fn? metric)
+                             (str metric)
+                             metric)))
+              )
 
           temp-file (str output-dir "/" ( java.util.UUID/randomUUID) ".nippy")
           _ (swap! files #(conj % temp-file))]
       (nippy/freeze-to-file temp-file freezable-result)
       (result-reduce-fn result))))
+
 
 (defn qualify-keywords
   "Converts unqualified keywords in a pipeline declaration to fully-qualified form.
@@ -222,6 +229,7 @@
 
   Most aggressive cleanup option. Used by `result-dissoc-in-seq--all-fn`."
   [[:metric-fn]
+   [:metric-def]
    [:fit-ctx]
    [:train-transform :ctx]
    [:train-transform :other-metrics]
