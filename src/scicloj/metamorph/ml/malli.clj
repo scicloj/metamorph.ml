@@ -69,11 +69,61 @@
    (mu/assoc :model-type keyword?)))
 
 
+(defn result-schema-template [metric-schema]
+  [:sequential
+   [:sequential
+    [:map {:closed true}
+     [:split-uid [:maybe string?]]
+     [:fit-ctx [:map [:metamorph/mode [:enum :fit :transform]]]]
+     [:timing-fit int?]
+  
+     [:train-transform [:map {:closed true}
+                        [:other-metrics [:sequential [:map {:closed true}
+                                                      [:name keyword?]
+                                                      metric-schema
+                                                      [:metric float?]]]]
+                        [:timing int?]
+                        [:metric float?]
+                        [:probability-distribution  [:maybe [:fn dataset?]]]
+                        [:min float?]
+                        [:mean float?]
+                        [:max float?]
+                        [:ctx map?]]]
+     [:test-transform [:map {:closed true}
+                       [:other-metrics [:sequential [:map {:closed true}
+                                                     [:name keyword?]
+                                                     metric-schema
+                                                     [:metric float?]]]]
+                       [:timing int?]
+                       [:metric float?]
+                       [:probability-distribution  [:maybe [:fn dataset?]]]
+                       [:min float?]
+                       [:mean float?]
+                       [:max float?]
+                       [:ctx map?]]]
+     [:loss-or-accuracy [:enum :accuracy :loss]]
+     [:metric-fn fn?]
+     [:pipe-decl [:maybe sequential?]]
+     [:pipe-fn fn?]
+     [:source-information [:maybe [:map [:classpath [:sequential string?]]
+                                   [:fn-sources [:map-of :qualified-symbol [:map [:source-form any?]
+                                                                            [:source-str string?]]]]]]]]]]
+  )
+
 (def custom-schemas
    
    
     
     {
+     :scicloj.metamorph.ml/optimize-hyperparams--metric-def
+     [:map {:closed true}
+      [:metric keyword?]
+      [:averaging [:enum :macro :micro]]
+      [:loss-or-accuracy [:enum :accuracy :loss]]
+      [:options {:optional true} :map]
+      
+      ]
+
      :scicloj.metamorph.ml/optimize-hyperparams--metric-fn
      fn?
 
@@ -101,45 +151,12 @@
                                                                  [:metric-fn fn?]]]]
                   [:attach-fn-sources {:optional true} [:map [:ns any?]
                                                         [:pipe-fns-clj-file string?]]]]]
+     :scicloj.metamorph.ml/evaluate-pipelines--evaluation-result
+     (result-schema-template [:metric-fn fn?])
      :scicloj.metamorph.ml/optimize-hyperparams--evaluation-result
-     [:sequential
-      [:sequential
-       [:map {:closed true}
-        [:split-uid [:maybe string?]]
-        [:fit-ctx [:map [:metamorph/mode [:enum :fit :transform]]]]
-        [:timing-fit int?]
+     (result-schema-template [:metric-fn fn?])
 
-        [:train-transform [:map {:closed true}
-                           [:other-metrics [:sequential [:map {:closed true}
-                                                         [:name keyword?]
-                                                         [:metric-fn fn?]
-                                                         [:metric float?]]]]
-                           [:timing int?]
-                           [:metric float?]
-                           [:probability-distribution  [:maybe [:fn dataset?]]]
-                           [:min float?]
-                           [:mean float?]
-                           [:max float?]
-                           [:ctx map?]]]
-        [:test-transform [:map {:closed true}
-                          [:other-metrics [:sequential [:map {:closed true}
-                                                        [:name keyword?]
-                                                        [:metric-fn fn?]
-                                                        [:metric float?]]]]
-                          [:timing int?]
-                          [:metric float?]
-                          [:probability-distribution  [:maybe [:fn dataset?]]]
-                          [:min float?]
-                          [:mean float?]
-                          [:max float?]
-                          [:ctx map?]]]
-        [:loss-or-accuracy [:enum :accuracy :loss]]
-        [:metric-fn fn?]
-        [:pipe-decl [:maybe sequential?]]
-        [:pipe-fn fn?]
-        [:source-information [:maybe [:map [:classpath [:sequential string?]]
-                                      [:fn-sources [:map-of :qualified-symbol [:map [:source-form any?]
-                                                                               [:source-str string?]]]]]]]]]]})
+     })
    
 (mr/set-default-registry!
  (-> 
