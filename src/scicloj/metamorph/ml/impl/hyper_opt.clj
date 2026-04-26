@@ -33,8 +33,6 @@
 
 
 (defn- score [predictions-ds trueth-ds target-column-name metric-def-or-fn other-metrics]
-  (def metric-def-or-fn metric-def-or-fn)
-  (def other-metrics other-metrics)
 
   (let [predictions-col (get (ds-cat/reverse-map-categorical-xforms predictions-ds)
                              target-column-name)
@@ -42,11 +40,6 @@
                         target-column-name)
         metric-fn-or-kw  (:metric metric-def-or-fn)
 
-        _ (def trueth-col trueth-col)
-        _ (def predictions-col predictions-col)
-        _ (def metric-fn-or-kw metric-fn-or-kw)
-        _ (def trueth-ds trueth-ds)
-        _ (def predictions-ds predictions-ds)
 
         _ (strict-type-check trueth-col predictions-col)
         metric-value
@@ -60,11 +53,22 @@
            ))
 
         other-metrics-result
-        (map
-         (fn [{:keys [metric-fn] :as m}]
-           (assoc m
-                  :metric-fn (:metric-fn metric-fn)
-                  :metric ((:metric-fn metric-fn) trueth-col predictions-col)))
+        (mapv
+         (fn [{:keys [metric-def] :as m}]
+           (let [metric (:metric metric-def)
+                 metric-value 
+                 (if (fn? metric)
+                   (metric trueth-col predictions-col)
+                   (col-metric/classification-metric
+                    trueth-ds
+                    predictions-ds
+                    metric
+                    (:averaging metric-def-or-fn))
+                   )
+                 
+                 ]
+             (assoc m
+                    :metric metric-value)))
          other-metrics)]
     {:metric metric-value
      :other-metrics-result other-metrics-result}))
@@ -202,14 +206,15 @@
                  (assoc (calc-metric pipeline-fn metric-def-or-fn train test tune-options)
                         :split-uid split-uid
                         :loss-or-accuracy loss-or-accuracy
-                        :metric-fn (:metric metric-def-or-fn)
+                        ;:metric-fn (:metric metric-def-or-fn)
+                        :metric-def metric-def-or-fn
                         :pipe-decl pipeline-decl
                         :pipe-fn pipeline-fn
                         :source-information
                         (get-nice-source-info pipeline-decl
                                               (get-in tune-options [:attach-fn-sources :ns])
                                               (get-in tune-options [:attach-fn-sources :pipe-fns-clj-file])))
-
+                 
                  reduced-result ((tune-options :evaluation-handler-fn) complete-result)]
              reduced-result)))
 
