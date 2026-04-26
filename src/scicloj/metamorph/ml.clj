@@ -202,7 +202,7 @@
       :scicloj.metamorph.ml/optimize-hyperparams--train-test-split-seq
       :scicloj.metamorph.ml/optimize-hyperparams--metric-fn
       :scicloj.metamorph.ml/optimize-hyperparams--loss-or-accuracy]
-     :scicloj.metamorph.ml/evaluate-pipelines--evaluation-result]
+     :scicloj.metamorph.ml/optimize-hyperparams--evaluation-result]
 
     [:=>
      [:cat
@@ -210,12 +210,12 @@
       :scicloj.metamorph.ml/optimize-hyperparams--train-test-split-seq
       :scicloj.metamorph.ml/optimize-hyperparams--metric-fn
       :scicloj.metamorph.ml/optimize-hyperparams--loss-or-accuracy
-      :scicloj.metamorph.ml/optimize-hyperparams--options
+      :scicloj.metamorph.ml/evaluate-pipelines--options
       ]
-     :scicloj.metamorph.ml/evaluate-pipelines--evaluation-result
+     :scicloj.metamorph.ml/optimize-hyperparams--evaluation-result
      
      ]]}
- 
+  
 
   ([pipeline-fn-or-decl-seq train-test-split-seq metric-fn loss-or-accuracy options]
    (hyper-opt/optimize-hyperparameter
@@ -934,15 +934,15 @@
       :scicloj.metamorph.ml/optimize-hyperparams--options]
      :scicloj.metamorph.ml/evaluate-pipelines--evaluation-result]]}
   
-  ([pipeline-fn-or-decl-seq train-test-split-seq metric options]
+  ([pipeline-fn-or-decl-seq train-test-split-seq metric-def options]
    (hyper-opt/optimize-hyperparameter pipeline-fn-or-decl-seq 
                                       train-test-split-seq 
-                                      metric
+                                      metric-def
                                       options))  
-  ([pipeline-fn-or-decl-seq train-test-split-seq metric]
+  ([pipeline-fn-or-decl-seq train-test-split-seq metric-def]
    (optimize-hyperparameter pipeline-fn-or-decl-seq
                             train-test-split-seq
-                            metric
+                            metric-def
                             {}))  
   
   )
