@@ -536,7 +536,7 @@
 
     (is (nil?
          (m/explain
-          :scicloj.metamorph.ml/optimize-hyperparams--evaluation-result
+          :scicloj.metamorph.ml/evaluate-pipelines--evaluation-result
           evaluation-result)))))
 
 (deftest call-without-ds
@@ -849,11 +849,21 @@
                        :metric :accuracy
                        :averaging :macro
                        :loss-or-accuracy :accuracy
-                                ;:options {}
+                       :options {}
                        }
                       {}]]
     (validate-simple-pipeline eval-fn eval-fn-args 0.5333333333333333)))
 
+(deftest optimize-hyperparameter--metric-kw-2
+  (do-define--test-model)
+  (let [eval-fn ml/optimize-hyperparameter
+        eval-fn-args [{;:model-type :classification
+                       :metric :accuracy
+                       :averaging :macro
+                       :loss-or-accuracy :accuracy
+                       :options {}}
+                      ]]
+    (validate-simple-pipeline eval-fn eval-fn-args 0.5333333333333333)))
 
  
 

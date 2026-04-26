@@ -202,7 +202,7 @@
       :scicloj.metamorph.ml/optimize-hyperparams--train-test-split-seq
       :scicloj.metamorph.ml/optimize-hyperparams--metric-fn
       :scicloj.metamorph.ml/optimize-hyperparams--loss-or-accuracy]
-     :scicloj.metamorph.ml/optimize-hyperparams--evaluation-result]
+     :scicloj.metamorph.ml/evaluate-pipelines--evaluation-result]
 
     [:=>
      [:cat
@@ -212,13 +212,13 @@
       :scicloj.metamorph.ml/optimize-hyperparams--loss-or-accuracy
       :scicloj.metamorph.ml/optimize-hyperparams--options
       ]
-     :scicloj.metamorph.ml/optimize-hyperparams--evaluation-result
+     :scicloj.metamorph.ml/evaluate-pipelines--evaluation-result
      
      ]]}
  
 
   ([pipeline-fn-or-decl-seq train-test-split-seq metric-fn loss-or-accuracy options]
-   (hyper-opt/optimize-hyperparameters
+   (hyper-opt/optimize-hyperparameter
     pipeline-fn-or-decl-seq
     train-test-split-seq
     {:metric metric-fn
@@ -916,11 +916,35 @@
 
 
 (defn optimize-hyperparameter 
-[pipeline-fn-or-decl-seq train-test-split-seq metric options]
-(hyper-opt/optimize-hyperparameters pipeline-fn-or-decl-seq 
-                              train-test-split-seq 
-                              metric
-                              options)  
+  "Optimize hyperparameter"
+  {:malli/schema
+   [:function
+    [:=>
+     [:cat
+      :scicloj.metamorph.ml/optimize-hyperparams--pipeline-fn-or-decl-seq
+      :scicloj.metamorph.ml/optimize-hyperparams--train-test-split-seq
+      :scicloj.metamorph.ml/optimize-hyperparams--metric-def]
+     :scicloj.metamorph.ml/evaluate-pipelines--evaluation-result]
+
+    [:=>
+     [:cat
+      :scicloj.metamorph.ml/optimize-hyperparams--pipeline-fn-or-decl-seq
+      :scicloj.metamorph.ml/optimize-hyperparams--train-test-split-seq
+      :scicloj.metamorph.ml/optimize-hyperparams--metric-def
+      :scicloj.metamorph.ml/optimize-hyperparams--options]
+     :scicloj.metamorph.ml/evaluate-pipelines--evaluation-result]]}
+  
+  ([pipeline-fn-or-decl-seq train-test-split-seq metric options]
+   (hyper-opt/optimize-hyperparameter pipeline-fn-or-decl-seq 
+                                      train-test-split-seq 
+                                      metric
+                                      options))  
+  ([pipeline-fn-or-decl-seq train-test-split-seq metric]
+   (optimize-hyperparameter pipeline-fn-or-decl-seq
+                            train-test-split-seq
+                            metric
+                            {}))  
+  
   )
 
 
