@@ -232,18 +232,14 @@
                            {:name name
                             :metric-def {:metric metric-fn}})
                          (:other-metrics options))))]
-     
-     (for [r1 result] 
+
+     (for [r1 result]
        (for [r2 r1]
          (if (some? (:metric-def r2))
            (-> r2
                (assoc :metric-fn (-> r2 :metric-def :metric))
                (dissoc :metric-def))
-           r2)
-         )
-       )
-     )
-   )
+           r2)))))
   
 
   ([pipeline-fn-seq train-test-split-seq metric-fn loss-or-accuracy]

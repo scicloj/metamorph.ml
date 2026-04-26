@@ -32,6 +32,23 @@
 ;;  target-column-name (into {} trueth-cat-map) (into {} predict-cat-map))
 
 
+(defn- calc-col-metric [trueth-ds predictions-ds metric-def]
+  
+  (case (:metric-type metric-def)
+    :classification 
+    (col-metric/classification-metric
+     trueth-ds
+     predictions-ds
+     (:metric metric-def)
+     (:averaging metric-def))
+    
+    :regression
+    (col-metric/regression-metric
+     trueth-ds predictions-ds (:metric metric-def))
+    )
+  
+  )
+
 (defn- score [predictions-ds trueth-ds target-column-name metric-def-or-fn other-metrics]
 
   (let [predictions-col (get (ds-cat/reverse-map-categorical-xforms predictions-ds)
@@ -45,30 +62,29 @@
         metric-value
         (if (fn? metric-fn-or-kw)
           (metric-fn-or-kw trueth-col predictions-col)
-          (col-metric/classification-metric
-           trueth-ds
-           predictions-ds 
-           metric-fn-or-kw 
-           (:averaging metric-def-or-fn)
-           ))
+          (calc-col-metric  trueth-ds
+                           predictions-ds
+                           metric-def-or-fn )
+
+          )
 
         other-metrics-result
         (mapv
          (fn [{:keys [metric-def] :as m}]
            (let [metric (:metric metric-def)
-                 metric-value 
+                 metric-value
                  (if (fn? metric)
                    (metric trueth-col predictions-col)
-                   (col-metric/classification-metric
-                    trueth-ds
-                    predictions-ds
-                    metric
-                    (:averaging metric-def-or-fn))
-                   )
-                 
-                 ]
-             (assoc m
-                    :metric metric-value)))
+                   (calc-col-metric trueth-ds predictions-ds metric-def))
+                 m-with-metric
+                 (assoc m
+                        :metric metric-value)]
+             (if (fn? metric)
+               m-with-metric
+               (assoc m-with-metric
+                      :metric-def metric-def)
+               )
+             ))
          other-metrics)]
     {:metric metric-value
      :other-metrics-result other-metrics-result}))
