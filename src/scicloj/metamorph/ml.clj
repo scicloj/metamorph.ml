@@ -928,8 +928,80 @@
                           :metamorph/data (predict data (get ctx id)))))))))
 
 
-(defn optimize-hyperparameter 
-  "Optimize hyperparameter"
+(defn optimize-hyperparameter
+  "Finds optimal hyperparameters in a machine learning pipeline using cross validation.
+     
+It evaluates the performance of a seq of metamorph pipelines, which are suposed to have a model as last step under key :model,
+which behaves correctly  in mode :fit and  :transform. The function `scicloj.metamorph.ml/model` is such function behaving correctly.
+     
+This function calculates the accuracy or loss, given as `metric-def` of each pipeline in `pipeline-fn-seq` using all the train-test splits
+     given in  `train-test-split-seq`.
+  
+It runs the pipelines  in mode  :fit and in mode :transform for each pipeline-fn in `pipe-fn-seq` for each split in `train-test-split-seq`.
+  
+The function returns a seq of seqs of evaluation results per pipe-fn per train-test split.
+Each of the evaluation results is a context map, which is specified in the malli schema attached to this function.
+  
+   * `pipeline-fn-or-decl-seq` need to be  sequence of pipeline functions or pipline declarations which follow the metamorph approach.
+        These type of functions get produced typically by calling `scicloj.metamorph/pipeline`. 
+        Each item in this list represents one hyper-pararmeter setting. `scicloj.metamorph.ml.gridsearch/sobol-gridsearch` can be
+        used to generate model options vrainats from a search grid definition. 
+        The different pipelines can contain one model with several options, or multiple models with differentg options or even different
+        preprocessing instructions per pipeline.
+  
+   * `train-test-split-seq` need to be a sequence of maps containing the  train and test dataset (being tech.ml.dataset) at keys :train and :test.
+      `tablecloth.api/split->seq` produces such splits. Supervised models require both keys (:train and :test), while unsupervised models only use :train
+      The nested loop over `pipeline-fn-or-decl-seq` and `train-test-split-seq` decides how many evaluations are run, and restults are returned in detailed and aggregated form.
+
+  
+   * `metric-def` Metric definition to use. It's a map with keys
+        * :metric - a keyword specifying the metric fn to use, see `scicloj.metamorph.ml.column-metric/classification-metric` and 
+                  `scicloj.metamorph.ml.column-metric/regression-metric` for available metric functions
+        * `:averaging` - :macro or :micro , decides how to average over the results of the usualy binary classification functions 
+        * `:loss-or-accuracy` [:accuracy or :loss] , if teh fn is caluclating accuracy (higer values are better), or loss (lower values are better)
+        * `:options` optional options for the metric fn
+     
+       This metric will be used to sort and eventualy filter the result, depending on the options
+        (:return-best-pipeline-only   and :return-best-crossvalidation-only). The notion of `best` comes from metric-fn combined with loss-and-accuracy
+     
+ 
+  
+  
+   * `options` map controls some mainly performance related parameters. These function can potentialy result in a large ammount of data,
+      able to bring the JVM into out-of-memory. We can control how many details the function returns by the following parameter: 
+       The default are quite aggresive in removing details, and this can be tweaked further into more or less details via:
+  
+         * `:return-best-pipeline-only` - Only return information of the best performing pipeline. Default is true.
+         * `:return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is `true`.
+         * `:map-fn` - Controls parallelism, so if we use map (:map) , pmap (:pmap) or :mapv to map over different pipelines. Default is `:map`
+         * `:evaluation-handler-fn` - Gets called once with the complete result of an individual pipeline evaluation.
+             It can be used to adapt the data returned for each evaluation and / or to make side effects using
+             the evaluatio data.
+             The result of this function is taken as evaluation result. It need to  contain as a minumum this 2 key paths:
+             [:train-transform :metric]
+             [:test-transform :metric]
+             All other evalution data can be removed, if desired.
+  
+             It can be used for side effects as well, like experiment tracking on disk.
+             The passed in evaluation result is a map with all information on the current evaluation, including the datasets used.
+  
+             The default handler function is:  `scicloj.metamorph.ml/default-result-dissoc--in-fn` which removes the often large
+             model object and the training data.
+             `identity` can be use to get all evaluation data.
+             `scicloj.metamorph.ml/result-dissoc-in-seq--all` reduces even more agressively.
+  
+  
+    
+         * `:other-metrics` Specifies other metrices to be calculated during evaluation
+  
+     This function expects as well the ground truth of the target variable into
+     a specific key in the context at key `:model :scicloj.metamorph.ml/target-ds`
+     See here for the simplest way to set this up: https://github.com/behrica/metamorph.ml/blob/main/README.md
+     The function [[scicloj.ml.metamorph/model]] does this correctly.
+             
+     (This function replaces the `deprecated` function `evaluate-pipelines`. It's main difference is the changed handling of metric functions)        
+    "
+
   {:malli/schema
    [:function
     [:=>
@@ -946,19 +1018,17 @@
       :scicloj.metamorph.ml/optimize-hyperparams--metric-def
       :scicloj.metamorph.ml/optimize-hyperparams--options]
      :scicloj.metamorph.ml/evaluate-pipelines--evaluation-result]]}
-  
+
   ([pipeline-fn-or-decl-seq train-test-split-seq metric-def options]
-   (hyper-opt/optimize-hyperparameter pipeline-fn-or-decl-seq 
-                                      train-test-split-seq 
+   (hyper-opt/optimize-hyperparameter pipeline-fn-or-decl-seq
+                                      train-test-split-seq
                                       metric-def
-                                      options))  
+                                      options))
   ([pipeline-fn-or-decl-seq train-test-split-seq metric-def]
    (optimize-hyperparameter pipeline-fn-or-decl-seq
                             train-test-split-seq
                             metric-def
-                            {}))  
-  
-  )
+                            {})))
 
 
 (malli/instrument-ns 'scicloj.metamorph.ml)
