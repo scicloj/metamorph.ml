@@ -68,6 +68,18 @@
    m/schema
    (mu/assoc :model-type keyword?)))
 
+(defn options-schema [metric-schema]
+  [:or empty? [:map
+               [:return-best-pipeline-only {:optional true} boolean?]
+               [:return-best-crossvalidation-only {:optional true} boolean?]
+               [:map-fn {:optional true} [:enum :map :pmap :mapv :ppmap]]
+               [:ppmap-grain-size {:optional true} int?]
+               [:evaluation-handler-fn {:optional true} fn?]
+               [:other-metrics {:optional true} [:sequential [:map
+                                                              [:name keyword?]
+                                                              metric-schema]]]
+               [:attach-fn-sources {:optional true} [:map [:ns any?]
+                                                     [:pipe-fns-clj-file string?]]]]])
 
 (defn result-schema-template [metric-schema]
   [:sequential
@@ -102,7 +114,7 @@
                        [:max float?]
                        [:ctx map?]]]
      [:loss-or-accuracy [:enum :accuracy :loss]]
-     [:metric-fn fn?]
+     metric-schema
      [:pipe-decl [:maybe sequential?]]
      [:pipe-fn fn?]
      [:source-information [:maybe [:map [:classpath [:sequential string?]]
@@ -139,22 +151,16 @@
                    [:train [:fn dataset?]]
                    [:test {:optional true} [:fn dataset?]]]]
      
+     :scicloj.metamorph.ml/evaluate-pipelines--options
+     (options-schema [:metric-fn fn?])
+
      :scicloj.metamorph.ml/optimize-hyperparams--options
-     [:or empty? [:map
-                  [:return-best-pipeline-only {:optional true} boolean?]
-                  [:return-best-crossvalidation-only {:optional true} boolean?]
-                  [:map-fn {:optional true} [:enum :map :pmap :mapv :ppmap]]
-                  [:ppmap-grain-size {:optional true} int?]
-                  [:evaluation-handler-fn {:optional true} fn?]
-                  [:other-metrics {:optional true} [:sequential [:map
-                                                                 [:name keyword?]
-                                                                 [:metric-fn fn?]]]]
-                  [:attach-fn-sources {:optional true} [:map [:ns any?]
-                                                        [:pipe-fns-clj-file string?]]]]]
+     (options-schema [:metric-def :map])
+     
      :scicloj.metamorph.ml/evaluate-pipelines--evaluation-result
      (result-schema-template [:metric-fn fn?])
      :scicloj.metamorph.ml/optimize-hyperparams--evaluation-result
-     (result-schema-template [:metric-fn fn?])
+     (result-schema-template [:metric-def :map])
 
      })
    

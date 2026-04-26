@@ -32,15 +32,15 @@
 ;;  target-column-name (into {} trueth-cat-map) (into {} predict-cat-map))
 
 
-(defn- score [predictions-ds trueth-ds target-column-name metric-def other-metrics]
-  (def metric-def metric-def)
+(defn- score [predictions-ds trueth-ds target-column-name metric-def-or-fn other-metrics]
+  (def metric-def-or-fn metric-def-or-fn)
   (def other-metrics other-metrics)
 
   (let [predictions-col (get (ds-cat/reverse-map-categorical-xforms predictions-ds)
                              target-column-name)
         trueth-col (get (ds-cat/reverse-map-categorical-xforms trueth-ds)
                         target-column-name)
-        metric-fn-or-kw  (:metric metric-def)
+        metric-fn-or-kw  (:metric metric-def-or-fn)
 
         _ (def trueth-col trueth-col)
         _ (def predictions-col predictions-col)
@@ -56,7 +56,7 @@
            trueth-ds
            predictions-ds 
            metric-fn-or-kw 
-           (:averaging metric-def)
+           (:averaging metric-def-or-fn)
            ))
 
         other-metrics-result
@@ -71,7 +71,7 @@
 
 
 
-(defn- supervised-eval-pipeline [pipeline-fn fitted-ctx metric-def ds other-metrics]
+(defn- supervised-eval-pipeline [pipeline-fn fitted-ctx metric-def-or-fn ds other-metrics]
 
   (let [start-transform (System/currentTimeMillis)
         predicted-ctx (pipeline-fn (merge fitted-ctx {:metamorph/mode :transform  :metamorph/data ds}))
@@ -95,7 +95,7 @@
         _ (check-categorical-maps trueth-ds predictions-ds target-column-name)
 
 
-        scores (score predictions-ds trueth-ds target-column-name metric-def other-metrics)
+        scores (score predictions-ds trueth-ds target-column-name metric-def-or-fn other-metrics)
 
 
         eval-result
@@ -110,15 +110,15 @@
 
 
 
-(defn- eval-pipeline [pipeline-fn fitted-ctx metric ds other-metrics]
+(defn- eval-pipeline [pipeline-fn fitted-ctx metric-def-or-fn ds other-metrics]
 
   (if  (-> fitted-ctx :model :scicloj.metamorph.ml/unsupervised?)
     {:other-metrics []
      :timing 0
      :ctx {}
-     :metric (metric fitted-ctx)}
+     :metric (metric-def-or-fn fitted-ctx)}
 
-    (supervised-eval-pipeline pipeline-fn fitted-ctx metric ds other-metrics)))
+    (supervised-eval-pipeline pipeline-fn fitted-ctx metric-def-or-fn ds other-metrics)))
 
 
 (defn- calc-metric [pipeline-fn metric-def train-ds test-ds tune-options]
@@ -184,7 +184,7 @@
       (update source-information :fn-sources format-fn-sources))))
 
 
-(defn- evaluate-one-pipeline [pipeline-decl-or-fn train-test-split-seq metric-def tune-options]
+(defn- evaluate-one-pipeline [pipeline-decl-or-fn train-test-split-seq metric-def-or-fn tune-options]
 
   (let [pipeline-fn (if (fn? pipeline-decl-or-fn)
                       pipeline-decl-or-fn
@@ -192,17 +192,17 @@
         pipeline-decl (when (sequential? pipeline-decl-or-fn)
                         pipeline-decl-or-fn)
         
-        loss-or-accuracy (:loss-or-accuracy metric-def)
+        loss-or-accuracy (:loss-or-accuracy metric-def-or-fn)
 
         split-eval-results
         (->>
          (for [train-test-split train-test-split-seq]
            (let [{:keys [train test split-uid]} train-test-split
                  complete-result
-                 (assoc (calc-metric pipeline-fn metric-def train test tune-options)
+                 (assoc (calc-metric pipeline-fn metric-def-or-fn train test tune-options)
                         :split-uid split-uid
                         :loss-or-accuracy loss-or-accuracy
-                        :metric-fn (:metric metric-def)
+                        :metric-fn (:metric metric-def-or-fn)
                         :pipe-decl pipeline-decl
                         :pipe-fn pipeline-fn
                         :source-information
@@ -252,7 +252,7 @@
 
 (defn optimize-hyperparameter
 
-  ([pipeline-fn-or-decl-seq train-test-split-seq metric-def options]
+  ([pipeline-fn-or-decl-seq train-test-split-seq metric-def-or-fn options]
    (let [used-options (merge {:map-fn :map
                               :return-best-pipeline-only true
                               :return-best-crossvalidation-only true
@@ -275,7 +275,7 @@
             (evaluate-one-pipeline
              pipeline-fn-or-decl
              train-test-split-seq
-             metric-def
+             metric-def-or-fn
              used-options))
           pipeline-fn-or-decl-seq)
 
@@ -293,16 +293,16 @@
 
          result-pipeline-evals
          (if (used-options :return-best-pipeline-only)
-           (case (:loss-or-accuracy metric-def)
+           (case (:loss-or-accuracy metric-def-or-fn)
              :loss     (->> pipeline-eval-means  (take 1) (map :pipe-eval))
              :accuracy (->> pipeline-eval-means  (take-last 1) (map :pipe-eval)))
-           (case (:loss-or-accuracy metric-def)
+           (case (:loss-or-accuracy metric-def-or-fn)
              :loss     (->> pipeline-eval-means  (map :pipe-eval))
              :accuracy (->> pipeline-eval-means  reverse (mapv :pipe-eval))))]
 
 
      result-pipeline-evals))
 
-  ([pipeline-fn-seq train-test-split-seq metric]
-   (optimize-hyperparameter pipeline-fn-seq train-test-split-seq metric {})))
+  ([pipeline-fn-seq train-test-split-seq metric-def-or-fn]
+   (optimize-hyperparameter pipeline-fn-seq train-test-split-seq metric-def-or-fn {})))
 

@@ -111,7 +111,7 @@
                   :metamorph/mode :transform}))
          (:metamorph/data))]
     ;; (ds-mod/column-values->categorical :species)
-
+    
 
     (is (= (repeat 10 "versicolor")
            (-> predictions ds-cat/reverse-map-categorical-xforms :species seq)))
@@ -124,12 +124,18 @@
     (is (= excpected-metric-value
            (-> evaluations first first :train-transform :metric)
            ))
-    ;; =>
-    (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-fn :timing-fit :loss-or-accuracy :source-information :split-uid])
-           (set (keys (first (first evaluations))))))
+    (def evaluations evaluations)
+    (if (=  ml/evaluate-pipelines eval-fn)
+      (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-fn :timing-fit :loss-or-accuracy :source-information :split-uid])
+             (set (keys (first (first evaluations))))))
+      (is (= (set [:fit-ctx :test-transform :train-transform :pipe-fn :pipe-decl :metric-fn :timing-fit :loss-or-accuracy :source-information :split-uid])
+       (set (keys (first (first evaluations))))))
+      
+      )
     (is (contains?   (:fit-ctx (first (first evaluations)))  :metamorph/mode))
     (is (contains?   (:ctx (:train-transform (first (first evaluations))))  :metamorph/mode))
     (is (contains?   (:ctx (:test-transform (first (first evaluations))))  :metamorph/mode))))
+
 
 (deftest evaluate-pipelines-simplest
   (do-define--test-model)
@@ -303,9 +309,11 @@
          train-split-seq
          loss/classification-loss
          :loss
-         {:evaluation-handler-fn
-          ;(fn [result] (def result result) result)
-          eval/metrics-keep-fn})]
+          {:evaluation-handler-fn
+           ;(fn [result] (def result result) result)
+           eval/metrics-keep-fn
+           }
+         )]
     (is (=
          [[:train-transform]
           [:train-transform :metric]
@@ -318,6 +326,7 @@
           [:test-transform :max]
           [:test-transform :mean]]
          (keys-in (-> result first first))))))
+
 
 (deftest evaluate-pipelines--metric-and-options-keep-fn
   (do-define--test-model)
@@ -866,4 +875,41 @@
     (validate-simple-pipeline eval-fn eval-fn-args 0.5333333333333333)))
 
  
+
+;; (deftest validate-schema--optimize-hyperparameter
+;;   (do-define--test-model)
+;;   (let [create-base-pipe-decl
+;;         (fn  [node-size]
+;;           [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
+;;            [:tech.v3.dataset.metamorph/categorical->number [:species] iris-target-values]
+;;            {:metamorph/id :model} [:scicloj.metamorph.ml/model {:model-type :test-model
+;;                                                                 :node-size node-size}]])
+
+;;         pipes (map create-base-pipe-decl [1 5 10 20 50 100])
+
+;;         split (tc/split->seq iris :holdout)
+
+;;         evaluation-result
+;;         (ml/optimize-hyperparameter
+;;          pipes split
+;;          {:metric :accuracy
+;;           :averaging :macro
+;;           :loss-or-accuracy :accuracy}
+;;          {:other-metrics [{:name :m
+;;                            :metric-def
+;;                            {:metric :accuracy
+;;                             :averaging :macro
+;;                             :loss-or-accuracy :accuracy}}]
+;;           }
+;;          )]
+
+
+;;     (def evaluation-result evaluation-result)
+;;      (is (nil?
+;;           (m/explain
+;;            :scicloj.metamorph.ml/optimize-hyperparams--evaluation-result
+;;            evaluation-result)))
+    
+;;     ))
+
 
