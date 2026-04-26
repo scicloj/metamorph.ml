@@ -52,9 +52,9 @@
 
 
 
-(def *insist* (atom true))
+(def ^:private *insist* (atom true))
 
-(defmacro insist
+(defmacro ^:private insist
   "Evaluates expression x and throws an AssertionError with optional
   message if x does not evaluate to logical true.
 
