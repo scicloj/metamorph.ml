@@ -130,7 +130,8 @@
      :scicloj.metamorph.ml/optimize-hyperparams--metric-def
      [:map {:closed true}
       [:metric keyword?]
-      [:averaging [:enum :macro :micro]]
+      [:metric-type  [:enum :regression :classification]]
+      [:averaging {:optional true} [:enum :macro :micro]]
       [:loss-or-accuracy [:enum :accuracy :loss]]
       [:options {:optional true} :map]
       

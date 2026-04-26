@@ -324,7 +324,8 @@
         {:metric metric
          :average (case averaging
                     :macro stats/mean
-                    :micro :micro)
+                    :micro :micro
+                    nil stats/mean)
          :beta (get options :beta 0.5)}))))
 
 

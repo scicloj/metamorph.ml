@@ -576,6 +576,32 @@
          (->> prediction :mpg (take 5))))))
 
 
+(deftest optimize-hyperparameter
+  (let [ds
+        (->
+         (data/mtcars-ds)
+         (ds/drop-columns [:model])
+         (ds-mod/set-inference-target :mpg))
+
+        split (first (tc/split->seq ds :holdout {:seed 123}))
+
+        pipe-fn
+        (mm/pipeline
+         {:metamorph/id :model}
+         (ml/model {:model-type :fastmath/ols}))
+
+        result
+        (ml/optimize-hyperparameter
+         [pipe-fn]
+         [split]
+         {:metric-type :regression
+          :metric :mae
+          :loss-or-accuracy :loss})]
+
+    (is (= 3.762642843199996
+           (-> result first first :test-transform :metric)))))
+
+
 
 
 (comment 

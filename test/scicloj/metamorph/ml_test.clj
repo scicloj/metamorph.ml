@@ -857,9 +857,8 @@
 (deftest optimize-hyperparameter--metric-kw
   (do-define--test-model)
   (let [eval-fn ml/optimize-hyperparameter
-        eval-fn-args [{;:model-type :classification
+        eval-fn-args [{:metric-type :classification
                        :metric :accuracy
-                       :averaging :macro
                        :loss-or-accuracy :accuracy
                        :options {}
                        }
@@ -869,9 +868,8 @@
 (deftest optimize-hyperparameter--metric-kw-2
   (do-define--test-model)
   (let [eval-fn ml/optimize-hyperparameter
-        eval-fn-args [{;:model-type :classification
+        eval-fn-args [{:metric-type :classification
                        :metric :accuracy
-                       :averaging :macro
                        :loss-or-accuracy :accuracy
                        :options {}}
                       ]]
@@ -896,12 +894,13 @@
         (ml/optimize-hyperparameter
          pipes split
          {:metric :accuracy
+          :metric-type :classification
           :averaging :macro
           :loss-or-accuracy :accuracy}
          {:other-metrics [{:name :m
                            :metric-def
-                           {:metric :accuracy
-                            :averaging :macro
+                           {:metric-type :classification
+                            :metric :accuracy
                             :loss-or-accuracy :accuracy}}]})]
 
 
