@@ -36,6 +36,12 @@ see the deps.edn file in alias "test".
 
 
 ```clojure
+(ns read 
+  (:require
+    [scicloj.metamorph.ml.rdatasets :as rdatasets]
+    [tech.v3.dataset :as ds]
+    [scicloj.metamorph.ml :as ml]))
+
 (require
  '[tech.v3.dataset :as ds]
  '[tech.v3.dataset.metamorph :as ds-mm]
@@ -44,12 +50,16 @@ see the deps.edn file in alias "test".
  '[tech.v3.dataset.column-filters :as cf]
  '[tablecloth.api.split :as split]
  '[scicloj.metamorph.ml :as ml]
- '[scicloj.metamorph.ml.loss :as loss]
+ '[scicloj.metamorph.ml.rdatasets :as rdatasets]
+ '[scicloj.metamorph.ml.column-metric :as col-metric]
  '[scicloj.ml.smile.classification]
- :reload)
+ )
 
 ;;  the data
-(def  ds (ds/->dataset "https://raw.githubusercontent.com/techascent/tech.ml/master/test/data/iris.csv" {:key-fn keyword}))
+
+(def  ds (->
+          (rdatasets/datasets-iris)
+          (ds/drop-columns [:rownames])))
 
 ;;  the (single, fixed) pipe-fn
 (def pipe-fn
@@ -69,15 +79,18 @@ see the deps.edn file in alias "test".
 (def  pipe-fn-seq [pipe-fn])
 
 (def  evaluations
-  (ml/evaluate-pipelines pipe-fn-seq train-split-seq loss/classification-loss :loss))
+  (ml/optimize-hyperparameter pipe-fn-seq train-split-seq
+                              {:metric :accuracy
+                               :loss-or-accuracy :accuracy
+                               :averaging :macro}))
 
 ;; we have only one result
 (def best-fitted-context (-> evaluations first first :fit-ctx))
 (def best-pipe-fn (-> evaluations first first :pipe-fn))
 
-;; get training loss
+;; get training accuracy
 (-> evaluations first first :train-transform :metric)
-;; => 0.04
+;; => 0.97
 
 ;;  simulate new data
 (def  new-ds (ds/sample ds 10 {:seed 1234}))
@@ -102,10 +115,11 @@ This library contains the basis functions for machine learning, arround:
 * Train a model
 * Predict on a trained model
 * Register a trained model
+* Find best model via hyperparameter optimisation
 
 ## model plugins
 
-`metamorph.ml` is a framework, only containing a single model type of a linear regression.
+`metamorph.ml` is a ML framework,  containing just a single model type of a linear regression.
 It is meant to be used together with other libraries, which contribute models:
 
 |library| url | descriptions
@@ -115,15 +129,41 @@ It is meant to be used together with other libraries, which contribute models:
 |org.scicloj/sklearn-clj      | https://github.com/scicloj/sklearn-clj       | most regression/classification models of python-sklearn
 |org.scicloj/scicloj.ml.xgboost|https://github.com/scicloj/scicloj.ml.xgboost | xgboost4J models
 
+## Train a model
+
+For training a model, we have function `train` , `predict` and `evaluate`:
+
+```clojure
+(def  ds (->
+          (rdatasets/datasets-iris)
+          (ds/drop-columns [:rownames])))
+
+(def preprocessed-ds
+  (-> ds
+      (ds-mod/set-inference-target :species)
+      (ds/categorical->number cf/categorical)))
+
+(def split (ds-mod/train-test-split preprocessed-ds))
+
+(def model (ml/train (:train-ds split) {:model-type :smile.classification/random-forest}))
+
+(def prediction (ml/predict (:test-ds split) model))
+
+(col-metric/classification-metric (:test-ds split) prediction :accuracy :macro)
+;;=> 1.0
+
+```
+
 
 ## Evaluate pipelines
 Instead of running  `train` and `predict` as separate steps, 
 the library offers as well to combine this in one step, and to `evaluate` a model or a pipleine.
+Additonaly it does operate on an abstrcation of the preprocessing + modeling steps, teh so caleed pipeline.
 
-The function `evaluate-pipelines` which takes a sequence of metamorph compliant pipeline-fn (= each pipeline is a series of steps to transform the raw data and a model step), does this.
+The function `ml/optimize-hyperparameter` which takes a sequence of metamorph compliant pipeline-fn (= each pipeline is a series of steps to transform the raw data and a model step), does this.
 
 It executes each pipeline first in `mode` :fit and then in `mode` transform, as specified by [metamorph](https://github.com/scicloj/metamorph)
-which a pipeline step containing a model should then translates into a
+which a pipeline step containing a model then translates into a
 train/predict pattern including evaluation of the result.
 
 The last step of the pipeline function should be a "model", so something which
@@ -137,7 +177,7 @@ Here is a well behaving model function:
 https://github.com/scicloj/metamorph.ml/blob/973606776cfabbe5a666a6cc0bab5a1833f044c8/src/scicloj/metamorph/ml.clj#L662
 which calls `train` and `predict` accordingly. 
 
-So for each pipeline-fn in the sequence given to `evaluate-models` one model
+So for each pipeline-fn in the sequence given to `optimize-hyperparameter` one model
 will be trained and evaluated.
 
 It does this for each pipeline-fn given and each pipeline-fn gets evaluated
@@ -166,7 +206,7 @@ This can be done in various ways, from hand coding each pipeline  or having
 a pipeline creation function  over to using grid search libraries:
 https://github.com/scicloj/metamorph.ml/blob/973606776cfabbe5a666a6cc0bab5a1833f044c8/src/scicloj/metamorph/ml/gridsearch.clj#L109
 
-A simple pipeline looks like this:
+A simple ML pipeline looks like this:
 
 ```clojure
  (mm/pipeline
@@ -174,6 +214,8 @@ A simple pipeline looks like this:
          (ds-mm/categorical->number cf/categorical)
          (ml-mm/model {:model-type :smile.classification/random-forest}))
 ```
+It does preprocessing of data and contains the `modelling` step as well.
+
 
 Pipelines can be created as well declarative based on maps, see here: 
 https://scicloj.github.io/tablecloth/index.html#Declarative
@@ -185,7 +227,7 @@ at key :train and an other dataset  at key :test. These will be used to
 train / predict and evaluate one pipeline.
 
 
-`evaluates-pipelines` returns then a sequence  of model evaluations.
+`optimize-hyperparameter` returns then a sequence  of model evaluations.
 It returns #pipeline-fn x  #cross-validation-splits evaluation results. This is as well the total number of models trained in total.
 
 Each evaluation result contains a map with these keys:

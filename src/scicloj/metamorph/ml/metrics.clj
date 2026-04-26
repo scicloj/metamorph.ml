@@ -1,5 +1,8 @@
 (ns scicloj.metamorph.ml.metrics
-  "Excellent metrics tools from the cortex project."
+  "DEPRECATED: Excellent metrics tools from the cortex project."
+  {:deprecated "1.4.0"
+   :superseded-by "scicloj.metamorph.ml/column-metric"
+   }
   (:require [tech.v3.datatype :as dtype]
             [fastmath.core :as fm]
             [scicloj.metamorph.ml :as ml]

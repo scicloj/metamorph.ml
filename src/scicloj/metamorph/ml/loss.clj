@@ -1,5 +1,8 @@
 (ns scicloj.metamorph.ml.loss
-  "Simple loss functions."
+  "DEPRECATED: Simple loss functions."
+  {:deprecated "1.4.0"
+   :superseded-by "scicloj.metamorph.ml/column-metric"}
+  
   (:require [tech.v3.datatype.functional :as dfn]
             [tech.v3.datatype :as dtype]
             [tech.v3.datatype.errors :as errors]

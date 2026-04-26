@@ -1,5 +1,9 @@
-unreleased 
+- unreleased 
  - allow dmatrix for prediction
+ - added `ml/optimize-hyperparameter`
+ - deprecated `ml/evaluate-pipelines`
+ - deprecated ns `scicloj.metamorph.ml.metrics`,`scicloj.metamorph.ml.loss`
+
 
 1.5.1
  - added `r-model-matrix/lm` helper for one-line linear models
@@ -10,15 +14,17 @@ unreleased
  - `design-matrix` fn expands no-column name to auto-column name [#42](https://github.com/scicloj/metamorph.ml/issues/42)
 - added support in ns `r-model-matrix` for model matrix creation using "R-formula syntax" backed up by R itself,
   with 3 implementations to choose using opencpu,rejine,clojisr
-
+ 
 1.4.0
  - validate predit-fn results
- - new ns scicloj.metamorph.ml.column-metric with metric-fns operating on datasets, not seq-of-numbers
+ - new ns `scicloj.metamorph.ml.column-metric with metric-fns operating on datasets, not seq-of-numbers
  - TMD's of rdatasets get doc-url as dataset name, ready for clicking [#36](https://github.com/scicloj/metamorph.ml/issues/36)
  - added model names to fastmath/ols [#24](https://github.com/scicloj/metamorph.ml/issues/24)
  - add support for fastmath GLM model [46](https://github.com/scicloj/metamorph.ml/issues/46)
  - allow ml.dmlc.xgboost4j.java.DMatrix as input to train/test
  
+
+
 1.3.2
  - removed clj-memory-meter from src-code 
 1.3.1

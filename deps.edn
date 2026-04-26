@@ -4,7 +4,7 @@
         scicloj/tablecloth          {:mvn/version "8.016"}
 
 
-        metosin/malli               {:mvn/version "0.20.1"}
+        metosin/malli               {:mvn/version "0.20.0"}
         generateme/fastmath         {:mvn/version "3.0.0-alpha6"}
         it.unimi.dsi/fastutil       {:mvn/version "8.5.18"}
         aerial.hanami/aerial.hanami {:mvn/version "0.20.2"

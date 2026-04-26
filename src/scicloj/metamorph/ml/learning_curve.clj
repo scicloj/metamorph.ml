@@ -2,14 +2,13 @@
   (:require
    [clojure.math :as math]
    [scicloj.metamorph.ml]
-   [scicloj.metamorph.ml.loss]
    [tablecloth.api :as tc]))
 
 (defn learning-curve
   "Generates a learnining curve.
 
   The functions splits  the dataset  in a fixed size test set
-  and increasingly larger  training sets. A model is trained at each
+  and increasingly larger training sets. A model is trained at each
   step and evaluated.
 
   Returns dataset with the learninig curve data.

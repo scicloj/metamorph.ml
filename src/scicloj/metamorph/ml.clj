@@ -130,7 +130,10 @@
 
 
 
-(defn evaluate-pipelines
+(defn ^{:deprecated "1.4.0"
+        :superseded-by "ml/optimize-hyperparameter"}  
+  
+  evaluate-pipelines
   "Evaluates the performance of a seq of metamorph pipelines, which are suposed to have a model as last step under key :model,
   which behaves correctly  in mode :fit and  :transform. The function `scicloj.metamorph.ml/model` is such function behaving correctly.
   
@@ -849,7 +852,8 @@
 
 
 
-(defn default-loss-fn
+(defn ^{:deprecated "1.4.0"} 
+  default-loss-fn
   "Given a datset which must have exactly 1 inference target column return a default
   loss fn. If column is categorical, loss is tech.v3.ml.loss/classification-loss, else
   the loss is tech.v3.ml.loss/mae (mean average error)."
