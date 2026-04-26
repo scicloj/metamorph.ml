@@ -522,8 +522,6 @@
 
         split (tc/split->seq iris :holdout)
 
-        result-schema (-> #'ml/evaluate-pipelines meta :malli/schema second :registry :scicloj.metamorph.ml/evaluation-result)
-
         evaluation-result
         (ml/evaluate-pipelines
          pipes split
@@ -538,7 +536,7 @@
 
     (is (nil?
          (m/explain
-          result-schema
+          :scicloj.metamorph.ml/optimize-hyperparams--evaluation-result
           evaluation-result)))))
 
 (deftest call-without-ds

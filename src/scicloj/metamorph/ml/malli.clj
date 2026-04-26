@@ -5,7 +5,8 @@
    [malli.dev.pretty :as pretty]
    [malli.instrument :as mi]
    [malli.util :as mu]
-   [tech.v3.dataset.impl.dataset :refer [dataset?]]))
+   [tech.v3.dataset.impl.dataset :refer [dataset?]]
+   [malli.registry :as mr]))
 
 (defn instrument-mm
   "Instruments a metamorph function with input validation via Malli schema.
@@ -66,3 +67,85 @@
    (get model-options :options [:map ])
    m/schema
    (mu/assoc :model-type keyword?)))
+
+
+(def custom-schemas
+   
+   
+    
+    {
+     :scicloj.metamorph.ml/optimize-hyperparams--metric-fn
+     fn?
+
+     :scicloj.metamorph.ml/optimize-hyperparams--loss-or-accuracy
+     [:enum :accuracy :loss]
+
+     :scicloj.metamorph.ml/optimize-hyperparams--pipeline-fn-or-decl-seq
+     [:sequential [:or vector? fn?]]
+     
+     :scicloj.metamorph.ml/optimize-hyperparams--train-test-split-seq
+     [:sequential [:map {:closed true}
+                   [:split-uid {:optional true} string?]
+                   [:train [:fn dataset?]]
+                   [:test {:optional true} [:fn dataset?]]]]
+     
+     :scicloj.metamorph.ml/optimize-hyperparams--options
+     [:or empty? [:map
+                  [:return-best-pipeline-only {:optional true} boolean?]
+                  [:return-best-crossvalidation-only {:optional true} boolean?]
+                  [:map-fn {:optional true} [:enum :map :pmap :mapv :ppmap]]
+                  [:ppmap-grain-size {:optional true} int?]
+                  [:evaluation-handler-fn {:optional true} fn?]
+                  [:other-metrics {:optional true} [:sequential [:map
+                                                                 [:name keyword?]
+                                                                 [:metric-fn fn?]]]]
+                  [:attach-fn-sources {:optional true} [:map [:ns any?]
+                                                        [:pipe-fns-clj-file string?]]]]]
+     :scicloj.metamorph.ml/optimize-hyperparams--evaluation-result
+     [:sequential
+      [:sequential
+       [:map {:closed true}
+        [:split-uid [:maybe string?]]
+        [:fit-ctx [:map [:metamorph/mode [:enum :fit :transform]]]]
+        [:timing-fit int?]
+
+        [:train-transform [:map {:closed true}
+                           [:other-metrics [:sequential [:map {:closed true}
+                                                         [:name keyword?]
+                                                         [:metric-fn fn?]
+                                                         [:metric float?]]]]
+                           [:timing int?]
+                           [:metric float?]
+                           [:probability-distribution  [:maybe [:fn dataset?]]]
+                           [:min float?]
+                           [:mean float?]
+                           [:max float?]
+                           [:ctx map?]]]
+        [:test-transform [:map {:closed true}
+                          [:other-metrics [:sequential [:map {:closed true}
+                                                        [:name keyword?]
+                                                        [:metric-fn fn?]
+                                                        [:metric float?]]]]
+                          [:timing int?]
+                          [:metric float?]
+                          [:probability-distribution  [:maybe [:fn dataset?]]]
+                          [:min float?]
+                          [:mean float?]
+                          [:max float?]
+                          [:ctx map?]]]
+        [:loss-or-accuracy [:enum :accuracy :loss]]
+        [:metric-fn fn?]
+        [:pipe-decl [:maybe sequential?]]
+        [:pipe-fn fn?]
+        [:source-information [:maybe [:map [:classpath [:sequential string?]]
+                                      [:fn-sources [:map-of :qualified-symbol [:map [:source-form any?]
+                                                                               [:source-str string?]]]]]]]]]]})
+   
+(mr/set-default-registry!
+ (-> 
+  (merge 
+   (m/default-schemas)
+   custom-schemas
+   )
+  (mr/simple-registry)
+  ))
