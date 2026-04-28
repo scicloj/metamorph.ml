@@ -9,7 +9,14 @@
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.datatype.errors :as errors]
    [tech.v3.datatype.functional :as dfn]
-   [scicloj.metamorph.ml.column-metric :as col-metric]))
+   [scicloj.metamorph.ml.column-metric :as col-metric]
+   [com.climate.claypoole :as cp]))
+
+(defn- pprun! [pool proc col grain-size]
+  (cp/prun! pool
+            (fn [part]
+              (run! proc part))
+            (partition grain-size col)))
 
 
 (defn- strict-type-check [trueth-col predictions-col]
@@ -282,12 +289,16 @@
 
 
                              options)
+         pool-size (+ 2 (.. Runtime getRuntime availableProcessors))
          map-fn
          (case (used-options :map-fn)
            :ppmap (partial ppp/ppmap-with-progress "ppmap: evaluate pipelines" (used-options :ppmap-grain-size))
            :pmap (partial ppp/pmap-with-progress "pmap: evaluate pipelines")
            :map (partial ppp/map-with-progress "map: evaluate pipelines")
-           :mapv mapv)
+           :mapv mapv
+           :run! run!
+           :prun! (partial cp/prun! pool-size)
+           :pprun (fn [proc col] (pprun! pool-size proc col (used-options :ppmap-grain-size))))
 
 
          pipeline-evals
@@ -300,29 +311,29 @@
              used-options))
           pipeline-fn-or-decl-seq)
 
-         pipeline-eval-means
-         (->>
-          (mapv
-           (fn [pipe-eval]
-             {:pipe-mean
-              (dfn/mean
-               (mapv (comp :metric :train-transform) pipe-eval))
-              :pipe-eval pipe-eval})
-           pipeline-evals)
-          (sort-by :pipe-mean))
-
-
-         result-pipeline-evals
-         (if (used-options :return-best-pipeline-only)
-           (case (:loss-or-accuracy metric-def-or-fn)
-             :loss     (->> pipeline-eval-means  (take 1) (map :pipe-eval))
-             :accuracy (->> pipeline-eval-means  (take-last 1) (map :pipe-eval)))
-           (case (:loss-or-accuracy metric-def-or-fn)
-             :loss     (->> pipeline-eval-means  (map :pipe-eval))
-             :accuracy (->> pipeline-eval-means  reverse (mapv :pipe-eval))))]
-
-
-     result-pipeline-evals))
+         result
+         (if (some? pipeline-evals)
+           (let [pipeline-eval-means
+                 (->>
+                  (mapv
+                   (fn [pipe-eval]
+                     {:pipe-mean
+                      (dfn/mean
+                       (mapv (comp :metric :train-transform) pipe-eval))
+                      :pipe-eval pipe-eval})
+                   pipeline-evals)
+                  (sort-by :pipe-mean))
+                 result-pipeline-evals
+                 (if (used-options :return-best-pipeline-only)
+                   (case (:loss-or-accuracy metric-def-or-fn)
+                     :loss     (->> pipeline-eval-means  (take 1) (map :pipe-eval))
+                     :accuracy (->> pipeline-eval-means  (take-last 1) (map :pipe-eval)))
+                   (case (:loss-or-accuracy metric-def-or-fn)
+                     :loss     (->> pipeline-eval-means  (map :pipe-eval))
+                     :accuracy (->> pipeline-eval-means  reverse (mapv :pipe-eval))))]
+             result-pipeline-evals)
+           nil)]
+     result))
 
   ([pipeline-fn-seq train-test-split-seq metric-def-or-fn]
    (optimize-hyperparameter pipeline-fn-seq train-test-split-seq metric-def-or-fn {})))
