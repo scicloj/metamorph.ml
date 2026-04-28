@@ -72,7 +72,7 @@
   [:or empty? [:map
                [:return-best-pipeline-only {:optional true} boolean?]
                [:return-best-crossvalidation-only {:optional true} boolean?]
-               [:map-fn {:optional true} [:enum :map :pmap :mapv :ppmap]]
+               [:map-fn {:optional true} [:enum :map :pmap :mapv :ppmap :run! :prun! :pprun!]]
                [:ppmap-grain-size {:optional true} int?]
                [:evaluation-handler-fn {:optional true} fn?]
                [:other-metrics {:optional true} [:sequential [:map

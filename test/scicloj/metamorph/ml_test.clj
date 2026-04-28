@@ -24,6 +24,7 @@
    [scicloj.metamorph.ml.column-metric :as metric]
    [scicloj.metamorph.ml.impl.hyper-opt :as hyper-opt]
    [scicloj.ml.xgboost]
+
    )
   (:import
    [ml.dmlc.xgboost4j.java DMatrix]
@@ -134,6 +135,7 @@
     (is (contains?   (:fit-ctx (first (first evaluations)))  :metamorph/mode))
     (is (contains?   (:ctx (:train-transform (first (first evaluations))))  :metamorph/mode))
     (is (contains?   (:ctx (:test-transform (first (first evaluations))))  :metamorph/mode))))
+
 
 
 (deftest evaluate-pipelines-simplest
@@ -908,5 +910,33 @@
          (m/explain
           :scicloj.metamorph.ml/optimize-hyperparams--evaluation-result
           evaluation-result)))))
+
+
+
+(deftest validate-schema--optimize-hyperparameter-prun!
+  (do-define--test-model)
+
+  (let [pipe-decl
+        [[:tech.v3.dataset.metamorph/set-inference-target [:species]]
+         [:tech.v3.dataset.metamorph/categorical->number [:species] iris-target-values]
+         {:metamorph/id :model} [:scicloj.metamorph.ml/model {:model-type :test-model}]]
+
+
+        split (tc/split->seq iris :holdout)
+
+
+        evaluation-result
+        (ml/optimize-hyperparameter
+         [pipe-decl] split
+         {:metric :accuracy
+          :metric-type :classification
+          :averaging :macro
+          :loss-or-accuracy :accuracy}
+         {:evaluation-handler-fn (fn [_] nil)
+          :map-fn :prun!})]
+
+
+    (is (nil? evaluation-result))))
+
 
 

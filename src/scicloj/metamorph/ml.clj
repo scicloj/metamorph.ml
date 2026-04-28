@@ -104,12 +104,15 @@
    [tech.v3.dataset.modelling :as ds-mod]
    [tech.v3.datatype.errors :as errors]
    [tech.v3.datatype.export-symbols :as exporter]
-   [tech.v3.datatype :as dt])
+   [tech.v3.datatype :as dt]
+   )
   (:import
    java.util.UUID))
 
 
 (exporter/export-symbols scicloj.metamorph.ml.ensemble ensemble-pipe)
+
+
 
 (def train-predict-cache
   "Controls , if train/predict invocations are cached.
@@ -149,7 +152,7 @@
       These type of functions get produced typically by calling `scicloj.metamorph/pipeline`. Documentation is here:
 
    * `train-test-split-seq` need to be a sequence of maps containing the  train and test dataset (being tech.ml.dataset) at keys :train and :test.
-    `tablecloth.api/split->seq` produces such splits. Supervised models require both keys (:train and :test), while unsupervised models only use :train
+     `tablecloth.api/split->seq` produces such splits. Supervised models require both keys (:train and :test), while unsupervised models only use :train
 
    * `metric-fn` Metric function to use. Typically comming from `tech.v3.ml.loss`. For supervised models the metric-fn receives the trueth
       and predicted values and should return a single double number.  The metric fns receives a a seq *without* categorical maps. These
@@ -162,31 +165,33 @@
    * `loss-or-accuracy` If the metric-fn is a loss or accuracy calculation. Can be :loss or :accuracy. Decided the notion of `best` model.
       In case of :loss pipelines with lower metric are better, in case of :accuracy pipelines with higher value are better.
 
-  * `options` map controls some mainly performance related parameters. These function can potentialy result in a large ammount of data,
-    able to bring the JVM into out-of-memory. We can control how many details the function returns by the following parameter: 
-     The default are quite aggresive in removing details, and this can be tweaked further into more or less details via:
+   * `options` map controls some mainly performance related parameters. This function can potentialy result in a large ammount of data,
+     able to bring the JVM into out-of-memory. We can control memory consumption / paralellism by the below options.
      
-
+     The defaults are quite aggresive in removing details, and this can be tweaked further into more or less details via:
 
        * `:return-best-pipeline-only` - Only return information of the best performing pipeline. Default is true.
        * `:return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is `true`.
-       * `:map-fn` - Controls parallelism, so if we use map (:map) , pmap (:pmap) or :mapv to map over different pipelines. Default is `:map`
+       * `:map-fn` - Controls parallelism, so decides if we use `map` , `pmap` , `ppmap`  or `mapv` to map over different pipelines. Default is `:map`
+                     Giving :run!, :prun!, pprun! executes the pipelines based on `run!`. In this case this function returns nothing, 
+                     and it assumes that a site-effect making `:evaluation-handler-fn` is given. (which can then return nil)
        * `:evaluation-handler-fn` - Gets called once with the complete result of an individual pipeline evaluation.
            It can be used to adapt the data returned for each evaluation and / or to make side effects using
-           the evaluatio data.
+           the evaluatio data. 
            The result of this function is taken as evaluation result. It need to  contain as a minumum this 2 key paths:
            [:train-transform :metric]
            [:test-transform :metric]
-           All other evalution data can be removed, if desired.
+           All other evalution data can be removed, if desired. 
+           The `evaluation-handler-fn` fn can as well return nil, and then it should be used together with `map-fn` :run!, :prun! or pprun!,
+           so we execute it for side-efects only, which means as well that memory consumption is minimal
 
-           It can be used for side effects as well, like experiment tracking on disk.
+           It can be used for side effects, like experiment tracking on disk or in a database.
            The passed in evaluation result is a map with all information on the current evaluation, including the datasets used.
 
            The default handler function is:  `scicloj.metamorph.ml/default-result-dissoc--in-fn` which removes the often large
            model object and the training data.
-           `identity` can be use to get all evaluation data.
-           `scicloj.metamorph.ml/result-dissoc-in-seq--all` reduces even more agressively.
-
+           `identity` can be use to retain all evaluation data incl. data
+           `scicloj.metamorph.ml/result-dissoc-in-seq--all` is availble and reduces even more agressively, just keeping the metrices.
 
   
        * `:other-metrics` Specifies other metrices to be calculated during evaluation
@@ -963,36 +968,39 @@ Each of the evaluation results is a context map, which is specified in the malli
      
        This metric will be used to sort and eventualy filter the result, depending on the options
         (:return-best-pipeline-only   and :return-best-crossvalidation-only). The notion of `best` comes from metric-fn combined with loss-and-accuracy
+
+      * `options` map controls some mainly performance related parameters. This function can potentialy result in a large ammount of data,
+        able to bring the JVM into out-of-memory. We can control memory consumption / paralellism by the below options.
+     
+     The defaults are quite aggresive in removing details, and this can be tweaked further into more or less details via:
+
+       * `:return-best-pipeline-only` - Only return information of the best performing pipeline. Default is true.
+       * `:return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is `true`.
+       * `:map-fn` - Controls parallelism, so decides if we use `map` , `pmap` , `ppmap`  or `mapv` to map over different pipelines. Default is `:map`
+                     Giving :run!, :prun!, pprun! executes the pipelines based on `run!`. In this case this function returns nothing, 
+                     and it assumes that a site-effect making `:evaluation-handler-fn` is given. (which can then return nil)
+       * `:evaluation-handler-fn` - Gets called once with the complete result of an individual pipeline evaluation.
+           It can be used to adapt the data returned for each evaluation and / or to make side effects using
+           the evaluatio data. 
+           The result of this function is taken as evaluation result. It need to  contain as a minumum this 2 key paths:
+           [:train-transform :metric]
+           [:test-transform :metric]
+           All other evalution data can be removed, if desired. 
+           The `evaluation-handler-fn` fn can as well return nil, and then it should be used together with `map-fn` :run!, :prun! or pprun!,
+           so we execute it for side-efects only, which means as well that memory consumption is minimal
+
+           It can be used for side effects, like experiment tracking on disk or in a database.
+           The passed in evaluation result is a map with all information on the current evaluation, including the datasets used.
+
+           The default handler function is:  `scicloj.metamorph.ml/default-result-dissoc--in-fn` which removes the often large
+           model object and the training data.
+           `identity` can be use to retain all evaluation data incl. data
+           `scicloj.metamorph.ml/result-dissoc-in-seq--all` is availble and reduces even more agressively, just keeping the metrices.
+
+  
+       * `:other-metrics` Specifies other metrices to be calculated during evaluation
      
  
-  
-  
-   * `options` map controls some mainly performance related parameters. These function can potentialy result in a large ammount of data,
-      able to bring the JVM into out-of-memory. We can control how many details the function returns by the following parameter: 
-       The default are quite aggresive in removing details, and this can be tweaked further into more or less details via:
-  
-         * `:return-best-pipeline-only` - Only return information of the best performing pipeline. Default is true.
-         * `:return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is `true`.
-         * `:map-fn` - Controls parallelism, so if we use map (:map) , pmap (:pmap) or :mapv to map over different pipelines. Default is `:map`
-         * `:evaluation-handler-fn` - Gets called once with the complete result of an individual pipeline evaluation.
-             It can be used to adapt the data returned for each evaluation and / or to make side effects using
-             the evaluatio data.
-             The result of this function is taken as evaluation result. It need to  contain as a minumum this 2 key paths:
-             [:train-transform :metric]
-             [:test-transform :metric]
-             All other evalution data can be removed, if desired.
-  
-             It can be used for side effects as well, like experiment tracking on disk.
-             The passed in evaluation result is a map with all information on the current evaluation, including the datasets used.
-  
-             The default handler function is:  `scicloj.metamorph.ml/default-result-dissoc--in-fn` which removes the often large
-             model object and the training data.
-             `identity` can be use to get all evaluation data.
-             `scicloj.metamorph.ml/result-dissoc-in-seq--all` reduces even more agressively.
-  
-  
-    
-         * `:other-metrics` Specifies other metrices to be calculated during evaluation
   
      This function expects as well the ground truth of the target variable into
      a specific key in the context at key `:model :scicloj.metamorph.ml/target-ds`

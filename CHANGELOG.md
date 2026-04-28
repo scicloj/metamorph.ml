@@ -3,6 +3,7 @@
  - added `ml/optimize-hyperparameter`
  - deprecated `ml/evaluate-pipelines`
  - deprecated ns `scicloj.metamorph.ml.metrics`,`scicloj.metamorph.ml.loss`
+ - added support for :run!,prun!, :pprun! in `evaluate-pipelines`, `optimize-hyperparameter`
 
 
 1.5.1
@@ -23,7 +24,6 @@
  - add support for fastmath GLM model [46](https://github.com/scicloj/metamorph.ml/issues/46)
  - allow ml.dmlc.xgboost4j.java.DMatrix as input to train/test
  
-
 
 1.3.2
  - removed clj-memory-meter from src-code 

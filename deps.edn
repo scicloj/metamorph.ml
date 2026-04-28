@@ -32,10 +32,7 @@
         clj-http/clj-http {:mvn/version "3.13.1"}
         cheshire/cheshire {:mvn/version "6.2.0"}
         opencpu-clj/opencpu-clj {:mvn/version "0.3.1"}
-        
-        }
-
- 
+        org.clj-commons/claypoole {:mvn/version "1.2.2"}}
 
  :paths ["src" "resources"]
 
@@ -72,8 +69,7 @@
   :test
   {:jvm-opts ["-Djdk.attach.allowAttachSelf","-Xmx14G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
    :extra-paths ["test"]
-   :extra-deps {
-                org.scicloj/scicloj.ml.xgboost 
+   :extra-deps {org.scicloj/scicloj.ml.xgboost
                 ;{:local/root  "/sources/scicloj.ml.xgboost"}
                  {:git/url "https://github.com/scicloj/scicloj.ml.xgboost"
                   :git/sha "02216371d64f75ae2e4c2a0ec442372f6732e864"}
