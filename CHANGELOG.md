@@ -1,3 +1,7 @@
+unreleased
+ - `design-matrix` expands keyword to identity [#41](https://github.com/scicloj/metamorph.ml/issues/41)
+ - `design-matrix` expands no-column name to auto-column name [#42](https://github.com/scicloj/metamorph.ml/issues/42)
+
 1.4.0
  
  - validate predit-fn results
@@ -6,9 +10,7 @@
  - added model names to fastmath/ols [#24](https://github.com/scicloj/metamorph.ml/issues/24)
  - add support for fastmath GLM model [46](https://github.com/scicloj/metamorph.ml/issues/46)
  - allow ml.dmlc.xgboost4j.java.DMatrix as input to train/test
- - `design-matrix` expands keyword to identity [#41](https://github.com/scicloj/metamorph.ml/issues/41)
- - `design-matrix` expands no-column name to auto-column name [#42](https://github.com/scicloj/metamorph.ml/issues/42)
-
+ 
 1.3.2
  - removed clj-memory-meter from src-code 
 1.3.1
