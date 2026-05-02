@@ -31,5 +31,11 @@
 		}
 	},
 
-	"remoteUser": "vscode"
+	"remoteUser": "vscode",
+	"postCreateCommand": {
+		"Rserve": "Rscript -e 'install.packages(\"Rserve\",,\"http://rforge.net\")'",
+		"clj deps": "clojure -P -A:dev:exp -Sthreads 1  > /tmp/progress.log 2>&1"
+
+
+	}
 }

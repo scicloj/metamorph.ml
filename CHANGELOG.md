@@ -2,6 +2,8 @@ unreleased
  - `design-matrix` expands keyword to identity [#41](https://github.com/scicloj/metamorph.ml/issues/41)
  - `design-matrix` expands no-column name to auto-column name [#42](https://github.com/scicloj/metamorph.ml/issues/42)
 
+- added support for design matrice creation using "R-formula syntax" backed up by R itself.
+
 1.4.0
  
  - validate predit-fn results

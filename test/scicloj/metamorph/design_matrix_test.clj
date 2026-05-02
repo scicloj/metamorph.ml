@@ -4,11 +4,7 @@
              [tablecloth.api :as tc]
              [tablecloth.column.api]
              [tech.v3.dataset.tensor :as tensor]
-             [scicloj.metamorph.ml.design-matrix :as dm]
-             [scicloj.metamorph.ml.rdatasets :as rdatasets]
-             [tech.v3.dataset :as ds]
-             [fastmath.ml.regression :as regr]
-             [tech.v3.dataset.column-filters :as cf]))
+             [scicloj.metamorph.ml.design-matrix :as dm]))
 
 
 
