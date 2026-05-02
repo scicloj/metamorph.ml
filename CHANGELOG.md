@@ -1,3 +1,7 @@
+unreleased
+
+- added support for design matrice creation using "R-formula syntax" backed up by R itself.
+
 1.4.0
  
  - validate predit-fn results

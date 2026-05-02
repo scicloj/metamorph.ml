@@ -198,6 +198,7 @@
     
     "
    [ds r-formula impl]
+   
    (case impl
      :ocpu (model-matrix--ocpu ds r-formula)
      :renjine (model-matrix--renjine ds r-formula)
