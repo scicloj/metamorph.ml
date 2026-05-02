@@ -1,10 +1,15 @@
 (ns scicloj.metamorph.design-matrix-test
-  (:require  [clojure.test :as t :refer [deftest is]]
-             [scicloj.metamorph.common]
-             [tablecloth.api :as tc]
-             [tablecloth.column.api]
-             [tech.v3.dataset.tensor :as tensor]
-             [scicloj.metamorph.ml.design-matrix :as dm]))
+  (:require
+   [clojure.test :as t :refer [deftest is]]
+   [fastmath.ml.regression :as regression]
+   [scicloj.metamorph.common]
+   [scicloj.metamorph.ml.design-matrix :as dm]
+   [scicloj.metamorph.ml.rdatasets :as rdatasets]
+   [tablecloth.api :as tc]
+   [tablecloth.column.api]
+   [tech.v3.dataset :as ds]
+   [tech.v3.dataset.column-filters :as cf]
+   [tech.v3.dataset.tensor :as tensor]))
 
 
 
@@ -145,7 +150,7 @@
 (defn- lm [data target-specs feature-specs]
   (let [dm
         (dm/create-design-matrix data target-specs feature-specs)]
-    (regr/lm
+    (regression/lm
      (->
       (cf/target dm)
       (ds/columns)
