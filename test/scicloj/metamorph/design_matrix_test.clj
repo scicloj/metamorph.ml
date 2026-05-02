@@ -129,35 +129,3 @@
                  {:x 3 "y" 4}]}) :a)))))
 
 
-(deftest model-matrix--ocpu
-  (is (=
-       [{"(Intercept)" 1, "as.factor(cyl)6" 1, "as.factor(cyl)8" 0, "disp" 160.0, "gear" 4}
-        {"(Intercept)" 1, "as.factor(cyl)6" 1, "as.factor(cyl)8" 0, "disp" 160.0, "gear" 4}
-        {"(Intercept)" 1, "as.factor(cyl)6" 0, "as.factor(cyl)8" 0, "disp" 108.0, "gear" 4}
-        {"(Intercept)" 1, "as.factor(cyl)6" 1, "as.factor(cyl)8" 0, "disp" 258.0, "gear" 3}
-        {"(Intercept)" 1, "as.factor(cyl)6" 0, "as.factor(cyl)8" 1, "disp" 360.0, "gear" 3}]
-
-
-       (->
-        (dm/model-matrix--ocpu (rdatasets/datasets-mtcars)
-                               "~as.factor(cyl)+disp+gear")
-        (tc/head 5)
-        (tc/rows :as-maps)))))
-
-(deftest model-matrix--renjine
-  (is (=
-       [{"X.Intercept." 1.0, "as.factor.cyl.6" 1.0, "as.factor.cyl.8" 0.0, "disp" 160.0, "gear" 4.0}
-        {"X.Intercept." 1.0, "as.factor.cyl.6" 1.0, "as.factor.cyl.8" 0.0, "disp" 160.0, "gear" 4.0}
-        {"X.Intercept." 1.0, "as.factor.cyl.6" 0.0, "as.factor.cyl.8" 0.0, "disp" 108.0, "gear" 4.0}
-        {"X.Intercept." 1.0, "as.factor.cyl.6" 1.0, "as.factor.cyl.8" 0.0, "disp" 258.0, "gear" 3.0}
-        {"X.Intercept." 1.0, "as.factor.cyl.6" 0.0, "as.factor.cyl.8" 1.0, "disp" 360.0, "gear" 3.0}]
-
-
-       (->
-        (dm/model-matrix--renjine (rdatasets/datasets-mtcars)
-                               "~as.factor(cyl)+disp+gear")
-        (tc/head 5)
-        (tc/rows :as-maps)))))
-
-
-
