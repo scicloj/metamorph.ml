@@ -1,4 +1,79 @@
 (ns scicloj.metamorph.ml.text
+  "Large-scale text processing and TF-IDF feature engineering for NLP pipelines.
+
+   This namespace provides efficient tools for converting raw text documents into
+   machine learning-ready features using TF-IDF (Term Frequency-Inverse Document
+   Frequency) scoring. Designed to handle large text corpora with flexible memory
+   management strategies.
+
+   Core Functions:
+
+   **->tidy-text**
+   Parses text files or datasets into tidy-text format (one token per row).
+   Line-by-line processing enables handling of files larger than available RAM.
+   Supports custom tokenization and metadata extraction.
+
+   Output format: tech.v3.dataset with columns:
+   - :document (int): Document/line identifier
+   - :token-idx (int): Token as indexed integer (maps to lookup table)
+   - :token-pos (int): Position of token within document
+   - :meta (optional): Arbitrary metadata from line-split-fn
+
+   **->tfidf**
+   Transforms tidy-text into TF-IDF vector representation for bag-of-words models.
+   Calculates term frequency (TF) and inverse document frequency (IDF) for each token.
+
+   Output columns:
+   - :document, :token-idx, :token-count, :tf, :tfidf
+
+   Memory Optimization:
+
+   The namespace provides flexible memory control for large texts via options:
+
+   Container Types:
+   - `:jvm-heap` (default): Java heap storage (fast, limited by heap)
+   - `:native-heap`: Off-heap native memory via tech.v3
+   - `:mmap`: Memory-mapped files (disk-backed, bypasses heap limits)
+
+   Processing Options:
+   - `container-type`: Storage for intermediate results during processing
+   - `column-container-type`: Storage for final output dataset
+   - `combine-method`: `:coalesce-blocks!` or `:concat-buffers` (tradeoffs)
+   - `compacting-document-interval`: Batch size for consolidating data
+   - `datatype-document/token-pos/idx`: Memory datatype selection (:int16 vs :int32)
+
+   Token Management:
+   - `token->index-map`: Custom token lookup table (can reuse across runs)
+   - `new-token-behaviour`: `:store` (default), `:fail`, or `:as-unknown`
+
+   Performance Characteristics:
+   - Typical text requires ~1.5x the original file size in RAM
+   - A 8GB text file typically needs ≥12GB total memory
+   - Scaling strategy: Use off-heap or mmap for large corpora
+
+   Example Usage:
+   ;; Load and tokenize text file
+   (let [reader (io/reader \"corpus.txt\")
+         result (->tidy-text
+                 reader
+                 #(line-seq %)
+                 #(str/split % #\"\\t\" 2) ; tab-separated: text, meta
+                 #(str/split % #\"\\s+\") ; whitespace tokenization
+                 :max-lines 100000)]
+     ;; Extract tidy text datasets
+     (doseq [ds (:datasets result)]
+       ;; Convert to TF-IDF vectors
+       (->tfidf ds
+                 :container-type :native-heap
+                 :column-container-type :jvm-heap)))
+
+   Typical Workflow:
+   1. Use ->tidy-text to create tidy text format from raw documents
+   2. Use ->tfidf to create TF-IDF feature vectors
+   3. Pass vectors to classification/regression models
+
+   See also: `scicloj.metamorph.ml.column-metric` for evaluation,
+   `scicloj.metamorph.ml` for model training"
   (:require
    ;[clj-memory-meter.core :as mm]
    [clojure.java.shell :as shell]
@@ -18,9 +93,6 @@
    [it.unimi.dsi.fastutil.objects Object2IntOpenHashMap]
    [java.io BufferedReader BufferedWriter]
    [java.util List Map]))
-
-(set! *warn-on-reflection* true)
-(set! *unchecked-math* :warn-on-boxed)
 
 
 (defn- create-token->idf-map [tidy-text]

@@ -1,4 +1,32 @@
 (ns scicloj.metamorph.ml.classification
+  "Classification models and evaluation metrics for metamorph.ml.
+
+   This namespace provides tools for classification tasks including:
+   - Confusion matrix generation and analysis
+   - Baseline classifier implementations
+   - Classification evaluation utilities
+
+   Key features:
+   - `confusion-map`: Creates confusion matrices from predictions and true labels
+   - `confusion-map->ds`: Converts confusion matrices to tabular dataset format
+   - `:metamorph.ml/dummy-classifier`: A baseline classifier for sanity checks
+
+   Dummy Classifier Strategies:
+   - `:majority-class` (default): Always predicts the most frequent class
+   - `:fixed-class`: Predicts a specified class
+   - `:random-class`: Predicts randomly from the observed classes
+
+   Confusion Matrix Normalization:
+   - `:all` (default): Row-wise normalization (recall perspective)
+   - `:none`: Raw counts
+
+   Example usage:
+   (let [pred [0 1 0 1 1]
+         true [0 0 1 1 1]
+         conf-map (confusion-map pred true :none)]
+     (confusion-map->ds conf-map))
+
+   See also: `scicloj.metamorph.ml/define-model!`, `scicloj.metamorph.ml.viz/confusion-matrix`"
   (:require [tech.v3.dataset :as ds]
             [tech.v3.dataset.modelling :as ds-mod]
             [tech.v3.datatype.pprint :as dtype-pp]

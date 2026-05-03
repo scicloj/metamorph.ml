@@ -1,4 +1,43 @@
 (ns scicloj.metamorph.ml.column-metric
+  "Model evaluation metrics for classification and regression tasks.
+
+   This namespace provides functions to compute standard machine learning metrics
+   on model predictions vs. ground truth labels, with support for both binary and
+   multiclass classification as well as regression tasks.
+
+   Key Functions:
+   - `classification-metric`: Evaluate classification model predictions
+   - `regression-metric`: Evaluate regression model predictions
+
+   Classification Metrics (from fastmath.stats):
+   Supports binary and multiclass metrics including accuracy, precision, recall,
+   F1-score, and more. Multiclass metrics can be averaged using:
+   - `:macro` - Unweighted mean of per-class metrics
+   - `:micro` - Aggregated true/false positives globally
+   Also supports `:roc-auc` for multiclass AUC scoring.
+
+   Regression Metrics (from fastmath.stats):
+   Distance and similarity metrics such as MAE, MSE, RMSE, R², etc.
+
+   Data Format:
+   - Input datasets must be tech.ml.dataset (TMD) format
+   - Must have appropriate column metadata (:prediction, :target, etc.)
+   - Support categorical mappings via :categorical-map metadata
+   - Missing values and NaNs are detected and rejected appropriately
+
+   Validation:
+   The functions perform extensive validation including:
+   - Column metadata correctness
+   - Missing values and NaN detection
+   - Type and datatype uniformity
+   - Row count alignment between datasets
+   - Single-label assumption (multi-label not yet supported)
+
+   Example:
+   (classification-metric y-true y-pred :f1 :macro {})
+   (regression-metric y-true y-pred :mse)
+
+   See also: `fastmath.stats` documentation for available metric names"
   (:require
    [fastmath.stats :as stats]
    [fastmath.vector :as v]

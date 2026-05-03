@@ -1,4 +1,46 @@
 (ns scicloj.metamorph.ml.r-model-matrix
+  "R-style formula-based feature engineering and linear regression.
+
+   This namespace provides tools to leverage R's powerful formula syntax for
+   feature engineering and linear modeling within Clojure. R formulas enable
+   expressive specification of interactions, transformations, and categorical
+   expansions without manual column manipulation.
+
+   Key Functions:
+   - `r-model-matrix`: Convert dataset + R formula to design matrix
+   - `lm`: Simplified linear regression using R formulas
+
+   Implementation Backends:
+   The namespace supports multiple R execution backends:
+   - `:ocpu`    Remote R via OpenCPU (cloud.opencpu.org) - no local R needed
+   - `:renjine` Java-based R implementation (https://renjin.org/)
+   - `:clojisr` Local R via clojisr (requires R installation)
+
+   Model Matrix Capabilities:
+   R formulas handle:
+   - Basic features: `y ~ x1 + x2`
+   - Interactions: `y ~ x1 * x2` (expands to x1 + x2 + x1:x2)
+   - Polynomial terms: `y ~ x + I(x^2)`
+   - Categorical encoding: Automatic dummy variable creation
+   - Intercept control: `y ~ x - 1` (remove intercept)
+   - Exclusions: `y ~ . - x3` (all columns except x3)
+
+   Linear Regression (lm):
+   Combines formula-based feature engineering with OLS regression training.
+   Returns a ready-to-use trained model for predictions.
+
+   Example Usage:
+   (r-model-matrix iris-data \"~ Sepal.Length + Sepal.Width\" :renjine)
+   (lm iris-data \"Sepal.Width ~ Sepal.Length * Petal.Length\" 
+       :Sepal.Width :ocpu)
+
+   Notes:
+   - OpenCPU backend is convenient but requires internet connectivity
+   - Renjin is standalone but may have some R incompatibilities
+   - clojisr requires a local R installation but offers full R compatibility
+   - Returned model matrices exclude row names and intercept columns by default
+
+   See also: `scicloj.metamorph.ml.design-matrix` for Clojure-native feature engineering"
   (:require
    [cemerick.pomegranate :as pom]
    [cemerick.pomegranate.aether :as aether]

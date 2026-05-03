@@ -1,4 +1,94 @@
 (ns scicloj.metamorph.ml
+  "Core machine learning framework integrating metamorph pipelines with standardized model APIs.
+
+   This is the central namespace of metamorph.ml, providing infrastructure for:
+   - Registering and using machine learning models
+   - Training models and making predictions
+   - Evaluating pipelines via cross-validation
+   - Standardized model diagnostics (glance, tidy, augment)
+   - Optional caching of computationally expensive operations
+
+   Key Concepts:
+
+   **Model Registration**: Models are registered using `define-model!` and can be
+   referenced by keyword (e.g., `:fastmath/ols`, `:metamorph.ml/dummy-classifier`).
+   Models define a train-fn, predict-fn, and optional diagnostic functions.
+
+   **Training and Prediction**:
+   - `train`: Train a model on a dataset given options including :model-type
+   - `predict`: Make predictions using a trained model
+   - `train-predict-cache`: Optional cache to avoid redundant computations
+
+   **Pipeline Evaluation**:
+   - `evaluate-pipelines`: Evaluate multiple pipelines across train/test splits
+   - `evaluate-one-pipeline`: Evaluate a single pipeline with cross-validation
+   - Returns results sorted by metric performance with optional filtering
+   - Supports parallel evaluation (:map/:pmap/:ppmap)
+
+   **Model Diagnostics** (following tidymodels conventions):
+   - `glance`: One-row model summary (goodness-of-fit)
+   - `tidy`: One-row-per-component output (coefficients with statistics)
+   - `augment`: One-row-per-observation output (predictions, residuals)
+
+   Main API Functions:
+
+   - `define-model!`: Register a new model type with train/predict/diagnostic functions
+   - `train`: Train a model with a specified model-type
+   - `predict`: Generate predictions from a trained model
+   - `evaluate-pipelines`: Evaluate pipelines with cross-validation
+   - `glance`: Get model summary statistics
+   - `tidy`: Extract coefficient-level results
+   - `augment`: Add predictions and residuals to data
+
+   Pipeline Integration:
+
+   Models integrate with metamorph pipelines via the `model` step, which:
+   - Trains in :fit mode using training data
+   - Predicts in :transform mode on new data
+   - Stores model output column metadata for later evaluation
+
+   Example Usage:
+
+   ;; Register a custom model (rarely needed - use existing models)
+   (define-model! :my/custom-model train-fn predict-fn {...})
+
+   ;; Train a model
+   (let [model (train iris-data {:model-type :fastmath/ols
+                                 :target-columns [:Sepal.Width]
+                                 :feature-columns [:Sepal.Length]})]
+     ;; Get diagnostics
+     (glance model)
+     (tidy model)
+     ;; Make predictions
+     (predict iris-data model))
+
+   ;; Evaluate multiple pipelines in cross-validation
+   (evaluate-pipelines
+     [pipeline1 pipeline2]
+     train-test-splits
+     metric-fn
+     :accuracy
+     {:map-fn :pmap})
+
+   Built-in Models:
+
+   **Regression**:
+   - `:metamorph.ml/ols`: Apache Commons Math OLS
+   - `:fastmath/ols`: FastMath OLS
+   - `:fastmath/glm`: FastMath GLM
+   - `:metamorph.ml/dummy-regressor`: Mean baseline
+
+   **Classification**:
+   - `:metamorph.ml/dummy-classifier`: Majority class or random baseline
+
+   **Preprocessing**:
+   See specific namespaces for transformers:
+   - `scicloj.metamorph.ml.preprocessing`: Scaling and normalization
+   - `scicloj.metamorph.ml.categorical`: One-hot encoding
+   - `scicloj.metamorph.ml.r-model-matrix`: R formula features
+
+   See also: `scicloj.metamorph.core` for metamorph pipeline mechanics,
+   `scicloj.metamorph.ml.tidy-models` for diagnostic validation"
   (:require
    [clojure.set :as set]
    [clojure.string :as str]

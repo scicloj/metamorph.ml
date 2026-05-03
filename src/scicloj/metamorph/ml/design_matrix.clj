@@ -1,4 +1,54 @@
 (ns scicloj.metamorph.ml.design-matrix
+  "Design matrix construction for machine learning pipelines.
+
+   This namespace provides utilities to transform datasets into numeric design
+   matrices suitable for machine learning models. It supports deriving new features,
+   transforming existing columns, managing target variables, and expanding complex
+   column types (arrays, maps).
+
+   Main Entry Point:
+   - `create-design-matrix`: Transform a dataset into a design matrix with custom specs
+
+   Design Matrix Specification Syntax:
+
+   Column specifications use [column-name transformation] pairs where:
+   - Transformations are Clojure expressions (quoted with ')
+   - Expressions can reference column names directly as symbols
+   - Expressions are evaluated in order and can chain
+   - Non-listed columns are removed from the output
+
+   Shorthand Syntax:
+   - :column-name           Keeps column unchanged (identity function)
+   - [nil '(+ a b)]         Auto-generates column name for derived column
+   - ['(+ a b)]             Same as above
+
+   Available Aliases (no qualification needed):
+   - `ds`  - tech.v3.dataset
+   - `tc`  - tablecloth.api
+   - `tcc` - tablecloth.column.api
+   - All of clojure.core
+
+   Features:
+   - Derives new columns from existing data
+   - Expands array and map columns into separate columns
+   - Automatically converts categorical columns to numbers
+   - Sets inference target(s) for supervised learning
+   - Chains transformations in dependency order
+
+   Example:
+   (create-design-matrix
+     iris-data
+     [:species]                          ; target column
+     [[:petal-length identity]           ; keep as-is
+      [:sepal-ratio '(/ :sepal-length    ; derive new feature
+                        :sepal-width)]]) 
+
+   Limitations:
+   - Does not automatically expand categorical variables (specify manually)
+   - For linear regression, fastmath/ols offers a :transformer option using R formulas
+   - Design matrix approach is more flexible but less compact than R formula syntax
+
+   See also: `fastmath.ml/lm` for linear regression with formula-based transformations"
   (:require
    [clojure.set :as set]
    [clojure.walk :as cljwalk]

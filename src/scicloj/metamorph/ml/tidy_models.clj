@@ -1,4 +1,54 @@
 (ns scicloj.metamorph.ml.tidy-models
+  "Model output standardization and validation following tidymodels conventions.
+
+   This namespace implements the tidymodels philosophy (inspired by R's tidymodels/broom
+   packages) for standardized, machine-readable model outputs. All model outputs conform
+   to consistent schemas defined in canonical column specification files.
+
+   Three Core Output Functions:
+
+   **glance**: One-row model summary
+   - High-level goodness-of-fit statistics
+   - Examples: R², AIC, BIC, log-likelihood, F-statistic, p-value
+   - Use case: Quick model performance overview
+
+   **tidy**: One-row-per-component output
+   - Component-level details (e.g., one row per coefficient)
+   - Examples: term, estimate, std.error, statistic, p.value
+   - Use case: Detailed model inspection and reporting
+
+   **augment**: One-row-per-observation output
+   - Adds model predictions/residuals to original data
+   - Original columns plus: .fitted, .resid, .hat, .sigma, .cooksd
+   - Use case: Diagnostics and visualization of predictions
+
+   Validation and Schema Management:
+
+   - `allowed-tidy-columns`: Canonical list of valid tidy column names
+   - `allowed-glance-columns`: Canonical list of valid glance column names
+   - `allowed-augment-columns`: Canonical list of valid augment column names
+   - `validate-tidy-ds`: Validates dataset conforms to tidy standard
+   - `validate-glance-ds`: Validates dataset conforms to glance standard
+   - `validate-augment-ds`: Validates dataset conforms to augment standard
+
+   Schemas are maintained in GitHub repository (resources/*.edn):
+   - columms-tidy.edn
+   - columms-glance.edn
+   - columms-augment.edn
+
+   Control Validation:
+   The `*validate-tidy-fns*` dynamic variable controls strict validation:
+   - `true` (default): Raises exception on invalid columns
+   - `false`: Silently allows any columns
+
+   
+   Integration:
+   Model implementations use these validators in their tidy-fn/glance-fn/augment-fn
+   to ensure outputs conform to standardized schemas for consistency across models.
+
+   See also: `scicloj.metamorph.ml` for training and prediction,
+   `scicloj.metamorph.ml.regression` and `scicloj.metamorph.ml.classification`
+   for specific model implementations"
   (:require
    [clojure.edn :as edn]
    [clojure.set :as set]

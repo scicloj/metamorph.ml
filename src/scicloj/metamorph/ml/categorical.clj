@@ -1,4 +1,24 @@
 (ns scicloj.metamorph.ml.categorical
+  "Categorical feature encoding for machine learning pipelines.
+
+   This namespace provides metamorph transformers for handling categorical
+   variables commonly used in supervised learning. Currently focuses on
+   one-hot encoding, which converts categorical values into binary indicator columns.
+
+   One-hot encoding is essential for:
+   - Preparing categorical features for algorithms that expect numeric inputs
+   - Preventing ordinal assumptions on nominal categories
+   - Creating interpretable model features
+
+   Main API:
+   - `transform-one-hot`: The primary metamorph transformer for one-hot encoding
+
+   Encoding strategies:
+   - `:full`        Uses a predefined level set from full dataset context
+   - `:fit`         Levels discovered during :fit used in :transform
+   - `:independent` Each mode independently determines and encodes levels
+
+   "
   (:require [tech.v3.dataset.categorical :as ds-cat]
             [tech.v3.dataset :as ds]
             [clojure.set :as set]

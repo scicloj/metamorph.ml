@@ -1,4 +1,40 @@
 (ns scicloj.metamorph.ml.preprocessing
+  "Feature scaling and normalization transformers for metamorph pipelines.
+
+   This namespace provides metamorph-compatible transformers for standardizing and
+   normalizing numeric features. These preprocessing steps are essential for many
+   machine learning algorithms to perform well.
+
+   Available Transformers:
+   - `std-scale`: Standardization (z-score normalization)
+   - `min-max-scale`: Min-max scaling to a specified range
+
+   StandardScaling (std-scale):
+   Centers each numeric column (subtract mean) and/or scales by standard deviation,
+   producing zero-mean unit-variance data. Useful for:
+   - Algorithms sensitive to feature magnitude (SVMs, neural networks, KNN)
+   - Distance-based models
+   Options:
+   - `:mean?` (default true): Center by subtracting column mean
+   - `:stddev?` (default true): Scale by standard deviation
+
+   Min-Max Scaling (min-max-scale):
+   Rescales each numeric column to a specified range (default [-0.5, 0.5]).
+   Options:
+   - `:min` (default -0.5): Target minimum value
+   - `:max` (default 0.5): Target maximum value
+
+   Metamorph Integration:
+   Both transformers follow the metamorph pipeline pattern:
+   - `:fit` mode: Learn scaling parameters from training data
+   - `:transform` mode: Apply learned parameters to new data
+   - Stores transformation parameters in context under their assigned `:metamorph/id`
+
+   Example Usage (in metamorph pipeline):
+     (preprocessing/std-scale [:age :income] {:mean? true :stddev? true}))
+    
+
+   
   (:require
    [tablecloth.api :as tc]
    [tech.v3.dataset.math :as std-math]))

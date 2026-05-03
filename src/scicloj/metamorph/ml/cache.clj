@@ -1,4 +1,26 @@
 (ns scicloj.metamorph.ml.cache
+  "Caching infrastructure for metamorph.ml train/predict operations.
+
+   This namespace provides flexible caching backends to store and retrieve results
+   of machine learning training and prediction operations. This is useful for
+   avoiding redundant computations when working with the same models and data.
+
+   Supported cache backends:
+   - **Atom cache**: In-memory caching using a Clojure atom (fast, ephemeral)
+   - **Disk cache**: File-based caching using Nippy serialization (persistent)
+   - **Redis cache**: Distributed caching via Redis (requires carmine library)
+
+   Usage:
+   (enable-atom-cache! (atom {}))  ; Enable in-memory caching
+   ;; or
+   (enable-disk-cache! \"/tmp/ml-cache\")  ; Enable disk-based caching
+   ;; or
+   (enable-redis-cache! {...})  ; Enable Redis caching
+
+   To disable caching:
+   (disable-cache!)
+
+   See individual function docs for more details on each backend."
   (:require [scicloj.metamorph.ml :as ml]
             [clojure.java.io :as io]
             [taoensso.nippy :as nippy]))
