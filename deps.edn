@@ -35,7 +35,7 @@
         
         }
 
- :mvn/repos {"bedatadriven-public" {:url "https://nexus.bedatadriven.com/content/groups/public/"}}
+ 
 
  :paths ["src" "resources"]
 
