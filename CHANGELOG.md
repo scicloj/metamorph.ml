@@ -1,10 +1,11 @@
 - unrealeased
  - added `r-model-matrix/lm` helper for one-line linear models
+ - added ns documentation to most ns
 
 1.5.0
  - `design-matrix` fn expands keyword to identity [#41](https://github.com/scicloj/metamorph.ml/issues/41)
  - `design-matrix` fn expands no-column name to auto-column name [#42](https://github.com/scicloj/metamorph.ml/issues/42)
-- added support in ns `r_model_matrix` for model matrix creation using "R-formula syntax" backed up by R itself,
+- added support in ns `r-model-matrix` for model matrix creation using "R-formula syntax" backed up by R itself,
   with 3 implementations to choose using opencpu,rejine,clojisr
 
 1.4.0
