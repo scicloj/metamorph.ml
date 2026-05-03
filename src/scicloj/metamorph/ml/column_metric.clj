@@ -34,8 +34,10 @@
    - Single-label assumption (multi-label not yet supported)
 
    Example:
+   ```
    (classification-metric y-true y-pred :f1 :macro {})
    (regression-metric y-true y-pred :mse)
+   ```
 
    See also: `fastmath.stats` documentation for available metric names"
   (:require

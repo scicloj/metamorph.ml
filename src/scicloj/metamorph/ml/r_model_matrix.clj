@@ -276,7 +276,10 @@
    excludes the intercept column and row names from the design matrix by default.
 
    Example:
-   (lm iris-data \"Sepal.Width ~ Sepal.Length + Petal.Length\" :Sepal.Width :renjine)"
+   ```
+   (lm iris-data \"Sepal.Width ~ Sepal.Length + Petal.Length\" :Sepal.Width :renjine)
+   ```
+   "
   [ds formula target-var formula-impl]
   (-> ds
    (r-model-matrix formula formula-impl)

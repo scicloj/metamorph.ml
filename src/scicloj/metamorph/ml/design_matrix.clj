@@ -36,12 +36,14 @@
    - Chains transformations in dependency order
 
    Example:
+   ```
    (create-design-matrix
      iris-data
      [:species]                          ; target column
      [[:petal-length identity]           ; keep as-is
       [:sepal-ratio '(/ :sepal-length    ; derive new feature
                         :sepal-width)]]) 
+   ```
 
    Limitations:
    - Does not automatically expand categorical variables (specify manually)
@@ -134,13 +136,14 @@
    
 
    Example:
- 
+   ```
    (dm/create-design-matrix
          ds
          [:y] 
          [         
           [:sum '(+ :a :b :c)]
          ])
+   ```
    
    This will:
    - set inference target to y:
