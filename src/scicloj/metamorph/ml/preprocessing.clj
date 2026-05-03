@@ -31,7 +31,7 @@
    - Stores transformation parameters in context under their assigned `:metamorph/id`
 
    Example Usage (in metamorph pipeline):
-     (preprocessing/std-scale [:age :income] {:mean? true :stddev? true}))
+     (preprocessing/std-scale [:age :income] {:mean? true :stddev? true}))"
     
 
    
