@@ -2,7 +2,8 @@ unreleased
  - `design-matrix` expands keyword to identity [#41](https://github.com/scicloj/metamorph.ml/issues/41)
  - `design-matrix` expands no-column name to auto-column name [#42](https://github.com/scicloj/metamorph.ml/issues/42)
 
-- added support for design matrice creation using "R-formula syntax" backed up by R itself.
+- added support in ns r_model_matrixfor model matrix creation using "R-formula syntax" backed up by R itself,
+  with 3 implementations using opencpu,rejine,clojisr
 
 1.4.0
  
