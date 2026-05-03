@@ -163,7 +163,7 @@
      :model-matrix-dataset dataset}))
 
 
-(defn model-matrix--clojisr [ds r-formula]
+(defn- model-matrix--clojisr [ds r-formula]
   (add-clojisr-dependency)
   (let [clj->r (requiring-resolve 'clojisr.v1.r/clj->r)
         r->clj (requiring-resolve 'clojisr.v1.r/r->clj)
@@ -196,7 +196,7 @@
     
    Returns a map with 
    - `:model-matrix-dataset` having the TMD containing the design matrix specified by `r-formula`
-   - `:attributes` the (R) attributes of te model.matrix object
+   - `:attributes` the (R) attributes of the model.matrix object
     
     "
    [ds r-formula impl]
