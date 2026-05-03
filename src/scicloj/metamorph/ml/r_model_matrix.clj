@@ -239,7 +239,7 @@
   (-> ds
    (r-model-matrix formula formula-impl)
    :model-matrix-dataset
-   (tc/drop-columns [:$row.names "(Intercept)"])
+   (tc/drop-columns [:$row.names "(Intercept)" "X.Intercept."])
    (tc/add-column target-var (get ds target-var))
    (ds-mod/set-inference-target [target-var])
    (ml/train {:model-type :fastmath/ols})

@@ -58,22 +58,38 @@
         (tc/rows :as-maps)))))
 
 
+(defn verify--lm [formula-impl]
+  (=
+   {"Intercept" 28.79765746432728,
+    "as.factor(cyl)6" -4.792830146567762,
+    "as.factor(cyl)8" -4.803708279733735,
+    "disp" -0.026725355438243094,
+    "gear" 0.16519203237173752}
 
+   (-> (rdatasets/datasets-mtcars)
+       (model-matrix/lm "~ as.factor(cyl)+disp+gear" :mpg formula-impl)
 
-(deftest lm
+       ((fn [result]
+          (zipmap
+           (:names result)
+           (map :estimate (:coefficients result))))))))
 
-  (is ( = 
-       {"Intercept" 28.79765746432728,
-        "as.factor(cyl)6" -4.792830146567762,
-        "as.factor(cyl)8" -4.803708279733735,
-        "disp" -0.026725355438243094,
-        "gear" 0.16519203237173752}       
-        
-        (-> (rdatasets/datasets-mtcars)
-            (model-matrix/lm "~ as.factor(cyl)+disp+gear" :mpg :ocpu)  
+  (deftest lm
+    (is (verify--lm :ocpu))
+    (is (verify--lm :clojisr))
 
-            ((fn [result]
-               (zipmap
-                (:names result)
-                (map :estimate (:coefficients result)))))))))
+    (is (=
+         {"Intercept" 28.79765746432728,
+          "as.factor.cyl.6" -4.792830146567762,
+          "as.factor.cyl.8" -4.803708279733735,
+          "disp" -0.026725355438243094,
+          "gear" 0.16519203237173752}
+
+         (-> (rdatasets/datasets-mtcars)
+             (model-matrix/lm "~ as.factor(cyl)+disp+gear" :mpg :renjine)
+
+             ((fn [result]
+                (zipmap
+                 (:names result)
+                 (map :estimate (:coefficients result)))))))))
 
