@@ -1,12 +1,10 @@
-unreleased
- - `design-matrix` expands keyword to identity [#41](https://github.com/scicloj/metamorph.ml/issues/41)
- - `design-matrix` expands no-column name to auto-column name [#42](https://github.com/scicloj/metamorph.ml/issues/42)
-
-- added support in ns r_model_matrixfor model matrix creation using "R-formula syntax" backed up by R itself,
-  with 3 implementations using opencpu,rejine,clojisr
+1.5.0
+ - `design-matrix` fn expands keyword to identity [#41](https://github.com/scicloj/metamorph.ml/issues/41)
+ - `design-matrix` fn expands no-column name to auto-column name [#42](https://github.com/scicloj/metamorph.ml/issues/42)
+- added support in ns `r_model_matrix` for model matrix creation using "R-formula syntax" backed up by R itself,
+  with 3 implementations to choose using opencpu,rejine,clojisr
 
 1.4.0
- 
  - validate predit-fn results
  - new ns scicloj.metamorph.ml.column-metric with metric-fns operating on datasets, not seq-of-numbers
  - TMD's of rdatasets get doc-url as dataset name, ready for clicking [#36](https://github.com/scicloj/metamorph.ml/issues/36)
