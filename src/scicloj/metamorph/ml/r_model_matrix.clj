@@ -5,8 +5,10 @@
    [cheshire.core :as json]
    [clojure.string :as str]
    [opencpu-clj.ocpu :as ocpu]
+   [scicloj.metamorph.ml :as ml]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
+   [tech.v3.dataset.modelling :as ds-mod]
    [tech.v3.datatype :as dt]))
 
 (defn- add-clojisr-dependency []
@@ -207,4 +209,39 @@
    )
  
 
+(defn lm
+  "Train a linear model using an R-style formula.
+
+   This function combines R formula-based feature engineering with ordinary least
+   squares (OLS) regression. It creates a design matrix from the input dataset using
+   the specified R formula, then trains a linear model on the resulting features.
+
+   Parameters:
+   - `ds`             A tech.ml.dataset dataset containing the input data with all
+                      variables referenced in the formula and target variable.
+   - `formula`        A string containing the R formula (e.g., \"y ~ x1 + x2 * x3\").
+                      The formula is interpreted by the R backend.
+   - `target-var`     A keyword or string naming the target variable for regression.
+                      This variable must be present in the input dataset.
+   - `formula-impl`   An implementation keyword for formula evaluation:
+
+     - `:ocpu`    Uses OpenCPU (cloud.opencpu.org), no local R needed
+     - `:renjine` Uses Renjin, a Java implementation of R
+     - `:clojisr` Uses clojisr with local R installation
+
+   Returns:
+   A trained linear model (OLS from fastmath) ready for predictions. The model
+   excludes the intercept column and row names from the design matrix by default.
+
+   Example:
+   (lm iris-data \"Sepal.Width ~ Sepal.Length + Petal.Length\" :Sepal.Width :renjine)"
+  [ds formula target-var formula-impl]
+  (-> ds
+   (r-model-matrix formula formula-impl)
+   :model-matrix-dataset
+   (tc/drop-columns [:$row.names "(Intercept)"])
+   (tc/add-column target-var (get ds target-var))
+   (ds-mod/set-inference-target [target-var])
+   (ml/train {:model-type :fastmath/ols})
+   :model-data))
 

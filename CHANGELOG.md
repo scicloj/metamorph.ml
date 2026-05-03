@@ -1,3 +1,6 @@
+- unrealeased
+ - added `r-model-matrix/lm` helper for one-line linear models
+
 1.5.0
  - `design-matrix` fn expands keyword to identity [#41](https://github.com/scicloj/metamorph.ml/issues/41)
  - `design-matrix` fn expands no-column name to auto-column name [#42](https://github.com/scicloj/metamorph.ml/issues/42)

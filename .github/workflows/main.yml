@@ -49,6 +49,12 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
+      - name: Install R
+        uses: r-lib/actions/setup-r@v2
+
+      - name: Install R packages
+        run:  Rscript -e 'install.packages("Rserve",,"http://rforge.net")'
+
       # Runs a single command using the runners shell
       - name: Run CI
         run: clojure -X:deps prep :aliases [:dev]  -Sthreads 1  && clojure -Sthreads 1 -T:build ci

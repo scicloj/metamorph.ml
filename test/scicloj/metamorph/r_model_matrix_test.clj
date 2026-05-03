@@ -56,3 +56,24 @@
         :model-matrix-dataset
         (tc/head 5)
         (tc/rows :as-maps)))))
+
+
+
+
+(deftest lm
+
+  (is ( = 
+       {"Intercept" 28.79765746432728,
+        "as.factor(cyl)6" -4.792830146567762,
+        "as.factor(cyl)8" -4.803708279733735,
+        "disp" -0.026725355438243094,
+        "gear" 0.16519203237173752}       
+        
+        (-> (rdatasets/datasets-mtcars)
+            (model-matrix/lm "~ as.factor(cyl)+disp+gear" :mpg :ocpu)  
+
+            ((fn [result]
+               (zipmap
+                (:names result)
+                (map :estimate (:coefficients result)))))))))
+
