@@ -996,20 +996,25 @@
    ml/train passes the needed information of the train target column to the model implementaion to do this.
 
    "
-  {:malli/schema [:=> [:cat [:fn dataset?]
+  {:malli/schema [:=> [:cat [:fn (fn [x]
+                                   (or (dataset? x)
+                                       (= (-> x class .getName) "ml.dmlc.xgboost4j.java.DMatrix")))]
                        [:map [:options map?]
                         [:feature-columns sequential?]
                         [:target-columns sequential?]]]
 
                   [map?]]}
 
-  [dataset {:keys [feature-columns options train-input-hash]
-            :as model}]
-  (assert-categorical-consistency dataset)
-  (let [predict-hash (when (:use-cache @train-predict-cache) (str train-input-hash "--" (hash dataset)))
+  [dataset-or-dmatrix {:keys [feature-columns options train-input-hash]
+                       :as model}]
+  (when (ds/dataset? dataset-or-dmatrix )
+    (assert-categorical-consistency dataset-or-dmatrix))
+  (let [predict-hash (when (:use-cache @train-predict-cache) (str train-input-hash "--" (hash dataset-or-dmatrix)))
         cached (when predict-hash ((:get-fn @train-predict-cache) predict-hash))
+        column-names (when (ds/dataset? dataset-or-dmatrix)
+                       (ds/column-names dataset-or-dmatrix))
         feature-columns (if (empty? feature-columns) 
-                          (ds/column-names dataset)
+                          column-names
                           feature-columns)
 
         pred-ds
@@ -1017,7 +1022,11 @@
           cached
 
           (let [{:keys [predict-fn] :as model-def} (options->model-def options)
-                feature-ds (ds/select-columns dataset feature-columns)
+
+                feature-ds
+                (if (dataset? dataset-or-dmatrix)
+                  (ds/select-columns dataset-or-dmatrix feature-columns)
+                  dataset-or-dmatrix)
                 thawed-model (thaw-model model model-def)
                 pred-ds (predict-fn feature-ds
                                     thawed-model

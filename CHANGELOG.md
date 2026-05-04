@@ -1,3 +1,6 @@
+unreleased 
+ - allow dmatrix for prediction
+
 1.5.1
  - added `r-model-matrix/lm` helper for one-line linear models
  - added ns documentation to most ns

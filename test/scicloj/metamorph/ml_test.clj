@@ -29,6 +29,23 @@
    (clojure.lang ExceptionInfo)
    (java.util UUID)))
 
+(defonce rng (new java.util.Random))
+
+(defn- set-random-seed!
+  "Sets the seed of the global random number generator."
+  [seed]
+  (.setSeed rng seed))
+
+(defn- seeded-shuffle
+  "Return a random permutation of coll. Works like clojure.core/shuffle
+  except it uses the seed specified in set-random-seed!."
+  [^java.util.Collection coll]
+  (let [al (java.util.ArrayList. coll)]
+    (java.util.Collections/shuffle al rng)
+    (clojure.lang.RT/vector (.toArray al))))
+
+(set-random-seed! 1234)
+
 
 (def iris
   (rdatasets/datasets-iris))
@@ -764,6 +781,23 @@
 
              )))))
   
-  
- 
+(deftest train-predict--dmatrix
+
+  (let [dmatrix (DMatrix. "test/data/iris.libsvm.txt?format=libsvm")
+        train-test-indices
+        (->> (range (.rowNum dmatrix))
+             (seeded-shuffle)
+             (partition-all (/ (.rowNum dmatrix) 2)))
+        train-dm (.slice dmatrix (int-array (first train-test-indices)))
+        test-dm (.slice dmatrix (int-array (second train-test-indices)))
+        model (ml/train train-dm
+                        {:num-class 4
+                         :seed 123
+                         :model-type :xgboost/classification})
+        prediction (ml/predict test-dm model)
+        accurcay (loss/classification-accuracy
+                  (vec (get (ds-cat/reverse-map-categorical-xforms prediction) nil))
+                  (mapv int (.getLabel test-dm)))]
+    (is (< 0.80 accurcay))))
+
 
