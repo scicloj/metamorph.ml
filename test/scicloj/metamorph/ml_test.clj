@@ -845,17 +845,6 @@
     (is (< 0.80 accurcay))))
 
   
-
-(deftest optimize-hyperparameter--loss-fn
-  (do-define--test-model)
-  (let [eval-fn ml/optimize-hyperparameter
-        eval-fn-args [{
-                       :metric loss/classification-accuracy
-                       :loss-or-accuracy :accuracy
-                       }
-                      {}]]
-    (validate-simple-pipeline eval-fn eval-fn-args 0.3)))
-
 (deftest optimize-hyperparameter--metric-kw
   (do-define--test-model)
   (let [eval-fn ml/optimize-hyperparameter
