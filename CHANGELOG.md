@@ -6,6 +6,7 @@
  - deprecated `ml/evaluate-pipelines`
  - deprecated ns `scicloj.metamorph.ml.metrics`,`scicloj.metamorph.ml.loss`
  - added support for :run!,prun!, :pprun! in `evaluate-pipelines`, `optimize-hyperparameter`
+ - made `scicloj.metamorph.ml.viz/apply-xform-kvs` public
 
 
 1.5.1
