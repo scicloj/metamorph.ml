@@ -11,9 +11,8 @@ Machine learning functions based on  [tech.ml.dataset](https://github.com/techas
 
 ## Main idea
 
-This library is based on the idea, that in machine learning model evaluations,
-we often do not want to tune only the model and its hyper-parameters,
-but the whole data transformation pipeline.
+This library is based on the idea to unify model hyperparameter tuning and data preprosessing in a single approach. 
+
 
 It unifies the often separated concerns of tuning of data pre-processing and
 tuning of model hyper-parameters.
