@@ -15,8 +15,6 @@
    [scicloj.ml.tribuo]
    ))
 
-(apply tc/concat-copying (repeat 10 (datasets/openintro-birds)))
-
 (def data
   (->
    (apply tc/concat-copying (repeat 10 (datasets/openintro-birds)))

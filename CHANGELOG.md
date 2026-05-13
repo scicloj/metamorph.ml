@@ -6,8 +6,11 @@ unreleased
  - deprecated ns `scicloj.metamorph.ml.metrics`,`scicloj.metamorph.ml.loss`
  - added support for :run!,prun!, :pprun! in `evaluate-pipelines`, `optimize-hyperparameter`
  - made `scicloj.metamorph.ml.viz/apply-xform-kvs` public
+ - added random forrest implementation as model-type: :metamorph.ml/random-forest
 
 
+1.4.0
+ 
 1.5.1
  - added `r-model-matrix/lm` helper for one-line linear models
  - added ns documentation to most ns
