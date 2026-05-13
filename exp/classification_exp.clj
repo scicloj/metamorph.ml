@@ -64,7 +64,7 @@
    (train
     {:model-type :smile.classification/random-forest
      :max-depth 8
-     :ntrees 100})
+     :trees 100})
    (train {:model-type :smile.classification/logistic-regression})
    (train {:model-type :smile.classification/ada-boost})
    (train {:model-type :sklearn.classification/decision-tree-classifier})
@@ -92,7 +92,9 @@
                                                              
                                                              ]
            :tribuo-trainer-name "random-forest"})
-   (train {:model-type :sklearn.classification/random-forest-classifier :n-estimators 100})
+   (train {:model-type :sklearn.classification/random-forest-classifier 
+           :n-estimators 100
+           :max-depth 8})
    ]))
 
 ;(csk/->kebab-case-keyword "n_estimators")
