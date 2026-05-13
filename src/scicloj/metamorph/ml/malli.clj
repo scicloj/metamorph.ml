@@ -5,7 +5,8 @@
    [malli.dev.pretty :as pretty]
    [malli.instrument :as mi]
    [malli.util :as mu]
-   [tech.v3.dataset.impl.dataset :refer [dataset?]]))
+   [tech.v3.dataset.impl.dataset :refer [dataset?]]
+   [malli.registry :as mr]))
 
 (defn instrument-mm
   "Instruments a metamorph function with input validation via Malli schema.
@@ -66,3 +67,109 @@
    (get model-options :options [:map ])
    m/schema
    (mu/assoc :model-type keyword?)))
+
+(defn options-schema [metric-schema]
+  [:or empty? [:map
+               [:return-best-pipeline-only {:optional true} boolean?]
+               [:return-best-crossvalidation-only {:optional true} boolean?]
+               [:map-fn {:optional true} [:enum :map :pmap :mapv :ppmap :run! :prun! :pprun!]]
+               [:ppmap-grain-size {:optional true} int?]
+               [:evaluation-handler-fn {:optional true} fn?]
+               [:other-metrics {:optional true} [:sequential [:map
+                                                              [:name keyword?]
+                                                              metric-schema]]]
+               [:attach-fn-sources {:optional true} [:map [:ns any?]
+                                                     [:pipe-fns-clj-file string?]]]]])
+
+(defn result-schema-template [metric-schema]
+  [:sequential
+   [:sequential
+    [:map {:closed true}
+     [:split-uid [:maybe string?]]
+     [:fit-ctx [:map [:metamorph/mode [:enum :fit :transform]]]]
+     [:timing-fit int?]
+  
+     [:train-transform [:map {:closed true}
+                        [:other-metrics [:sequential [:map {:closed true}
+                                                      [:name keyword?]
+                                                      metric-schema
+                                                      [:metric float?]]]]
+                        [:timing int?]
+                        [:metric float?]
+                        [:probability-distribution  [:maybe [:fn dataset?]]]
+                        [:min float?]
+                        [:mean float?]
+                        [:max float?]
+                        [:ctx map?]]]
+     [:test-transform [:map {:closed true}
+                       [:other-metrics [:sequential [:map {:closed true}
+                                                     [:name keyword?]
+                                                     metric-schema
+                                                     [:metric float?]]]]
+                       [:timing int?]
+                       [:metric float?]
+                       [:probability-distribution  [:maybe [:fn dataset?]]]
+                       [:min float?]
+                       [:mean float?]
+                       [:max float?]
+                       [:ctx map?]]]
+     [:loss-or-accuracy [:enum :accuracy :loss]]
+     metric-schema
+     [:pipe-decl [:maybe sequential?]]
+     [:pipe-fn fn?]
+     [:source-information [:maybe [:map [:classpath [:sequential string?]]
+                                   [:fn-sources [:map-of :qualified-symbol [:map [:source-form any?]
+                                                                            [:source-str string?]]]]]]]]]]
+  )
+
+(def custom-schemas
+   
+   
+    
+    {
+     :scicloj.metamorph.ml/optimize-hyperparams--metric-def
+     [:map {:closed true}
+      [:metric keyword?]
+      [:metric-type  [:enum :regression :classification]]
+      [:averaging {:optional true} [:enum :macro :micro]]
+      [:loss-or-accuracy [:enum :accuracy :loss]]
+      [:options {:optional true} :map]
+      
+      ]
+
+     :scicloj.metamorph.ml/optimize-hyperparams--metric-fn
+     fn?
+
+     :scicloj.metamorph.ml/optimize-hyperparams--loss-or-accuracy
+     [:enum :accuracy :loss]
+
+     :scicloj.metamorph.ml/optimize-hyperparams--pipeline-fn-or-decl-seq
+     [:sequential [:or vector? fn?]]
+     
+     :scicloj.metamorph.ml/optimize-hyperparams--train-test-split-seq
+     [:sequential [:map {:closed true}
+                   [:split-uid {:optional true} string?]
+                   [:train [:fn dataset?]]
+                   [:test {:optional true} [:fn dataset?]]]]
+     
+     :scicloj.metamorph.ml/evaluate-pipelines--options
+     (options-schema [:metric-fn fn?])
+
+     :scicloj.metamorph.ml/optimize-hyperparams--options
+     (options-schema [:metric-def :map])
+     
+     :scicloj.metamorph.ml/evaluate-pipelines--evaluation-result
+     (result-schema-template [:metric-fn fn?])
+     :scicloj.metamorph.ml/optimize-hyperparams--evaluation-result
+     (result-schema-template [:metric-def :map])
+
+     })
+   
+(mr/set-default-registry!
+ (-> 
+  (merge 
+   (m/default-schemas)
+   custom-schemas
+   )
+  (mr/simple-registry)
+  ))

@@ -1,7 +1,6 @@
 (ns scicloj.metamorph.evaluation-handler-test
   (:require  [clojure.test :refer [is deftest]]
              [scicloj.metamorph.common]
-             [scicloj.metamorph.ml-test]
              [tablecloth.pipeline :as tc-pipe]
              [tech.v3.dataset]
              [scicloj.metamorph.ml.evaluation-handler :refer [get-source-information qualify-keywords]]))
