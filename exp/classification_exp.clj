@@ -1,5 +1,6 @@
 (ns classification-exp
   (:require
+   [camel-snake-kebab.core :as csk]
    [scicloj.ml.smile.classification]
    [scicloj.metamorph.ml :as ml]
    [scicloj.metamorph.ml.classification]
@@ -11,6 +12,7 @@
    [tablecloth.api :as tc]
    [scicloj.sklearn-clj.ml]
    [libpython-clj2.python]
+   [scicloj.ml.tribuo]
    ))
 
 (apply tc/concat-copying (repeat 10 (datasets/openintro-birds)))
@@ -60,7 +62,7 @@
    (train {:model-type :metamorph.ml/random-forest
            :n-trees 100
            :parallel true
-           :max-depth 20
+           :max-depth 8
            })
    (train
     {:model-type :smile.classification/random-forest
@@ -68,6 +70,31 @@
    (train {:model-type :smile.classification/logistic-regression})
    (train {:model-type :smile.classification/ada-boost})
    (train {:model-type :sklearn.classification/decision-tree-classifier})
-   (train {:model-type :sklearn.classification/random-forest-classifier :n-jobs -1})
+   (train {:model-type :scicloj.ml.tribuo/classification
+           :tribuo-components [{:name "cart"
+                                :type "org.tribuo.classification.dtree.CARTClassificationTrainer"
+                                :properties {
+                                             :maxDepth "8" 
+                                             :fractionFeaturesInSplit "0.5"
+                                             :impurity "gini"
+                                             
+                                             }}
+                               {:name "random-forest"
+                                :type "org.tribuo.common.tree.RandomForestTrainer"
+                                :properties {:innerTrainer "cart"
+                                             :combiner "votecombiner"
+                                             :numMembers "100"
+                                             :seed "1234"}}
+                                
+                                
+                               {:name "gini" 
+                                :type "org.tribuo.classification.dtree.impurity.GiniIndex"}
+                               {:name "votecombiner" 
+                                :type "org.tribuo.classification.ensemble.VotingCombiner"}
+                                                             
+                                                             ]
+           :tribuo-trainer-name "random-forest"})
+   (train {:model-type :sklearn.classification/random-forest-classifier :n-estimators 100})
    ]))
 
+;(csk/->kebab-case-keyword "n_estimators")
