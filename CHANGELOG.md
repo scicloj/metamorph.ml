@@ -1,6 +1,5 @@
-- unreleased 
+unreleased 
  - allow dmatrix for prediction
- - made `scicloj.metamorph.ml.viz/apply-xform-kvs` public
  - improved exception of invalid model params
  - added `ml/optimize-hyperparameter`
  - deprecated `ml/evaluate-pipelines`
