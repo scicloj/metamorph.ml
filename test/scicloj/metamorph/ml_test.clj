@@ -744,7 +744,7 @@
     (catch ExceptionInfo e
       (is (=
            {:a ["disallowed key"]}
-           (ex-data e)))))
+           (:validation-error (ex-data e))))))
   (is (nil?
        (->
         (ml/train iris-train {:model-type :test-model--options})
