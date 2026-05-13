@@ -28,7 +28,7 @@
    (tc/drop-missing)
    (ds-mod/set-inference-target :effect)))
 
-(-> data :effect frequencies)
+
 (defn train [model-opts]
   (let [;; Create simple iris-like dataset
         
@@ -40,10 +40,8 @@
         model (ml/train  (:train (first split))
                          model-opts)
 
-        _ (def model model)
         ;; Predict
         predictions (ml/predict (-> split first :test cf/feature) model)
-        _ (def predictions predictions)
         end (System/currentTimeMillis)
         actual (vec (-> split first :test :effect))
         predicted (map int (vec (predictions :effect)))
@@ -63,10 +61,12 @@
            :n-trees 100
            :parallel true
            :max-depth 8
+           :random-seed 1234
            })
    (train
     {:model-type :smile.classification/random-forest
-     :trees 100})
+     :max-depth 8
+     :ntrees 100})
    (train {:model-type :smile.classification/logistic-regression})
    (train {:model-type :smile.classification/ada-boost})
    (train {:model-type :sklearn.classification/decision-tree-classifier})
