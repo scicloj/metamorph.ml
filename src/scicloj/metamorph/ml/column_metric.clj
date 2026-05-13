@@ -43,7 +43,6 @@
   (:require
    [fastmath.stats :as stats]
    [fastmath.vector :as v]
-   [scicloj.metamorph.ml.classification]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.categorical :as ds-cat]
    [tech.v3.dataset.column :as col]
@@ -53,9 +52,9 @@
 
 
 
-(def *insist* (atom true))
+(def ^:private *insist* (atom true))
 
-(defmacro insist
+(defmacro ^:private insist
   "Evaluates expression x and throws an AssertionError with optional
   message if x does not evaluate to logical true.
 
@@ -325,7 +324,8 @@
         {:metric metric
          :average (case averaging
                     :macro stats/mean
-                    :micro :micro)
+                    :micro :micro
+                    nil stats/mean)
          :beta (get options :beta 0.5)}))))
 
 
