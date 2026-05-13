@@ -659,10 +659,15 @@
   (let [options-schema (malli/model-options->full-schema model-options)]
 
     (when (not (m/validate options-schema options))
-      (throw (ex-info "Invalid options: "
-                      (->
+      (let [humanized (->
                        (m/explain options-schema options)
-                       (me/humanize)))))))
+                       (me/humanize))
+            ]
+        (throw (ex-info (format "Invalid options: %s " humanized )
+                        {:options-schema options-schema
+                         :options options
+                         :validation-error humanized
+                         }))))))
 
 (defn- assert-categorical-consistency [dataset]
   (when (dataset? dataset)

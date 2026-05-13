@@ -1,6 +1,7 @@
 unreleased 
  - allow dmatrix for prediction
  - made `scicloj.metamorph.ml.viz/apply-xform-kvs` public
+ - improved exception of invalid model params
  
 1.5.1
  - added `r-model-matrix/lm` helper for one-line linear models
