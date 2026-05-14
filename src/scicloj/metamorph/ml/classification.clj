@@ -169,4 +169,4 @@
                    :description "The fixed class to use when strategy is :fixed-class"}
      number?]]})
 
-
+(require 'scicloj.metamorph.ml.random-forest :reload)
