@@ -1,11 +1,9 @@
-unreleased 
- - allow dmatrix for prediction
- - improved exception of invalid model params
+1.6.0 
+ - allow xjboost4j DMatrix for prediction
  - added `ml/optimize-hyperparameter`
  - deprecated `ml/evaluate-pipelines`
  - deprecated ns `scicloj.metamorph.ml.metrics`,`scicloj.metamorph.ml.loss`
- - added support for :run!,prun!, :pprun! in `evaluate-pipelines`, `optimize-hyperparameter`
- - made `scicloj.metamorph.ml.viz/apply-xform-kvs` public
+ - added support for :run!,prun!, :pprun! in `evaluate-pipelines` and `optimize-hyperparameter`
  - added random forrest implementation as model-type: :metamorph.ml/random-forest
 
  
