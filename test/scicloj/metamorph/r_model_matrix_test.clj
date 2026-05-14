@@ -5,6 +5,7 @@
    [scicloj.metamorph.ml.r-model-matrix :as model-matrix]
    [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [tablecloth.api :as tc]
+   [scicloj.metamorph.ml.regression]
    [tablecloth.column.api]))
 
 (deftest model-matrix--ocpu

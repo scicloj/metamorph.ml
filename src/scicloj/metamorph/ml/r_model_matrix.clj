@@ -46,7 +46,7 @@
    [cemerick.pomegranate.aether :as aether]
    [cheshire.core :as json]
    [clojure.string :as str]
-   [opencpu-clj.ocpu :as ocpu]
+   ;[opencpu-clj.ocpu :as ocpu]
    [scicloj.metamorph.ml :as ml]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
@@ -60,7 +60,13 @@
    :repositories (merge cemerick.pomegranate.aether/maven-central
                         {"clojars" "https://clojars.org/repo"})))
 
-(defn- add-renjin-deps []
+(defn- add-opencpu-dependency []
+  (pom/add-dependencies
+   :classloader (clojure.lang.RT/baseLoader)
+   :coordinates '[[opencpu-clj/opencpu-clj "0.3.1"]]
+   :repositories (merge cemerick.pomegranate.aether/maven-central
+                        {"clojars" "https://clojars.org/repo"})))
+ (defn- add-renjin-deps []
 
   (pom/add-dependencies
    :classloader (clojure.lang.RT/baseLoader)
@@ -69,8 +75,8 @@
                         {"bedatadriven-public" "https://nexus.bedatadriven.com/content/groups/public/"})))
 
 
-(defn- object-id [base-url library object-name params]
-  (-> (ocpu/object base-url
+(defn- object-id [ocpu-object base-url library object-name params]
+  (-> (ocpu-object base-url
                    :library library
                    :R object-name
                    params)
@@ -78,7 +84,10 @@
       first (str/split #"/") (nth 3)))
 
 (defn- model-matrix--ocpu [ds r-formula]
+  (add-opencpu-dependency)
   (let [base-url "https://cloud.opencpu.org"
+        ocpu-object (requiring-resolve 'opencpu-clj.ocpu/object)
+        ocpu-session (requiring-resolve 'opencpu-clj.ocpu/session)
         
         ds--json
         (apply merge
@@ -87,13 +96,13 @@
                   {col
                    (json/encode (vec (get ds col)))})
                 (keys ds)))
-        df-object  (-> (object-id base-url :tibble :tibble ds--json))
-        formula-object  (-> (object-id base-url :stats :formula {:x r-formula}))
+        df-object  (-> (object-id ocpu-object  base-url :tibble :tibble ds--json))
+        formula-object  (-> (object-id ocpu-object  base-url :stats :formula {:x r-formula}))
 
 
         model-matrix-result
         (->
-         (ocpu/object base-url :library :stats :R "model.matrix"
+         (ocpu-object base-url :library :stats :R "model.matrix"
                       {:object formula-object
                        :data df-object})
          :result)
@@ -106,17 +115,17 @@
             (nth 3))
         
 
-        attributes (ocpu/object base-url :library :base :R "attributes"
+        attributes (ocpu-object base-url :library :base :R "attributes"
                        {:x model-matrix-object} :json)
         
         col-names
         (->
-         (ocpu/object base-url :library :base :R "colnames"
+         (ocpu-object base-url :library :base :R "colnames"
                       {:x model-matrix-object} :json)
          :result)
 
         model-matrix
-        (ocpu/session base-url (first model-matrix-result) :json)
+        (ocpu-session base-url (first model-matrix-result) :json)
         
         dataset
         (->
