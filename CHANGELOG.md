@@ -1,3 +1,6 @@
+1.6.2
+- add inference targets to `r-model-matrix`
+
 1.6.1
 - fixed classloader for `r-model-matrix`
 

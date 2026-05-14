@@ -50,7 +50,8 @@
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.modelling :as ds-mod]
-   [tech.v3.datatype :as dt]))
+   [tech.v3.datatype :as dt]
+   [tech.v3.dataset.column-filters :as cf]))
 
 (defn add-clojisr-dependency 
   "Adds dynamically `clojisr` to classpath using pomegranate.
@@ -252,6 +253,8 @@
 
 
    Returns a dataset containing the constructed design matrix.
+   If `ds` contains `target` columns, they are added to the returned dataset.
+    
    Dispatches to the appropriate backend implementation.
 
     
@@ -261,12 +264,28 @@
     
     "
    [ds r-formula impl]
+   (def ds ds)
+   (def r-formula r-formula)
+   (def impl impl)
+
+   (let [target-ds (cf/target ds) 
+         
+         result 
+         (case impl
+           :ocpu (model-matrix--ocpu ds r-formula)
+           :renjin (model-matrix--renjine ds r-formula)
+           :clojisr (model-matrix--clojisr ds r-formula)
+           )
+         model-matrix-dataset (:model-matrix-dataset result)
+         ]
+     (def target-ds target-ds)
+     (def result result)  
+     (def model-matrix-dataset model-matrix-dataset)  
+     result)
+   (assoc result 
+          :model-matrix-dataset (merge model-matrix-dataset target-ds)
+          )
    
-   (case impl
-     :ocpu (model-matrix--ocpu ds r-formula)
-     :renjin (model-matrix--renjine ds r-formula)
-     :clojisr (model-matrix--clojisr ds r-formula)
-     )
    )
  
 
