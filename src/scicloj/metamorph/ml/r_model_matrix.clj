@@ -13,7 +13,7 @@
    Implementation Backends:
    The namespace supports multiple R execution backends:
    - `:ocpu`    Remote R via OpenCPU (cloud.opencpu.org) - no local R needed
-   - `:renjine` Java-based R implementation (https://renjin.org/)
+   - `:renjin` Java-based R implementation (https://renjin.org/)
    - `:clojisr` Local R via clojisr (requires R installation)
 
    Model Matrix Capabilities:
@@ -30,7 +30,7 @@
    Returns a ready-to-use trained model for predictions.
 
    Example Usage:
-   (r-model-matrix iris-data \"~ Sepal.Length + Sepal.Width\" :renjine)
+   (r-model-matrix iris-data \"~ Sepal.Length + Sepal.Width\" :renjin)
    (lm iris-data \"Sepal.Width ~ Sepal.Length * Petal.Length\" 
        :Sepal.Width :ocpu)
 
@@ -46,30 +46,38 @@
    [cemerick.pomegranate.aether :as aether]
    [cheshire.core :as json]
    [clojure.string :as str]
-   ;[opencpu-clj.ocpu :as ocpu]
    [scicloj.metamorph.ml :as ml]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.modelling :as ds-mod]
    [tech.v3.datatype :as dt]))
 
-(defn- add-clojisr-dependency []
+(defn add-clojisr-dependency 
+  "Adds dynamically `clojisr` to classpath using pomegranate.
+   This might not work in all situations"
+  [classloader-or-nil]
   (pom/add-dependencies
-   :classloader (clojure.lang.RT/baseLoader)
+   :classloader classloader-or-nil
    :coordinates '[[scicloj/clojisr "1.1.0"]]
    :repositories (merge cemerick.pomegranate.aether/maven-central
                         {"clojars" "https://clojars.org/repo"})))
 
-(defn- add-opencpu-dependency []
+(defn add-opencpu-dependency 
+    "Adds dynamically `opencpu-clj` to classpath using pomegranate.
+     This might not work in all situations"
+  [classloader-or-nil]
   (pom/add-dependencies
-   :classloader (clojure.lang.RT/baseLoader)
+   :classloader classloader-or-nil
    :coordinates '[[opencpu-clj/opencpu-clj "0.3.1"]]
    :repositories (merge cemerick.pomegranate.aether/maven-central
                         {"clojars" "https://clojars.org/repo"})))
- (defn- add-renjin-deps []
-
+ 
+(defn add-renjin-deps 
+      "Adds dynamically `renjin` to classpath using pomegranate.
+       This might not work in all situations"
+  [classloader-or-nil]
   (pom/add-dependencies
-   :classloader (clojure.lang.RT/baseLoader)
+   :classloader classloader-or-nil
    :coordinates '[[org.renjin/renjin-script-engine "3.5-beta76"]]
    :repositories (merge aether/maven-central
                         {"bedatadriven-public" "https://nexus.bedatadriven.com/content/groups/public/"})))
@@ -84,7 +92,6 @@
       first (str/split #"/") (nth 3)))
 
 (defn- model-matrix--ocpu [ds r-formula]
-  (add-opencpu-dependency)
   (let [base-url "https://cloud.opencpu.org"
         ocpu-object (requiring-resolve 'opencpu-clj.ocpu/object)
         ocpu-session (requiring-resolve 'opencpu-clj.ocpu/session)
@@ -151,8 +158,6 @@
 
 
 (defn- model-matrix--renjine [ds r-formula]
-  (add-renjin-deps)
-
 
   (let [factory  (construct "org.renjin.script.RenjinScriptEngineFactory" (to-array []))
         engine (.getScriptEngine factory)
@@ -215,7 +220,6 @@
 
 
 (defn- model-matrix--clojisr [ds r-formula]
-  (add-clojisr-dependency)
   (let [clj->r (requiring-resolve 'clojisr.v1.r/clj->r)
         r->clj (requiring-resolve 'clojisr.v1.r/r->clj)
         r (requiring-resolve 'clojisr.v1.r/r)
@@ -239,6 +243,12 @@
      - `:ocpu`    Uses an online service https://www.opencpu.org/api.html (server: cloud.opencpu.org)
      - `:renjine` Uses https://renjin.org/   
      - `:clojisr` Uses https://github.com/scicloj/clojisr, which requires a local R installation 
+    
+    Each implementation requires dependencies to be added:
+    - `:ocpu` :  [opencpu-clj/opencpu-clj \"0.3.1\"] 
+    - `:renjin` : [org.renjin/renjin-script-engine \"3.5-beta76\"]
+    - `:clojisr` : [scicloj/clojisr \"1.1.0\"]
+
 
 
    Returns a dataset containing the constructed design matrix.
@@ -254,7 +264,7 @@
    
    (case impl
      :ocpu (model-matrix--ocpu ds r-formula)
-     :renjine (model-matrix--renjine ds r-formula)
+     :renjin (model-matrix--renjine ds r-formula)
      :clojisr (model-matrix--clojisr ds r-formula)
      )
    )
@@ -277,25 +287,25 @@
    - `formula-impl`   An implementation keyword for formula evaluation:
 
      - `:ocpu`    Uses OpenCPU (cloud.opencpu.org), no local R needed
-     - `:renjine` Uses Renjin, a Java implementation of R
+     - `:renjin` Uses Renjin, a Java implementation of R
      - `:clojisr` Uses clojisr with local R installation
 
+   Requires setup of dependencies of teh engine, see: `r-model-matrix`
    Returns:
    A trained linear model (OLS from fastmath) ready for predictions. The model
    excludes the intercept column and row names from the design matrix by default.
 
    Example:
    ```
-   (lm iris-data \"Sepal.Width ~ Sepal.Length + Petal.Length\" :Sepal.Width :renjine)
+   (lm iris-data \"Sepal.Width ~ Sepal.Length + Petal.Length\" :Sepal.Width :renjin)
    ```
    "
   [ds formula target-var formula-impl]
   (-> ds
-   (r-model-matrix formula formula-impl)
-   :model-matrix-dataset
-   (tc/drop-columns [:$row.names "(Intercept)" "X.Intercept."])
-   (tc/add-column target-var (get ds target-var))
-   (ds-mod/set-inference-target [target-var])
-   (ml/train {:model-type :fastmath/ols})
-   :model-data))
+      (r-model-matrix formula formula-impl)
+      :model-matrix-dataset
+      (tc/drop-columns [:$row.names "(Intercept)" "X.Intercept."])
+      (tc/add-column target-var (get ds target-var))
+      (ds-mod/set-inference-target [target-var])
+      (ml/train {:model-type :fastmath/ols})))
 

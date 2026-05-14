@@ -35,6 +35,9 @@
         org.clj-commons/claypoole {:mvn/version "1.2.2"}}
 
  :paths ["src" "resources"]
+ :mvn/repos {
+             "bedatadriven-public" {:url "https://nexus.bedatadriven.com/content/groups/public/"}
+             }
 
 
  :aliases
@@ -76,9 +79,12 @@
    :extra-paths ["test"]
    :extra-deps {org.scicloj/scicloj.ml.xgboost
                 ;{:local/root  "/sources/scicloj.ml.xgboost"}
-                 {:git/url "https://github.com/scicloj/scicloj.ml.xgboost"
-                  :git/sha "02216371d64f75ae2e4c2a0ec442372f6732e864"}
+                {:git/url "https://github.com/scicloj/scicloj.ml.xgboost"
+                 :git/sha "02216371d64f75ae2e4c2a0ec442372f6732e864"}
                 ;; ;{:mvn/version "6.4.0"}
+                opencpu-clj/opencpu-clj {:mvn/version "0.3.1"}
+                scicloj/clojisr {:mvn/version "1.1.0"}
+                org.renjin/renjin-script-engine {:mvn/version "3.5-beta76"}
 
                 lambdaisland/kaocha {:mvn/version "1.91.1392"}
                 org.mapdb/mapdb {:mvn/version "3.1.0"}}}

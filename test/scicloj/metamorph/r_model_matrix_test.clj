@@ -8,6 +8,7 @@
    [scicloj.metamorph.ml.regression]
    [tablecloth.column.api]))
 
+
 (deftest model-matrix--ocpu
   (is (=
        [{"(Intercept)" 1, "as.factor(cyl)6" 1, "as.factor(cyl)8" 0, "disp" 160.0, "gear" 4}
@@ -37,7 +38,7 @@
        (->
         (model-matrix/r-model-matrix (rdatasets/datasets-mtcars)
                                   "~as.factor(cyl)+disp+gear"
-                                     :renjine)
+                                     :renjin)
         :model-matrix-dataset
         (tc/head 5)
         (tc/rows :as-maps)))))
@@ -69,6 +70,7 @@
 
    (-> (rdatasets/datasets-mtcars)
        (model-matrix/lm "~ as.factor(cyl)+disp+gear" :mpg formula-impl)
+       :model-data
 
        ((fn [result]
           (zipmap
@@ -87,7 +89,8 @@
           "gear" 0.16519203237173752}
 
          (-> (rdatasets/datasets-mtcars)
-             (model-matrix/lm "~ as.factor(cyl)+disp+gear" :mpg :renjine)
+             (model-matrix/lm "~ as.factor(cyl)+disp+gear" :mpg :renjin)
+             :model-data
 
              ((fn [result]
                 (zipmap
