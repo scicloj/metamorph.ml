@@ -8,8 +8,6 @@ unreleased
  - made `scicloj.metamorph.ml.viz/apply-xform-kvs` public
  - added random forrest implementation as model-type: :metamorph.ml/random-forest
 
-
-1.4.0
  
 1.5.1
  - added `r-model-matrix/lm` helper for one-line linear models
