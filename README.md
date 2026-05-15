@@ -8,6 +8,8 @@
 
 Machine learning functions based on  [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) and [metamorph](https://github.com/scicloj/metamorph).
 
+Api documentation incl. examples is here: [API](https://scicloj.github.io/metamorph.ml/codox)
+
 
 ## Main idea
 
