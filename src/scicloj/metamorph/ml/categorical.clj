@@ -6,14 +6,17 @@
    one-hot encoding, which converts categorical values into binary indicator columns.
 
    One-hot encoding is essential for:
+
    - Preparing categorical features for algorithms that expect numeric inputs
    - Preventing ordinal assumptions on nominal categories
    - Creating interpretable model features
 
    Main API:
+
    - `transform-one-hot`: The primary metamorph transformer for one-hot encoding
 
    Encoding strategies:
+
    - `:full`        Uses a predefined level set from full dataset context
    - `:fit`         Levels discovered during :fit used in :transform
    - `:independent` Each mode independently determines and encodes levels
@@ -92,13 +95,17 @@
   the one-hot encoding.
 
   `column-selector` - Tablecloth column selector (keyword, fn, or selector spec)
+   
   `strategy` - Strategy for handling train/test level differences:
-               * `:full` - Levels retrieved from dataset at `:metamorph.ml/full-ds` in context
-               * `:independent` - One-hot columns fitted and transformed independently
-               * `:fit` - Mapping from :fit mode used in :transform (assumes all levels present in fit)
+   
+  - `:full` - Levels retrieved from dataset at `:metamorph.ml/full-ds` in context
+  - `:independent` - One-hot columns fitted and transformed independently
+  - `:fit` - Mapping from :fit mode used in :transform (assumes all levels present in fit)
+   
   `options` - Optional map with:
-              * `:table-args` - Precise mapping as sequence of [val idx] pairs or sorted values
-              * `:result-datatype` - Datatype of the one-hot-mapping columns
+   
+  - `:table-args` - Precise mapping as sequence of [val idx] pairs or sorted values
+  - `:result-datatype` - Datatype of the one-hot-mapping columns
 
   Returns a metamorph step function that transforms the data in both :fit and
   :transform modes.

@@ -12,23 +12,27 @@
    Design Matrix Specification Syntax:
 
    Column specifications use [column-name transformation] pairs where:
+
    - Transformations are Clojure expressions (quoted with ')
    - Expressions can reference column names directly as symbols
    - Expressions are evaluated in order and can chain
    - Non-listed columns are removed from the output
 
    Shorthand Syntax:
+
    - :column-name           Keeps column unchanged (identity function)
    - [nil '(+ a b)]         Auto-generates column name for derived column
    - ['(+ a b)]             Same as above
 
    Available Aliases (no qualification needed):
+
    - `ds`  - tech.v3.dataset
    - `tc`  - tablecloth.api
    - `tcc` - tablecloth.column.api
    - All of clojure.core
 
    Features:
+
    - Derives new columns from existing data
    - Expands array and map columns into separate columns
    - Automatically converts categorical columns to numbers
@@ -46,8 +50,8 @@
    ```
 
    Limitations:
+
    - Does not automatically expand categorical variables (specify manually)
-   - For linear regression, fastmath/ols offers a :transformer option using R formulas
    - Design matrix approach is more flexible but less compact than R formula syntax
 
    See also: `fastmath.ml/lm` for linear regression with formula-based transformations"
@@ -105,6 +109,7 @@
    * `features-specs` are the specifications how to transform the features 
 
    The 'spec' can express several types of dataset transformations in a compact way:
+
    - add new derived columns
    - remove columns
    - rename columns
@@ -146,6 +151,7 @@
    ```
    
    This will:
+   
    - set inference target to y:
    - create a new derived variables :sum, being the sum of a,b,c
    - remove all columns except :y and :sum

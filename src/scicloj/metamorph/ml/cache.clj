@@ -11,14 +11,20 @@
    - **Redis cache**: Distributed caching via Redis (requires carmine library)
 
    Usage:
+
+   ```
    (enable-atom-cache! (atom {}))  ; Enable in-memory caching
    ;; or
    (enable-disk-cache! \"/tmp/ml-cache\")  ; Enable disk-based caching
    ;; or
    (enable-redis-cache! {...})  ; Enable Redis caching
+   ```
 
    To disable caching:
+
+   ```
    (disable-cache!)
+   ```
 
    See individual function docs for more details on each backend."
   (:require [scicloj.metamorph.ml :as ml]

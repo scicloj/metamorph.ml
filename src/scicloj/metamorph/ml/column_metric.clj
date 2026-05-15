@@ -6,10 +6,12 @@
    multiclass classification as well as regression tasks.
 
    Key Functions:
+
    - `classification-metric`: Evaluate classification model predictions
    - `regression-metric`: Evaluate regression model predictions
 
    Classification Metrics (from fastmath.stats):
+
    Supports binary and multiclass metrics including accuracy, precision, recall,
    F1-score, and more. Multiclass metrics can be averaged using:
    - `:macro` - Unweighted mean of per-class metrics
@@ -20,6 +22,7 @@
    Distance and similarity metrics such as MAE, MSE, RMSE, R², etc.
 
    Data Format:
+
    - Input datasets must be tech.ml.dataset (TMD) format
    - Must have appropriate column metadata (:prediction, :target, etc.)
    - Support categorical mappings via :categorical-map metadata
@@ -27,6 +30,7 @@
 
    Validation:
    The functions perform extensive validation including:
+
    - Column metadata correctness
    - Missing values and NaN detection
    - Type and datatype uniformity
@@ -283,14 +287,17 @@
   Both datasets need to have columns containing the appropriate column metadata
   as foreseen by TMD, see here:https://techascent.github.io/tech.ml.dataset/tech.v3.dataset.column-filters.html 
    , eg:
+
    * :column-type being :prediction, :probability-distribution
    * :inference-target true
    * :categorical-map column metadata is explicitely supported and get handled properly when present, so gets taken into consideration
+   
    when comparing columns
 
    The `ml/predict` fn is producing these type of datasets.
 
   The function validates various aspects and ev. rejects data which has:
+              
    * wrong column metadata
    * missing values or NaNs
    * non-discrete values in :prediction column

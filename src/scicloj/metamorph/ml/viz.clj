@@ -18,16 +18,16 @@
 
   Returns a vega lite spec of the learninig curve plot.
 
-  `dataset` the TMD dataset to use
-  `train-sizes` vector of double from 0 to 1, controlling the sizes of the training data.
-  `lc-opts`
-     `k` At each step a k cross-validation is done
-     `metric-fn` the metric to use for evaluation the model
-     `loss-or-accuracy`   If the metric-fn calculates :loss or :accuracy
-  `hanami-opts` Options passed to hanami to control the plot. Can be the default hanami
-   substituions keys or:
-       `TRAIN-COLOR:`   Color used for the train curve (default: blue)
-       `TEST-COLOR:`    Color used for the test curve (default: orange)
+  - `dataset` the TMD dataset to use
+  - `train-sizes` vector of double from 0 to 1, controlling the sizes of the training data.
+  - `lc-opts`
+      - `k` At each step a k cross-validation is done
+      - `metric-fn` the metric to use for evaluation the model
+      - `loss-or-accuracy`   If the metric-fn calculates :loss or :accuracy
+  - `hanami-opts` Options passed to hanami to control the plot. Can be the default hanami substituions keys or:
+   
+      - `TRAIN-COLOR:`   Color used for the train curve (default: blue)
+      - `TEST-COLOR:`    Color used for the test curve (default: orange)
 
   "
   ([dataset pipe-fn train-sizes
@@ -56,11 +56,10 @@
 (defn confusion-matrix
   "Generates a confusin matrix plot out of `predicted-labels` and `labels`
 
-   `opts`
-     `normalize` : Can be :none (default) or :all and decides if the values in the matrix are counts or percentages.
+   - `opts`
+       - `normalize` : Can be :none (default) or :all and decides if the values in the matrix are counts or percentages.
 
-   `hanami-opts` Options passed to hanami to control the plot. Can be any of the default hanami
-   substituions keys.
+   - `hanami-opts` Options passed to hanami to control the plot. Can be any of the default hanami substituions keys.
 
   "
   ([predicted-labels labels

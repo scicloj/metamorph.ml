@@ -45,10 +45,10 @@
 (defn linear
   "Creates a linear grid search definition for hyperparameter tuning.
 
-  `start` - Starting value of the range
-  `end` - Ending value of the range
-  `n-steps` - Number of evenly-spaced steps (default: 100)
-  `res-dtype-or-space` - Either a datatype keyword (`:float64`, `:int32`, etc.)
+  - `start` - Starting value of the range
+  - `end` - Ending value of the range
+  - `n-steps` - Number of evenly-spaced steps (default: 100)
+  - `res-dtype-or-space` - Either a datatype keyword (`:float64`, `:int32`, etc.)
                          or a vector of categorical values (default: `:float64`)
 
   Returns a grid search definition map that can be used with `sobol-gridsearch`.

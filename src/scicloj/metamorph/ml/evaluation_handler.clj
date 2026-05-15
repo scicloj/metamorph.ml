@@ -90,9 +90,9 @@
 (defn get-source-information
   "Creates metadata about a pipeline including function sources and classpath.
 
-  `qualified-pipe-decl` - Pipeline declaration with fully-qualified keywords
-  `pipe-ns` - Namespace symbol for the pipeline
-  `pipeline-source-file` - Path to the source file containing the pipeline
+  - `qualified-pipe-decl` - Pipeline declaration with fully-qualified keywords
+  - `pipe-ns` - Namespace symbol for the pipeline
+  - `pipeline-source-file` - Path to the source file containing the pipeline
 
   Returns a map with `:fn-sources` (source code of all pipeline functions) and
   `:classpath` (JVM classpath at evaluation time)."
@@ -103,9 +103,9 @@
 (defn example-nippy-handler
   "Creates an evaluation result handler that serializes results to Nippy format.
 
-  `files` - Atom to track generated file paths
-  `output-dir` - Directory path for output files
-  `result-reduce-fn` - Function to apply to results after serialization
+  - `files` - Atom to track generated file paths
+  - `output-dir` - Directory path for output files
+  - `result-reduce-fn` - Function to apply to results after serialization
 
   Returns a handler function that removes non-freezable data (`:pipe-fn`, `:metric-fn`),
   serializes the result to a UUID-named .nippy file, and applies `result-reduce-fn`.
@@ -136,8 +136,8 @@
 (defn qualify-keywords
   "Converts unqualified keywords in a pipeline declaration to fully-qualified form.
 
-  `pipe-decl` - Pipeline declaration (nested data structure)
-  `pipe-ns` - Namespace symbol for keyword resolution
+  - `pipe-decl` - Pipeline declaration (nested data structure)
+  - `pipe-ns` - Namespace symbol for keyword resolution
 
   Returns the pipeline declaration with all resolvable keywords converted to
   namespace-qualified keywords (e.g., `:fn-name` becomes `:my.ns/fn-name`).
@@ -166,8 +166,8 @@
 (defn qualify-pipelines
   "Qualifies all keywords in a sequence of pipeline declarations.
 
-  `pipe-decls` - Sequence of pipeline declarations
-  `pipe-ns` - Namespace symbol for keyword resolution
+  - `pipe-decls` - Sequence of pipeline declarations
+  - `pipe-ns` - Namespace symbol for keyword resolution
 
   Returns a vector of qualified pipeline declarations. Applies `qualify-keywords`
   to each pipeline in the sequence.
@@ -223,8 +223,16 @@
 (def result-dissoc-in-seq--all
   "Maximum cleanup: removes almost everything except core metrics and model type.
 
-  Removes contexts, timing data, probability distributions, pipeline declarations,
-  functions, and source information. Keeps only the essential metric values and
+  Removes: 
+   
+  - contexts 
+  - timing data
+  - probability distributions 
+  - pipeline declarations
+  - functions 
+  - source information
+   
+  Keeps only the essential metric values and
   model type.
 
   Most aggressive cleanup option. Used by `result-dissoc-in-seq--all-fn`."
@@ -262,11 +270,11 @@
   [result]
   (reduce-result result result-dissoc-in-seq--ctxs))
 
-(defn select-paths
+(defn- select-paths
   "Extracts specific nested paths from a map into a new map.
 
-  `m` - Source map
-  `paths` - Sequence of key path vectors (e.g., `[[:a :b] [:c :d]]`)
+  - `m` - Source map
+  - `paths` - Sequence of key path vectors (e.g., `[[:a :b] [:c :d]]`)
 
   Returns a new map containing only the specified paths with their values.
   Paths with nil values are omitted from the result.

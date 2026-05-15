@@ -20,7 +20,7 @@
 
    Model Matrix Capabilities:
    R formulas handle:
-   
+
    - Basic features: `y ~ x1 + x2`
    - Interactions: `y ~ x1 * x2` (expands to x1 + x2 + x1:x2)
    - Polynomial terms: `y ~ x + I(x^2)`
@@ -38,6 +38,7 @@
        :Sepal.Width :ocpu)
 
    Notes:
+
    - OpenCPU backend is convenient but requires internet connectivity
    - Renjin is standalone but may have some R incompatibilities
    - clojisr requires a local R installation but offers full R compatibility
@@ -166,12 +167,9 @@
 
 
 (defn- model-matrix--renjine [ds r-formula]
-  (def ds ds)
-  (def r-formula r-formula)
 
   (let [factory  (construct "org.renjin.script.RenjinScriptEngineFactory" (to-array []))
         engine (.getScriptEngine factory)
-        _ (def engine engine)
         _ (run!
            (fn [[k v]]
              (case (dt/elemwise-datatype v)
@@ -276,39 +274,27 @@
    - `:attributes` the (R) attributes of the model.matrix object
     
     "
-   {:metadoc/examples 
-    [
-     (example-session "Call with opencpu"
+   {:metadoc/examples
+    [(example-session "Call with renjin backend"
                       (require '[scicloj.metamorph.ml.rdatasets :as rdatasets])
                       (->
                        (rdatasets/datasets-iris)
                        (r-model-matrix "species ~ `sepal-length`" :renjin)
                        :model-matrix-dataset
-                       str
-                       )
-                      
-                      )
-     (example "test addition" {:test-value 2}(+ 1 1))     
-
-     ]
-    
-    }
+                       str))]}
    [ds r-formula impl]
 
-   (let [target-ds (cf/target ds) 
-         
-         result 
+   (let [target-ds (cf/target ds)
+
+         result
          (case impl
            :ocpu (model-matrix--ocpu ds r-formula)
            :renjin (model-matrix--renjine ds r-formula)
-           :clojisr (model-matrix--clojisr ds r-formula)
-           )
-         model-matrix-dataset (:model-matrix-dataset result)
-         ]
-     
-   (assoc result 
-          :model-matrix-dataset (merge model-matrix-dataset target-ds)
-          )))
+           :clojisr (model-matrix--clojisr ds r-formula))
+         model-matrix-dataset (:model-matrix-dataset result)]
+
+     (assoc result
+            :model-matrix-dataset (merge model-matrix-dataset target-ds))))
  
 
 (defn lm
@@ -319,6 +305,7 @@
    the specified R formula, then trains a linear model on the resulting features.
 
    Parameters:
+
    - `ds`             A tech.ml.dataset dataset containing the input data with all
                       variables referenced in the formula and target variable.
    - `formula`        A string containing the R formula (e.g., \"y ~ x1 + x2 * x3\").
@@ -332,6 +319,7 @@
      - `:clojisr` Uses clojisr with local R installation
 
    Requires setup of dependencies of teh engine, see: `r-model-matrix`
+    
    Returns:
    A trained linear model (OLS from fastmath) ready for predictions. The model
    excludes the intercept column and row names from the design matrix by default.

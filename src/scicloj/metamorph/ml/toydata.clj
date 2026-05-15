@@ -1,6 +1,8 @@
 (ns scicloj.metamorph.ml.toydata
   "Deprecated ns. Use scicloj.metamorph.ml.rdatasets instead"
-  {:deprecated "1.1"}
+  {:deprecated "1.1"
+   :no-doc true
+   }
   (:require
    [camel-snake-kebab.core :as csk]
    [clojure.java.io :as io]

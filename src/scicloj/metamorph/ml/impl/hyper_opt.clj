@@ -1,4 +1,5 @@
 (ns scicloj.metamorph.ml.impl.hyper-opt
+  {:no-doc true}
   (:require
    [clojure.string :as str]
    [pppmap.core :as ppp]

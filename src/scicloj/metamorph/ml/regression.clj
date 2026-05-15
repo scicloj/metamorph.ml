@@ -8,17 +8,20 @@
    Available Models:
 
    **OLS (Ordinary Least Squares)**
+
    - `:metamorph.ml/ols`: Apache Commons Math implementation (Java-based)
    - `:fastmath/ols`: FastMath implementation (pure Clojure)
    Solves for regression coefficients β in: y = Xβ + ε
    Assumes linear relationships and homoscedastic errors.
 
    **GLM (Generalized Linear Model)**
+
    - `:fastmath/glm`: FastMath GLM implementation
    Extends linear regression to non-normal distributions and non-linear relationships
    via link functions and variance models.
 
    **Baseline Model**
+   
    - `:metamorph.ml/dummy-regressor`: Predicts mean of training target
    Useful sanity check - models should outperform this baseline.
 
@@ -126,7 +129,7 @@
            (-> model :analysis deref))))
 
 
-(defn predict-fm [feature-ds thawed-model model]
+(defn- predict-fm [feature-ds thawed-model model]
   (let [prediction (map
                     (:model-data model)
                     (-> feature-ds ds/rowvecs))

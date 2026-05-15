@@ -14,6 +14,7 @@
    Supports custom tokenization and metadata extraction.
 
    Output format: tech.v3.dataset with columns:
+
    - :document (int): Document/line identifier
    - :token-idx (int): Token as indexed integer (maps to lookup table)
    - :token-pos (int): Position of token within document
@@ -24,18 +25,25 @@
    Calculates term frequency (TF) and inverse document frequency (IDF) for each token.
 
    Output columns:
-   - :document, :token-idx, :token-count, :tf, :tfidf
+
+   - `:document`
+   - `:token-idx`
+   - `:token-count`
+   - `:tf`
+   - `:tfid`
 
    Memory Optimization:
 
    The namespace provides flexible memory control for large texts via options:
 
    Container Types:
+
    - `:jvm-heap` (default): Java heap storage (fast, limited by heap)
    - `:native-heap`: Off-heap native memory via tech.v3
    - `:mmap`: Memory-mapped files (disk-backed, bypasses heap limits)
 
    Processing Options:
+
    - `container-type`: Storage for intermediate results during processing
    - `column-container-type`: Storage for final output dataset
    - `combine-method`: `:coalesce-blocks!` or `:concat-buffers` (tradeoffs)
@@ -43,15 +51,18 @@
    - `datatype-document/token-pos/idx`: Memory datatype selection (:int16 vs :int32)
 
    Token Management:
+
    - `token->index-map`: Custom token lookup table (can reuse across runs)
    - `new-token-behaviour`: `:store` (default), `:fail`, or `:as-unknown`
 
    Performance Characteristics:
+
    - Typical text requires ~1.5x the original file size in RAM
    - A 8GB text file typically needs ≥12GB total memory
    - Scaling strategy: Use off-heap or mmap for large corpora
 
    Example Usage:
+   ```
    ;; Load and tokenize text file
    (let [reader (io/reader \"corpus.txt\")
          result (->tidy-text
@@ -66,8 +77,10 @@
        (->tfidf ds
                  :container-type :native-heap
                  :column-container-type :jvm-heap)))
+   ```
 
    Typical Workflow:
+
    1. Use ->tidy-text to create tidy text format from raw documents
    2. Use ->tfidf to create TF-IDF feature vectors
    3. Pass vectors to classification/regression models
@@ -300,28 +313,29 @@
    TFIDF calculation of the the tokens.
   
   `tidy-text` needs to be a dataset with columns
-      :document    
-      :token-idx   
-      :token-pos   
+   
+   - `:document`    
+   - `:token-idx`   
+   - `:token-pos`   
    
 
    The following three can be used to `move` data off heap during calculations.
    They can make dramatic differences in performance (faster and slower) 
    and memory usage.
 
-   `container-type` decides if the intermidiate results are stored on-heap (:jvm-heap, the default)
+   - `container-type` decides if the intermidiate results are stored on-heap (:jvm-heap, the default)
                    or off-heap (:native-heap) or :mmap (as mmaped file)
-   `column-container-type` same decides if the resulting dataset os store on-hep (:jvm-heap, the default)
+   - `column-container-type` same decides if the resulting dataset os store on-hep (:jvm-heap, the default)
                    or off-heap (:native-heap) or :mmap (as mmaped file)
-   `combine-method` How to combine the intermidiate containers, either :concat-bufders or :coalesce-buffers!
+   - `combine-method` How to combine the intermidiate containers, either :concat-bufders or :coalesce-buffers!
    
    Returns a dataset with columns:
 
-   :document      document id
-   :token-idx     The token as id
-   :token-count   How often the token appears in a 'document' 
-   :tf            :token-count divided by document length
-   :tfidf         tfidf value for token
+   - `:document`      document id
+   - `:token-idx`     The token as id
+   - `:token-count`   How often the token appears in a 'document' 
+   - `:tf`            :token-count divided by document length
+   - `:tfidf`         tfidf value for token
 
   "
   [tidy-text &  {:keys [container-type
@@ -458,17 +472,23 @@
     (.add ^List (:token-index-containers acc) token-index-container)))
 
 
-(defn process-line
+(defn- process-line
   "Processes a single text line for document corpus creation.
 
   Tokenizes text, looks up/assigns token IDs, and accumulates document statistics.
   This is a low-level function used internally by text preprocessing pipelines.
 
-  Parameters control tokenization, data types, compacting behavior, and unknown
-  token handling. Updates the accumulator with parsed document data (metadata,
+  Parameters control: 
+   - tokenization 
+   - data types
+   - compacting behavior
+   - unknown  token handling. 
+   
+   Updates the accumulator with parsed document data (metadata,
   token counts, token indices).
 
   Used internally by text corpus processing functions."
+
   [token-lookup-table line-split-fn text-tokenizer-fn
    datatype-document
    datatype-token-pos
@@ -557,30 +577,31 @@
    Initial tests show that each byte of text size need 1.5 byte on average
    So a 8 GB text file can be sucessfully loaded when having at least 12 GB.
 
-   `lines-source` Either a buffered reader or a TMD dadaset
-   `line-seq-fn`  A function which return a lazy-list of lines , given the `lines-source`
-   `line-split-fn` A fn which should seperate a single line of input in text and `other`
+   - `lines-source` Either a buffered reader or a TMD dadaset
+   - `line-seq-fn`  A function which return a lazy-list of lines , given the `lines-source`
+   - `line-split-fn` A fn which should seperate a single line of input in text and `other`
                    Supposed to return a seq of size 2, where the first is the 'text' of the line and `meta` can be 
                    anything non-nil (map, vector, scalar). It's value will be returned in column `meta` and is supposed 
                    to be further processed later. `meta` can be nil always,  so no column `meta` will be created 
 
-   `text-tokenizer-fn` A function which will be called for any `text` as obtained by `line-split-fn`
+   - `text-tokenizer-fn` A function which will be called for any `text` as obtained by `line-split-fn`
                        It should split the text by word boundaries and return the obtained tokens as a seq of strings.
                        It can do any text normalisation desired.
    
    Optional `options` are: 
-   `skip-lines`                      0           Lines to skip at beginning
-   `max-lines`                       MAX_INT     max lines to return
+
+   - `skip-lines`                      0           Lines to skip at beginning
+   - `max-lines`                       MAX_INT     max lines to return
 
    The following can be used to optimize the heap usage for larger texts.
    It can be tune depending on how may documents, how many words per document, and how many 
    tokens overall are in the text corpus. 
 
    
-   `datatype-document`              :int16                Datatype of :document column (:int16 or :int32)
-   `datatype-token-pos`             :int16                Datatype of :token-pos column (:int16 or :int32)
-   `datatype-meta`                  :object               Datatype of :meta column (anything, need to match what `line-split-fn` returns as 'meta')
-   `datatype-token-idx`             :int16                Datatype of :token-idx column (:int16 or :int32)
+   - `datatype-document`              :int16                Datatype of :document column (:int16 or :int32)
+   - `datatype-token-pos`             :int16                Datatype of :token-pos column (:int16 or :int32)
+   - `datatype-meta`                  :object               Datatype of :meta column (anything, need to match what `line-split-fn` returns as 'meta')
+   - `datatype-token-idx`             :int16                Datatype of :token-idx column (:int16 or :int32)
 
 
    The following options can be used to `move` data off heap during 
@@ -588,14 +609,14 @@
    and memory usage.                   
                    
 
-   `column-container-type`          :jvm-heap             If the resulting table is created on heap (:jvm-heap ) of off heap (:native-heap)
-   `container-type`                 :jvm-heap             as `column-container-type` but for intermidiate reuslts, per interval
-   `compacting-document-intervall`  10000                 After how many lines the data is written into a continous block
-   `combine-method`                 :coalesce-blocks!     Which method to use to combine blocks (:coalesce-blocks! or :concat-buffers)
+   - `column-container-type`          :jvm-heap             If the resulting table is created on heap (:jvm-heap ) of off heap (:native-heap)
+   - `container-type`                 :jvm-heap             as `column-container-type` but for intermidiate reuslts, per interval
+    `compacting-document-intervall`  10000                 After how many lines the data is written into a continous block
+   - `combine-method`                 :coalesce-blocks!     Which method to use to combine blocks (:coalesce-blocks! or :concat-buffers)
                                                           One or the other might need less RAM in ceratin scenarious.
-   `token->index-map`               Object2IntOpenHashMap Can be overriden with a own object->int map implementation, (maybe off-heap). 
+   - `token->index-map`               Object2IntOpenHashMap Can be overriden with a own object->int map implementation, (maybe off-heap). 
                                                           Can as well be a map obtained from a prevoius run in order to guranty same mappings.                        
-   `new-token-behaviour`            :store                How to react when new  tokens appear , which are no in `token->id-map`
+   - `new-token-behaviour`            :store                How to react when new  tokens appear , which are no in `token->id-map`
                                                           Either :store (default), :fail (throw exception) or :as-unknown (use specific token [UNKNOWN]) 
    
     
@@ -606,26 +627,26 @@
    They can make dramatic differences in performance (faster and slower) 
    and memory usage.
 
-   `container-type` decides if the intermidiate results are stored on-heap (:jvm-heap, the default)
+   - `container-type` decides if the intermidiate results are stored on-heap (:jvm-heap, the default)
                    or off-heap (:native-heap) or :mmap (as mmaped file)
-   `column-container-type` same decides if the resulting dataset os store on-hep (:jvm-heap, the default)
+   - `column-container-type` same decides if the resulting dataset os store on-hep (:jvm-heap, the default)
                    or off-heap (:native-heap) or :mmap (as mmaped file)
-   `combine-method` How to combine the intermidiate containers, either :concat-bufders or :coalesce-buffers!
+   - `combine-method` How to combine the intermidiate containers, either :concat-bufders or :coalesce-buffers!
 
    
 
-   Function returns a map of :datasets and :token-lookup-table
+   Function returns a map of `:datasets` and `:token-lookup-table`
    
-   :datasets is a seq of TMD datasets each having 4 columns which represent
+   `:datasets` is a seq of TMD datasets each having 4 columns which represent
    the input text in the tidy-text format:
 
-   :document    The 'document/line' a token is comming from
-   :token-idx   The token/word (as int) , which is present as well in the token->int look up table returned
-   :token-pos   The position of the token in the document
-   :meta        The meta values if return by `line-split-fn`
+   - `:document`    The 'document/line' a token is comming from
+   - `:token-idx`   The token/word (as int) , which is present as well in the token->int look up table returned
+   - `:token-pos`   The position of the token in the document
+   - `:meta`        The meta values if return by `line-split-fn`
                    
    Assuming that the `text-tokenizer-fn` does no text normalisation, the table is a exact representation 
-   of the input text. I contains as well the word order in column :token-pos, 
+   of the input text. I contains as well the word order in column `:token-pos`, 
    so resorting the table keeps the original text.
 
 
@@ -742,8 +763,8 @@
 (defn- ->line
   "Converts a document dataset to LIBSVM format line.
 
-  `document-ds` - Dataset with `:meta`, `:token-idx`, and value columns
-  `column` - Column name containing feature values
+  - `document-ds` - Dataset with `:meta`, `:token-idx`, and value columns
+  - `column` - Column name containing feature values
 
   Returns a string in LIBSVM format: `<label> <index>:<value> <index>:<value> ...`
   where tokens are ordered by index and formatted as index:value pairs.
@@ -767,9 +788,9 @@
 (defn tidy->libsvm!
   "Writes a TF-IDF dataset to LIBSVM text format.
 
-  `tfidf-ds` - Dataset with TF-IDF features (from `->tfidf`) including `:meta`, `:token-idx`, and value columns
-  `writer` - BufferedWriter for output
-  `column` - Column name containing feature values (e.g., `:tfidf`)
+  - `tfidf-ds` - Dataset with TF-IDF features (from `->tfidf`) including `:meta`, `:token-idx`, and value columns
+  - `writer` - BufferedWriter for output
+  - `column` - Column name containing feature values (e.g., `:tfidf`)
 
   Writes the dataset in LIBSVM sparse format: `<label> <index>:<value> <index>:<value> ...`
   where label comes from the `:meta` column. Groups by `:document` and writes

@@ -2,6 +2,7 @@
   "Core machine learning framework integrating metamorph pipelines with standardized model APIs.
 
    This is the central namespace of metamorph.ml, providing infrastructure for:
+
    - Registering and using machine learning models
    - Training models and making predictions
    - Evaluating pipelines via cross-validation
@@ -15,17 +16,21 @@
    Models define a train-fn, predict-fn, and optional diagnostic functions.
 
    **Training and Prediction**:
+
    - `train`: Train a model on a dataset given options including :model-type
    - `predict`: Make predictions using a trained model
    - `train-predict-cache`: Optional cache to avoid redundant computations
 
    **Pipeline Evaluation**:
+
    - `evaluate-pipelines`: Evaluate multiple pipelines across train/test splits
    - `evaluate-one-pipeline`: Evaluate a single pipeline with cross-validation
    - Returns results sorted by metric performance with optional filtering
    - Supports parallel evaluation (:map/:pmap/:ppmap)
 
+
    **Model Diagnostics** (following tidymodels conventions):
+
    - `glance`: One-row model summary (goodness-of-fit)
    - `tidy`: One-row-per-component output (coefficients with statistics)
    - `augment`: One-row-per-observation output (predictions, residuals)
@@ -43,12 +48,14 @@
    Pipeline Integration:
 
    Models integrate with metamorph pipelines via the `model` step, which:
+
    - Trains in :fit mode using training data
    - Predicts in :transform mode on new data
    - Stores model output column metadata for later evaluation
 
    Example Usage:
 
+   ```
    ;; Register a custom model (rarely needed - use existing models)
    (define-model! :my/custom-model train-fn predict-fn {...})
 
@@ -69,19 +76,23 @@
      metric-fn
      :accuracy
      {:map-fn :pmap})
-
+   ```
+   
    Built-in Models:
 
    **Regression**:
+                                 
    - `:metamorph.ml/ols`: Apache Commons Math OLS
    - `:fastmath/ols`: FastMath OLS
    - `:fastmath/glm`: FastMath GLM
    - `:metamorph.ml/dummy-regressor`: Mean baseline
 
    **Classification**:
+
    - `:metamorph.ml/dummy-classifier`: Majority class or random baseline
 
    **Preprocessing**:
+     
    See specific namespaces for transformers:
    - `scicloj.metamorph.ml.preprocessing`: Scaling and normalization
    - `scicloj.metamorph.ml.categorical`: One-hot encoding
@@ -89,6 +100,7 @@
 
    See also: `scicloj.metamorph.core` for metamorph pipeline mechanics,
    `scicloj.metamorph.ml.tidy-models` for diagnostic validation"
+  
   (:require
    [clojure.set :as set]
    [scicloj.metamorph.ml.loss :as loss]
@@ -135,8 +147,8 @@
 
 (defn ^{:deprecated "1.4.0"
         :superseded-by "ml/optimize-hyperparameter"}  
-  
   evaluate-pipelines
+
   "Evaluates the performance of a seq of metamorph pipelines, which are suposed to have a model as last step under key :model,
   which behaves correctly  in mode :fit and  :transform. The function `scicloj.metamorph.ml/model` is such function behaving correctly.
   
@@ -166,21 +178,20 @@
       In case of :loss pipelines with lower metric are better, in case of :accuracy pipelines with higher value are better.
 
    * `options` map controls some mainly performance related parameters. This function can potentialy result in a large ammount of data,
-     able to bring the JVM into out-of-memory. We can control memory consumption / paralellism by the below options.
-     
-     The defaults are quite aggresive in removing details, and this can be tweaked further into more or less details via:
+     able to bring the JVM into out-of-memory. We can control memory consumption / paralellism by the below options. The defaults are quite aggresive in removing details, and this can be tweaked further into more or less details via:
 
-       * `:return-best-pipeline-only` - Only return information of the best performing pipeline. Default is true.
-       * `:return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is `true`.
-       * `:map-fn` - Controls parallelism, so decides if we use `map` , `pmap` , `ppmap`  or `mapv` to map over different pipelines. Default is `:map`
+         - `:return-best-pipeline-only` - Only return information of the best performing pipeline. Default is true.
+         - `:return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is `true`.
+         - `:map-fn` - Controls parallelism, so decides if we use `map` , `pmap` , `ppmap`  or `mapv` to map over different pipelines. Default is `:map`
                      Giving :run!, :prun!, pprun! executes the pipelines based on `run!`. In this case this function returns nothing, 
                      and it assumes that a site-effect making `:evaluation-handler-fn` is given. (which can then return nil)
-       * `:evaluation-handler-fn` - Gets called once with the complete result of an individual pipeline evaluation.
+         - `:evaluation-handler-fn` - Gets called once with the complete result of an individual pipeline evaluation.
            It can be used to adapt the data returned for each evaluation and / or to make side effects using
-           the evaluatio data. 
-           The result of this function is taken as evaluation result. It need to  contain as a minumum this 2 key paths:
-           [:train-transform :metric]
-           [:test-transform :metric]
+           the evaluation data. The result of this function is taken as evaluation result. It need to contain as a minumum this 2 key paths:
+      
+           - `[:train-transform :metric]`
+           - `[:test-transform :metric]`
+      
            All other evalution data can be removed, if desired. 
            The `evaluation-handler-fn` fn can as well return nil, and then it should be used together with `map-fn` :run!, :prun! or pprun!,
            so we execute it for side-efects only, which means as well that memory consumption is minimal
@@ -190,11 +201,13 @@
 
            The default handler function is:  `scicloj.metamorph.ml/default-result-dissoc--in-fn` which removes the often large
            model object and the training data.
+         
            `identity` can be use to retain all evaluation data incl. data
+                     
            `scicloj.metamorph.ml/result-dissoc-in-seq--all` is availble and reduces even more agressively, just keeping the metrices.
 
   
-       * `:other-metrics` Specifies other metrices to be calculated during evaluation
+        * `:other-metrics` Specifies other metrices to be calculated during evaluation
 
    This function expects as well the ground truth of the target variable into
    a specific key in the context at key `:model :scicloj.metamorph.ml/target-ds`
@@ -474,12 +487,13 @@
   * `:target-datatypes` - map of target columns names -> target columns type 
   * `:target-categorical-maps` - the categorical maps of the target columns, if present 
    
- A well behaving model implementaion should use 
-   :target-column  
-   :target-datatypes 
-   :target-categorical-maps  
+  A well behaving model implementaion should use 
    
-   to construct its prediction dataset so that its matches with the train data target column.
+  - `:target-column`  
+  - ':target-datatypes` 
+  - `:target-categorical-maps`  
+   
+  to construct its prediction dataset so that its matches with the train data target column.
    "
   {:malli/schema [:=> [:cat 
                        [:fn (fn [x]
@@ -578,8 +592,8 @@
   during `predict`, but you can manually thaw and cache the model under
   `:thawed-model` for faster repeated predictions on small datasets.
 
-  `model` - Model map from `train` containing `:model-data`
-  `opts` - Optional map with `:thaw-fn` to override the model's thaw function
+  - `model` - Model map from `train` containing `:model-data`
+  - `opts` - Optional map with `:thaw-fn` to override the model's thaw function
 
   Returns the thawed model data ready for prediction. If already thawed and
   cached, returns the cached version.
@@ -680,9 +694,10 @@
     value and values that describe the probability distribution.
    
   Each implementing model should construct its prediction in a shape expressed by
-   :target-column  
-   :target-datatypes 
-   :target-categorical-maps  
+   
+   - `:target-column`  
+   - `:target-datatypes` 
+   - `:target-categorical-maps`  
 
    it is receiving.
 
@@ -696,9 +711,10 @@
    - categorical maps
 
    It NEED to be symetric, and return the same datatype in prediction as it receives in training:
-   numeric in train -> same numeric in predict
-   string in train -> string in predict
-   categorical map in train -> equivalent categorical map in predict
+    
+   - numeric in train -> same numeric in predict
+   - string in train -> string in predict
+   - categorical map in train -> equivalent categorical map in predict
    
    ml/train passes the needed information of the train target column to the model implementaion to do this.
 
@@ -752,9 +768,9 @@
 (defn loglik
   "Calculates the log-likelihood for the given model and predictions.
 
-  `model` - Trained model map containing `:options` with model definition
-  `y` - Actual target values (ground truth)
-  `yhat` - Predicted values from the model
+  - `model` - Trained model map containing `:options` with model definition
+  - `y` - Actual target values (ground truth)
+  - `yhat` - Predicted values from the model
 
   Returns the log-likelihood value by calling the model's `:loglik-fn` function.
   The specific log-likelihood function used depends on the model type.
@@ -772,8 +788,10 @@
   Returns a dataset with rows from this list:
  https://raw.githubusercontent.com/scicloj/metamorph.ml/main/resources/columms-tidy.edn
 
-  No other row names should be used.
+ No other row names should be used.
+  
  Each model will only return a small subset of possible rows.
+ 
  The list of allowed row names might change over time.
 
  A model might not implement this function, and then an empty dataset will be returned.
@@ -799,11 +817,13 @@
   Potential row names are these:
   https://raw.githubusercontent.com/scicloj/metamorph.ml/main/resources/columms-glance.edn
 
- No other row names should be used.
- Each model will only return a small subset of possible rows.
- The list of allowed row names might change over time.
+  No other row names should be used.
+   
+  Each model will only return a small subset of possible rows.
+ 
+  The list of allowed row names might change over time.
 
- A model might not implement this function, and then an empty dataset will be returned.
+  A model might not implement this function, and then an empty dataset will be returned.
  "
   [model]
   (let [glance-fn
@@ -824,8 +844,9 @@
   Potential row names are these:
   https://raw.githubusercontent.com/scicloj/metamorph.ml/main/resources/columms-augment.edn
 
- No other row names should be used.
- Each model will only return a small subset of possible rows.
+  No other row names should be used.
+   
+  Each model will only return a small subset of possible rows.
 
   A model might not implement this function, and then the dataset is
   returned unchanged.
