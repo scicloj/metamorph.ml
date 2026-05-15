@@ -7,17 +7,20 @@
    expansions without manual column manipulation.
 
    Key Functions:
+
    - `r-model-matrix`: Convert dataset + R formula to design matrix
    - `lm`: Simplified linear regression using R formulas
 
    Implementation Backends:
    The namespace supports multiple R execution backends:
+
    - `:ocpu`    Remote R via OpenCPU (cloud.opencpu.org) - no local R needed
    - `:renjin` Java-based R implementation (https://renjin.org/)
    - `:clojisr` Local R via clojisr (requires R installation)
 
    Model Matrix Capabilities:
    R formulas handle:
+   
    - Basic features: `y ~ x1 + x2`
    - Interactions: `y ~ x1 * x2` (expands to x1 + x2 + x1:x2)
    - Polynomial terms: `y ~ x + I(x^2)`
@@ -51,7 +54,11 @@
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.modelling :as ds-mod]
    [tech.v3.datatype :as dt]
-   [tech.v3.dataset.column-filters :as cf]))
+   [tech.v3.dataset.column-filters :as cf]
+   [metadoc.examples :refer [example-session example]]
+   
+   
+   [scicloj.metamorph.ml.rdatasets :as rdatasets]))
 
 (defn add-clojisr-dependency 
   "Adds dynamically `clojisr` to classpath using pomegranate.
@@ -159,9 +166,12 @@
 
 
 (defn- model-matrix--renjine [ds r-formula]
+  (def ds ds)
+  (def r-formula r-formula)
 
   (let [factory  (construct "org.renjin.script.RenjinScriptEngineFactory" (to-array []))
         engine (.getScriptEngine factory)
+        _ (def engine engine)
         _ (run!
            (fn [[k v]]
              (case (dt/elemwise-datatype v)
@@ -176,7 +186,7 @@
                          (->>
                           ds
                           keys
-                          (map name)
+                          (map #(format "`%s`" (name %)))
                           (str/join ","))))
 
 
@@ -240,15 +250,17 @@
     
    - `ds`         A tech.ml.dataset dataset representing the input data.
    - `r-formula`  A string containing the R formula to use for model matrix construction. The formua is interpreted by R itself, so should be full compatible
-   - `impl`       An implementation keyword, either 
-     - `:ocpu`    Uses an online service https://www.opencpu.org/api.html (server: cloud.opencpu.org)
-     - `:renjine` Uses https://renjin.org/   
-     - `:clojisr` Uses https://github.com/scicloj/clojisr, which requires a local R installation 
+   - `impl`       An implementation keyword, either
+
+       - `:ocpu`    Uses an online service https://www.opencpu.org/api.html (server: cloud.opencpu.org)
+       - `:renjine` Uses https://renjin.org/   
+       - `:clojisr` Uses https://github.com/scicloj/clojisr, which requires a local R installation 
     
-    Each implementation requires dependencies to be added:
-    - `:ocpu` :  [opencpu-clj/opencpu-clj \"0.3.1\"] 
-    - `:renjin` : [org.renjin/renjin-script-engine \"3.5-beta76\"]
-    - `:clojisr` : [scicloj/clojisr \"1.1.0\"]
+   Each implementation requires dependencies to be added:
+    
+   - `:ocpu` :  [opencpu-clj/opencpu-clj \"0.3.1\"] 
+   - `:renjin` : [org.renjin/renjin-script-engine \"3.5-beta76\"]
+   - `:clojisr` : [scicloj/clojisr \"1.1.0\"]
 
 
 
@@ -258,15 +270,30 @@
    Dispatches to the appropriate backend implementation.
 
     
-   Returns a map with 
+   Returns a map with
+   
    - `:model-matrix-dataset` having the TMD containing the design matrix specified by `r-formula`
    - `:attributes` the (R) attributes of the model.matrix object
     
     "
+   {:metadoc/examples 
+    [
+     (example-session "Call with opencpu"
+                      (require '[scicloj.metamorph.ml.rdatasets :as rdatasets])
+                      (->
+                       (rdatasets/datasets-iris)
+                       (r-model-matrix "species ~ `sepal-length`" :renjin)
+                       :model-matrix-dataset
+                       str
+                       )
+                      
+                      )
+     (example "test addition" {:test-value 2}(+ 1 1))     
+
+     ]
+    
+    }
    [ds r-formula impl]
-   (def ds ds)
-   (def r-formula r-formula)
-   (def impl impl)
 
    (let [target-ds (cf/target ds) 
          
@@ -278,15 +305,10 @@
            )
          model-matrix-dataset (:model-matrix-dataset result)
          ]
-     (def target-ds target-ds)
-     (def result result)  
-     (def model-matrix-dataset model-matrix-dataset)  
-     result)
+     
    (assoc result 
           :model-matrix-dataset (merge model-matrix-dataset target-ds)
-          )
-   
-   )
+          )))
  
 
 (defn lm
