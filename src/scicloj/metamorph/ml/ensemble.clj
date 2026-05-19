@@ -38,7 +38,7 @@
   Reads keys from ctx                  | In `:transform`: reads fitted sub-pipeline contexts
   Writes keys to ctx                   | In `:fit`: stores all fitted contexts; In `:transform`: writes final prediction
 
-  See also: `scicloj.metamorph.ml/evaluate-pipelines`"
+  See also: [[scicloj.metamorph.ml/evaluate-pipelines]]"
   [pipes]
   (morph/pipeline
    {:metamorph/id :ensemble}

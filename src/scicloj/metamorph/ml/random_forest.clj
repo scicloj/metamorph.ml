@@ -1,5 +1,9 @@
 (ns scicloj.metamorph.ml.random-forest
-  "Optimized Pure Clojure Random Forest implementation for classification and regression."
+  "Optimized Pure Clojure Random Forest implementation for classification and regression.
+   Can be used specifying 
+   
+   `:model-type :metamorph.ml/random-forest`
+   "
   (:require [scicloj.metamorph.ml :as ml]
             [tech.v3.dataset :as ds]
             [tech.v3.dataset.modelling :as ds-mod]))

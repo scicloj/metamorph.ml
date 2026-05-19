@@ -5,6 +5,7 @@
    [scicloj.metamorph.core :as mm]
    [scicloj.metamorph.ml :as ml]
    [scicloj.metamorph.ml.categorical :as cat]
+   [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.modelling :as ds-mod]))
@@ -103,5 +104,8 @@
     (is (= [0] (:y prediction)))
     (is (= [:model-data :options :train-input-hash :id :feature-columns :target-columns :target-datatypes :target-categorical-maps]
            (keys model)))))
+
+
+
 
 

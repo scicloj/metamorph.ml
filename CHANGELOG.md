@@ -1,3 +1,7 @@
+unreleased
+- docstring update
+- use codox / metadoc
+
 1.6.2
 - add inference targets to `r-model-matrix`
 

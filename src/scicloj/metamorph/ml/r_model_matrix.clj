@@ -7,17 +7,20 @@
    expansions without manual column manipulation.
 
    Key Functions:
+
    - `r-model-matrix`: Convert dataset + R formula to design matrix
    - `lm`: Simplified linear regression using R formulas
 
    Implementation Backends:
    The namespace supports multiple R execution backends:
+
    - `:ocpu`    Remote R via OpenCPU (cloud.opencpu.org) - no local R needed
    - `:renjin` Java-based R implementation (https://renjin.org/)
    - `:clojisr` Local R via clojisr (requires R installation)
 
    Model Matrix Capabilities:
    R formulas handle:
+
    - Basic features: `y ~ x1 + x2`
    - Interactions: `y ~ x1 * x2` (expands to x1 + x2 + x1:x2)
    - Polynomial terms: `y ~ x + I(x^2)`
@@ -29,29 +32,29 @@
    Combines formula-based feature engineering with OLS regression training.
    Returns a ready-to-use trained model for predictions.
 
-   Example Usage:
-   (r-model-matrix iris-data \"~ Sepal.Length + Sepal.Width\" :renjin)
-   (lm iris-data \"Sepal.Width ~ Sepal.Length * Petal.Length\" 
-       :Sepal.Width :ocpu)
-
+   
    Notes:
+
    - OpenCPU backend is convenient but requires internet connectivity
    - Renjin is standalone but may have some R incompatibilities
    - clojisr requires a local R installation but offers full R compatibility
    - Returned model matrices exclude row names and intercept columns by default
 
-   See also: `scicloj.metamorph.ml.design-matrix` for Clojure-native feature engineering"
+   See also: [[scicloj.metamorph.ml.design-matrix]] for Clojure-native feature engineering"
   (:require
    [cemerick.pomegranate :as pom]
    [cemerick.pomegranate.aether :as aether]
    [cheshire.core :as json]
    [clojure.string :as str]
+   [metadoc.examples :refer [example-session]]
    [scicloj.metamorph.ml :as ml]
+   [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [tablecloth.api :as tc]
    [tech.v3.dataset :as ds]
+   [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.modelling :as ds-mod]
-   [tech.v3.datatype :as dt]
-   [tech.v3.dataset.column-filters :as cf]))
+   [tech.v3.dataset.print :as print]
+   [tech.v3.datatype :as dt]))
 
 (defn add-clojisr-dependency 
   "Adds dynamically `clojisr` to classpath using pomegranate.
@@ -176,7 +179,7 @@
                          (->>
                           ds
                           keys
-                          (map name)
+                          (map #(format "`%s`" (name %)))
                           (str/join ","))))
 
 
@@ -240,15 +243,17 @@
     
    - `ds`         A tech.ml.dataset dataset representing the input data.
    - `r-formula`  A string containing the R formula to use for model matrix construction. The formua is interpreted by R itself, so should be full compatible
-   - `impl`       An implementation keyword, either 
-     - `:ocpu`    Uses an online service https://www.opencpu.org/api.html (server: cloud.opencpu.org)
-     - `:renjine` Uses https://renjin.org/   
-     - `:clojisr` Uses https://github.com/scicloj/clojisr, which requires a local R installation 
+   - `impl`       An implementation keyword, either
+
+       - `:ocpu`    Uses an online service https://www.opencpu.org/api.html (server: cloud.opencpu.org)
+       - `:renjine` Uses https://renjin.org/   
+       - `:clojisr` Uses https://github.com/scicloj/clojisr, which requires a local R installation 
     
-    Each implementation requires dependencies to be added:
-    - `:ocpu` :  [opencpu-clj/opencpu-clj \"0.3.1\"] 
-    - `:renjin` : [org.renjin/renjin-script-engine \"3.5-beta76\"]
-    - `:clojisr` : [scicloj/clojisr \"1.1.0\"]
+   Each implementation requires dependencies to be added:
+    
+   - `:ocpu` :  [opencpu-clj/opencpu-clj \"0.3.1\"] 
+   - `:renjin` : [org.renjin/renjin-script-engine \"3.5-beta76\"]
+   - `:clojisr` : [scicloj/clojisr \"1.1.0\"]
 
 
 
@@ -258,37 +263,44 @@
    Dispatches to the appropriate backend implementation.
 
     
-   Returns a map with 
+   Returns a map with
+   
    - `:model-matrix-dataset` having the TMD containing the design matrix specified by `r-formula`
    - `:attributes` the (R) attributes of the model.matrix object
     
     "
-   [ds r-formula impl]
-   (def ds ds)
-   (def r-formula r-formula)
-   (def impl impl)
-
-   (let [target-ds (cf/target ds) 
-         
-         result 
-         (case impl
-           :ocpu (model-matrix--ocpu ds r-formula)
-           :renjin (model-matrix--renjine ds r-formula)
-           :clojisr (model-matrix--clojisr ds r-formula)
-           )
-         model-matrix-dataset (:model-matrix-dataset result)
-         ]
-     (def target-ds target-ds)
-     (def result result)  
-     (def model-matrix-dataset model-matrix-dataset)  
-     result)
-   (assoc result 
-          :model-matrix-dataset (merge model-matrix-dataset target-ds)
-          )
+   {:metadoc/examples
+    [(example-session "Call with renjin backend"
+                      (require '[scicloj.metamorph.ml.rdatasets :as rdatasets])
+                      (->
+                       (rdatasets/datasets-mtcars)
+                       (r-model-matrix "mpg ~ as.factor(cyl) * hp + disp" :renjin)
+                       :model-matrix-dataset
+                       (print/dataset->str)))
+     (example-session "Call with ocpu backend"
+                      (require '[scicloj.metamorph.ml.rdatasets :as rdatasets])
+                      (->
+                       (rdatasets/datasets-iris)
+                       (ds/remove-column :rownames)
+                       (ds-mod/set-inference-target [:species])
+                       (r-model-matrix "species ~ ." :ocpu)
+                       :model-matrix-dataset
+                       (print/dataset->str)))]}
    
-   )
- 
+   [dataset r-formula impl]
 
+   (let [target-ds (cf/target dataset)
+
+         result
+         (case impl
+           :ocpu (model-matrix--ocpu dataset r-formula)
+           :renjin (model-matrix--renjine dataset r-formula)
+           :clojisr (model-matrix--clojisr dataset r-formula))
+         model-matrix-dataset (:model-matrix-dataset result)]
+
+     (assoc result
+            :model-matrix-dataset (merge model-matrix-dataset target-ds))))
+ 
 (defn lm
   "Train a linear model using an R-style formula.
 
@@ -297,6 +309,7 @@
    the specified R formula, then trains a linear model on the resulting features.
 
    Parameters:
+
    - `ds`             A tech.ml.dataset dataset containing the input data with all
                       variables referenced in the formula and target variable.
    - `formula`        A string containing the R formula (e.g., \"y ~ x1 + x2 * x3\").
@@ -310,6 +323,7 @@
      - `:clojisr` Uses clojisr with local R installation
 
    Requires setup of dependencies of teh engine, see: `r-model-matrix`
+    
    Returns:
    A trained linear model (OLS from fastmath) ready for predictions. The model
    excludes the intercept column and row names from the design matrix by default.
@@ -327,4 +341,6 @@
       (tc/add-column target-var (get ds target-var))
       (ds-mod/set-inference-target [target-var])
       (ml/train {:model-type :fastmath/ols})))
+
+
 

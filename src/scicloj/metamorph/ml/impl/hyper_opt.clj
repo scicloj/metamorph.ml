@@ -1,4 +1,5 @@
 (ns scicloj.metamorph.ml.impl.hyper-opt
+  {:no-doc true}
   (:require
    [clojure.string :as str]
    [pppmap.core :as ppp]
@@ -228,8 +229,7 @@
                  complete-result
                  (assoc (calc-metric pipeline-fn metric-def-or-fn train test tune-options)
                         :split-uid split-uid
-                        :loss-or-accuracy loss-or-accuracy
-                        ;:metric-fn (:metric metric-def-or-fn)
+                        :loss-or-accuracy loss-or-accuracy ;TODO remove for optimize-yperparams
                         :metric-def metric-def-or-fn
                         :pipe-decl pipeline-decl
                         :pipe-fn pipeline-fn

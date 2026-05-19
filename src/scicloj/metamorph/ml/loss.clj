@@ -11,8 +11,8 @@
 (defn mse
   "Calculates mean squared error between predictions and labels.
 
-  `predictions` - Sequence of predicted values
-  `labels` - Sequence of actual/ground truth values
+  - `predictions` - Sequence of predicted values
+  - `labels` - Sequence of actual/ground truth values
 
   Returns the average of squared differences between predictions and labels.
   Lower values indicate better model fit. Commonly used for regression models.
@@ -31,8 +31,8 @@
 (defn rmse
   "Calculates root mean squared error between predictions and labels.
 
-  `predictions` - Sequence of predicted values
-  `labels` - Sequence of actual/ground truth values
+  - `predictions` - Sequence of predicted values
+  - `labels` - Sequence of actual/ground truth values
 
   Returns the square root of mean squared error. RMSE is in the same units as
   the target variable, making it more interpretable than MSE. Lower values
@@ -47,8 +47,8 @@
 (defn mae
   "Calculates mean absolute error between predictions and labels.
 
-  `predictions` - Sequence of predicted values
-  `labels` - Sequence of actual/ground truth values
+  - `predictions` - Sequence of predicted values
+  - `labels` - Sequence of actual/ground truth values
 
   Returns the average of absolute differences between predictions and labels.
   MAE is more robust to outliers than MSE/RMSE and shares the same units as the
@@ -86,8 +86,8 @@
 (defn classification-accuracy
   "Calculates classification accuracy as the proportion of correct predictions.
 
-  `lhs` - Sequence of predicted class labels (without categorical map metadata)
-  `rhs` - Sequence of actual/ground truth class labels (without categorical map metadata)
+  - `lhs` - Sequence of predicted class labels (without categorical map metadata)
+  - `rhs` - Sequence of actual/ground truth class labels (without categorical map metadata)
 
   Returns accuracy as a double in [0, 1] where 1.0 is perfect classification.
   Computes the ratio of correct predictions to total predictions. Both inputs
@@ -106,8 +106,8 @@
 (defn classification-loss
   "Calculates classification loss as the proportion of incorrect predictions.
 
-  `lhs` - Sequence of predicted class labels (without categorical map metadata)
-  `rhs` - Sequence of actual/ground truth class labels (without categorical map metadata)
+  - `lhs` - Sequence of predicted class labels (without categorical map metadata)
+  - `rhs` - Sequence of actual/ground truth class labels (without categorical map metadata)
 
   Returns classification error rate as a double in [0, 1] where 0.0 is perfect
   classification. Computed as 1.0 minus classification accuracy. Lower values
@@ -124,8 +124,8 @@
 (defn auc
   "Calculates area under the ROC curve for binary classification.
 
-  `predictions` - Sequence of predicted scores/probabilities (numeric)
-  `labels` - Sequence of binary labels (must be 0 or 1)
+  - `predictions` - Sequence of predicted scores/probabilities (numeric)
+  - `labels` - Sequence of binary labels (must be 0 or 1)
 
   Returns the AUC score as a double in [0, 1]. Values above 0.5 indicate the
   model performs better than random guessing. AUC of 1.0 is perfect classification.

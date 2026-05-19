@@ -2,6 +2,7 @@
   "Core machine learning framework integrating metamorph pipelines with standardized model APIs.
 
    This is the central namespace of metamorph.ml, providing infrastructure for:
+
    - Registering and using machine learning models
    - Training models and making predictions
    - Evaluating pipelines via cross-validation
@@ -15,17 +16,21 @@
    Models define a train-fn, predict-fn, and optional diagnostic functions.
 
    **Training and Prediction**:
+
    - `train`: Train a model on a dataset given options including :model-type
    - `predict`: Make predictions using a trained model
    - `train-predict-cache`: Optional cache to avoid redundant computations
 
    **Pipeline Evaluation**:
+
    - `evaluate-pipelines`: Evaluate multiple pipelines across train/test splits
    - `evaluate-one-pipeline`: Evaluate a single pipeline with cross-validation
    - Returns results sorted by metric performance with optional filtering
    - Supports parallel evaluation (:map/:pmap/:ppmap)
 
+
    **Model Diagnostics** (following tidymodels conventions):
+
    - `glance`: One-row model summary (goodness-of-fit)
    - `tidy`: One-row-per-component output (coefficients with statistics)
    - `augment`: One-row-per-observation output (predictions, residuals)
@@ -43,52 +48,40 @@
    Pipeline Integration:
 
    Models integrate with metamorph pipelines via the `model` step, which:
+
    - Trains in :fit mode using training data
    - Predicts in :transform mode on new data
    - Stores model output column metadata for later evaluation
 
-   Example Usage:
-
-   ;; Register a custom model (rarely needed - use existing models)
-   (define-model! :my/custom-model train-fn predict-fn {...})
-
-   ;; Train a model
-   (let [model (train iris-data {:model-type :fastmath/ols
-                                 :target-columns [:Sepal.Width]
-                                 :feature-columns [:Sepal.Length]})]
-     ;; Get diagnostics
-     (glance model)
-     (tidy model)
-     ;; Make predictions
-     (predict iris-data model))
-
-   ;; Evaluate multiple pipelines in cross-validation
-   (evaluate-pipelines
-     [pipeline1 pipeline2]
-     train-test-splits
-     metric-fn
-     :accuracy
-     {:map-fn :pmap})
-
+   
    Built-in Models:
 
    **Regression**:
+                                 
    - `:metamorph.ml/ols`: Apache Commons Math OLS
    - `:fastmath/ols`: FastMath OLS
    - `:fastmath/glm`: FastMath GLM
    - `:metamorph.ml/dummy-regressor`: Mean baseline
 
    **Classification**:
+
    - `:metamorph.ml/dummy-classifier`: Majority class or random baseline
+   - `:metamorph.ml/random-forest`: Random forest classifier
 
    **Preprocessing**:
+     
    See specific namespaces for transformers:
+     
    - `scicloj.metamorph.ml.preprocessing`: Scaling and normalization
    - `scicloj.metamorph.ml.categorical`: One-hot encoding
    - `scicloj.metamorph.ml.r-model-matrix`: R formula features
 
    See also: `scicloj.metamorph.core` for metamorph pipeline mechanics,
    `scicloj.metamorph.ml.tidy-models` for diagnostic validation"
+ {:metadoc/categories {:model-diagnostic "Model diagnsotics"
+                       :model-lifecycle "Model lifecycle"
+                       :model-definition "Model definition"
+                       }}
   (:require
    [clojure.set :as set]
    [scicloj.metamorph.ml.loss :as loss]
@@ -105,13 +98,17 @@
    [tech.v3.datatype.errors :as errors]
    [tech.v3.datatype.export-symbols :as exporter]
    [tech.v3.datatype :as dt]
-   )
+   ;; for examples
+   [metadoc.examples :refer [example-session example]]
+   [scicloj.metamorph.ml.rdatasets]
+   [scicloj.metamorph.core :as mm]
+   [tablecloth.pipeline :as tc-mm])
   (:import
    java.util.UUID))
 
 
 (exporter/export-symbols scicloj.metamorph.ml.ensemble ensemble-pipe)
-
+(declare train)
 
 
 (def train-predict-cache
@@ -134,9 +131,9 @@
 
 
 (defn ^{:deprecated "1.4.0"
-        :superseded-by "ml/optimize-hyperparameter"}  
-  
+        :superseeded-by "ml/optimize-hyperparameter"}  
   evaluate-pipelines
+
   "Evaluates the performance of a seq of metamorph pipelines, which are suposed to have a model as last step under key :model,
   which behaves correctly  in mode :fit and  :transform. The function `scicloj.metamorph.ml/model` is such function behaving correctly.
   
@@ -166,21 +163,20 @@
       In case of :loss pipelines with lower metric are better, in case of :accuracy pipelines with higher value are better.
 
    * `options` map controls some mainly performance related parameters. This function can potentialy result in a large ammount of data,
-     able to bring the JVM into out-of-memory. We can control memory consumption / paralellism by the below options.
-     
-     The defaults are quite aggresive in removing details, and this can be tweaked further into more or less details via:
+     able to bring the JVM into out-of-memory. We can control memory consumption / paralellism by the below options. The defaults are quite aggresive in removing details, and this can be tweaked further into more or less details via:
 
-       * `:return-best-pipeline-only` - Only return information of the best performing pipeline. Default is true.
-       * `:return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is `true`.
-       * `:map-fn` - Controls parallelism, so decides if we use `map` , `pmap` , `ppmap`  or `mapv` to map over different pipelines. Default is `:map`
+         - `:return-best-pipeline-only` - Only return information of the best performing pipeline. Default is true.
+         - `:return-best-crossvalidation-only` - Only return information of the best crossvalidation (per pipeline returned). Default is `true`.
+         - `:map-fn` - Controls parallelism, so decides if we use `map` , `pmap` , `ppmap`  or `mapv` to map over different pipelines. Default is `:map`
                      Giving :run!, :prun!, pprun! executes the pipelines based on `run!`. In this case this function returns nothing, 
                      and it assumes that a site-effect making `:evaluation-handler-fn` is given. (which can then return nil)
-       * `:evaluation-handler-fn` - Gets called once with the complete result of an individual pipeline evaluation.
+         - `:evaluation-handler-fn` - Gets called once with the complete result of an individual pipeline evaluation.
            It can be used to adapt the data returned for each evaluation and / or to make side effects using
-           the evaluatio data. 
-           The result of this function is taken as evaluation result. It need to  contain as a minumum this 2 key paths:
-           [:train-transform :metric]
-           [:test-transform :metric]
+           the evaluation data. The result of this function is taken as evaluation result. It need to contain as a minumum this 2 key paths:
+      
+           - `[:train-transform :metric]`
+           - `[:test-transform :metric]`
+      
            All other evalution data can be removed, if desired. 
            The `evaluation-handler-fn` fn can as well return nil, and then it should be used together with `map-fn` :run!, :prun! or pprun!,
            so we execute it for side-efects only, which means as well that memory consumption is minimal
@@ -190,11 +186,13 @@
 
            The default handler function is:  `scicloj.metamorph.ml/default-result-dissoc--in-fn` which removes the often large
            model object and the training data.
+         
            `identity` can be use to retain all evaluation data incl. data
+                     
            `scicloj.metamorph.ml/result-dissoc-in-seq--all` is availble and reduces even more agressively, just keeping the metrices.
 
   
-       * `:other-metrics` Specifies other metrices to be calculated during evaluation
+        * `:other-metrics` Specifies other metrices to be calculated during evaluation
 
    This function expects as well the ground truth of the target variable into
    a specific key in the context at key `:model :scicloj.metamorph.ml/target-ds`
@@ -202,7 +200,8 @@
    The function [[scicloj.ml.metamorph/model]] does this correctly.
   "
 
-  {:malli/schema
+  {:metadoc/categories #{:model-lifecycle}
+   :malli/schema
    [:function
     [:=>
      [:cat
@@ -252,14 +251,36 @@
 
 
 
-(defonce ^{:doc "Map of model kwd to model definition"} model-definitions* (atom nil))
+(defonce ^{:doc "Map of model kwd to model definition"
+           :metadoc/categories #{:model-definition}}
+  model-definitions* (atom nil))
 
 
 (defn define-model!
   "Create a model definition.  An ml model is a function that takes a dataset and an
   options map and returns a model.  A model is something that, combined with a dataset,
   produces a inferred dataset."
-  {:malli/schema [:=> [:cat :keyword fn? fn? [:map
+  {:metadoc/categories #{:model-definition}
+   :metadoc/examples 
+   [(example-session 
+     "Define simple (noop) model"
+     (define-model! :myns/model1
+       (fn train
+         [feature-ds label-ds opts]
+         "my model")
+       (fn predict
+         [feature-ds thawed-model opts])
+       {})
+     (train
+      (->
+       (ds/->dataset {:a [0] :b [1]})
+       (ds-mod/set-inference-target [:a]))
+      
+      {:model-type :myns/model1})
+
+     
+     )]
+   :malli/schema [:=> [:cat :keyword fn? fn? [:map
                                               [:hyperparameters {:optional true} [:maybe map?]]
                                               [:thaw-fn {:optional true} fn?]
                                               [:explain-fn {:optional true} fn?]
@@ -290,7 +311,7 @@
   (println "Register model: " model-kwd)
 
   (malli/model-options->full-schema opts) ;; throws on invalid malli schema for options
-
+  
 
   (swap! model-definitions* assoc model-kwd {:train-fn train-fn
                                              :predict-fn predict-fn
@@ -319,6 +340,7 @@
   Example: `[:metamorph.ml/dummy-classifier ...]`
 
   See also: `define-model!`, `options->model-def`"
+  {:metadoc/categories #{:model-definition}}
   []
   (keys @model-definitions*))
 
@@ -335,6 +357,7 @@
   Used internally to look up train/predict functions and model metadata.
 
   See also: `define-model!`, `model-definition-names`, `hyperparameters`"
+  {:metadoc/categories #{:model-definition}}
   [options]
   {:pre [(contains? options :model-type)]}
   (if-let [model-def (get @model-definitions* (:model-type options))]
@@ -354,6 +377,7 @@
   Used for introspection and hyperparameter tuning/grid search.
 
   See also: `define-model!`, `options->model-def`"
+  {:metadoc/categories #{:model-definition}}
   [model-kwd]
   (:hyperparameters (options->model-def {:model-type model-kwd})))
 
@@ -474,21 +498,34 @@
   * `:target-datatypes` - map of target columns names -> target columns type 
   * `:target-categorical-maps` - the categorical maps of the target columns, if present 
    
- A well behaving model implementaion should use 
-   :target-column  
-   :target-datatypes 
-   :target-categorical-maps  
+  A well behaving model implementaion should use 
    
-   to construct its prediction dataset so that its matches with the train data target column.
+  - `:target-column`  
+  - ':target-datatypes` 
+  - `:target-categorical-maps`  
+   
+  to construct its prediction dataset so that its matches with the train data target column.
    "
-  {:malli/schema [:=> [:cat 
+  {:metadoc/categories #{:model-lifecycle}
+   :metadoc/examples [
+    (example-session "Train random-forest on iris data"
+     (let [training-data
+           (->
+            (scicloj.metamorph.ml.rdatasets/datasets-iris)
+            (ds/drop-columns [:rownames])
+            (ds-mod/set-inference-target [:species]))
+           model
+           (train training-data {:model-type :metamorph.ml/random-forest})]
+       (-> model :model-data :forest :trees count))
+     (comment "forest with hundred trees created"))]
+   
+   :malli/schema [:=> [:cat
                        [:fn (fn [x]
                               (or (dataset? x)
-                                  (= (-> x class .getName) "ml.dmlc.xgboost4j.java.DMatrix")
-                                  ))
-                        ]
+                                  (= (-> x class .getName) "ml.dmlc.xgboost4j.java.DMatrix")))]
                        map?]
-                  [map?]]}
+                  [map?]]
+   :test (  )}
   [data options]
 
   (assert-categorical-consistency data)
@@ -578,13 +615,13 @@
   during `predict`, but you can manually thaw and cache the model under
   `:thawed-model` for faster repeated predictions on small datasets.
 
-  `model` - Model map from `train` containing `:model-data`
-  `opts` - Optional map with `:thaw-fn` to override the model's thaw function
+  - `model` - Model map from `train` containing `:model-data`
+  - `opts` - Optional map with `:thaw-fn` to override the model's thaw function
 
   Returns the thawed model data ready for prediction. If already thawed and
   cached, returns the cached version.
 
-  See also: `train`, `predict`"
+  See also: [[train]], [[predict]]"
   {:malli/schema [:function
                   [:=> [:cat [:map [:model-data any?]] map?] map?]
                   [:=> [:cat [:map [:model-data any?]]] map?]]}
@@ -670,7 +707,6 @@
                (-> target-cat-maps-from-train)))))))
 
 
-
 (defn predict
   "Predict returns a dataset with only the predictions in it.
 
@@ -680,9 +716,10 @@
     value and values that describe the probability distribution.
    
   Each implementing model should construct its prediction in a shape expressed by
-   :target-column  
-   :target-datatypes 
-   :target-categorical-maps  
+   
+   - `:target-column`  
+   - `:target-datatypes` 
+   - `:target-categorical-maps`  
 
    it is receiving.
 
@@ -696,14 +733,33 @@
    - categorical maps
 
    It NEED to be symetric, and return the same datatype in prediction as it receives in training:
-   numeric in train -> same numeric in predict
-   string in train -> string in predict
-   categorical map in train -> equivalent categorical map in predict
+    
+   - numeric in train -> same numeric in predict
+   - string in train -> string in predict
+   - categorical map in train -> equivalent categorical map in predict
    
    ml/train passes the needed information of the train target column to the model implementaion to do this.
 
    "
-  {:malli/schema [:=> [:cat [:fn (fn [x]
+  {:metadoc/categories #{:model-lifecycle}
+   :metadoc/examples [(example
+                       "train/predict on (splitted) iris data"
+                       (let [iris
+                             (->
+                              (scicloj.metamorph.ml.rdatasets/datasets-iris)
+                              (ds/drop-columns [:rownames])
+                              (ds-mod/set-inference-target [:species]))
+                             
+                             split (ds-mod/train-test-split iris)
+
+                             model (scicloj.metamorph.ml/train 
+                                    (:train-ds split) 
+                                    {:model-type :metamorph.ml/random-forest})]
+                         
+                         (predict (:test-ds split) model)))]
+
+
+   :malli/schema [:=> [:cat [:fn (fn [x]
                                    (or (dataset? x)
                                        (= (-> x class .getName) "ml.dmlc.xgboost4j.java.DMatrix")))]
                        [:map [:options map?]
@@ -748,18 +804,18 @@
     pred-ds))
 
 
-
 (defn loglik
   "Calculates the log-likelihood for the given model and predictions.
 
-  `model` - Trained model map containing `:options` with model definition
-  `y` - Actual target values (ground truth)
-  `yhat` - Predicted values from the model
+  - `model` - Trained model map containing `:options` with model definition
+  - `y` - Actual target values (ground truth)
+  - `yhat` - Predicted values from the model
 
   Returns the log-likelihood value by calling the model's `:loglik-fn` function.
   The specific log-likelihood function used depends on the model type.
 
   See also: `scicloj.metamorph.ml/tidy`, `scicloj.metamorph.ml/glance`"
+  {:metadoc/categories #{:model-diagnostic}}
   [model y yhat]
   (let [loglik-fn
         (get
@@ -772,13 +828,28 @@
   Returns a dataset with rows from this list:
  https://raw.githubusercontent.com/scicloj/metamorph.ml/main/resources/columms-tidy.edn
 
-  No other row names should be used.
+ No other row names should be used.
+  
  Each model will only return a small subset of possible rows.
+ 
  The list of allowed row names might change over time.
 
  A model might not implement this function, and then an empty dataset will be returned.
 
   "
+  {:metadoc/categories #{:model-diagnostic}
+   :metadoc/examples
+   [(example-session
+     "Use `tidy` after regression, which gives basic information per term"
+     (require 'scicloj.metamorph.ml.classification)
+     (let [ds
+           (->
+            (scicloj.metamorph.ml.rdatasets/datasets-mtcars)
+            (ds/drop-columns [:rownames])
+            (ds/categorical->number cf/categorical)
+            (ds-mod/set-inference-target :mpg))
+           model (train ds {:model-type :fastmath/ols})]
+       (str (tidy model))))]}
   [model]
   (let [tidy-fn
         (get
@@ -791,7 +862,6 @@
       (ds/->dataset {}))))
 
 
-
 (defn glance
   "Gives a glance on the model, returning a dataset with model information
   about the entire model.
@@ -799,12 +869,27 @@
   Potential row names are these:
   https://raw.githubusercontent.com/scicloj/metamorph.ml/main/resources/columms-glance.edn
 
- No other row names should be used.
- Each model will only return a small subset of possible rows.
- The list of allowed row names might change over time.
+  No other row names should be used.
+   
+  Each model will only return a small subset of possible rows.
+ 
+  The list of allowed row names might change over time.
 
- A model might not implement this function, and then an empty dataset will be returned.
+  A model might not implement this function, and then an empty dataset will be returned.
  "
+  {:metadoc/categories #{:model-diagnostic}
+   :metadoc/examples
+   [(example-session
+     "Use `glance` after regression, which gives basic regression information"
+     (require 'scicloj.metamorph.ml.classification)
+     (let [ds
+           (->
+            (scicloj.metamorph.ml.rdatasets/datasets-mtcars)
+            (ds/drop-columns [:rownames])
+            (ds/categorical->number cf/categorical)
+            (ds-mod/set-inference-target :mpg))
+           model (train ds {:model-type :fastmath/ols})]
+       (str (glance model))))]}
   [model]
   (let [glance-fn
         (get
@@ -816,7 +901,6 @@
       (ds/->dataset {}))))
 
 
-
 (defn augment
   "
   Adds informations about observations to a dataset
@@ -824,13 +908,28 @@
   Potential row names are these:
   https://raw.githubusercontent.com/scicloj/metamorph.ml/main/resources/columms-augment.edn
 
- No other row names should be used.
- Each model will only return a small subset of possible rows.
+  No other row names should be used.
+   
+  Each model will only return a small subset of possible rows.
 
   A model might not implement this function, and then the dataset is
   returned unchanged.
 
 "
+  {:metadoc/categories #{:model-diagnostic}
+   :metadoc/examples
+   [(example-session
+     "Use `augment` after regression, which adds 'residual' and 'fitted' to data"
+     (require 'scicloj.metamorph.ml.classification)
+     (let [ds
+           (->
+            (scicloj.metamorph.ml.rdatasets/datasets-mtcars)
+            (ds/drop-columns [:rownames])
+            (ds/categorical->number cf/categorical)
+            (ds-mod/set-inference-target :mpg))
+           model (train ds {:model-type :fastmath/ols})]
+       (str (augment model ds))))]
+   }
   [model data]
 
   (let [augment-fn
@@ -849,7 +948,23 @@
   "Explain (if possible) an ml model.  A model explanation is a model-specific map
   of data that usually indicates some level of mapping between features and importance"
   {:malli/schema [:=> [:cat map? [:* any?]]
-                  [map?]]}
+                  [map?]]
+   :metadoc/categories #{:model-diagnostic}
+   :metadoc/examples
+   [ 
+    (example-session
+     "explain (= show feature importance) of :random-forest model"
+     (require 'scicloj.metamorph.ml.classification)
+     (let [training-data
+           (->
+            (scicloj.metamorph.ml.rdatasets/datasets-iris)
+            (ds/drop-columns [:rownames])
+            (ds-mod/set-inference-target [:species]))
+           model
+           (train training-data {:model-type :metamorph.ml/random-forest})]
+       (explain model))
+     )]
+   }
   [model & [options]]
   (let [{:keys [explain-fn] :as model-def}
         (options->model-def (:options model))]
@@ -916,7 +1031,16 @@
   * `scicloj.metamorph.ml/predict`
 
   "
-  {:malli/schema [:=> [:cat map?] [map?]]}
+  {:metadoc/categories #{:model-lifecycle}
+   :metadoc/examples
+   
+   [(example
+     "Pipeline incl. the model stop"
+     (mm/pipeline
+      (tc-mm/drop-columns [:a])
+      {:metamorph/id :model}
+      (model {:model-type :metamorph.ml/dummy-classifier})))]
+   :malli/schema [:=> [:cat map?] [map?]]}
   [options]
 
   (malli/instrument-mm
@@ -1030,7 +1154,10 @@ Each of the evaluation results is a context map, which is specified in the malli
       :scicloj.metamorph.ml/optimize-hyperparams--train-test-split-seq
       :scicloj.metamorph.ml/optimize-hyperparams--metric-def
       :scicloj.metamorph.ml/optimize-hyperparams--options]
-     :scicloj.metamorph.ml/evaluate-pipelines--evaluation-result]]}
+     :scicloj.metamorph.ml/evaluate-pipelines--evaluation-result]]
+   :metadoc/categories #{:model-lifecycle}
+   
+   }
 
   ([pipeline-fn-or-decl-seq train-test-split-seq metric-def options]
    (hyper-opt/optimize-hyperparameter pipeline-fn-or-decl-seq
@@ -1045,4 +1172,7 @@ Each of the evaluation results is a context map, which is specified in the malli
 
 
 (malli/instrument-ns 'scicloj.metamorph.ml)
+
+
+
 

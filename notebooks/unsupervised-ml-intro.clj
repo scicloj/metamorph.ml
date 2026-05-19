@@ -14,8 +14,7 @@
 ;; to discover hidden patterns, group similar observations, or reduce
 ;; dimensionality for visualization and preprocessing.
 
-;; BROKEN 
-
+;; Disclaimer: (created with the help of Claude Code)
 (ns unsupervised-ml-intro
   (:require
    [clojure.string :as str]
@@ -545,7 +544,7 @@ provides functions for this."]
 
 ;; **Final clustered data:**
 
-(tc/head iris-final 10)
+iris-final
 
 ;; Cluster statistics:
 

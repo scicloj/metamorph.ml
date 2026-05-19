@@ -6,19 +6,26 @@
    avoiding redundant computations when working with the same models and data.
 
    Supported cache backends:
+
    - **Atom cache**: In-memory caching using a Clojure atom (fast, ephemeral)
    - **Disk cache**: File-based caching using Nippy serialization (persistent)
    - **Redis cache**: Distributed caching via Redis (requires carmine library)
 
    Usage:
+
+   ```
    (enable-atom-cache! (atom {}))  ; Enable in-memory caching
    ;; or
    (enable-disk-cache! \"/tmp/ml-cache\")  ; Enable disk-based caching
    ;; or
    (enable-redis-cache! {...})  ; Enable Redis caching
+   ```
 
    To disable caching:
+
+   ```
    (disable-cache!)
+   ```
 
    See individual function docs for more details on each backend."
   (:require [scicloj.metamorph.ml :as ml]
@@ -94,7 +101,7 @@
   Resets the cache configuration to a disabled state. After calling this,
   train and predict operations will not use any caching mechanism.
 
-  See also: `enable-atom-cache!`, `enable-disk-cache!`, `enable-redis-cache!`"
+  See also: [[enable-atom-cache!]], [[enable-disk-cache!]], [[enable-redis-cache!]]"
   []
   (reset! ml/train-predict-cache {:use-cache false
                                   :get-fn nil

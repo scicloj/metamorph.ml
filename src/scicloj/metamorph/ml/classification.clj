@@ -2,35 +2,36 @@
   "Classification models and evaluation metrics for metamorph.ml.
 
    This namespace provides tools for classification tasks including:
+
    - Confusion matrix generation and analysis
    - Baseline classifier implementations
    - Classification evaluation utilities
 
    Key features:
+
    - `confusion-map`: Creates confusion matrices from predictions and true labels
    - `confusion-map->ds`: Converts confusion matrices to tabular dataset format
    - `:metamorph.ml/dummy-classifier`: A baseline classifier for sanity checks
 
    Dummy Classifier Strategies:
+
    - `:majority-class` (default): Always predicts the most frequent class
    - `:fixed-class`: Predicts a specified class
    - `:random-class`: Predicts randomly from the observed classes
 
    Confusion Matrix Normalization:
+
    - `:all` (default): Row-wise normalization (recall perspective)
    - `:none`: Raw counts
 
-   Example usage:
-   (let [pred [0 1 0 1 1]
-         true [0 0 1 1 1]
-         conf-map (confusion-map pred true :none)]
-     (confusion-map->ds conf-map))
+   
 
-   See also: `scicloj.metamorph.ml/define-model!`, `scicloj.metamorph.ml.viz/confusion-matrix`"
-  (:require [tech.v3.dataset :as ds]
+   See also: [[scicloj.metamorph.ml.viz/confusion-matrix]]"
+  (:require [metadoc.examples :refer [example]]
+            [scicloj.metamorph.ml :as ml]
+            [tech.v3.dataset :as ds]
             [tech.v3.dataset.modelling :as ds-mod]
-            [tech.v3.datatype.pprint :as dtype-pp]
-            [scicloj.metamorph.ml :as ml]))
+            [tech.v3.datatype.pprint :as dtype-pp]))
             
             
 (defn- safe-inc
@@ -45,8 +46,9 @@
   `predicted-labels` - Sequence of predicted class labels
   `labels` - Sequence of actual class labels
   `normalize` - Normalization mode (default: `:all`)
-                * `:all` - Normalize by row (proportion of actual class)
-                * `:none` - Raw counts
+   
+   * `:all` - Normalize by row (proportion of actual class)
+   * `:none` - Raw counts
 
   Returns a nested sorted map where `{actual-class {predicted-class value}}`.
   When normalized, values represent proportions; otherwise, they are counts.
@@ -55,7 +57,14 @@
 
   Use `confusion-map->ds` to convert to dataset format for display.
 
-  See also: `confusion-map->ds`, `scicloj.metamorph.ml.viz/confusion-matrix`"
+  See also: [[confusion-map->ds]], [[scicloj.metamorph.ml.viz/confusion-matrix]]"
+  {:metadoc/examples 
+   [(example (let [pred [0 1 0 1 1]
+                   truth [0 0 1 1 1]]
+               (confusion-map pred truth :none))
+             )]
+   
+   }
   ([predicted-labels labels normalize]
 
    (let [answer-counts (frequencies labels)]
@@ -92,7 +101,14 @@
 
   The dataset format is suitable for printing, analysis, or visualization.
 
-  See also: `confusion-map`, `scicloj.metamorph.ml.viz/confusion-matrix`"
+  See also: [[confusion-map]], [[scicloj.metamorph.ml.viz/confusion-matrix]]"
+  {:metadoc/examples
+   [(example (let [pred  [0 1 0 1 1 2]
+                   truth [2 0 1 1 1 2]
+                   conf-map (confusion-map pred truth :none)
+                   ]
+               (str (confusion-map->ds conf-map))
+               ))]}
   [conf-matrix-map]
   (let [
         conf-matrix-map conf-matrix-map
@@ -128,9 +144,6 @@
         target-column (get target-ds target-column-name)
         freqs (frequencies target-column)
         ]
-    ;; (println  :target-column target-column)
-    ;; (println  :target-column--meta (meta target-column))
-    ;; (println  :target-column--freq  freqs)
     (->>
      freqs
      (sort-by second)
@@ -169,4 +182,4 @@
                    :description "The fixed class to use when strategy is :fixed-class"}
      number?]]})
 
-(require 'scicloj.metamorph.ml.random-forest :reload)
+(require 'scicloj.metamorph.ml.random-forest)

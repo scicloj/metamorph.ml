@@ -122,4 +122,7 @@
       (throw (ex-info (str "run failed for " aliases) opts)))
     opts))
 
+(defn codox [opts]
+  (b/process {:command-args ["clojure" "-X:dev:test:codox"]})
+  )
 

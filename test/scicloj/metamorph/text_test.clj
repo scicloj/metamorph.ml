@@ -321,6 +321,7 @@
            (frequencies (:meta tfidf))))
     (is (= '(:document  :tfidf :tf :token-idx :token-count :meta)
            (tc/column-names tfidf)))))
+
 (defn- tidy-wiki []
   (text/->tidy-text
    (io/reader
@@ -368,7 +369,7 @@
     (is (= 7 (last (-> second-tidy-result :datasets first :token-idx))))))
 
 
-(deftest ->svmlib
+(deftest ->svmlib--tfidf
   (let [f (java.io.File/createTempFile "tfidf" ".txt")]
     (.deleteOnExit f)
     (-> (tidy-wiki)
@@ -377,6 +378,17 @@
         (text/->tfidf)
         (text/tidy->libsvm! (io/writer f) :tfidf))
     (is (= "0 1:0.0 2:0.0 3:0.12041201 4:0.060206003\n1 1:0.0 2:0.0 5:0.08600858 6:0.12901287\n"
+           (slurp f)))))
+
+(deftest ->svmlib
+  (let [f (java.io.File/createTempFile "tidy" ".txt")]
+    (.deleteOnExit f)
+    (-> (tidy-wiki)
+        :datasets
+        first
+        (text/tidy->libsvm! (io/writer f) :meta)
+        )
+    (is (= "0 1:0 2:0 3:0 3:0 4:0\n1 1:1 2:1 5:1 5:1 6:1 6:1 6:1\n"
            (slurp f)))))
 
 
@@ -388,4 +400,7 @@
         (tc/head 2)
         (tc/rows :as-maps)))))
   
+
+
+
 

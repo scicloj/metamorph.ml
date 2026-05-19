@@ -13,7 +13,7 @@
 ;; approach to machine learning, integrating data preprocessing and model
 ;; training into cohesive workflows.
 ;; 
-;; (created with the help of Claude Code)
+;; Disclaimer: (created with the help of Claude Code)
 
 (ns supervised-ml-intro
   (:require [scicloj.clay.v2.api :as clay]

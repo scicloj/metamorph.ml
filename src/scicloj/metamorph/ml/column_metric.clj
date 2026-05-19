@@ -6,10 +6,12 @@
    multiclass classification as well as regression tasks.
 
    Key Functions:
+
    - `classification-metric`: Evaluate classification model predictions
    - `regression-metric`: Evaluate regression model predictions
 
    Classification Metrics (from fastmath.stats):
+
    Supports binary and multiclass metrics including accuracy, precision, recall,
    F1-score, and more. Multiclass metrics can be averaged using:
    - `:macro` - Unweighted mean of per-class metrics
@@ -20,6 +22,7 @@
    Distance and similarity metrics such as MAE, MSE, RMSE, R², etc.
 
    Data Format:
+
    - Input datasets must be tech.ml.dataset (TMD) format
    - Must have appropriate column metadata (:prediction, :target, etc.)
    - Support categorical mappings via :categorical-map metadata
@@ -27,22 +30,19 @@
 
    Validation:
    The functions perform extensive validation including:
+
    - Column metadata correctness
    - Missing values and NaN detection
    - Type and datatype uniformity
    - Row count alignment between datasets
    - Single-label assumption (multi-label not yet supported)
 
-   Example:
-   ```
-   (classification-metric y-true y-pred :f1 :macro {})
-   (regression-metric y-true y-pred :mse)
-   ```
 
    See also: `fastmath.stats` documentation for available metric names"
   (:require
    [fastmath.stats :as stats]
    [fastmath.vector :as v]
+   [metadoc.examples :refer [example]]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.categorical :as ds-cat]
    [tech.v3.dataset.column :as col]
@@ -283,14 +283,17 @@
   Both datasets need to have columns containing the appropriate column metadata
   as foreseen by TMD, see here:https://techascent.github.io/tech.ml.dataset/tech.v3.dataset.column-filters.html 
    , eg:
+
    * :column-type being :prediction, :probability-distribution
    * :inference-target true
    * :categorical-map column metadata is explicitely supported and get handled properly when present, so gets taken into consideration
+   
    when comparing columns
 
    The `ml/predict` fn is producing these type of datasets.
 
   The function validates various aspects and ev. rejects data which has:
+              
    * wrong column metadata
    * missing values or NaNs
    * non-discrete values in :prediction column
@@ -301,6 +304,23 @@
    
    This might depend on the concrete metric-fn used.
    "
+  {:metadoc/examples 
+   [
+    (example 
+     "Calculate 'accuracy'"
+     (classification-metric
+              (ds/new-dataset [(ds/new-column :truth [1 1 1 1] {:inference-target? true})])
+              (ds/new-dataset [(ds/new-column :pred [1 0 1 0]  {:column-type :prediction})])
+              :accuracy
+              :macro))
+    (example 
+     "Calculate 'true positives'"
+     (classification-metric
+      (ds/new-dataset [(ds/new-column :truth [1 1 1 1] {:inference-target? true})])
+      (ds/new-dataset [(ds/new-column :pred [1 0 1 0]  {:column-type :prediction})])
+      :tp
+      :micro))
+    ]}
   ([y-true y-pred metric averaging options]
 
    (if (= :roc-auc metric)
@@ -385,5 +405,4 @@
      (format "Function '%s' does not exist in fastmath.stats." (format "fastmath.stats/%s" (name metric-fn))))
     (fastmath-stats-fn
      truth-col prediction-col)))
-
 

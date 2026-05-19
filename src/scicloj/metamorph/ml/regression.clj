@@ -8,17 +8,20 @@
    Available Models:
 
    **OLS (Ordinary Least Squares)**
+
    - `:metamorph.ml/ols`: Apache Commons Math implementation (Java-based)
    - `:fastmath/ols`: FastMath implementation (pure Clojure)
    Solves for regression coefficients β in: y = Xβ + ε
    Assumes linear relationships and homoscedastic errors.
 
    **GLM (Generalized Linear Model)**
+
    - `:fastmath/glm`: FastMath GLM implementation
    Extends linear regression to non-normal distributions and non-linear relationships
    via link functions and variance models.
 
    **Baseline Model**
+   
    - `:metamorph.ml/dummy-regressor`: Predicts mean of training target
    Useful sanity check - models should outperform this baseline.
 
@@ -32,18 +35,21 @@
      Returns augmented dataset with :.fitted and :.resid columns
 
    Example Usage (in metamorph pipeline):
+   ```
    (ml/train
      data
-     {:model-type :fastmath/ols
-      :target-columns [:price]
-      :feature-columns [:sqft :bedrooms]})
+     {:model-type :fastmath/ols})
+      
+   ```
 
    Model Diagnostics:
-   (glance model)      ; Overall model metrics
-   (tidy model)        ; Coefficient table
-   (augment model ds)  ; Predicted values and residuals
+   ```
+   (ml/glance model)        ; Overall model metrics
+   (ml/tidy model)          ; Coefficient table
+   (ml/augment model data)  ; Predicted values and residuals
+  ```   
 
-   See also: `scicloj.metamorph.ml.r-model-matrix` for formula-based feature engineering"
+   See also: [[scicloj.metamorph.ml.r-model-matrix]] for R-formula-based feature engineering"
   (:require
    [fastmath.ml.regression :as fm-reg]
    [scicloj.metamorph.ml :as ml]
@@ -126,7 +132,7 @@
            (-> model :analysis deref))))
 
 
-(defn predict-fm [feature-ds thawed-model model]
+(defn- predict-fm [feature-ds thawed-model model]
   (let [prediction (map
                     (:model-data model)
                     (-> feature-ds ds/rowvecs))

@@ -45,10 +45,10 @@
 (defn linear
   "Creates a linear grid search definition for hyperparameter tuning.
 
-  `start` - Starting value of the range
-  `end` - Ending value of the range
-  `n-steps` - Number of evenly-spaced steps (default: 100)
-  `res-dtype-or-space` - Either a datatype keyword (`:float64`, `:int32`, etc.)
+  - `start` - Starting value of the range
+  - `end` - Ending value of the range
+  - `n-steps` - Number of evenly-spaced steps (default: 100)
+  - `res-dtype-or-space` - Either a datatype keyword (`:float64`, `:int32`, etc.)
                          or a vector of categorical values (default: `:float64`)
 
   Returns a grid search definition map that can be used with `sobol-gridsearch`.
@@ -57,7 +57,7 @@
   by index. For example, `[:small :medium :large]` with 3 steps generates those
   three categorical values.
 
-  See also: `categorical`, `sobol-gridsearch`"
+  See also: [[categorical]], [[sobol-gridsearch]]"
   ([start end n-steps res-dtype-or-space]
    (let [start (double start)
          end (double end)
@@ -85,7 +85,7 @@
   Example: `(categorical [:adam :sgd :rmsprop])` creates a definition that will
   try all three optimizers.
 
-  See also: `linear`, `sobol-gridsearch`"
+  See also: [[linear]], [[sobol-gridsearch]]"
   [value-vec]
   (let [n-elems (count value-vec)]
     (linear 0 (dec n-elems) n-elems value-vec)))

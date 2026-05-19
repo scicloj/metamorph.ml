@@ -67,7 +67,7 @@
 
   Use with `confusion-matrix-chart` to create a visualization.
 
-  See also: `scicloj.metamorph.ml.classification/confusion-map`"
+  See also: [[scicloj.metamorph.ml.classification/confusion-map]]"
   [predicted-labels labels opts]
   (let [cm (cl/confusion-map
              predicted-labels

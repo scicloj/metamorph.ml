@@ -6,24 +6,31 @@
    one-hot encoding, which converts categorical values into binary indicator columns.
 
    One-hot encoding is essential for:
+
    - Preparing categorical features for algorithms that expect numeric inputs
    - Preventing ordinal assumptions on nominal categories
    - Creating interpretable model features
 
    Main API:
+
    - `transform-one-hot`: The primary metamorph transformer for one-hot encoding
 
    Encoding strategies:
+
    - `:full`        Uses a predefined level set from full dataset context
    - `:fit`         Levels discovered during :fit used in :transform
    - `:independent` Each mode independently determines and encodes levels
 
    "
-  (:require [tech.v3.dataset.categorical :as ds-cat]
-            [tech.v3.dataset :as ds]
-            [clojure.set :as set]
+  (:require [clojure.set :as set]
+            [metadoc.examples :refer [example]]
+            [scicloj.metamorph.core :as mm]
+            [scicloj.metamorph.ml.categorical :as cat]
+            [scicloj.metamorph.ml.malli :as malli]
+            [scicloj.metamorph.ml.rdatasets :as rdatasets]
             [tablecloth.api :as tc]
-            [scicloj.metamorph.ml.malli :as malli]))
+            [tech.v3.dataset :as ds]
+            [tech.v3.dataset.categorical :as ds-cat]))
             
 
 (defn- apply-mappings [ds one-hot-encodings]
@@ -92,13 +99,17 @@
   the one-hot encoding.
 
   `column-selector` - Tablecloth column selector (keyword, fn, or selector spec)
+   
   `strategy` - Strategy for handling train/test level differences:
-               * `:full` - Levels retrieved from dataset at `:metamorph.ml/full-ds` in context
-               * `:independent` - One-hot columns fitted and transformed independently
-               * `:fit` - Mapping from :fit mode used in :transform (assumes all levels present in fit)
+   
+  - `:full` - Levels retrieved from dataset at `:metamorph.ml/full-ds` in context
+  - `:independent` - One-hot columns fitted and transformed independently
+  - `:fit` - Mapping from :fit mode used in :transform (assumes all levels present in fit)
+   
   `options` - Optional map with:
-              * `:table-args` - Precise mapping as sequence of [val idx] pairs or sorted values
-              * `:result-datatype` - Datatype of the one-hot-mapping columns
+   
+  - `:table-args` - Precise mapping as sequence of [val idx] pairs or sorted values
+  - `:result-datatype` - Datatype of the one-hot-mapping columns
 
   Returns a metamorph step function that transforms the data in both :fit and
   :transform modes.
@@ -111,6 +122,19 @@
   Writes keys to ctx                   | In `:fit`: stores fitted encoding in `:metamorph/id`
 
   See also: `tech.v3.dataset.categorical/fit-one-hot`, `tech.v3.dataset/categorical->one-hot`"
+  {:metadoc/examples
+   [(example
+     "One hot encode :cyl column in pipeline"
+     (let [ds
+           (-> (rdatasets/datasets-mtcars)
+               (ds/select-columns [:mpg :cyl]))]
+       (->
+        (mm/fit
+         ds
+         (cat/transform-one-hot :cyl :independent))
+        :metamorph/data
+        str)))]}
+  
   ([column-selector strategy] (transform-one-hot column-selector strategy nil))
   ([column-selector strategy options]
    (malli/instrument-mm

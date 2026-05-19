@@ -12,6 +12,7 @@
 (clay/make! {:format [:quarto :html]
              :base-source-path "notebooks/"
              :source-path ["supervised-ml-intro.clj"
+                           "unsupervised-ml-intro.clj"
                            "clerk_link.clj"]
              :base-target-path "docs"
              :book {:title "metamorph.ml topics"}
