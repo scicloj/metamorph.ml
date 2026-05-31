@@ -88,12 +88,14 @@
 
 
 (defn- object-id [ocpu-object base-url library object-name params]
-  (-> (ocpu-object base-url
-                   :library library
-                   :R object-name
-                   params)
-      :result
-      first (str/split #"/") (nth 3)))
+  (let [object-result (ocpu-object base-url
+                                   :library library
+                                   :R object-name
+                                   params)]
+    (assert (= 200 (-> object-result :status)) (format "HTTP status from '%s' !=200 : %s" base-url (-> object-result :status)))
+    (-> object-result
+        :result
+        first (str/split #"/") (nth 3))))
 
 (defn- model-matrix--ocpu [ds r-formula]
   (let [base-url "https://cloud.opencpu.org"
