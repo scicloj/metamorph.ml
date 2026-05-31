@@ -13,7 +13,9 @@
 		"ghcr.io/itsmechlark/features/redis-server:1": {},
 		"ghcr.io/rocker-org/devcontainer-features/pandoc:1": {},
 		"ghcr.io/devcontainer-community/devcontainer-features/astral.sh-uv:1": {},
-		"ghcr.io/rocker-org/devcontainer-features/r-apt:0": {}
+		"ghcr.io/rocker-org/devcontainer-features/r-apt:0": {},
+		 "ghcr.io/rocker-org/devcontainer-features/r-packages:1": {
+			"packages": "svglite"}
 
 
 },

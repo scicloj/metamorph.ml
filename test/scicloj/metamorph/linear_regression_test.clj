@@ -12,7 +12,8 @@
    [tablecloth.api :as tc]
    [taoensso.nippy :as nippy]
    [tech.v3.dataset :as ds]
-   [tech.v3.dataset.modelling :as ds-mod]))
+   [tech.v3.dataset.modelling :as ds-mod]
+   [tech.v3.dataset.column-filters :as cf]))
 
 
 (defn approx? [x0 x1]
@@ -26,7 +27,7 @@
   (->> (map approx? v0 v1)
        (every? true?)))
 
-(defn validate-model--linear-regression-mtcars-fm-ols [ ds model]
+(defn validate-model--linear-regression-mtcars-fm-ols [ds model]
 
   (let [glance (-> (ml/glance model) (ds/rows :as-map) first)
         tidy (ml/tidy model)
@@ -34,7 +35,7 @@
         prediction-ds (ml/predict ds model)
         prediction (:mpg prediction-ds)]
 
-    (is (= 
+    (is (=
          ["Intercept" :cyl :disp :hp :drat :wt :qsec :vs :am :gear :carb]
          (-> model :model-data :names)))
     (is (approx?   0.8066423189909859 (-> glance :adj.r.squared)))
@@ -136,7 +137,7 @@
                       0.43891421063143365
                       -0.24062582666609506]
                      (-> tidy :statistic)))
-    (is (= [:mpg :cyl :disp :hp :drat :wt :qsec :vs :am :gear :carb :.resid :.fitted]
+    (is (= [:mpg :cyl :disp :hp :drat :wt :qsec :vs :am :gear :carb :.resid :.std.resid :.fitted]
            (ds/column-names augment)))
     (is (all-approx?
          [-1.599505761262371
@@ -204,19 +205,13 @@
                       19.693828154474765
                       13.941118382059862
                       24.368267683243772]
-                     (augment :.fitted)))
-    
-    )
-  
-  )
+                     (augment :.fitted)))))
 
 (defn thaw-fm-ols [frozen-model]
   (nippy/thaw-from-string frozen-model
                           {:serializable-allowlist
                            (set/union nippy/*thaw-serializable-allowlist*
-                                      #{"org.apache.commons.math3.linear.Array2DRowRealMatrix"})})
- 
-  )
+                                      #{"org.apache.commons.math3.linear.Array2DRowRealMatrix"})}))
 
 (defn pretty-spit
   [file-name collection]
@@ -427,36 +422,36 @@
     ;;    |   :am |  2.52022689 |  2.05665055 |
     ;;    | :gear |  0.65541302 |  1.49325996 |
     ;;    | :carb | -0.19941925 |  0.82875250 |
-    
+
 
 
     (is (ds/dataset?
-         (ml/augment model ds))))  
-           ;; => _unnamed [32 12]:
-           ;;    | :mpg | :cyl | :disp | :hp | :drat |   :wt | :qsec | :vs | :am | :gear | :carb | :.residuals |
-           ;;    |-----:|-----:|------:|----:|------:|------:|------:|----:|----:|------:|------:|------------:|
-           ;;    | 21.0 |    6 | 160.0 | 110 |  3.90 | 2.620 | 16.46 |   0 |   1 |     4 |     4 | -1.59950576 |
-           ;;    | 21.0 |    6 | 160.0 | 110 |  3.90 | 2.875 | 17.02 |   0 |   1 |     4 |     4 | -1.11188608 |
-           ;;    | 22.8 |    4 | 108.0 |  93 |  3.85 | 2.320 | 18.61 |   1 |   1 |     4 |     1 | -3.45064408 |
-           ;;    | 21.4 |    6 | 258.0 | 110 |  3.08 | 3.215 | 19.44 |   1 |   0 |     3 |     1 |  0.16259545 |
-           ;;    | 18.7 |    8 | 360.0 | 175 |  3.15 | 3.440 | 17.02 |   0 |   0 |     3 |     2 |  1.00656597 |
-           ;;    | 18.1 |    6 | 225.0 | 105 |  2.76 | 3.460 | 20.22 |   1 |   0 |     3 |     1 | -2.28303904 |
-           ;;    | 14.3 |    8 | 360.0 | 245 |  3.21 | 3.570 | 15.84 |   0 |   0 |     3 |     4 | -0.08625625 |
-           ;;    | 24.4 |    4 | 146.7 |  62 |  3.69 | 3.190 | 20.00 |   1 |   0 |     4 |     2 |  1.90398812 |
-           ;;    | 22.8 |    4 | 140.8 |  95 |  3.92 | 3.150 | 22.90 |   1 |   0 |     4 |     2 | -1.61908990 |
-           ;;    | 19.2 |    6 | 167.6 | 123 |  3.92 | 3.440 | 18.30 |   1 |   0 |     4 |     4 |  0.50097006 |
-           ;;    |  ... |  ... |   ... | ... |   ... |   ... |   ... | ... | ... |   ... |   ... |         ... |
-           ;;    | 15.5 |    8 | 318.0 | 150 |  2.76 | 3.520 | 16.87 |   0 |   0 |     3 |     2 | -1.44305322 |
-           ;;    | 15.2 |    8 | 304.0 | 150 |  3.15 | 3.435 | 17.30 |   0 |   0 |     3 |     2 | -2.53218150 |
-           ;;    | 13.3 |    8 | 350.0 | 245 |  3.73 | 3.840 | 15.41 |   0 |   0 |     3 |     4 | -0.00602198 |
-           ;;    | 19.2 |    8 | 400.0 | 175 |  3.08 | 3.845 | 17.05 |   0 |   0 |     3 |     2 |  2.50832101 |
-           ;;    | 27.3 |    4 |  79.0 |  66 |  4.08 | 1.935 | 18.90 |   1 |   1 |     4 |     1 | -0.99346869 |
-           ;;    | 26.0 |    4 | 120.3 |  91 |  4.43 | 2.140 | 16.70 |   0 |   1 |     5 |     2 | -0.15295396 |
-           ;;    | 30.4 |    4 |  95.1 | 113 |  3.77 | 1.513 | 16.90 |   1 |   1 |     5 |     2 |  2.76372742 |
-           ;;    | 15.8 |    8 | 351.0 | 264 |  4.22 | 3.170 | 14.50 |   0 |   1 |     5 |     4 | -3.07004080 |
-           ;;    | 19.7 |    6 | 145.0 | 175 |  3.62 | 2.770 | 15.50 |   0 |   1 |     5 |     6 |  0.00617185 |
-           ;;    | 15.0 |    8 | 301.0 | 335 |  3.54 | 3.570 | 14.60 |   0 |   1 |     5 |     8 |  1.05888162 |
-           ;;    | 21.4 |    4 | 121.0 | 109 |  4.11 | 2.780 | 18.60 |   1 |   1 |     4 |     2 | -2.96826768 |
+         (ml/augment model ds))))
+  ;; => _unnamed [32 12]:
+  ;;    | :mpg | :cyl | :disp | :hp | :drat |   :wt | :qsec | :vs | :am | :gear | :carb | :.residuals |
+  ;;    |-----:|-----:|------:|----:|------:|------:|------:|----:|----:|------:|------:|------------:|
+  ;;    | 21.0 |    6 | 160.0 | 110 |  3.90 | 2.620 | 16.46 |   0 |   1 |     4 |     4 | -1.59950576 |
+  ;;    | 21.0 |    6 | 160.0 | 110 |  3.90 | 2.875 | 17.02 |   0 |   1 |     4 |     4 | -1.11188608 |
+  ;;    | 22.8 |    4 | 108.0 |  93 |  3.85 | 2.320 | 18.61 |   1 |   1 |     4 |     1 | -3.45064408 |
+  ;;    | 21.4 |    6 | 258.0 | 110 |  3.08 | 3.215 | 19.44 |   1 |   0 |     3 |     1 |  0.16259545 |
+  ;;    | 18.7 |    8 | 360.0 | 175 |  3.15 | 3.440 | 17.02 |   0 |   0 |     3 |     2 |  1.00656597 |
+  ;;    | 18.1 |    6 | 225.0 | 105 |  2.76 | 3.460 | 20.22 |   1 |   0 |     3 |     1 | -2.28303904 |
+  ;;    | 14.3 |    8 | 360.0 | 245 |  3.21 | 3.570 | 15.84 |   0 |   0 |     3 |     4 | -0.08625625 |
+  ;;    | 24.4 |    4 | 146.7 |  62 |  3.69 | 3.190 | 20.00 |   1 |   0 |     4 |     2 |  1.90398812 |
+  ;;    | 22.8 |    4 | 140.8 |  95 |  3.92 | 3.150 | 22.90 |   1 |   0 |     4 |     2 | -1.61908990 |
+  ;;    | 19.2 |    6 | 167.6 | 123 |  3.92 | 3.440 | 18.30 |   1 |   0 |     4 |     4 |  0.50097006 |
+  ;;    |  ... |  ... |   ... | ... |   ... |   ... |   ... | ... | ... |   ... |   ... |         ... |
+  ;;    | 15.5 |    8 | 318.0 | 150 |  2.76 | 3.520 | 16.87 |   0 |   0 |     3 |     2 | -1.44305322 |
+  ;;    | 15.2 |    8 | 304.0 | 150 |  3.15 | 3.435 | 17.30 |   0 |   0 |     3 |     2 | -2.53218150 |
+  ;;    | 13.3 |    8 | 350.0 | 245 |  3.73 | 3.840 | 15.41 |   0 |   0 |     3 |     4 | -0.00602198 |
+  ;;    | 19.2 |    8 | 400.0 | 175 |  3.08 | 3.845 | 17.05 |   0 |   0 |     3 |     2 |  2.50832101 |
+  ;;    | 27.3 |    4 |  79.0 |  66 |  4.08 | 1.935 | 18.90 |   1 |   1 |     4 |     1 | -0.99346869 |
+  ;;    | 26.0 |    4 | 120.3 |  91 |  4.43 | 2.140 | 16.70 |   0 |   1 |     5 |     2 | -0.15295396 |
+  ;;    | 30.4 |    4 |  95.1 | 113 |  3.77 | 1.513 | 16.90 |   1 |   1 |     5 |     2 |  2.76372742 |
+  ;;    | 15.8 |    8 | 351.0 | 264 |  4.22 | 3.170 | 14.50 |   0 |   1 |     5 |     4 | -3.07004080 |
+  ;;    | 19.7 |    6 | 145.0 | 175 |  3.62 | 2.770 | 15.50 |   0 |   1 |     5 |     6 |  0.00617185 |
+  ;;    | 15.0 |    8 | 301.0 | 335 |  3.54 | 3.570 | 14.60 |   0 |   1 |     5 |     8 |  1.05888162 |
+  ;;    | 21.4 |    4 | 121.0 | 109 |  4.11 | 2.780 | 18.60 |   1 |   1 |     4 |     2 | -2.96826768 |
 
 
 
@@ -467,73 +462,72 @@
 
 
 
-           ;; ----------------------------------------------------------------
-           ;;  R
-           ;;  m=lm(mpg ~ .,mtcars)
-           ;;  > t(glance(m))
-           ;; [,1]
-           ;; r.squared       0.8690157644778
-           ;; adj.r.squared   0.8066423189910
-           ;; sigma           2.6501970278655
-           ;; statistic      13.9324636902088
-           ;; p.value         0.0000003793152
-           ;; df             10.0000000000000
-           ;; logLik        -69.8549052172399
-           ;; AIC           163.7098104344797
-           ;; BIC           181.2986412680764
-           ;; deviance      147.4944300166508
-           ;; df.residual    21.0000000000000
-           ;; nobs           32.0000000000000
+  ;; ----------------------------------------------------------------
+  ;;  R
+  ;;  m=lm(mpg ~ .,mtcars)
+  ;;  > t(glance(m))
+  ;; [,1]
+  ;; r.squared       0.8690157644778
+  ;; adj.r.squared   0.8066423189910
+  ;; sigma           2.6501970278655
+  ;; statistic      13.9324636902088
+  ;; p.value         0.0000003793152
+  ;; df             10.0000000000000
+  ;; logLik        -69.8549052172399
+  ;; AIC           163.7098104344797
+  ;; BIC           181.2986412680764
+  ;; deviance      147.4944300166508
+  ;; df.residual    21.0000000000000
+  ;; nobs           32.0000000000000
 
-           ;; > tidy(m)
-           ;; # A tibble: 11 × 5
-           ;;    term        estimate std.error statistic p.value
-           ;;    <chr>          <dbl>     <dbl>     <dbl>   <dbl>
-           ;;  1 (Intercept)  12.3      18.7        0.657  0.518
-           ;;  2 cyl          -0.111     1.05      -0.107  0.916
-           ;;  3 disp          0.0133    0.0179     0.747  0.463
-           ;;  4 hp           -0.0215    0.0218    -0.987  0.335
-           ;;  5 drat          0.787     1.64       0.481  0.635
-           ;;  6 wt           -3.72      1.89      -1.96   0.0633
-           ;;  7 qsec          0.821     0.731      1.12   0.274
-           ;;  8 vs            0.318     2.10       0.151  0.881
-           ;;  9 am            2.52      2.06       1.23   0.234
-           ;; 10 gear          0.655     1.49       0.439  0.665
-           ;; 11 carb         -0.199     0.829     -0.241  0.812
+  ;; > tidy(m)
+  ;; # A tibble: 11 × 5
+  ;;    term        estimate std.error statistic p.value
+  ;;    <chr>          <dbl>     <dbl>     <dbl>   <dbl>
+  ;;  1 (Intercept)  12.3      18.7        0.657  0.518
+  ;;  2 cyl          -0.111     1.05      -0.107  0.916
+  ;;  3 disp          0.0133    0.0179     0.747  0.463
+  ;;  4 hp           -0.0215    0.0218    -0.987  0.335
+  ;;  5 drat          0.787     1.64       0.481  0.635
+  ;;  6 wt           -3.72      1.89      -1.96   0.0633
+  ;;  7 qsec          0.821     0.731      1.12   0.274
+  ;;  8 vs            0.318     2.10       0.151  0.881
+  ;;  9 am            2.52      2.06       1.23   0.234
+  ;; 10 gear          0.655     1.49       0.439  0.665
+  ;; 11 carb         -0.199     0.829     -0.241  0.812
 
-           ;; print(augment(m),width=Inf)
-           ;; # A tibble: 32 × 18
-           ;;    .rownames           mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb .fitted  .resid  .hat .sigma   .cooksd .std.resid
-           ;;    <chr>             <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>   <dbl>   <dbl> <dbl>  <dbl>     <dbl>      <dbl>
-           ;;  1 Mazda RX4          21       6  160    110  3.9   2.62  16.5     0     1     4     4    22.6 -1.60   0.303   2.68 0.0206       -0.723
-           ;;  2 Mazda RX4 Wag      21       6  160    110  3.9   2.88  17.0     0     1     4     4    22.1 -1.11   0.290   2.70 0.00922      -0.498
-           ;;  3 Datsun 710         22.8     4  108     93  3.85  2.32  18.6     1     1     4     1    26.3 -3.45   0.239   2.57 0.0635       -1.49
-           ;;  4 Hornet 4 Drive     21.4     6  258    110  3.08  3.22  19.4     1     0     3     1    21.2  0.163  0.228   2.72 0.000131      0.0698
-           ;;  5 Hornet Sportabout  18.7     8  360    175  3.15  3.44  17.0     0     0     3     2    17.7  1.01   0.200   2.70 0.00408       0.425
-           ;;  6 Valiant            18.1     6  225    105  2.76  3.46  20.2     1     0     3     1    20.4 -2.28   0.282   2.65 0.0370       -1.02
-           ;;  7 Duster 360         14.3     8  360    245  3.21  3.57  15.8     0     0     3     4    14.4 -0.0863 0.326   2.72 0.0000691    -0.0396
-           ;;  8 Merc 240D          24.4     4  147.    62  3.69  3.19  20       1     0     4     2    22.5  1.90   0.330   2.67 0.0345        0.878
-           ;;  9 Merc 230           22.8     4  141.    95  3.92  3.15  22.9     1     0     4     2    24.4 -1.62   0.742   2.62 0.379        -1.20
-           ;; 10 Merc 280           19.2     6  168.   123  3.92  3.44  18.3     1     0     4     4    18.7  0.501  0.429   2.71 0.00428       0.250
+  ;; print(augment(m),width=Inf)
+  ;; # A tibble: 32 × 18
+  ;;    .rownames           mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb .fitted  .resid  .hat .sigma   .cooksd .std.resid
+  ;;    <chr>             <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>   <dbl>   <dbl> <dbl>  <dbl>     <dbl>      <dbl>
+  ;;  1 Mazda RX4          21       6  160    110  3.9   2.62  16.5     0     1     4     4    22.6 -1.60   0.303   2.68 0.0206       -0.723
+  ;;  2 Mazda RX4 Wag      21       6  160    110  3.9   2.88  17.0     0     1     4     4    22.1 -1.11   0.290   2.70 0.00922      -0.498
+  ;;  3 Datsun 710         22.8     4  108     93  3.85  2.32  18.6     1     1     4     1    26.3 -3.45   0.239   2.57 0.0635       -1.49
+  ;;  4 Hornet 4 Drive     21.4     6  258    110  3.08  3.22  19.4     1     0     3     1    21.2  0.163  0.228   2.72 0.000131      0.0698
+  ;;  5 Hornet Sportabout  18.7     8  360    175  3.15  3.44  17.0     0     0     3     2    17.7  1.01   0.200   2.70 0.00408       0.425
+  ;;  6 Valiant            18.1     6  225    105  2.76  3.46  20.2     1     0     3     1    20.4 -2.28   0.282   2.65 0.0370       -1.02
+  ;;  7 Duster 360         14.3     8  360    245  3.21  3.57  15.8     0     0     3     4    14.4 -0.0863 0.326   2.72 0.0000691    -0.0396
+  ;;  8 Merc 240D          24.4     4  147.    62  3.69  3.19  20       1     0     4     2    22.5  1.90   0.330   2.67 0.0345        0.878
+  ;;  9 Merc 230           22.8     4  141.    95  3.92  3.15  22.9     1     0     4     2    24.4 -1.62   0.742   2.62 0.379        -1.20
+  ;; 10 Merc 280           19.2     6  168.   123  3.92  3.44  18.3     1     0     4     4    18.7  0.501  0.429   2.71 0.00428       0.250
 
 
-           ;; m=lm(mpg ~ .,mtcars)
-           ;; numeric( predict(m,mtcars))
-           ;; [1] 22.59951 22.11189 26.25064 21.23740 17.69343 20.38304 14.38626 22.49601
-           ;; [9] 24.41909 18.69903 19.19165 14.17216 15.59957 15.74222 12.03401 10.93644
-           ;; [17] 10.49363 27.77291 29.89674 29.51237 23.64310 16.94305 17.73218 13.30602
-           ;; [25] 16.69168 28.29347 26.15295 27.63627 18.87004 19.69383 13.94112 24.36827
-
+  ;; m=lm(mpg ~ .,mtcars)
+  ;; numeric( predict(m,mtcars))
+  ;; [1] 22.59951 22.11189 26.25064 21.23740 17.69343 20.38304 14.38626 22.49601
+  ;; [9] 24.41909 18.69903 19.19165 14.17216 15.59957 15.74222 12.03401 10.93644
+  ;; [17] 10.49363 27.77291 29.89674 29.51237 23.64310 16.94305 17.73218 13.30602
+  ;; [25] 16.69168 28.29347 26.15295 27.63627 18.87004 19.69383 13.94112 24.36827
   )
 
 (deftest metamorph.ml-ols
   (let [ds
         (->
          (data/mtcars-ds)
-         (ds/drop-columns [:model])
+
          (ds-mod/set-inference-target :mpg))
 
-        model (ml/train ds {:model-type :metamorph.ml/ols})
+        model (ml/train (ds/drop-columns ds [:model]) {:model-type :metamorph.ml/ols})
         ;; cannot be persisted, as not serializable
         ;model-frozen (nippy/freeze model)
         ;model-unfrozen (nippy/thaw model-frozen)
@@ -541,6 +535,9 @@
     (validate-model--ols model ds)
     ;(validate-model--ols model-unfrozen ds)
     ))
+
+
+
 
 (deftest glm
   (let [ds
@@ -604,54 +601,19 @@
 
 
 
-(comment 
-  (require '[fastmath.ml.regression.contrast :as contrast]
-           '[fastmath.core :as m])
-  
 
-  (def prestige
-    (->
-     (rdatasets/carData-Prestige)
-     (tc/drop-missing)
-     (tc/select-columns [:prestige :type :education :income])
-     (ds-mod/set-inference-target :prestige)))
-  
 
-  (def type-contrast (contrast/dummy ["bc" "prof" "wc"]))
-  
+(deftest plot
+  (is (=  [:layers :data :mapping]
+          (keys
+           (let [dataset
+                 (->
+                  (rdatasets/datasets-mtcars)
+                  (ds/categorical->number cf/categorical)
+                  (tc/drop-columns [:rownames])
+                  (ds-mod/set-inference-target :mpg))
 
-  (defn prestige-transformer
+                 model (ml/train dataset {:model-type :fastmath/ols})]
+             (-> (ml/plot model dataset)  
+                 :residual-vs-fitted))))))
 
-    ([[type ^double education ^long income]]
-     (let [[^long typeprof ^long typewc] ((:mapping type-contrast) type)
-           lincome (m/log income)]
-       [typeprof typewc education lincome
-        (* typeprof education)
-        (* typewc education)
-        (* typeprof lincome)
-            (* typewc lincome)])))
-  
-
-  (def pipe-fn
-    (mm/pipeline
-     {:metamorph/id :model}
-     (ml/model {:model-type :fastmath/ols
-                :transformer prestige-transformer
-                })
-     
-     ))
-  
-
-  (def model
-    (mm/fit-pipe
-     prestige
-     pipe-fn))
-
-  (mm/transform-pipe 
-   (-> prestige
-       (tc/drop-columns [:prestige])
-       )
-   pipe-fn
-   model
-   )
-  )

@@ -51,19 +51,21 @@
 
    See also: [[scicloj.metamorph.ml.r-model-matrix]] for R-formula-based feature engineering"
   (:require
-   [fastmath.ml.regression :as fm-reg]
-   [scicloj.metamorph.ml :as ml]
-   [tablecloth.api :as tc]
-   [tech.v3.dataset :as ds]
-   [tech.v3.datatype :as dt]
-   [tech.v3.dataset.tensor :as dtt]
    [fastmath.core :as m]
+   [fastmath.ml.regression :as fm-reg]
+   [fastmath.random :as r]
    [fastmath.vector :as v]
-
+   [scicloj.metamorph.ml :as ml]
+   [scicloj.plotje.api :as pj]
+   [scicloj.plotje.impl.render]
+   [tablecloth.api :as tc]
+   [tablecloth.column.api :as tcc]
+   [tech.v3.dataset :as ds]
    [tech.v3.dataset.column-filters :as cf]
-   [tablecloth.column.api :as tcc])
-  (:import [org.apache.commons.math3.stat.regression OLSMultipleLinearRegression]
-           [fastmath.java Array]))
+   [tech.v3.dataset.tensor :as dtt]
+   [tech.v3.datatype :as dt])
+  (:import [fastmath.java Array]
+           [org.apache.commons.math3.stat.regression OLSMultipleLinearRegression]))
 
 
 (defn- tidy-fm-ols [model]
@@ -87,8 +89,11 @@
   (let [residuals (-> model :model-data :residuals)]
     (-> data
         (tc/add-columns {:.resid (:raw residuals)
-                         :.fitted (:fitted (:model-data model))}))))
-
+                         ;:.std.resid (-> model :model-data :analysis :residuals :standardized)
+                         :.std.resid (-> model :model-data :analysis :residuals :studentized)
+                         :.fitted (:fitted (:model-data model))
+                         
+                         }))))
 
 
 (defn- glance-fm-ols [model]
@@ -246,6 +251,43 @@
                                     {:column-type :prediction})])))
 
 
+(defn- diagnostic-plots [model dataset options]
+  (let [residuals (:.resid (ml/augment model dataset))
+        fitted (-> (ml/predict dataset model) (cf/prediction) tc/columns first)
+        dataset (-> dataset
+                    (tc/add-column :fitted fitted)
+                    (tc/add-column :residual residuals))
+        residual-vs-fitted-pose (->
+                                 dataset
+                                 (pj/lay-point  :fitted :residual)
+                                 (pj/lay-smooth {:color "red"}))
+
+        standardised-residuals
+        (->
+         (ml/augment model dataset)
+         :.std.resid
+        ;stats/standardize
+         )
+
+        num-rows (tc/row-count standardised-residuals)
+
+        normal-quantiles
+        (map
+         #(r/icdf r/default-normal %)
+         (map
+          #(/ % num-rows)
+          (range 1 (inc num-rows))))
+
+        residual-qq-pose
+        (->
+         (tc/dataset  {:y (sort standardised-residuals)
+                       :x (sort normal-quantiles)})
+         (pj/lay-point)
+         (pj/lay-smooth))]
+    {:residual-vs-fitted residual-vs-fitted-pose
+     :residual-q-q residual-qq-pose}))
+
+
 
 (ml/define-model! :metamorph.ml/ols
   train-ols
@@ -261,7 +303,11 @@
   {
    :tidy-fn tidy-fm-ols
    :glance-fn glance-fm-ols
-   :augment-fn augment-fm-ols})
+   :augment-fn augment-fm-ols
+   :plot-fn diagnostic-plots
+   }
+  
+  )
 
 (ml/define-model! :fastmath/glm
   train-fm-glm
@@ -290,6 +336,5 @@
         )
     )
   {})
-
 
 
