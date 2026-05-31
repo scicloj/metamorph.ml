@@ -1,6 +1,7 @@
 unreleased
 - docstring update
 - use codox / metadoc
+- added support for model plot fn
 
 1.6.2
 - add inference targets to `r-model-matrix`
