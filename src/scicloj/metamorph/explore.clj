@@ -19,7 +19,7 @@
     (/ (Math/round (* d factor)) factor)))
 
 
-(defn explore-categorical-var [data variable]
+(defn explore-categorical-var [data variable {:keys [color]}]
   (let [freqs (-> data variable frequencies)
         n-missing (-> data variable tc/select-missing tc/row-count)
         n-unique (count freqs)
@@ -35,7 +35,7 @@
     (->
      plot-data
      (pj/pose variable :%)
-     (pj/lay-value-bar  {:color "skyblue" :alpha 0.7})
+     (pj/lay-value-bar  {:color color :alpha 0.7})
      (pj/lay-label  {:text :% :color "black"})
      (pj/options {:title (name variable)
                   :subtitle (format "na = %d, unique = %d" n-missing n-unique)
@@ -47,13 +47,14 @@
 
 
 
-(defn explore-continous-var [data variable]
+(defn explore-continous-var [data variable {:keys [color]}]
   (let [
         qq-2 (stats/quantile (get data variable) 0.02)
         qq-98 (stats/quantile (get data variable) 0.98)
         n-missing (-> data variable tc/select-missing tc/row-count)
-        min (apply  tcc/min (get data variable))
-        max (apply  tcc/max (get data variable))
+        min (tcc/reduce-min (get data variable))
+        max (tcc/reduce-max  (get data variable))
+        mean (tcc/mean  (get data variable))
         ]
     (-> data
         (tc/select-rows (fn [row]
@@ -61,7 +62,8 @@
                            (>= (get row variable) qq-2)
                            (<= (get row variable) qq-98))))
         (pj/pose variable)
-        (pj/lay-density)
+        (pj/lay-density {:color color})
+        (pj/lay-rule-v {:x-intercept mean :color "grey"})
         (pj/options {:title (name variable)
                      :subtitle (format "na = %d, min = %.2f, max = %.2f" n-missing (double min) (double max))
                      :x-label ""
@@ -70,20 +72,23 @@
                     )
         )))
 
-(defn explore-all [data]
-  (pj/arrange
-   (->>
-    (map
-     (fn [col]
-       (if (:categorical? (meta col))
-         (explore-categorical-var data (:name (meta col)))
-         (explore-continous-var data (:name (meta col)))))
-     (->
-      (tc/columns data)))
-    (partition-all 2))
-   {:height 1000
-    :width 800}))
+(defn explore-all [data & opts]
+  (let  [defaults {:color "skyblue"}
+         defaulted-opts (merge defaults opts)
+         ]
 
+    (pj/arrange
+     (->>
+      (map
+       (fn [col]
+         (if (:categorical? (meta col))
+           (explore-categorical-var data (:name (meta col)) defaulted-opts)
+           (explore-continous-var data (:name (meta col)) defaulted-opts)))
+       (->
+        (tc/columns data)))
+      (partition-all 2))
+     {:height 1000
+      :width 800})))
 
 
 
