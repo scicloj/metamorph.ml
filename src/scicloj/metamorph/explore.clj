@@ -19,36 +19,46 @@
     (/ (Math/round (* d factor)) factor)))
 
 
-(defn explore-categorical-var [data variable {:keys [color]}]
-  (let [freqs (-> data variable frequencies)
+(defn explore-categorical-var [data variable {:keys [color target]}]
+  (let [group (if (some? target) target color)
+        freqs (-> data variable frequencies)
         n-missing (-> data variable tc/select-missing tc/row-count)
         n-unique (count freqs)
 
         plot-data
-        (tc/dataset
-         (map
-          (fn [[category count]]
-            ;(print :category category)
-            {variable (or category "_NA_")
-             :% (round-to-precision 2 (float (/ count (tc/row-count data))))})
-          freqs))]
+        (-> data
+            (tc/group-by [target variable])
+            (tc/aggregate (fn [ds]
+                            (round-to-precision 2
+                                                (* 100.0
+                                                   (/
+                                                    (tc/row-count ds)
+                                                    (tc/row-count data)))))
+                          {:default-column-name-prefix :%}
+                          )
+            
+            )]
     (->
      plot-data
      (pj/pose variable :%)
-     (pj/lay-value-bar  {:color color :alpha 0.7})
-     (pj/lay-label  {:text :% :color "black"})
+     (pj/lay-value-bar  {:color group :alpha 0.7})
+     (pj/lay-label  {:text :%})
      (pj/options {:title (name variable)
                   :subtitle (format "na = %d, unique = %d" n-missing n-unique)
                   :x-label ""
                   })
      (pj/coord :flip)
-     ;
      )))
 
 
 
-(defn explore-continous-var [data variable {:keys [color]}]
+(defn explore-continous-var [data variable {:keys [color target]}]
+  (def target target)
+  (def data data)
+  (def color color)
+  (def variable variable)
   (let [
+        group (if (some? target) target color)
         qq-2 (stats/quantile (get data variable) 0.02)
         qq-98 (stats/quantile (get data variable) 0.98)
         n-missing (-> data variable tc/select-missing tc/row-count)
@@ -62,7 +72,7 @@
                            (>= (get row variable) qq-2)
                            (<= (get row variable) qq-98))))
         (pj/pose variable)
-        (pj/lay-density {:color color})
+        (pj/lay-density {:color group})
         (pj/lay-rule-v {:x-intercept mean :color "grey"})
         (pj/options {:title (name variable)
                      :subtitle (format "na = %d, min = %.2f, max = %.2f" n-missing (double min) (double max))
@@ -72,8 +82,8 @@
                     )
         )))
 
-(defn explore-all [data & opts]
-  (let  [defaults {:color "skyblue"}
+(defn explore-all [data opts]
+  (let  [defaults {:color "skyblue" :target nil}
          defaulted-opts (merge defaults opts)
          ]
 
@@ -91,15 +101,22 @@
       :width 800})))
 
 
-
+(def data 
+  (-> 
+   (rdatasets/palmerpenguins-penguins)
+   
+   (tc/drop-columns [:rownames])
+   (tc/drop-missing [:flipper-length-mm])
+   (tc/add-column :year #(map str (:year %))))
+  )
 
 (-> 
-    (rdatasets/palmerpenguins-penguins)
-    
-    (tc/drop-columns [:rownames])
-    (tc/drop-missing [:flipper-length-mm])
-    (tc/add-column :year #(map str (:year %)))
-    (explore-all)
-    )  
+ data
+ (explore-all {:color "green"})
+ )  
+
+(->
+ data
+ (explore-all {:target :species}))  
 
 
