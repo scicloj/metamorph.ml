@@ -1,0 +1,4164 @@
+(ns scicloj.metamorph.explore-test
+  (:require [clojure.test :refer [deftest is]]
+            [scicloj.metamorph.ml.explore :refer [explore-all]]
+            [scicloj.metamorph.ml.rdatasets :as rdatasets]
+            [tablecloth.api :as tc]
+            [scicloj.plotje.api :as pj])
+  )
+
+(def data
+  (->
+   (rdatasets/palmerpenguins-penguins)
+   
+
+   (tc/drop-columns [:rownames])
+   (tc/drop-missing [:flipper-length-mm])
+   (tc/replace-missing [:sex] :value "__NA__")
+   (tc/add-column :year #(map str (:year %)))))
+
+(deftest explore-all-test
+  
+  
+
+  (is (= 
+       [:svg
+        {:xmlns "http://www.w3.org/2000/svg",
+         :width 800,
+         :height 1000,
+         :viewBox "0 0 800 1000",
+         :role "img",
+         :font-family "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"}
+        [:g
+         [:g
+          {:transform "translate(0.00,0.00)"}
+          [:g
+           [:g
+            {:transform "translate(237.75,14.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 15, :dominant-baseline "hanging", :text-anchor "middle"}
+              "species"]]]
+           [:g
+            {:transform "translate(237.75,30.00)"}
+            [:g
+             [:text
+              {:fill "rgb(102,102,102)",
+               :fill-opacity 1.0,
+               :font-size 13,
+               :dominant-baseline "hanging",
+               :text-anchor "middle"}
+              "na = 0, unique = 3"]]]
+           [:g
+            {:transform "translate(12.00,114.50)"}
+            [:g
+             {:transform "rotate(-90.00)"}
+             [:g
+              [:text
+               {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+               ""]]]]
+           [:g
+            {:transform "translate(237.75,232.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+              "%"]]]
+           [:g
+            {:transform "translate(85.50,43.00)"}
+            [:g
+             [:g
+              [:rect
+               {:fill "rgb(232,232,232)", :fill-opacity 1.0, :stroke "none", :x 0, :y 0, :width 304.5, :height 143.0}]]]]
+           [:g
+            {:transform "translate(75.50,33.00)"}
+            [:g
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,10.00 10.00,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "75.69,10.00 75.69,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "141.37,10.00 141.37,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "207.06,10.00 207.06,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "272.74,10.00 272.74,153.00"}]]]]
+             [:g
+              {:transform "translate(300.00,124.17)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "44.15"]]]]
+             [:g
+              {:transform "translate(246.20,76.50)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "35.96"]]]]
+             [:g
+              {:transform "translate(140.58,28.83)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "19.88"]]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(135,206,235)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,148.23 300.00,148.23 300.00,110.10 10.00,110.10 10.00,148.23",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(135,206,235)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,100.57 246.20,100.57 246.20,62.43 10.00,62.43 10.00,100.57",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(135,206,235)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,52.90 140.58,52.90 140.58,14.77 10.00,14.77 10.00,52.90",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              {:transform "translate(10.00,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "0"]]]
+             [:g
+              {:transform "translate(75.69,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "10"]]]
+             [:g
+              {:transform "translate(141.37,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "20"]]]
+             [:g
+              {:transform "translate(207.06,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "30"]]]
+             [:g
+              {:transform "translate(272.74,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "40"]]]
+             [:g
+              {:transform "translate(7.00,123.67)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "Adelie"]]]
+             [:g
+              {:transform "translate(7.00,76.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "Gentoo"]]]
+             [:g
+              {:transform "translate(7.00,28.33)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "Chinstrap"]]]]]]]
+         [:g
+          {:transform "translate(400.00,0.00)"}
+          [:g
+           [:g
+            {:transform "translate(237.75,14.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 15, :dominant-baseline "hanging", :text-anchor "middle"}
+              "island"]]]
+           [:g
+            {:transform "translate(237.75,30.00)"}
+            [:g
+             [:text
+              {:fill "rgb(102,102,102)",
+               :fill-opacity 1.0,
+               :font-size 13,
+               :dominant-baseline "hanging",
+               :text-anchor "middle"}
+              "na = 0, unique = 3"]]]
+           [:g
+            {:transform "translate(12.00,114.50)"}
+            [:g
+             {:transform "rotate(-90.00)"}
+             [:g
+              [:text
+               {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+               ""]]]]
+           [:g
+            {:transform "translate(237.75,232.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+              "%"]]]
+           [:g
+            {:transform "translate(85.50,43.00)"}
+            [:g
+             [:g
+              [:rect
+               {:fill "rgb(232,232,232)", :fill-opacity 1.0, :stroke "none", :x 0, :y 0, :width 304.5, :height 143.0}]]]]
+           [:g
+            {:transform "translate(75.50,33.00)"}
+            [:g
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,10.00 10.00,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "69.39,10.00 69.39,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "128.78,10.00 128.78,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "188.17,10.00 188.17,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "247.56,10.00 247.56,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "306.95,10.00 306.95,153.00"}]]]]
+             [:g
+              {:transform "translate(98.55,124.17)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "14.91"]]]]
+             [:g
+              {:transform "translate(300.00,76.50)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "48.83"]]]]
+             [:g
+              {:transform "translate(225.35,28.83)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "36.26"]]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(135,206,235)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,148.23 98.55,148.23 98.55,110.10 10.00,110.10 10.00,148.23",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(135,206,235)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,100.57 300.00,100.57 300.00,62.43 10.00,62.43 10.00,100.57",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(135,206,235)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,52.90 225.35,52.90 225.35,14.77 10.00,14.77 10.00,52.90",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              {:transform "translate(10.00,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "0"]]]
+             [:g
+              {:transform "translate(69.39,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "10"]]]
+             [:g
+              {:transform "translate(128.78,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "20"]]]
+             [:g
+              {:transform "translate(188.17,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "30"]]]
+             [:g
+              {:transform "translate(247.56,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "40"]]]
+             [:g
+              {:transform "translate(306.95,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "50"]]]
+             [:g
+              {:transform "translate(7.00,123.67)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "Torgersen"]]]
+             [:g
+              {:transform "translate(7.00,76.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "Biscoe"]]]
+             [:g
+              {:transform "translate(7.00,28.33)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "Dream"]]]]]]]
+         [:g
+          {:transform "translate(0.00,250.00)"}
+          [:g
+           [:g
+            {:transform "translate(211.00,14.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 15, :dominant-baseline "hanging", :text-anchor "middle"}
+              "bill-length-mm"]]]
+           [:g
+            {:transform "translate(211.00,30.00)"}
+            [:g
+             [:text
+              {:fill "rgb(102,102,102)",
+               :fill-opacity 1.0,
+               :font-size 13,
+               :dominant-baseline "hanging",
+               :text-anchor "middle"}
+              "na = 0, min = 32.10, max = 59.60"]]]
+           [:g
+            {:transform "translate(211.00,232.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+              ""]]]
+           [:g
+            {:transform "translate(32.00,43.00)"}
+            [:g
+             [:g
+              [:rect
+               {:fill "rgb(232,232,232)", :fill-opacity 1.0, :stroke "none", :x 0, :y 0, :width 358.0, :height 143.0}]]]]
+           [:g
+            {:transform "translate(22.00,33.00)"}
+            [:g
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "70.47,10.00 70.47,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "153.07,10.00 153.07,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "235.67,10.00 235.67,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "318.27,10.00 318.27,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,153.00 368.00,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,109.39 368.00,109.39"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,65.77 368.00,65.77"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,22.16 368.00,22.16"}]]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(135,206,235)",
+                 :fill-opacity 0.5,
+                 :stroke "none",
+                 :points
+                 "26.27,153.00 29.56,153.00 32.85,153.00 36.13,153.00 39.42,153.00 42.71,153.00 46.00,153.00 49.28,153.00 52.57,153.00 55.86,152.99 59.15,152.98 62.43,152.96 65.72,152.90 69.01,152.79 72.30,152.59 75.58,152.20 78.87,151.54 82.16,150.44 85.45,148.72 88.73,146.15 92.02,142.50 95.31,137.57 98.60,131.23 101.88,123.47 105.17,114.40 108.46,104.29 111.75,93.54 115.03,82.61 118.32,71.98 121.61,62.08 124.90,53.25 128.18,45.70 131.47,39.53 134.76,34.73 138.04,31.20 141.33,28.83 144.62,27.47 147.91,27.01 151.19,27.35 154.48,28.43 157.77,30.17 161.06,32.46 164.34,35.11 167.63,37.87 170.92,40.40 174.21,42.29 177.49,43.15 180.78,42.68 184.07,40.75 187.36,37.45 190.64,33.14 193.93,28.40 197.22,23.89 200.51,20.22 203.79,17.82 207.08,16.81 210.37,17.02 213.66,18.08 216.94,19.55 220.23,21.09 223.52,22.58 226.81,24.19 230.09,26.28 233.38,29.37 236.67,33.93 239.96,40.27 243.24,48.46 246.53,58.29 249.82,69.33 253.10,81.01 256.39,92.71 259.68,103.86 262.97,114.03 266.25,122.91 269.54,130.39 272.83,136.47 276.12,141.24 279.40,144.86 282.69,147.54 285.98,149.44 289.27,150.76 292.55,151.63 295.84,152.20 299.13,152.55 302.42,152.75 305.70,152.87 308.99,152.94 312.28,152.97 315.57,152.99 318.85,152.99 322.14,153.00 325.43,153.00 328.72,153.00 332.00,153.00 335.29,153.00 338.58,153.00 341.87,153.00 345.15,153.00 348.44,153.00 351.73,153.00 351.73,153.00 26.27,153.00",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(128,128,128)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 1.5,
+                  :points "185.46,10.00 185.46,153.00"}]]]]
+             [:g
+              {:transform "translate(70.47,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "30"]]]
+             [:g
+              {:transform "translate(153.07,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "40"]]]
+             [:g
+              {:transform "translate(235.67,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "50"]]]
+             [:g
+              {:transform "translate(318.27,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "60"]]]
+             [:g
+              {:transform "translate(7.00,147.50)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.0"]]]
+             [:g
+              {:transform "translate(7.00,103.89)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.02"]]]
+             [:g
+              {:transform "translate(7.00,60.27)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.04"]]]
+             [:g
+              {:transform "translate(7.00,16.66)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.06"]]]]]]]
+         [:g
+          {:transform "translate(400.00,250.00)"}
+          [:g
+           [:g
+            {:transform "translate(211.00,14.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 15, :dominant-baseline "hanging", :text-anchor "middle"}
+              "bill-depth-mm"]]]
+           [:g
+            {:transform "translate(211.00,30.00)"}
+            [:g
+             [:text
+              {:fill "rgb(102,102,102)",
+               :fill-opacity 1.0,
+               :font-size 13,
+               :dominant-baseline "hanging",
+               :text-anchor "middle"}
+              "na = 0, min = 13.10, max = 21.50"]]]
+           [:g
+            {:transform "translate(211.00,232.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+              ""]]]
+           [:g
+            {:transform "translate(32.00,43.00)"}
+            [:g
+             [:g
+              [:rect
+               {:fill "rgb(232,232,232)", :fill-opacity 1.0, :stroke "none", :x 0, :y 0, :width 358.0, :height 143.0}]]]]
+           [:g
+            {:transform "translate(22.00,33.00)"}
+            [:g
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "26.27,10.00 26.27,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "139.28,10.00 139.28,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "252.28,10.00 252.28,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "365.29,10.00 365.29,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,153.00 368.00,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,118.25 368.00,118.25"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,83.50 368.00,83.50"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,48.75 368.00,48.75"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,14.00 368.00,14.00"}]]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(135,206,235)",
+                 :fill-opacity 0.5,
+                 :stroke "none",
+                 :points
+                 "26.27,153.00 29.56,153.00 32.85,153.00 36.13,153.00 39.42,153.00 42.71,153.00 46.00,153.00 49.28,153.00 52.57,153.00 55.86,152.99 59.15,152.98 62.43,152.95 65.72,152.88 69.01,152.75 72.30,152.50 75.58,152.05 78.87,151.28 82.16,150.03 85.45,148.13 88.73,145.36 92.02,141.55 95.31,136.59 98.60,130.45 101.88,123.24 105.17,115.23 108.46,106.79 111.75,98.36 115.03,90.42 118.32,83.39 121.61,77.57 124.90,73.14 128.18,70.10 131.47,68.31 134.76,67.53 138.04,67.44 141.33,67.74 144.62,68.13 147.91,68.38 151.19,68.33 154.48,67.90 157.77,67.01 161.06,65.62 164.34,63.70 167.63,61.22 170.92,58.17 174.21,54.62 177.49,50.70 180.78,46.56 184.07,42.41 187.36,38.39 190.64,34.60 193.93,31.08 197.22,27.80 200.51,24.74 203.79,21.95 207.08,19.54 210.37,17.73 213.66,16.81 216.94,17.08 220.23,18.81 223.52,22.18 226.81,27.21 230.09,33.77 233.38,41.59 236.67,50.31 239.96,59.54 243.24,68.93 246.53,78.19 249.82,87.12 253.10,95.60 256.39,103.57 259.68,110.99 262.97,117.85 266.25,124.11 269.54,129.74 272.83,134.72 276.12,139.01 279.40,142.61 282.69,145.54 285.98,147.83 289.27,149.56 292.55,150.80 295.84,151.65 299.13,152.21 302.42,152.56 305.70,152.77 308.99,152.88 312.28,152.94 315.57,152.97 318.85,152.99 322.14,153.00 325.43,153.00 328.72,153.00 332.00,153.00 335.29,153.00 338.58,153.00 341.87,153.00 345.15,153.00 348.44,153.00 351.73,153.00 351.73,153.00 26.27,153.00",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(128,128,128)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 1.5,
+                  :points "187.90,10.00 187.90,153.00"}]]]]
+             [:g
+              {:transform "translate(26.27,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "10"]]]
+             [:g
+              {:transform "translate(139.28,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "15"]]]
+             [:g
+              {:transform "translate(252.28,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "20"]]]
+             [:g
+              {:transform "translate(365.29,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "25"]]]
+             [:g
+              {:transform "translate(7.00,147.50)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.0"]]]
+             [:g
+              {:transform "translate(7.00,112.75)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.05"]]]
+             [:g
+              {:transform "translate(7.00,78.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.1"]]]
+             [:g
+              {:transform "translate(7.00,43.25)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.15"]]]
+             [:g
+              {:transform "translate(7.00,8.50)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.2"]]]]]]]
+         [:g
+          {:transform "translate(0.00,500.00)"}
+          [:g
+           [:g
+            {:transform "translate(213.75,14.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 15, :dominant-baseline "hanging", :text-anchor "middle"}
+              "flipper-length-mm"]]]
+           [:g
+            {:transform "translate(213.75,30.00)"}
+            [:g
+             [:text
+              {:fill "rgb(102,102,102)",
+               :fill-opacity 1.0,
+               :font-size 13,
+               :dominant-baseline "hanging",
+               :text-anchor "middle"}
+              "na = 0, min = 172.00, max = 231.00"]]]
+           [:g
+            {:transform "translate(213.75,232.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+              ""]]]
+           [:g
+            {:transform "translate(37.50,43.00)"}
+            [:g
+             [:g
+              [:rect
+               {:fill "rgb(232,232,232)", :fill-opacity 1.0, :stroke "none", :x 0, :y 0, :width 352.5, :height 143.0}]]]]
+           [:g
+            {:transform "translate(27.50,33.00)"}
+            [:g
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "50.67,10.00 50.67,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "112.30,10.00 112.30,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "173.92,10.00 173.92,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "235.55,10.00 235.55,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "297.18,10.00 297.18,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "358.80,10.00 358.80,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,153.00 362.50,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,108.91 362.50,108.91"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,64.81 362.50,64.81"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,20.72 362.50,20.72"}]]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(135,206,235)",
+                 :fill-opacity 0.5,
+                 :stroke "none",
+                 :points
+                 "26.02,153.00 29.26,153.00 32.50,153.00 35.73,153.00 38.97,153.00 42.21,153.00 45.44,153.00 48.68,153.00 51.92,153.00 55.15,152.99 58.39,152.98 61.63,152.95 64.87,152.89 68.10,152.78 71.34,152.58 74.58,152.23 77.81,151.65 81.05,150.74 84.29,149.36 87.52,147.37 90.76,144.65 94.00,141.06 97.23,136.52 100.47,130.99 103.71,124.47 106.95,117.01 110.18,108.67 113.42,99.56 116.66,89.81 119.89,79.58 123.13,69.09 126.37,58.63 129.60,48.53 132.84,39.21 136.08,31.06 139.31,24.48 142.55,19.78 145.79,17.19 149.03,16.81 152.26,18.64 155.50,22.54 158.74,28.28 161.97,35.53 165.21,43.86 168.45,52.76 171.68,61.70 174.92,70.09 178.16,77.42 181.39,83.22 184.63,87.20 187.87,89.21 191.11,89.32 194.34,87.78 197.58,84.99 200.82,81.45 204.05,77.66 207.29,74.10 210.53,71.17 213.76,69.15 217.00,68.22 220.24,68.47 223.47,69.89 226.71,72.42 229.95,75.93 233.19,80.24 236.42,85.15 239.66,90.43 242.90,95.87 246.13,101.25 249.37,106.43 252.61,111.33 255.84,115.93 259.08,120.26 262.32,124.38 265.55,128.35 268.79,132.19 272.03,135.86 275.27,139.31 278.50,142.43 281.74,145.15 284.98,147.40 288.21,149.18 291.45,150.51 294.69,151.45 297.92,152.08 301.16,152.48 304.40,152.72 307.63,152.86 310.87,152.93 314.11,152.97 317.35,152.99 320.58,152.99 323.82,153.00 327.06,153.00 330.29,153.00 333.53,153.00 336.77,153.00 340.00,153.00 343.24,153.00 346.48,153.00 346.48,153.00 26.02,153.00",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(128,128,128)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 1.5,
+                  :points "176.74,10.00 176.74,153.00"}]]]]
+             [:g
+              {:transform "translate(50.67,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "160"]]]
+             [:g
+              {:transform "translate(112.30,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "180"]]]
+             [:g
+              {:transform "translate(173.92,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "200"]]]
+             [:g
+              {:transform "translate(235.55,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "220"]]]
+             [:g
+              {:transform "translate(297.18,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "240"]]]
+             [:g
+              {:transform "translate(358.80,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "260"]]]
+             [:g
+              {:transform "translate(7.00,147.50)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.0"]]]
+             [:g
+              {:transform "translate(7.00,103.41)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.01"]]]
+             [:g
+              {:transform "translate(7.00,59.31)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.02"]]]
+             [:g
+              {:transform "translate(7.00,15.22)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.03"]]]]]]]
+         [:g
+          {:transform "translate(400.00,500.00)"}
+          [:g
+           [:g
+            {:transform "translate(216.50,14.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 15, :dominant-baseline "hanging", :text-anchor "middle"}
+              "body-mass-g"]]]
+           [:g
+            {:transform "translate(216.50,30.00)"}
+            [:g
+             [:text
+              {:fill "rgb(102,102,102)",
+               :fill-opacity 1.0,
+               :font-size 13,
+               :dominant-baseline "hanging",
+               :text-anchor "middle"}
+              "na = 0, min = 2700.00, max = 6300.00"]]]
+           [:g
+            {:transform "translate(216.50,232.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+              ""]]]
+           [:g
+            {:transform "translate(43.00,43.00)"}
+            [:g
+             [:g
+              [:rect
+               {:fill "rgb(232,232,232)", :fill-opacity 1.0, :stroke "none", :x 0, :y 0, :width 347.0, :height 143.0}]]]]
+           [:g
+            {:transform "translate(33.00,33.00)"}
+            [:g
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "56.52,10.00 56.52,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "109.98,10.00 109.98,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "163.45,10.00 163.45,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "216.92,10.00 216.92,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "270.38,10.00 270.38,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "323.85,10.00 323.85,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,153.00 357.00,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,101.22 357.00,101.22"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,49.43 357.00,49.43"}]]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(135,206,235)",
+                 :fill-opacity 0.5,
+                 :stroke "none",
+                 :points
+                 "25.77,153.00 28.96,153.00 32.15,153.00 35.33,153.00 38.52,153.00 41.70,153.00 44.89,153.00 48.08,153.00 51.26,153.00 54.45,152.99 57.64,152.98 60.82,152.96 64.01,152.91 67.20,152.81 70.38,152.63 73.57,152.31 76.76,151.77 79.94,150.90 83.13,149.57 86.31,147.62 89.50,144.91 92.69,141.29 95.87,136.63 99.06,130.85 102.25,123.92 105.43,115.87 108.62,106.79 111.81,96.83 114.99,86.22 118.18,75.25 121.37,64.27 124.55,53.67 127.74,43.85 130.92,35.17 134.11,27.95 137.30,22.41 140.48,18.70 143.67,16.85 146.86,16.81 150.04,18.44 153.23,21.50 156.42,25.70 159.60,30.69 162.79,36.08 165.97,41.53 169.16,46.73 172.35,51.43 175.53,55.50 178.72,58.89 181.91,61.60 185.09,63.73 188.28,65.41 191.47,66.83 194.65,68.18 197.84,69.66 201.03,71.45 204.21,73.65 207.40,76.28 210.58,79.27 213.77,82.47 216.96,85.69 220.14,88.72 223.33,91.41 226.52,93.69 229.70,95.57 232.89,97.16 236.08,98.63 239.26,100.23 242.45,102.17 245.63,104.65 248.82,107.80 252.01,111.63 255.19,116.06 258.38,120.94 261.57,126.01 264.75,131.03 267.94,135.74 271.13,139.94 274.31,143.50 277.50,146.37 280.69,148.56 283.87,150.16 287.06,151.26 290.24,151.98 293.43,152.43 296.62,152.70 299.80,152.85 302.99,152.93 306.18,152.97 309.36,152.99 312.55,152.99 315.74,153.00 318.92,153.00 322.11,153.00 325.30,153.00 328.48,153.00 331.67,153.00 334.85,153.00 338.04,153.00 341.23,153.00 341.23,153.00 25.77,153.00",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(128,128,128)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 1.5,
+                  :points "174.24,10.00 174.24,153.00"}]]]]
+             [:g
+              {:transform "translate(56.52,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "2000"]]]
+             [:g
+              {:transform "translate(109.98,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "3000"]]]
+             [:g
+              {:transform "translate(163.45,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "4000"]]]
+             [:g
+              {:transform "translate(216.92,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "5000"]]]
+             [:g
+              {:transform "translate(270.38,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "6000"]]]
+             [:g
+              {:transform "translate(323.85,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "7000"]]]
+             [:g
+              {:transform "translate(7.00,147.50)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.0"]]]
+             [:g
+              {:transform "translate(7.00,95.72)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.0002"]]]
+             [:g
+              {:transform "translate(7.00,43.93)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.0004"]]]]]]]
+         [:g
+          {:transform "translate(0.00,750.00)"}
+          [:g
+           [:g
+            {:transform "translate(229.50,14.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 15, :dominant-baseline "hanging", :text-anchor "middle"}
+              "sex"]]]
+           [:g
+            {:transform "translate(229.50,30.00)"}
+            [:g
+             [:text
+              {:fill "rgb(102,102,102)",
+               :fill-opacity 1.0,
+               :font-size 13,
+               :dominant-baseline "hanging",
+               :text-anchor "middle"}
+              "na = 0, unique = 3"]]]
+           [:g
+            {:transform "translate(12.00,114.50)"}
+            [:g
+             {:transform "rotate(-90.00)"}
+             [:g
+              [:text
+               {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+               ""]]]]
+           [:g
+            {:transform "translate(229.50,232.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+              "%"]]]
+           [:g
+            {:transform "translate(69.00,43.00)"}
+            [:g
+             [:g
+              [:rect
+               {:fill "rgb(232,232,232)", :fill-opacity 1.0, :stroke "none", :x 0, :y 0, :width 321.0, :height 143.0}]]]]
+           [:g
+            {:transform "translate(59.00,33.00)"}
+            [:g
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,10.00 10.00,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "72.24,10.00 72.24,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "134.48,10.00 134.48,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "196.71,10.00 196.71,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "258.95,10.00 258.95,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "321.19,10.00 321.19,153.00"}]]]]
+             [:g
+              {:transform "translate(315.71,124.17)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "49.12"]]]]
+             [:g
+              {:transform "translate(310.30,76.50)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "48.25"]]]]
+             [:g
+              {:transform "translate(26.37,28.83)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "2.63"]]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(135,206,235)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,148.23 315.71,148.23 315.71,110.10 10.00,110.10 10.00,148.23",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(135,206,235)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,100.57 310.30,100.57 310.30,62.43 10.00,62.43 10.00,100.57",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(135,206,235)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,52.90 26.37,52.90 26.37,14.77 10.00,14.77 10.00,52.90",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              {:transform "translate(10.00,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "0"]]]
+             [:g
+              {:transform "translate(72.24,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "10"]]]
+             [:g
+              {:transform "translate(134.48,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "20"]]]
+             [:g
+              {:transform "translate(196.71,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "30"]]]
+             [:g
+              {:transform "translate(258.95,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "40"]]]
+             [:g
+              {:transform "translate(321.19,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "50"]]]
+             [:g
+              {:transform "translate(7.00,123.67)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "male"]]]
+             [:g
+              {:transform "translate(7.00,76.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "female"]]]
+             [:g
+              {:transform "translate(7.00,28.33)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "__NA__"]]]]]]]
+         [:g
+          {:transform "translate(400.00,750.00)"}
+          [:g
+           [:g
+            {:transform "translate(224.00,14.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 15, :dominant-baseline "hanging", :text-anchor "middle"}
+              "year"]]]
+           [:g
+            {:transform "translate(224.00,30.00)"}
+            [:g
+             [:text
+              {:fill "rgb(102,102,102)",
+               :fill-opacity 1.0,
+               :font-size 13,
+               :dominant-baseline "hanging",
+               :text-anchor "middle"}
+              "na = 0, unique = 3"]]]
+           [:g
+            {:transform "translate(12.00,114.50)"}
+            [:g
+             {:transform "rotate(-90.00)"}
+             [:g
+              [:text
+               {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+               ""]]]]
+           [:g
+            {:transform "translate(224.00,232.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+              "%"]]]
+           [:g
+            {:transform "translate(58.00,43.00)"}
+            [:g
+             [:g
+              [:rect
+               {:fill "rgb(232,232,232)", :fill-opacity 1.0, :stroke "none", :x 0, :y 0, :width 332.0, :height 143.0}]]]]
+           [:g
+            {:transform "translate(48.00,33.00)"}
+            [:g
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,10.00 10.00,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "100.86,10.00 100.86,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "191.72,10.00 191.72,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "282.58,10.00 282.58,153.00"}]]]]
+             [:g
+              {:transform "translate(299.57,124.17)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "31.87"]]]]
+             [:g
+              {:transform "translate(312.83,76.50)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "33.33"]]]]
+             [:g
+              {:transform "translate(326.19,28.83)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "34.8"]]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(135,206,235)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,148.23 299.57,148.23 299.57,110.10 10.00,110.10 10.00,148.23",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(135,206,235)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,100.57 312.83,100.57 312.83,62.43 10.00,62.43 10.00,100.57",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(135,206,235)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,52.90 326.19,52.90 326.19,14.77 10.00,14.77 10.00,52.90",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              {:transform "translate(10.00,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "0"]]]
+             [:g
+              {:transform "translate(100.86,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "10"]]]
+             [:g
+              {:transform "translate(191.72,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "20"]]]
+             [:g
+              {:transform "translate(282.58,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "30"]]]
+             [:g
+              {:transform "translate(7.00,123.67)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "2007"]]]
+             [:g
+              {:transform "translate(7.00,76.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "2008"]]]
+             [:g
+              {:transform "translate(7.00,28.33)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "2009"]]]]]]]]]
+       (->
+        data
+        (explore-all {:color "skyblue"})
+        (pj/plot)
+        )))  
+
+  (is (=
+       [:svg
+        {:xmlns "http://www.w3.org/2000/svg",
+         :width 800,
+         :height 1000,
+         :viewBox "0 0 800 1000",
+         :role "img",
+         :font-family "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"}
+        [:g
+         [:g
+          {:transform "translate(0.00,0.00)"}
+          [:g
+           [:g
+            {:transform "translate(187.75,14.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 15, :dominant-baseline "hanging", :text-anchor "middle"}
+              "species"]]]
+           [:g
+            {:transform "translate(187.75,30.00)"}
+            [:g
+             [:text
+              {:fill "rgb(102,102,102)",
+               :fill-opacity 1.0,
+               :font-size 13,
+               :dominant-baseline "hanging",
+               :text-anchor "middle"}
+              "na = 0, unique = 3"]]]
+           [:g
+            {:transform "translate(12.00,114.50)"}
+            [:g
+             {:transform "rotate(-90.00)"}
+             [:g
+              [:text
+               {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+               ""]]]]
+           [:g
+            {:transform "translate(187.75,232.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+              "%"]]]
+           [:g
+            {:transform "translate(310.00,35.00)"}
+            [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging"} "species"]]]
+           [:g
+            {:transform "translate(310.00,53.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(228,26,28)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Adelie"]]]]]
+           [:g
+            {:transform "translate(310.00,69.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(55,126,184)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Gentoo"]]]]]
+           [:g
+            {:transform "translate(310.00,85.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(77,175,74)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g
+               [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Chinstrap"]]]]]
+           [:g
+            {:transform "translate(85.50,43.00)"}
+            [:g
+             [:g
+              [:rect
+               {:fill "rgb(232,232,232)", :fill-opacity 1.0, :stroke "none", :x 0, :y 0, :width 204.5, :height 143.0}]]]]
+           [:g
+            {:transform "translate(75.50,33.00)"}
+            [:g
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,10.00 10.00,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "98.23,10.00 98.23,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "186.45,10.00 186.45,153.00"}]]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(228,26,28)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,148.23 204.76,148.23 204.76,135.52 10.00,135.52 10.00,148.23",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(55,126,184)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,100.57 168.63,100.57 168.63,87.86 10.00,87.86 10.00,100.57",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(77,175,74)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,52.90 97.70,52.90 97.70,40.19 10.00,40.19 10.00,52.90",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              {:transform "translate(204.76,124.17)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "44.15"]]]]
+             [:g
+              {:transform "translate(168.63,76.50)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "35.96"]]]]
+             [:g
+              {:transform "translate(97.70,28.83)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "19.88"]]]]
+             [:g
+              {:transform "translate(10.00,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "0"]]]
+             [:g
+              {:transform "translate(98.23,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "20"]]]
+             [:g
+              {:transform "translate(186.45,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "40"]]]
+             [:g
+              {:transform "translate(7.00,123.67)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "Adelie"]]]
+             [:g
+              {:transform "translate(7.00,76.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "Gentoo"]]]
+             [:g
+              {:transform "translate(7.00,28.33)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "Chinstrap"]]]]]]]
+         [:g
+          {:transform "translate(400.00,0.00)"}
+          [:g
+           [:g
+            {:transform "translate(187.75,14.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 15, :dominant-baseline "hanging", :text-anchor "middle"}
+              "island"]]]
+           [:g
+            {:transform "translate(187.75,30.00)"}
+            [:g
+             [:text
+              {:fill "rgb(102,102,102)",
+               :fill-opacity 1.0,
+               :font-size 13,
+               :dominant-baseline "hanging",
+               :text-anchor "middle"}
+              "na = 0, unique = 3"]]]
+           [:g
+            {:transform "translate(12.00,114.50)"}
+            [:g
+             {:transform "rotate(-90.00)"}
+             [:g
+              [:text
+               {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+               ""]]]]
+           [:g
+            {:transform "translate(187.75,232.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+              "%"]]]
+           [:g
+            {:transform "translate(310.00,35.00)"}
+            [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging"} "species"]]]
+           [:g
+            {:transform "translate(310.00,53.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(228,26,28)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Adelie"]]]]]
+           [:g
+            {:transform "translate(310.00,69.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(55,126,184)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Gentoo"]]]]]
+           [:g
+            {:transform "translate(310.00,85.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(77,175,74)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g
+               [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Chinstrap"]]]]]
+           [:g
+            {:transform "translate(85.50,43.00)"}
+            [:g
+             [:g
+              [:rect
+               {:fill "rgb(232,232,232)", :fill-opacity 1.0, :stroke "none", :x 0, :y 0, :width 204.5, :height 143.0}]]]]
+           [:g
+            {:transform "translate(75.50,33.00)"}
+            [:g
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,10.00 10.00,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "64.16,10.00 64.16,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "118.32,10.00 118.32,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "172.48,10.00 172.48,153.00"}]]]]
+             [:g
+              {:transform "translate(90.75,124.17)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "14.91"]]]]
+             [:g
+              {:transform "translate(79.70,76.50)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "12.87"]]]]
+             [:g
+              {:transform "translate(98.66,28.83)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "16.37"]]]]
+             [:g
+              {:transform "translate(204.76,76.50)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "35.96"]]]]
+             [:g
+              {:transform "translate(117.67,28.83)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "19.88"]]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(228,26,28)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,148.23 90.75,148.23 90.75,135.52 10.00,135.52 10.00,148.23",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(228,26,28)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,100.57 79.70,100.57 79.70,87.86 10.00,87.86 10.00,100.57",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(228,26,28)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,52.90 98.66,52.90 98.66,40.19 10.00,40.19 10.00,52.90",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(55,126,184)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,87.86 204.76,87.86 204.76,75.14 10.00,75.14 10.00,87.86",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(77,175,74)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,27.48 117.67,27.48 117.67,14.77 10.00,14.77 10.00,27.48",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              {:transform "translate(10.00,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "0"]]]
+             [:g
+              {:transform "translate(64.16,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "10"]]]
+             [:g
+              {:transform "translate(118.32,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "20"]]]
+             [:g
+              {:transform "translate(172.48,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "30"]]]
+             [:g
+              {:transform "translate(7.00,123.67)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "Torgersen"]]]
+             [:g
+              {:transform "translate(7.00,76.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "Biscoe"]]]
+             [:g
+              {:transform "translate(7.00,28.33)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "Dream"]]]]]]]
+         [:g
+          {:transform "translate(0.00,250.00)"}
+          [:g
+           [:g
+            {:transform "translate(161.00,14.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 15, :dominant-baseline "hanging", :text-anchor "middle"}
+              "bill-length-mm"]]]
+           [:g
+            {:transform "translate(161.00,30.00)"}
+            [:g
+             [:text
+              {:fill "rgb(102,102,102)",
+               :fill-opacity 1.0,
+               :font-size 13,
+               :dominant-baseline "hanging",
+               :text-anchor "middle"}
+              "na = 0, min = 32.10, max = 59.60"]]]
+           [:g
+            {:transform "translate(161.00,232.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+              ""]]]
+           [:g
+            {:transform "translate(310.00,35.00)"}
+            [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging"} "species"]]]
+           [:g
+            {:transform "translate(310.00,53.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(228,26,28)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Adelie"]]]]]
+           [:g
+            {:transform "translate(310.00,69.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(55,126,184)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Gentoo"]]]]]
+           [:g
+            {:transform "translate(310.00,85.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(77,175,74)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g
+               [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Chinstrap"]]]]]
+           [:g
+            {:transform "translate(32.00,43.00)"}
+            [:g
+             [:g
+              [:rect
+               {:fill "rgb(232,232,232)", :fill-opacity 1.0, :stroke "none", :x 0, :y 0, :width 258.0, :height 143.0}]]]]
+           [:g
+            {:transform "translate(22.00,33.00)"}
+            [:g
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "30.86,10.00 30.86,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "103.93,10.00 103.93,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "176.99,10.00 176.99,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "250.06,10.00 250.06,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,153.00 268.00,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,102.48 268.00,102.48"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,51.95 268.00,51.95"}]]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(228,26,28)",
+                 :fill-opacity 0.5,
+                 :stroke "none",
+                 :points
+                 "21.73,153.00 23.42,153.00 25.12,153.00 26.82,153.00 28.52,153.00 30.21,153.00 31.91,153.00 33.61,153.00 35.31,153.00 37.00,152.99 38.70,152.98 40.40,152.96 42.10,152.91 43.80,152.81 45.49,152.62 47.19,152.27 48.89,151.67 50.59,150.68 52.28,149.15 53.98,146.88 55.68,143.68 57.38,139.39 59.07,133.89 60.77,127.13 62.47,119.18 64.17,110.21 65.86,100.49 67.56,90.39 69.26,80.29 70.96,70.58 72.65,61.58 74.35,53.50 76.05,46.43 77.75,40.33 79.44,35.10 81.14,30.62 82.84,26.80 84.54,23.60 86.23,21.02 87.93,19.08 89.63,17.77 91.33,17.04 93.02,16.81 94.72,16.97 96.42,17.43 98.12,18.12 99.81,19.00 101.51,20.09 103.21,21.43 104.91,23.17 106.60,25.49 108.30,28.63 110.00,32.82 111.70,38.21 113.39,44.83 115.09,52.52 116.79,61.02 118.49,69.97 120.18,79.02 121.88,87.85 123.58,96.25 125.28,104.07 126.97,111.23 128.67,117.67 130.37,123.34 132.07,128.21 133.76,132.25 135.46,135.46 137.16,137.87 138.86,139.58 140.55,140.72 142.25,141.49 143.95,142.09 145.65,142.71 147.34,143.47 149.04,144.44 150.74,145.61 152.44,146.90 154.13,148.20 155.83,149.42 157.53,150.46 159.23,151.29 160.92,151.91 162.62,152.35 164.32,152.63 166.02,152.80 167.71,152.90 169.41,152.95 171.11,152.98 172.81,152.99 174.50,153.00 176.20,153.00 177.90,153.00 179.60,153.00 181.29,153.00 182.99,153.00 184.69,153.00 186.39,153.00 188.08,153.00 189.78,153.00 189.78,153.00 21.73,153.00",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(55,126,184)",
+                 :fill-opacity 0.5,
+                 :stroke "none",
+                 :points
+                 "64.84,153.00 66.68,153.00 68.53,153.00 70.37,153.00 72.22,153.00 74.06,153.00 75.91,153.00 77.75,153.00 79.60,153.00 81.44,153.00 83.29,152.99 85.13,152.98 86.98,152.96 88.82,152.92 90.67,152.84 92.51,152.72 94.36,152.51 96.20,152.18 98.05,151.71 99.89,151.03 101.74,150.11 103.58,148.89 105.43,147.34 107.27,145.40 109.12,143.03 110.97,140.16 112.81,136.76 114.66,132.79 116.50,128.25 118.35,123.20 120.19,117.73 122.04,111.97 123.88,106.03 125.73,100.00 127.57,93.86 129.42,87.53 131.26,80.88 133.11,73.79 134.95,66.25 136.80,58.37 138.64,50.45 140.49,42.90 142.33,36.19 144.18,30.74 146.02,26.87 147.87,24.72 149.71,24.21 151.56,25.11 153.40,27.05 155.25,29.57 157.09,32.22 158.94,34.59 160.78,36.40 162.63,37.53 164.47,38.05 166.32,38.18 168.16,38.27 170.01,38.71 171.85,39.92 173.70,42.26 175.54,45.98 177.39,51.18 179.23,57.83 181.08,65.72 182.93,74.50 184.77,83.74 186.62,93.00 188.46,101.89 190.31,110.08 192.15,117.39 194.00,123.75 195.84,129.18 197.69,133.76 199.53,137.61 201.38,140.83 203.22,143.51 205.07,145.74 206.91,147.57 208.76,149.05 210.60,150.21 212.45,151.10 214.29,151.75 216.14,152.21 217.98,152.52 219.83,152.72 221.67,152.85 223.52,152.92 225.36,152.96 227.21,152.98 229.05,152.99 230.90,153.00 232.74,153.00 234.59,153.00 236.43,153.00 238.28,153.00 240.12,153.00 241.97,153.00 243.81,153.00 245.66,153.00 247.50,153.00 247.50,153.00 64.84,153.00",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(77,175,74)",
+                 :fill-opacity 0.5,
+                 :stroke "none",
+                 :points
+                 "61.91,153.00 63.88,153.00 65.84,153.00 67.80,153.00 69.77,153.00 71.73,153.00 73.69,152.99 75.66,152.99 77.62,152.97 79.58,152.95 81.55,152.91 83.51,152.85 85.47,152.75 87.44,152.60 89.40,152.38 91.36,152.07 93.33,151.63 95.29,151.05 97.25,150.29 99.22,149.34 101.18,148.16 103.14,146.75 105.10,145.11 107.07,143.24 109.03,141.18 110.99,138.96 112.96,136.64 114.92,134.29 116.88,131.96 118.85,129.68 120.81,127.46 122.77,125.24 124.74,122.91 126.70,120.31 128.66,117.25 130.63,113.54 132.59,109.05 134.55,103.75 136.52,97.71 138.48,91.17 140.44,84.46 142.41,78.02 144.37,72.28 146.33,67.64 148.30,64.36 150.26,62.53 152.22,62.05 154.19,62.63 156.15,63.81 158.11,65.07 160.08,65.88 162.04,65.77 164.00,64.44 165.96,61.72 167.93,57.69 169.89,52.60 171.85,46.87 173.82,41.02 175.78,35.63 177.74,31.27 179.71,28.43 181.67,27.49 183.63,28.68 185.60,32.04 187.56,37.47 189.52,44.69 191.49,53.35 193.45,63.00 195.41,73.17 197.38,83.42 199.34,93.38 201.30,102.73 203.27,111.26 205.23,118.86 207.19,125.48 209.16,131.13 211.12,135.87 213.08,139.79 215.05,142.97 217.01,145.52 218.97,147.53 220.93,149.08 222.90,150.25 224.86,151.12 226.82,151.75 228.79,152.19 230.75,152.49 232.71,152.69 234.68,152.81 236.64,152.89 238.60,152.94 240.57,152.97 242.53,152.98 244.49,152.99 246.46,153.00 248.42,153.00 250.38,153.00 252.35,153.00 254.31,153.00 256.27,153.00 256.27,153.00 61.91,153.00",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(128,128,128)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 1.5,
+                  :points "132.58,10.00 132.58,153.00"}]]]]
+             [:g
+              {:transform "translate(30.86,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "30"]]]
+             [:g
+              {:transform "translate(103.93,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "40"]]]
+             [:g
+              {:transform "translate(176.99,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "50"]]]
+             [:g
+              {:transform "translate(250.06,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "60"]]]
+             [:g
+              {:transform "translate(7.00,147.50)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.0"]]]
+             [:g
+              {:transform "translate(7.00,96.98)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.05"]]]
+             [:g
+              {:transform "translate(7.00,46.45)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.1"]]]]]]]
+         [:g
+          {:transform "translate(400.00,250.00)"}
+          [:g
+           [:g
+            {:transform "translate(161.00,14.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 15, :dominant-baseline "hanging", :text-anchor "middle"}
+              "bill-depth-mm"]]]
+           [:g
+            {:transform "translate(161.00,30.00)"}
+            [:g
+             [:text
+              {:fill "rgb(102,102,102)",
+               :fill-opacity 1.0,
+               :font-size 13,
+               :dominant-baseline "hanging",
+               :text-anchor "middle"}
+              "na = 0, min = 13.10, max = 21.50"]]]
+           [:g
+            {:transform "translate(161.00,232.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+              ""]]]
+           [:g
+            {:transform "translate(310.00,35.00)"}
+            [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging"} "species"]]]
+           [:g
+            {:transform "translate(310.00,53.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(228,26,28)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Adelie"]]]]]
+           [:g
+            {:transform "translate(310.00,69.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(55,126,184)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Gentoo"]]]]]
+           [:g
+            {:transform "translate(310.00,85.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(77,175,74)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g
+               [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Chinstrap"]]]]]
+           [:g
+            {:transform "translate(32.00,43.00)"}
+            [:g
+             [:g
+              [:rect
+               {:fill "rgb(232,232,232)", :fill-opacity 1.0, :stroke "none", :x 0, :y 0, :width 258.0, :height 143.0}]]]]
+           [:g
+            {:transform "translate(22.00,33.00)"}
+            [:g
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "87.72,10.00 87.72,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "189.26,10.00 189.26,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,153.00 268.00,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,116.61 268.00,116.61"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,80.22 268.00,80.22"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,43.83 268.00,43.83"}]]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(228,26,28)",
+                 :fill-opacity 0.5,
+                 :stroke "none",
+                 :points
+                 "45.08,153.00 47.21,153.00 49.35,153.00 51.48,153.00 53.61,153.00 55.75,153.00 57.88,153.00 60.01,153.00 62.15,153.00 64.28,153.00 66.41,153.00 68.55,152.99 70.68,152.98 72.81,152.96 74.95,152.92 77.08,152.85 79.21,152.73 81.35,152.53 83.48,152.23 85.61,151.79 87.75,151.18 89.88,150.35 92.01,149.29 94.15,147.96 96.28,146.35 98.41,144.47 100.54,142.32 102.68,139.91 104.81,137.22 106.94,134.23 109.08,130.84 111.21,126.89 113.34,122.23 115.48,116.71 117.61,110.27 119.74,103.05 121.88,95.31 124.01,87.50 126.14,80.11 128.28,73.58 130.41,68.17 132.54,63.89 134.68,60.55 136.81,57.78 138.94,55.21 141.08,52.54 143.21,49.62 145.34,46.43 147.48,43.05 149.61,39.63 151.74,36.34 153.88,33.40 156.01,31.09 158.14,29.75 160.28,29.72 162.41,31.31 164.54,34.73 166.68,39.99 168.81,46.91 170.94,55.12 173.08,64.12 175.21,73.37 177.34,82.35 179.48,90.61 181.61,97.89 183.74,104.04 185.88,109.12 188.01,113.29 190.14,116.78 192.28,119.86 194.41,122.75 196.54,125.64 198.67,128.62 200.81,131.70 202.94,134.86 205.07,138.01 207.21,141.02 209.34,143.78 211.47,146.19 213.61,148.19 215.74,149.76 217.87,150.92 220.01,151.73 222.14,152.27 224.27,152.60 226.41,152.79 228.54,152.90 230.67,152.95 232.81,152.98 234.94,152.99 237.07,153.00 239.21,153.00 241.34,153.00 243.47,153.00 245.61,153.00 247.74,153.00 249.87,153.00 252.01,153.00 254.14,153.00 256.27,153.00 256.27,153.00 45.08,153.00",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(55,126,184)",
+                 :fill-opacity 0.5,
+                 :stroke "none",
+                 :points
+                 "21.73,153.00 23.25,153.00 24.76,153.00 26.28,153.00 27.80,153.00 29.32,152.99 30.83,152.99 32.35,152.97 33.87,152.94 35.39,152.88 36.91,152.76 38.42,152.56 39.94,152.23 41.46,151.67 42.98,150.80 44.50,149.48 46.01,147.55 47.53,144.87 49.05,141.25 50.57,136.58 52.09,130.77 53.60,123.81 55.12,115.79 56.64,106.87 58.16,97.31 59.67,87.39 61.19,77.41 62.71,67.67 64.23,58.41 65.75,49.83 67.26,42.08 68.78,35.25 70.30,29.45 71.82,24.72 73.34,21.11 74.85,18.62 76.37,17.22 77.89,16.81 79.41,17.27 80.93,18.44 82.44,20.14 83.96,22.24 85.48,24.61 87.00,27.15 88.51,29.78 90.03,32.41 91.55,34.97 93.07,37.35 94.59,39.48 96.10,41.30 97.62,42.83 99.14,44.15 100.66,45.44 102.18,46.92 103.69,48.83 105.21,51.42 106.73,54.85 108.25,59.22 109.77,64.52 111.28,70.62 112.80,77.31 114.32,84.31 115.84,91.30 117.35,97.98 118.87,104.08 120.39,109.44 121.91,113.95 123.43,117.63 124.94,120.60 126.46,123.02 127.98,125.09 129.50,127.02 131.02,128.97 132.53,131.05 134.05,133.29 135.57,135.68 137.09,138.16 138.61,140.62 140.12,142.96 141.64,145.10 143.16,146.98 144.68,148.55 146.19,149.82 147.71,150.80 149.23,151.53 150.75,152.05 152.27,152.40 153.78,152.64 155.30,152.79 156.82,152.88 158.34,152.94 159.86,152.97 161.37,152.98 162.89,152.99 164.41,153.00 165.93,153.00 167.45,153.00 168.96,153.00 170.48,153.00 172.00,153.00 172.00,153.00 21.73,153.00",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(77,175,74)",
+                 :fill-opacity 0.5,
+                 :stroke "none",
+                 :points
+                 "71.48,153.00 73.28,153.00 75.09,153.00 76.89,152.99 78.70,152.98 80.50,152.96 82.31,152.93 84.11,152.88 85.92,152.80 87.72,152.66 89.53,152.44 91.34,152.10 93.14,151.60 94.95,150.88 96.75,149.87 98.56,148.50 100.36,146.71 102.17,144.42 103.97,141.60 105.78,138.22 107.58,134.31 109.39,129.91 111.19,125.11 113.00,120.04 114.80,114.84 116.61,109.64 118.41,104.60 120.22,99.83 122.02,95.39 123.83,91.33 125.63,87.64 127.44,84.28 129.24,81.20 131.05,78.31 132.85,75.56 134.66,72.88 136.46,70.24 138.27,67.63 140.07,65.06 141.88,62.57 143.68,60.20 145.49,58.01 147.29,56.04 149.10,54.33 150.90,52.90 152.71,51.77 154.51,50.92 156.32,50.36 158.12,50.08 159.93,50.07 161.73,50.32 163.54,50.83 165.34,51.59 167.15,52.59 168.95,53.82 170.76,55.28 172.56,56.97 174.37,58.92 176.17,61.16 177.98,63.74 179.78,66.73 181.59,70.17 183.39,74.11 185.20,78.55 187.00,83.44 188.81,88.72 190.61,94.27 192.42,99.94 194.22,105.59 196.03,111.08 197.83,116.29 199.64,121.13 201.44,125.55 203.25,129.53 205.05,133.07 206.86,136.21 208.66,138.98 210.47,141.40 212.27,143.52 214.08,145.36 215.88,146.94 217.69,148.28 219.49,149.40 221.30,150.31 223.10,151.03 224.91,151.60 226.71,152.03 228.52,152.34 230.32,152.56 232.13,152.72 233.94,152.83 235.74,152.89 237.55,152.94 239.35,152.96 241.16,152.98 242.96,152.99 244.77,152.99 246.57,153.00 248.38,153.00 250.18,153.00 250.18,153.00 71.48,153.00",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(128,128,128)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 1.5,
+                  :points "131.41,10.00 131.41,153.00"}]]]]
+             [:g
+              {:transform "translate(87.72,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "15"]]]
+             [:g
+              {:transform "translate(189.26,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "20"]]]
+             [:g
+              {:transform "translate(7.00,147.50)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.0"]]]
+             [:g
+              {:transform "translate(7.00,111.11)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.1"]]]
+             [:g
+              {:transform "translate(7.00,74.72)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.2"]]]
+             [:g
+              {:transform "translate(7.00,38.33)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.3"]]]]]]]
+         [:g
+          {:transform "translate(0.00,500.00)"}
+          [:g
+           [:g
+            {:transform "translate(161.00,14.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 15, :dominant-baseline "hanging", :text-anchor "middle"}
+              "flipper-length-mm"]]]
+           [:g
+            {:transform "translate(161.00,30.00)"}
+            [:g
+             [:text
+              {:fill "rgb(102,102,102)",
+               :fill-opacity 1.0,
+               :font-size 13,
+               :dominant-baseline "hanging",
+               :text-anchor "middle"}
+              "na = 0, min = 172.00, max = 231.00"]]]
+           [:g
+            {:transform "translate(161.00,232.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+              ""]]]
+           [:g
+            {:transform "translate(310.00,35.00)"}
+            [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging"} "species"]]]
+           [:g
+            {:transform "translate(310.00,53.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(228,26,28)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Adelie"]]]]]
+           [:g
+            {:transform "translate(310.00,69.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(55,126,184)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Gentoo"]]]]]
+           [:g
+            {:transform "translate(310.00,85.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(77,175,74)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g
+               [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Chinstrap"]]]]]
+           [:g
+            {:transform "translate(32.00,43.00)"}
+            [:g
+             [:g
+              [:rect
+               {:fill "rgb(232,232,232)", :fill-opacity 1.0, :stroke "none", :x 0, :y 0, :width 258.0, :height 143.0}]]]]
+           [:g
+            {:transform "translate(22.00,33.00)"}
+            [:g
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "18.88,10.00 18.88,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "75.74,10.00 75.74,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "132.60,10.00 132.60,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "189.46,10.00 189.46,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "246.32,10.00 246.32,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,153.00 268.00,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,108.98 268.00,108.98"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,64.97 268.00,64.97"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,20.95 268.00,20.95"}]]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(228,26,28)",
+                 :fill-opacity 0.5,
+                 :stroke "none",
+                 :points
+                 "24.57,153.00 26.41,153.00 28.25,153.00 30.08,153.00 31.92,153.00 33.76,153.00 35.60,153.00 37.44,153.00 39.27,153.00 41.11,153.00 42.95,153.00 44.79,152.99 46.62,152.97 48.46,152.94 50.30,152.86 52.14,152.69 53.98,152.37 55.81,151.79 57.65,150.83 59.49,149.32 61.33,147.11 63.17,144.07 65.00,140.12 66.84,135.32 68.68,129.81 70.52,123.84 72.36,117.67 74.19,111.57 76.03,105.65 77.87,99.91 79.71,94.17 81.54,88.21 83.38,81.85 85.22,75.03 87.06,67.86 88.90,60.56 90.73,53.35 92.57,46.41 94.41,39.80 96.25,33.53 98.09,27.73 99.92,22.69 101.76,18.88 103.60,16.81 105.44,16.83 107.27,18.99 109.11,22.99 110.95,28.26 112.79,34.22 114.63,40.43 116.46,46.69 118.30,53.06 120.14,59.71 121.98,66.79 123.82,74.35 125.65,82.29 127.49,90.38 129.33,98.36 131.17,105.99 133.01,113.04 134.84,119.38 136.68,124.97 138.52,129.79 140.36,133.88 142.19,137.30 144.03,140.09 145.87,142.31 147.71,144.00 149.55,145.22 151.38,146.06 153.22,146.62 155.06,147.03 156.90,147.39 158.74,147.79 160.57,148.31 162.41,148.93 164.25,149.63 166.09,150.35 167.93,151.03 169.76,151.63 171.60,152.10 173.44,152.44 175.28,152.68 177.11,152.83 178.95,152.91 180.79,152.96 182.63,152.98 184.47,152.99 186.30,153.00 188.14,153.00 189.98,153.00 191.82,153.00 193.66,153.00 195.49,153.00 197.33,153.00 199.17,153.00 201.01,153.00 202.84,153.00 204.68,153.00 206.52,153.00 206.52,153.00 24.57,153.00",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(55,126,184)",
+                 :fill-opacity 0.5,
+                 :stroke "none",
+                 :points
+                 "102.75,153.00 104.30,153.00 105.85,153.00 107.40,153.00 108.95,153.00 110.51,153.00 112.06,153.00 113.61,153.00 115.16,152.99 116.71,152.99 118.26,152.98 119.81,152.96 121.36,152.92 122.91,152.87 124.46,152.78 126.01,152.65 127.56,152.46 129.11,152.21 130.66,151.86 132.22,151.42 133.77,150.85 135.32,150.12 136.87,149.17 138.42,147.92 139.97,146.23 141.52,143.95 143.07,140.90 144.62,136.91 146.17,131.83 147.72,125.62 149.27,118.33 150.82,110.14 152.37,101.36 153.93,92.37 155.48,83.58 157.03,75.34 158.58,67.91 160.13,61.39 161.68,55.74 163.23,50.81 164.78,46.39 166.33,42.32 167.88,38.48 169.43,34.90 170.98,31.70 172.53,29.09 174.08,27.29 175.64,26.49 177.19,26.76 178.74,28.08 180.29,30.30 181.84,33.23 183.39,36.66 184.94,40.42 186.49,44.42 188.04,48.64 189.59,53.09 191.14,57.84 192.69,62.91 194.24,68.28 195.79,73.86 197.35,79.52 198.90,85.06 200.45,90.29 202.00,95.00 203.55,99.04 205.10,102.31 206.65,104.79 208.20,106.58 209.75,107.84 211.30,108.84 212.85,109.88 214.40,111.26 215.95,113.22 217.50,115.89 219.06,119.29 220.61,123.28 222.16,127.66 223.71,132.15 225.26,136.46 226.81,140.38 228.36,143.74 229.91,146.48 231.46,148.59 233.01,150.14 234.56,151.22 236.11,151.94 237.66,152.39 239.21,152.67 240.77,152.82 242.32,152.91 243.87,152.96 245.42,152.98 246.97,152.99 248.52,153.00 250.07,153.00 251.62,153.00 253.17,153.00 254.72,153.00 256.27,153.00 256.27,153.00 102.75,153.00",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(77,175,74)",
+                 :fill-opacity 0.5,
+                 :stroke "none",
+                 :points
+                 "21.73,153.00 23.68,153.00 25.63,153.00 27.59,153.00 29.54,153.00 31.49,153.00 33.44,153.00 35.40,153.00 37.35,152.99 39.30,152.98 41.25,152.97 43.21,152.94 45.16,152.88 47.11,152.79 49.07,152.65 51.02,152.43 52.97,152.11 54.92,151.66 56.88,151.05 58.83,150.27 60.78,149.31 62.74,148.18 64.69,146.89 66.64,145.49 68.59,144.01 70.55,142.48 72.50,140.91 74.45,139.28 76.40,137.52 78.36,135.52 80.31,133.14 82.26,130.26 84.22,126.76 86.17,122.59 88.12,117.76 90.07,112.38 92.03,106.58 93.98,100.55 95.93,94.43 97.88,88.34 99.84,82.32 101.79,76.37 103.74,70.47 105.70,64.61 107.65,58.80 109.60,53.16 111.55,47.85 113.51,43.09 115.46,39.14 117.41,36.23 119.36,34.57 121.32,34.27 123.27,35.33 125.22,37.69 127.18,41.20 129.13,45.69 131.08,50.95 133.03,56.81 134.99,63.12 136.94,69.72 138.89,76.49 140.85,83.29 142.80,89.94 144.75,96.31 146.70,102.23 148.66,107.59 150.61,112.30 152.56,116.37 154.51,119.84 156.47,122.84 158.42,125.50 160.37,127.98 162.33,130.40 164.28,132.87 166.23,135.40 168.18,137.97 170.14,140.51 172.09,142.94 174.04,145.16 175.99,147.09 177.95,148.71 179.90,150.00 181.85,150.98 183.81,151.69 185.76,152.18 187.71,152.51 189.66,152.72 191.62,152.84 193.57,152.92 195.52,152.96 197.47,152.98 199.43,152.99 201.38,153.00 203.33,153.00 205.29,153.00 207.24,153.00 209.19,153.00 211.14,153.00 213.10,153.00 215.05,153.00 215.05,153.00 21.73,153.00",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(128,128,128)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 1.5,
+                  :points "135.21,10.00 135.21,153.00"}]]]]
+             [:g
+              {:transform "translate(18.88,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "160"]]]
+             [:g
+              {:transform "translate(75.74,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "180"]]]
+             [:g
+              {:transform "translate(132.60,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "200"]]]
+             [:g
+              {:transform "translate(189.46,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "220"]]]
+             [:g
+              {:transform "translate(246.32,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "240"]]]
+             [:g
+              {:transform "translate(7.00,147.50)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.0"]]]
+             [:g
+              {:transform "translate(7.00,103.48)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.02"]]]
+             [:g
+              {:transform "translate(7.00,59.47)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.04"]]]
+             [:g
+              {:transform "translate(7.00,15.45)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.06"]]]]]]]
+         [:g
+          {:transform "translate(400.00,500.00)"}
+          [:g
+           [:g
+            {:transform "translate(166.50,14.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 15, :dominant-baseline "hanging", :text-anchor "middle"}
+              "body-mass-g"]]]
+           [:g
+            {:transform "translate(166.50,30.00)"}
+            [:g
+             [:text
+              {:fill "rgb(102,102,102)",
+               :fill-opacity 1.0,
+               :font-size 13,
+               :dominant-baseline "hanging",
+               :text-anchor "middle"}
+              "na = 0, min = 2700.00, max = 6300.00"]]]
+           [:g
+            {:transform "translate(166.50,232.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+              ""]]]
+           [:g
+            {:transform "translate(310.00,35.00)"}
+            [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging"} "species"]]]
+           [:g
+            {:transform "translate(310.00,53.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(228,26,28)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Adelie"]]]]]
+           [:g
+            {:transform "translate(310.00,69.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(55,126,184)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Gentoo"]]]]]
+           [:g
+            {:transform "translate(310.00,85.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(77,175,74)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g
+               [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Chinstrap"]]]]]
+           [:g
+            {:transform "translate(43.00,43.00)"}
+            [:g
+             [:g
+              [:rect
+               {:fill "rgb(232,232,232)", :fill-opacity 1.0, :stroke "none", :x 0, :y 0, :width 247.0, :height 143.0}]]]]
+           [:g
+            {:transform "translate(33.00,33.00)"}
+            [:g
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "23.54,10.00 23.54,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "69.84,10.00 69.84,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "116.14,10.00 116.14,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "162.44,10.00 162.44,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "208.73,10.00 208.73,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "255.03,10.00 255.03,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,153.00 257.00,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,89.92 257.00,89.92"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,26.84 257.00,26.84"}]]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(228,26,28)",
+                 :fill-opacity 0.5,
+                 :stroke "none",
+                 :points
+                 "21.81,153.00 23.56,153.00 25.31,153.00 27.07,153.00 28.82,153.00 30.57,153.00 32.33,153.00 34.08,152.99 35.84,152.99 37.59,152.97 39.34,152.95 41.10,152.89 42.85,152.79 44.60,152.62 46.36,152.33 48.11,151.88 49.87,151.17 51.62,150.14 53.37,148.70 55.13,146.77 56.88,144.28 58.63,141.19 60.39,137.52 62.14,133.29 63.90,128.58 65.65,123.50 67.40,118.16 69.16,112.66 70.91,107.09 72.66,101.53 74.42,96.01 76.17,90.57 77.92,85.24 79.68,80.04 81.43,75.04 83.19,70.32 84.94,65.99 86.69,62.16 88.45,58.96 90.20,56.45 91.95,54.67 93.71,53.59 95.46,53.14 97.22,53.21 98.97,53.70 100.72,54.54 102.48,55.71 104.23,57.23 105.98,59.16 107.74,61.54 109.49,64.42 111.25,67.77 113.00,71.50 114.75,75.49 116.51,79.56 118.26,83.54 120.01,87.29 121.77,90.74 123.52,93.88 125.28,96.78 127.03,99.52 128.78,102.24 130.54,105.03 132.29,107.94 134.04,110.96 135.80,114.06 137.55,117.17 139.30,120.21 141.06,123.13 142.81,125.92 144.57,128.59 146.32,131.17 148.07,133.69 149.83,136.18 151.58,138.63 153.33,141.00 155.09,143.25 156.84,145.31 158.60,147.13 160.35,148.68 162.10,149.93 163.86,150.90 165.61,151.62 167.36,152.13 169.12,152.47 170.87,152.69 172.63,152.83 174.38,152.91 176.13,152.95 177.89,152.98 179.64,152.99 181.39,153.00 183.15,153.00 184.90,153.00 186.66,153.00 188.41,153.00 190.16,153.00 191.92,153.00 193.67,153.00 195.42,153.00 195.42,153.00 21.81,153.00",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(55,126,184)",
+                 :fill-opacity 0.5,
+                 :stroke "none",
+                 :points
+                 "69.84,153.00 71.62,153.00 73.39,153.00 75.17,153.00 76.95,153.00 78.73,153.00 80.50,153.00 82.28,153.00 84.06,152.99 85.83,152.98 87.61,152.97 89.39,152.95 91.17,152.90 92.94,152.83 94.72,152.73 96.50,152.57 98.27,152.33 100.05,151.99 101.83,151.53 103.61,150.91 105.38,150.10 107.16,149.08 108.94,147.81 110.71,146.26 112.49,144.43 114.27,142.30 116.04,139.87 117.82,137.16 119.60,134.20 121.38,131.01 123.15,127.63 124.93,124.10 126.71,120.44 128.48,116.66 130.26,112.74 132.04,108.67 133.82,104.40 135.59,99.92 137.37,95.23 139.15,90.38 140.92,85.44 142.70,80.57 144.48,75.93 146.26,71.72 148.03,68.11 149.81,65.26 151.59,63.24 153.36,62.10 155.14,61.80 156.92,62.26 158.70,63.36 160.47,64.95 162.25,66.85 164.03,68.90 165.80,70.91 167.58,72.74 169.36,74.29 171.13,75.48 172.91,76.29 174.69,76.77 176.47,76.99 178.24,77.07 180.02,77.16 181.80,77.43 183.57,78.02 185.35,79.10 187.13,80.78 188.91,83.15 190.68,86.26 192.46,90.11 194.24,94.64 196.01,99.75 197.79,105.29 199.57,111.10 201.35,116.97 203.12,122.71 204.90,128.14 206.68,133.12 208.45,137.52 210.23,141.28 212.01,144.39 213.78,146.86 215.56,148.76 217.34,150.17 219.12,151.17 220.89,151.86 222.67,152.31 224.45,152.60 226.22,152.78 228.00,152.88 229.78,152.94 231.56,152.97 233.33,152.98 235.11,152.99 236.89,153.00 238.66,153.00 240.44,153.00 242.22,153.00 244.00,153.00 245.77,153.00 245.77,153.00 69.84,153.00",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(77,175,74)",
+                 :fill-opacity 0.5,
+                 :stroke "none",
+                 :points
+                 "21.23,153.00 23.00,153.00 24.78,153.00 26.56,153.00 28.34,153.00 30.11,153.00 31.89,153.00 33.67,153.00 35.44,153.00 37.22,153.00 39.00,152.99 40.78,152.99 42.55,152.97 44.33,152.93 46.11,152.87 47.88,152.75 49.66,152.55 51.44,152.25 53.22,151.81 54.99,151.22 56.77,150.50 58.55,149.66 60.32,148.73 62.10,147.72 63.88,146.60 65.65,145.22 67.43,143.35 69.21,140.67 70.99,136.84 72.76,131.55 74.54,124.68 76.32,116.29 78.09,106.69 79.87,96.37 81.65,85.90 83.43,75.81 85.20,66.47 86.98,58.03 88.76,50.43 90.53,43.49 92.31,37.03 94.09,31.01 95.87,25.58 97.64,21.10 99.42,18.03 101.20,16.81 102.97,17.68 104.75,20.62 106.53,25.34 108.30,31.33 110.08,38.08 111.86,45.15 113.64,52.30 115.41,59.48 117.19,66.77 118.97,74.24 120.74,81.85 122.52,89.44 124.30,96.71 126.08,103.33 127.85,109.03 129.63,113.70 131.41,117.39 133.18,120.32 134.96,122.79 136.74,125.11 138.52,127.49 140.29,130.03 142.07,132.71 143.85,135.40 145.62,137.96 147.40,140.24 149.18,142.19 150.96,143.82 152.73,145.19 154.51,146.40 156.29,147.51 158.06,148.57 159.84,149.55 161.62,150.44 163.39,151.19 165.17,151.79 166.95,152.24 168.73,152.55 170.50,152.75 172.28,152.87 174.06,152.93 175.83,152.97 177.61,152.99 179.39,152.99 181.17,153.00 182.94,153.00 184.72,153.00 186.50,153.00 188.27,153.00 190.05,153.00 191.83,153.00 193.61,153.00 195.38,153.00 197.16,153.00 197.16,153.00 21.23,153.00",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(128,128,128)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 1.5,
+                  :points "125.48,10.00 125.48,153.00"}]]]]
+             [:g
+              {:transform "translate(23.54,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "2000"]]]
+             [:g
+              {:transform "translate(69.84,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "3000"]]]
+             [:g
+              {:transform "translate(116.14,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "4000"]]]
+             [:g
+              {:transform "translate(162.44,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "5000"]]]
+             [:g
+              {:transform "translate(208.73,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "6000"]]]
+             [:g
+              {:transform "translate(255.03,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "7000"]]]
+             [:g
+              {:transform "translate(7.00,147.50)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.0"]]]
+             [:g
+              {:transform "translate(7.00,84.42)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.0005"]]]
+             [:g
+              {:transform "translate(7.00,21.34)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "0.001"]]]]]]]
+         [:g
+          {:transform "translate(0.00,750.00)"}
+          [:g
+           [:g
+            {:transform "translate(179.50,14.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 15, :dominant-baseline "hanging", :text-anchor "middle"}
+              "sex"]]]
+           [:g
+            {:transform "translate(179.50,30.00)"}
+            [:g
+             [:text
+              {:fill "rgb(102,102,102)",
+               :fill-opacity 1.0,
+               :font-size 13,
+               :dominant-baseline "hanging",
+               :text-anchor "middle"}
+              "na = 0, unique = 3"]]]
+           [:g
+            {:transform "translate(12.00,114.50)"}
+            [:g
+             {:transform "rotate(-90.00)"}
+             [:g
+              [:text
+               {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+               ""]]]]
+           [:g
+            {:transform "translate(179.50,232.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+              "%"]]]
+           [:g
+            {:transform "translate(310.00,35.00)"}
+            [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging"} "species"]]]
+           [:g
+            {:transform "translate(310.00,53.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(228,26,28)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Adelie"]]]]]
+           [:g
+            {:transform "translate(310.00,69.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(55,126,184)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Gentoo"]]]]]
+           [:g
+            {:transform "translate(310.00,85.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(77,175,74)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g
+               [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Chinstrap"]]]]]
+           [:g
+            {:transform "translate(69.00,43.00)"}
+            [:g
+             [:g
+              [:rect
+               {:fill "rgb(232,232,232)", :fill-opacity 1.0, :stroke "none", :x 0, :y 0, :width 221.0, :height 143.0}]]]]
+           [:g
+            {:transform "translate(59.00,33.00)"}
+            [:g
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,10.00 10.00,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "108.58,10.00 108.58,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "207.17,10.00 207.17,153.00"}]]]]
+             [:g
+              {:transform "translate(220.48,124.17)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "21.35"]]]]
+             [:g
+              {:transform "translate(220.48,76.50)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "21.35"]]]]
+             [:g
+              {:transform "translate(24.39,28.83)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "1.46"]]]]
+             [:g
+              {:transform "translate(177.20,76.50)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "16.96"]]]]
+             [:g
+              {:transform "translate(185.87,124.17)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "17.84"]]]]
+             [:g
+              {:transform "translate(21.53,28.83)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "1.17"]]]]
+             [:g
+              {:transform "translate(107.99,76.50)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "9.94"]]]]
+             [:g
+              {:transform "translate(107.99,124.17)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "9.94"]]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(228,26,28)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,148.23 220.48,148.23 220.48,135.52 10.00,135.52 10.00,148.23",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(228,26,28)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,100.57 220.48,100.57 220.48,87.86 10.00,87.86 10.00,100.57",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(228,26,28)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,52.90 24.39,52.90 24.39,40.19 10.00,40.19 10.00,52.90",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(55,126,184)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,87.86 177.20,87.86 177.20,75.14 10.00,75.14 10.00,87.86",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(55,126,184)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,135.52 185.87,135.52 185.87,122.81 10.00,122.81 10.00,135.52",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(55,126,184)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,40.19 21.53,40.19 21.53,27.48 10.00,27.48 10.00,40.19",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(77,175,74)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,75.14 107.99,75.14 107.99,62.43 10.00,62.43 10.00,75.14",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(77,175,74)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,122.81 107.99,122.81 107.99,110.10 10.00,110.10 10.00,122.81",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              {:transform "translate(10.00,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "0"]]]
+             [:g
+              {:transform "translate(108.58,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "10"]]]
+             [:g
+              {:transform "translate(207.17,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "20"]]]
+             [:g
+              {:transform "translate(7.00,123.67)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "male"]]]
+             [:g
+              {:transform "translate(7.00,76.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "female"]]]
+             [:g
+              {:transform "translate(7.00,28.33)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "__NA__"]]]]]]]
+         [:g
+          {:transform "translate(400.00,750.00)"}
+          [:g
+           [:g
+            {:transform "translate(174.00,14.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 15, :dominant-baseline "hanging", :text-anchor "middle"}
+              "year"]]]
+           [:g
+            {:transform "translate(174.00,30.00)"}
+            [:g
+             [:text
+              {:fill "rgb(102,102,102)",
+               :fill-opacity 1.0,
+               :font-size 13,
+               :dominant-baseline "hanging",
+               :text-anchor "middle"}
+              "na = 0, unique = 3"]]]
+           [:g
+            {:transform "translate(12.00,114.50)"}
+            [:g
+             {:transform "rotate(-90.00)"}
+             [:g
+              [:text
+               {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+               ""]]]]
+           [:g
+            {:transform "translate(174.00,232.00)"}
+            [:g
+             [:text
+              {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 13, :dominant-baseline "hanging", :text-anchor "middle"}
+              "%"]]]
+           [:g
+            {:transform "translate(310.00,35.00)"}
+            [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging"} "species"]]]
+           [:g
+            {:transform "translate(310.00,53.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(228,26,28)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Adelie"]]]]]
+           [:g
+            {:transform "translate(310.00,69.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(55,126,184)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Gentoo"]]]]]
+           [:g
+            {:transform "translate(310.00,85.00)"}
+            [:g
+             [:g
+              {:transform "translate(0.00,0.00)"}
+              [:g
+               [:g
+                [:rect
+                 {:y 0,
+                  :rx 4.0,
+                  :stroke "none",
+                  :fill "rgb(77,175,74)",
+                  :width 8,
+                  :x 0,
+                  :ry 4.0,
+                  :fill-opacity 1.0,
+                  :height 8}]]]]
+             [:g
+              {:transform "translate(12.00,0.00)"}
+              [:g
+               [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "Chinstrap"]]]]]
+           [:g
+            {:transform "translate(58.00,43.00)"}
+            [:g
+             [:g
+              [:rect
+               {:fill "rgb(232,232,232)", :fill-opacity 1.0, :stroke "none", :x 0, :y 0, :width 232.0, :height 143.0}]]]]
+           [:g
+            {:transform "translate(48.00,33.00)"}
+            [:g
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "10.00,10.00 10.00,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "82.68,10.00 82.68,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "155.36,10.00 155.36,153.00"}]]]]
+             [:g
+              [:g
+               [:g
+                [:polyline
+                 {:fill "none",
+                  :stroke "rgb(245,245,245)",
+                  :stroke-opacity 1.0,
+                  :stroke-width 0.6,
+                  :points "228.05,10.00 228.05,153.00"}]]]]
+             [:g
+              {:transform "translate(218.31,124.17)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "14.33"]]]]
+             [:g
+              {:transform "translate(222.52,76.50)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "14.62"]]]]
+             [:g
+              {:transform "translate(230.95,28.83)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "15.2"]]]]
+             [:g
+              {:transform "translate(154.49,124.17)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "9.94"]]]]
+             [:g
+              {:transform "translate(205.51,76.50)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "13.45"]]]]
+             [:g
+              {:transform "translate(192.72,28.83)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 36.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "12.57"]]]]
+             [:g
+              {:transform "translate(120.48,124.17)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 24.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 24.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "7.6"]]]]
+             [:g
+              {:transform "translate(86.46,76.50)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "5.26"]]]]
+             [:g
+              {:transform "translate(112.05,28.83)"}
+              [:g
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:g
+                  [:rect
+                   {:fill "rgb(255,255,255)", :fill-opacity 0.85, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]]
+               [:g
+                {:transform "translate(-3.00,-2.00)"}
+                [:g
+                 [:rect {:fill "rgb(178,178,178)", :fill-opacity 0.5, :stroke "none", :x 0, :y 0, :width 30.0, :height 14}]]]
+               [:g [:text {:fill "rgb(51,51,51)", :fill-opacity 1.0, :font-size 10, :dominant-baseline "hanging"} "7.02"]]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(228,26,28)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,148.23 218.31,148.23 218.31,135.52 10.00,135.52 10.00,148.23",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(228,26,28)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,100.57 222.52,100.57 222.52,87.86 10.00,87.86 10.00,100.57",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(228,26,28)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,52.90 230.95,52.90 230.95,40.19 10.00,40.19 10.00,52.90",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(55,126,184)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,135.52 154.49,135.52 154.49,122.81 10.00,122.81 10.00,135.52",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(55,126,184)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,87.86 205.51,87.86 205.51,75.14 10.00,75.14 10.00,87.86",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(55,126,184)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,40.19 192.72,40.19 192.72,27.48 10.00,27.48 10.00,40.19",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(77,175,74)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,122.81 120.48,122.81 120.48,110.10 10.00,110.10 10.00,122.81",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(77,175,74)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,75.14 86.46,75.14 86.46,62.43 10.00,62.43 10.00,75.14",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              [:g
+               [:polygon
+                {:fill "rgb(77,175,74)",
+                 :fill-opacity 0.7,
+                 :stroke "none",
+                 :points "10.00,27.48 112.05,27.48 112.05,14.77 10.00,14.77 10.00,27.48",
+                 :shape-rendering "crispEdges"}]]]
+             [:g
+              {:transform "translate(10.00,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "0"]]]
+             [:g
+              {:transform "translate(82.68,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "5"]]]
+             [:g
+              {:transform "translate(155.36,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "10"]]]
+             [:g
+              {:transform "translate(228.05,165.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)",
+                 :fill-opacity 1.0,
+                 :font-size 11,
+                 :dominant-baseline "hanging",
+                 :text-anchor "middle"}
+                "15"]]]
+             [:g
+              {:transform "translate(7.00,123.67)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "2007"]]]
+             [:g
+              {:transform "translate(7.00,76.00)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "2008"]]]
+             [:g
+              {:transform "translate(7.00,28.33)"}
+              [:g
+               [:text
+                {:fill "rgb(102,102,102)", :fill-opacity 1.0, :font-size 11, :dominant-baseline "hanging", :text-anchor "end"}
+                "2009"]]]]]]]]]
+
+       (->
+        data
+        (explore-all {:target :species})
+        (pj/plot))
+       )))
