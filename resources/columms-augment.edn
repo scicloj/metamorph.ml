@@ -5,7 +5,7 @@
 ;;  :.col.prop "Column proportion (2 dimensional table only).",
 ;;  :.conf.high "Upper bound on confidence interval for fitted values.",
 ;;  :.conf.low "Lower bound on confidence interval for fitted values.",
-;;  :.cooksd "Cooks distance.",
+ :.cooksd "Cooks distance.",
 ;;  :.cov.ratio "The covariance ratio.",
 ;;  :.cred.high "Upper bound on credible interval for fitted values.",
 ;;  :.cred.low "Lower bound on credible interval for fitted values.",
