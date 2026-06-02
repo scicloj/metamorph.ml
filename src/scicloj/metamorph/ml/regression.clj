@@ -89,8 +89,7 @@
   (let [residuals (-> model :model-data :residuals)]
     (-> data
         (tc/add-columns {:.resid (:raw residuals)
-                         ;:.std.resid (-> model :model-data :analysis :residuals :standardized)
-                         :.std.resid (-> model :model-data :analysis :residuals :studentized)
+                         :.std.resid (-> model :model-data :analysis :residuals :standardized)
                          :.fitted (:fitted (:model-data model))
                          
                          }))))
@@ -142,6 +141,9 @@
                     (:model-data model)
                     (-> feature-ds ds/rowvecs))
         target-column-name (-> model :target-columns first)]
+    
+    (def prediction prediction)
+    (def target-column-name target-column-name)
 
     (ds/new-dataset [target-column-name
                      (ds/new-column target-column-name
@@ -250,6 +252,20 @@
                                     predicted-values
                                     {:column-type :prediction})])))
 
+(defn ppoints
+  "Mimics R's function `ppoints`.
+   Used for making the  :residual-q-q plot
+   "
+  [n]
+  (let [m-range n
+        a (if (<= n 10) 3/8 1/2)
+        denom (+ n 1 (- (* 2 a)))]
+    (mapv
+     (fn [m]
+       (double (/ (- (inc m) a) denom)))
+     (range m-range))))
+
+
 
 (defn- diagnostic-plots [model dataset options]
   (let [residuals (:.resid (ml/augment model dataset))
@@ -260,30 +276,34 @@
         residual-vs-fitted-pose (->
                                  dataset
                                  (pj/lay-point  :fitted :residual)
-                                 (pj/lay-smooth {:color "red"}))
+                                 (pj/lay-smooth {:color "red"})
+                                 (pj/options {:title "Fitted vs Residuals"
+                                              :x-label "Fitted values"
+                                              :y-label "Residuals"} )
+                                 )
 
         standardised-residuals
         (->
          (ml/augment model dataset)
-         :.std.resid
-        ;stats/standardize
-         )
+         :.std.resid)
 
         num-rows (tc/row-count standardised-residuals)
 
         normal-quantiles
         (map
          #(r/icdf r/default-normal %)
-         (map
-          #(/ % num-rows)
-          (range 1 (inc num-rows))))
+         (ppoints num-rows))
 
         residual-qq-pose
         (->
          (tc/dataset  {:y (sort standardised-residuals)
                        :x (sort normal-quantiles)})
-         (pj/lay-point)
-         (pj/lay-smooth))]
+         (pj/lay-point :x :y)
+         (pj/lay-smooth)
+         (pj/options {:title "Q-Q Residuals"
+                      :x-label "Theoretical Quantiles"
+                      :y-label "Standardised residuals"})
+         )]
     {:residual-vs-fitted residual-vs-fitted-pose
      :residual-q-q residual-qq-pose}))
 
@@ -336,5 +356,3 @@
         )
     )
   {})
-
-
