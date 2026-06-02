@@ -63,7 +63,8 @@
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.tensor :as dtt]
-   [tech.v3.datatype :as dt])
+   [tech.v3.datatype :as dt]
+   [fastmath.stats :as stats])
   (:import [fastmath.java Array]
            [org.apache.commons.math3.stat.regression OLSMultipleLinearRegression]))
 
@@ -266,96 +267,102 @@
        (double (/ (- (inc m) a) denom)))
      (range m-range))))
 
+;((y2-y1)/(x2-x1)) * (x - x1) + y1
+(defn make-line-eq-fn [xs ys]
+  (fn [x]
+    (+
+     (*
+      (/ (- (second ys) (first ys))
+         (- (second xs) (first xs)))
+      (- x (first xs)))
+     (first ys)))) 
 
 
-(defn- diagnostic-plots [model dataset options]
-  (let [
-        ;fitted (-> (ml/predict dataset model) (cf/prediction) tc/columns first)
-        
-        
-        ;; r-vs-f-dataset (-> dataset
-        ;;             (tc/add-column :fitted fitted)
-        ;;             (tc/add-column :residual residuals))
-        
-        augmented-ds (-> (ml/augment model dataset)
-                         (tc/add-column :row-number (map str (range (tc/row-count dataset)))))
-        
+(defn- residual-vs-fitted-pose [augmented-ds options]
+  (->
+   augmented-ds
+  
+   (pj/lay-point  :.fitted :.resid)
+   (pj/lay-smooth (merge {:color "red"} options))
+   (pj/options {:title "Fitted vs Residuals"
+                :x-label "Fitted values"
+                :y-label "Residuals"})
+   (pj/lay-rule-h {:y-intercept 0 :color "grey" :alpha 0.2})
+   (pj/lay-text :.fitted :.resid
+                {:text :row-number
+                                                  ;:nudge-x 1
+                 :data (-> augmented-ds
+                           (tc/add-column :.abs-resid #(tcc/abs (:.resid %)))
+                           (tc/order-by :.abs-resid :desc)
+                           (tc/head 3))}))
+  )
 
-        residual-vs-fitted-pose (->
-                                 augmented-ds
-                                 
-                                 (pj/lay-point  :.fitted :.resid)
-                                 (pj/lay-smooth {:color "red"})
-                                 (pj/options {:title "Fitted vs Residuals"
-                                              :x-label "Fitted values"
-                                              :y-label "Residuals"})
-                                 (pj/lay-rule-h {:y-intercept 0 :color "grey" :alpha 0.2})
-                                 (pj/lay-text :.fitted :.resid
-                                              {:text :row-number
-                                                ;:nudge-x 1
-                                               :data (-> augmented-ds
-                                                         (tc/add-column :.abs-resid #(tcc/abs (:.resid %)))
-                                                         (tc/order-by :.abs-resid :desc)
-                                                         (tc/head 3))})
-                                 
-                                 )
+(defn- residual-qq-pose [augmented-ds]
+  (let [num-rows (tc/row-count augmented-ds)
+
         
-        
-        
-
-
-        standardised-residuals
-        (->
-         augmented-ds
-         :.std.resid)
-
-        num-rows (tc/row-count standardised-residuals)
-
+        probs [0.25 0.75]
         normal-quantiles
         (map
          #(r/icdf r/default-normal %)
          (ppoints num-rows))
 
-        residual-qq-pose
-        (->
-         (tc/dataset  {:y (sort standardised-residuals)
-                       :x (sort normal-quantiles)})
-         (pj/lay-point :x :y)
-         (pj/lay-smooth)
-         (pj/options {:title "Q-Q Residuals"
-                      :x-label "Theoretical Quantiles"
-                      :y-label "Standardised residuals"}))
+        xs
+        (map
+         #(r/icdf r/default-normal %)
+         probs)
+
+        ys
+        (stats/quantiles
+         (-> augmented-ds :.std.resid)
+         probs)
+
+        line-fn (make-line-eq-fn xs ys)
+
+        start-x (tcc/reduce-min normal-quantiles)
+        start-y (line-fn start-x)
+        end-x (tcc/reduce-max normal-quantiles)
+        end-y (line-fn end-x)]
+
+    (->
+     (tc/dataset  {:y (sort (:.std.resid augmented-ds))
+                   :x (sort normal-quantiles)})
+     (pj/lay-point :x :y)
+     (pj/lay-line {:data [{:x start-x
+                           :y start-y}
+                          {:x end-x
+                           :y end-y}]})
+
+     (pj/options {:title "Q-Q Residuals"
+                  :x-label "Theoretical Quantiles"
+                  :y-label "Standardised residuals"}))))
+
+(defn- cooks-distance-pose [augmented-ds]
+  (-> augmented-ds
+      (pj/lay-lollipop :row-number :.cooksd)
+      (pj/options {:title "Cooks distance"
+
+                   :x-label "Obs. number"
+                   :y-label "Cook's distance"})))
 
 
+(defn- scale-location-pose [augmented-ds options]
+  (->
+   augmented-ds
+   (tc/add-column :.sqrt-abs-resid (tcc/sqrt (tcc/abs (:.std.resid augmented-ds))))
+   (pj/lay-point :.fitted :.sqrt-abs-resid)
+   (pj/lay-smooth (merge {:color "red"} options))
+   (pj/options {:title "Scale Location"
+                :x-label "Fitted values"
+                :y-label "(sqrt (abs standardised-residuals))"})))
 
-        scale-location-pose
-        (->
-         augmented-ds
-         (tc/add-column :.sqrt-abs-resid (tcc/sqrt (tcc/abs standardised-residuals)))
-         (pj/lay-point :.fitted :.sqrt-abs-resid)
-         (pj/lay-smooth {:color "red"})
-         (pj/options {:title "Scale Location"
-                      :x-label "Fitted values"
-                      :y-label "(sqrt (abs standardised-residuals))"}))
-
-
-        cooks-distance-pose
-        (-> augmented-ds
-            (pj/lay-lollipop :row-number :.cooksd)
-            (pj/options {:title "Cooks distance"
-
-                         :x-label "Obs. number"
-                         :y-label "Cook's distance"}))]
-
-
-
-
-
-    {:residual-vs-fitted residual-vs-fitted-pose
-     :residual-q-q residual-qq-pose
-     :scale-location scale-location-pose
-     :cooks-distance cooks-distance-pose
-     }))
+(defn- diagnostic-plots-ols-fm [model dataset options]
+  (let [augmented-ds (-> (ml/augment model dataset)
+                         (tc/add-column :row-number (map str (range (tc/row-count dataset)))))]
+    {:residual-vs-fitted (residual-vs-fitted-pose augmented-ds options)
+     :residual-q-q (residual-qq-pose augmented-ds)
+     :scale-location (scale-location-pose augmented-ds options)
+     :cooks-distance (cooks-distance-pose augmented-ds)}))
 
 
 
@@ -372,14 +379,10 @@
 (ml/define-model! :fastmath/ols
   train-fm-ols
   predict-fm
-  {
-   :tidy-fn tidy-fm-ols
+  {:tidy-fn tidy-fm-ols
    :glance-fn glance-fm-ols
    :augment-fn augment-fm-ols
-   :plot-fn diagnostic-plots
-   }
-  
-  )
+   :plot-fn diagnostic-plots-ols-fm})
 
 (ml/define-model! :fastmath/glm
   train-fm-glm
@@ -410,3 +413,4 @@
   {})
 
 
+ 
