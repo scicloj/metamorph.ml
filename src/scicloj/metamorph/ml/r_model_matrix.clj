@@ -92,7 +92,8 @@
                                    :library library
                                    :R object-name
                                    params)]
-    (assert (= 200 (-> object-result :status)) (format "HTTP status from '%s' !=200 : %s" base-url (-> object-result :status)))
+    (assert (contains? #{200 201} 
+                       (-> object-result :status)) (format "HTTP status from '%s' !=200 or 201 : %s" base-url (-> object-result :status)))
     (-> object-result
         :result
         first (str/split #"/") (nth 3))))
