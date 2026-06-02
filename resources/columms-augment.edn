@@ -22,7 +22,7 @@
 ;;  :.probability "Class probability of modal class.",
 ;;  :.prop "Proportion of the total.",
 ;;  :.remainder "The remainder, or random, component of the decomposition.",
- :.resid "The difference between observed and fitted values."}
+ :.resid "The difference between observed and fitted values."
 ;;  :.resid-j-0 "Population-level residuals for the j-th longitudinal process.",
 ;;  :.resid-j-1 "Individual-level residuals for the j-th longitudinal process.",
 ;;  :.row.prop "Row proportion (2 dimensions table only).",
@@ -38,3 +38,4 @@
 ;;  :.uncertainty "The uncertainty associated with the classification. Equal to one minus the model class probability.",
 ;;  :.upper "Upper bound on interval for fitted values.",
 ;;  :.weight "The final robust weights."
+}
