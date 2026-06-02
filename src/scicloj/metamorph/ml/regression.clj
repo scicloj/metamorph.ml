@@ -91,7 +91,7 @@
         (tc/add-columns {:.resid (:raw residuals)
                          :.std.resid (-> model :model-data :analysis :residuals :standardized)
                          :.fitted (:fitted (:model-data model))
-                         
+                         :.cooksd (-> model :model-data :analysis :influence :cooks-distance)
                          }))))
 
 
@@ -142,8 +142,6 @@
                     (-> feature-ds ds/rowvecs))
         target-column-name (-> model :target-columns first)]
     
-    (def prediction prediction)
-    (def target-column-name target-column-name)
 
     (ds/new-dataset [target-column-name
                      (ds/new-column target-column-name
@@ -236,7 +234,10 @@
   (let [xs
         (->
          feature-ds
-         ds/rowvecs)
+         ds/rowvecs)        ;; r-vs-f-dataset (-> dataset
+                    ;;             (tc/add-column :fitted fitted)
+                    ;;             (tc/add-column :residual residuals))
+
 
         xs
         (into-array (map double-array xs))
@@ -268,23 +269,44 @@
 
 
 (defn- diagnostic-plots [model dataset options]
-  (let [residuals (:.resid (ml/augment model dataset))
-        fitted (-> (ml/predict dataset model) (cf/prediction) tc/columns first)
-        dataset (-> dataset
-                    (tc/add-column :fitted fitted)
-                    (tc/add-column :residual residuals))
+  (let [
+        ;fitted (-> (ml/predict dataset model) (cf/prediction) tc/columns first)
+        
+        
+        ;; r-vs-f-dataset (-> dataset
+        ;;             (tc/add-column :fitted fitted)
+        ;;             (tc/add-column :residual residuals))
+        
+        augmented-ds (-> (ml/augment model dataset)
+                         (tc/add-column :row-number (map str (range (tc/row-count dataset)))))
+        
+
         residual-vs-fitted-pose (->
-                                 dataset
-                                 (pj/lay-point  :fitted :residual)
+                                 augmented-ds
+                                 
+                                 (pj/lay-point  :.fitted :.resid)
                                  (pj/lay-smooth {:color "red"})
                                  (pj/options {:title "Fitted vs Residuals"
                                               :x-label "Fitted values"
-                                              :y-label "Residuals"} )
+                                              :y-label "Residuals"})
+                                 (pj/lay-rule-h {:y-intercept 0 :color "grey" :alpha 0.2})
+                                 (pj/lay-text :.fitted :.resid
+                                              {:text :row-number
+                                                ;:nudge-x 1
+                                               :data (-> augmented-ds
+                                                         (tc/add-column :.abs-resid #(tcc/abs (:.resid %)))
+                                                         (tc/order-by :.abs-resid :desc)
+                                                         (tc/head 3))})
+                                 
                                  )
+        
+        
+        
+
 
         standardised-residuals
         (->
-         (ml/augment model dataset)
+         augmented-ds
          :.std.resid)
 
         num-rows (tc/row-count standardised-residuals)
@@ -302,10 +324,40 @@
          (pj/lay-smooth)
          (pj/options {:title "Q-Q Residuals"
                       :x-label "Theoretical Quantiles"
-                      :y-label "Standardised residuals"})
-         )]
+                      :y-label "Standardised residuals"}))
+
+
+
+        scale-location-pose
+        (->
+         augmented-ds
+         (tc/add-column :.sqrt-abs-resid (tcc/sqrt (tcc/abs standardised-residuals)))
+         (pj/lay-point :.fitted :.sqrt-abs-resid)
+         (pj/lay-smooth {:color "red"})
+         (pj/options {:title "Scale Location"
+                      :x-label "Fitted values"
+                      :y-label "(sqrt (abs standardised-residuals))"}))
+
+
+        cooks-distance-pose
+        (-> augmented-ds
+            (pj/lay-lollipop :row-number :.cooksd)
+            (pj/options {:title "Cooks distance"
+
+                         :x-label "Obs. number"
+                         :y-label "Cook's distance"}))]
+
+
+
+
+
     {:residual-vs-fitted residual-vs-fitted-pose
-     :residual-q-q residual-qq-pose}))
+     :residual-q-q residual-qq-pose
+     :scale-location scale-location-pose
+     :cooks-distance cooks-distance-pose
+     }))
+
+
 
 
 
@@ -356,3 +408,5 @@
         )
     )
   {})
+
+
