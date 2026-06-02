@@ -31,7 +31,7 @@
 ;;  :.seasadj "The seasonally adjusted (or *deseasonalised*) series.",
 ;;  :.seasonal "The seasonal component of the decomposition.",
 ;;  :.sigma "Estimated residual standard deviation when corresponding observation is dropped from model.",
-;;  :.std.resid "Standardised residuals.",
+ :.std.resid "Standardised residuals."
 ;;  :.tau "Quantile.",
 ;;  :.tau.squared.loo "leave-one-out tau-squared estimates",
 ;;  :.trend "The trend component of the decomposition.",
