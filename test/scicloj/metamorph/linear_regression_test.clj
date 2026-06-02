@@ -14,7 +14,8 @@
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.modelling :as ds-mod]
    [tech.v3.dataset.column-filters :as cf]
-   [tech.v3.dataset :as dataset]))
+   [tech.v3.dataset :as dataset]
+   [scicloj.plotje.api :as pj]))
 
 
 (defn approx? [x0 x1]
@@ -615,16 +616,47 @@
         model (ml/train dataset {:model-type :fastmath/ols})]
 
 
-    (is (=  [:layers :data :mapping]
+    (is (=  [:layers :data :mapping :opts]
             (-> (ml/plot model dataset)
                 :residual-vs-fitted
                 keys)))
-    (is (=  [:layers :data :mapping]
+    (is (=  [:layers :data :mapping :opts]
             (-> (ml/plot model dataset)
                 :residual-q-q
-                keys)))))
+                keys)))
+    (def model model)
+    (def dataset dataset)
+    
+    ))
 
-  
+ 
+(comment
+  (let [dataset
+        (->
+         (rdatasets/datasets-mtcars)
+         (ds/categorical->number cf/categorical)
+         (tc/drop-columns [:rownames])
+         (ds-mod/set-inference-target :mpg))
+
+        model (ml/train dataset {:model-type :fastmath/ols})
+        poses (ml/plot model dataset)
+        
+        ]
+
+   (pj/arrange (map val poses) 
+               {:cols 1
+                :height (* 400 (count poses))
+                }) 
+    
+
+
+    ))
+
+
+
+
+ (ml/augment model dataset) 
+ 
  (let [data
        (->
         (rdatasets/datasets-iris)
