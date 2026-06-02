@@ -631,44 +631,23 @@
 
  
 (comment
+  ;; arrange all diagnostic plots
   (let [dataset
         (->
-         (rdatasets/datasets-mtcars)
+         (rdatasets/datasets-trees)
          (ds/categorical->number cf/categorical)
          (tc/drop-columns [:rownames])
-         (ds-mod/set-inference-target :mpg))
+         (ds-mod/set-inference-target :girth))
 
         model (ml/train dataset {:model-type :fastmath/ols})
-        poses (ml/plot model dataset)
-        
-        ]
+        poses (ml/plot model dataset)]
 
-   (pj/arrange (map val poses) 
-               {:cols 1
-                :height (* 400 (count poses))
-                }) 
-    
-
-
-    ))
+    (pj/arrange (map val poses)
+                {:cols 1
+                 :height (* 400 (count poses))}))
+  )
 
 
 
 
- (ml/augment model dataset) 
- 
- (let [data
-       (->
-        (rdatasets/datasets-iris)
-        ;(ds/categorical->one-hot cf/categorical)
-        (tc/drop-columns [:rownames :species])
-        (ds-mod/set-inference-target :sepal-width)
-        )
-
-       model (ml/train data {:model-type :fastmath/ols})]
-
-   (-> (ml/plot model data)
-       :residual-q-q))
- 
- 
  
