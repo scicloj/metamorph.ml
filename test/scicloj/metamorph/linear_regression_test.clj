@@ -13,7 +13,8 @@
    [taoensso.nippy :as nippy]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.modelling :as ds-mod]
-   [tech.v3.dataset.column-filters :as cf]))
+   [tech.v3.dataset.column-filters :as cf]
+   [tech.v3.dataset :as dataset]))
 
 
 (defn approx? [x0 x1]
@@ -604,16 +605,38 @@
 
 
 (deftest plot
-  (is (=  [:layers :data :mapping]
-          (keys
-           (let [dataset
-                 (->
-                  (rdatasets/datasets-mtcars)
-                  (ds/categorical->number cf/categorical)
-                  (tc/drop-columns [:rownames])
-                  (ds-mod/set-inference-target :mpg))
+  (let [dataset
+        (->
+         (rdatasets/datasets-mtcars)
+         (ds/categorical->number cf/categorical)
+         (tc/drop-columns [:rownames])
+         (ds-mod/set-inference-target :mpg))
 
-                 model (ml/train dataset {:model-type :fastmath/ols})]
-             (-> (ml/plot model dataset)  
-                 :residual-vs-fitted))))))
+        model (ml/train dataset {:model-type :fastmath/ols})]
 
+
+    (is (=  [:layers :data :mapping]
+            (-> (ml/plot model dataset)
+                :residual-vs-fitted
+                keys)))
+    (is (=  [:layers :data :mapping]
+            (-> (ml/plot model dataset)
+                :residual-q-q
+                keys)))))
+
+  
+ (let [data
+       (->
+        (rdatasets/datasets-iris)
+        ;(ds/categorical->one-hot cf/categorical)
+        (tc/drop-columns [:rownames :species])
+        (ds-mod/set-inference-target :sepal-width)
+        )
+
+       model (ml/train data {:model-type :fastmath/ols})]
+
+   (-> (ml/plot model data)
+       :residual-q-q))
+ 
+ 
+ 
