@@ -634,10 +634,10 @@
   ;; arrange all diagnostic plots
   (let [dataset
         (->
-         (rdatasets/datasets-trees)
+         (rdatasets/datasets-mtcars)
          (ds/categorical->number cf/categorical)
          (tc/drop-columns [:rownames])
-         (ds-mod/set-inference-target :girth))
+         (ds-mod/set-inference-target :mpg))
 
         model (ml/train dataset {:model-type :fastmath/ols})
         poses (ml/plot model dataset)]
@@ -646,6 +646,7 @@
                 {:cols 1
                  :height (* 400 (count poses))}))
   )
+
 
 
 

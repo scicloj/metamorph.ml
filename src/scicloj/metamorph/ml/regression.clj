@@ -290,7 +290,7 @@
    (pj/lay-rule-h {:y-intercept 0 :color "grey" :alpha 0.2})
    (pj/lay-text :.fitted :.resid
                 {:text :row-number
-                                                  ;:nudge-x 1
+                 :color "red"                                 ;:nudge-x 1
                  :data (-> augmented-ds
                            (tc/add-column :.abs-resid #(tcc/abs (:.resid %)))
                            (tc/order-by :.abs-resid :desc)
@@ -322,11 +322,24 @@
         start-x (tcc/reduce-min normal-quantiles)
         start-y (line-fn start-x)
         end-x (tcc/reduce-max normal-quantiles)
-        end-y (line-fn end-x)]
+        end-y (line-fn end-x)
+        
+        qq-dataset 
+        (-> (tc/dataset  {:x (sort normal-quantiles)
+                          :y (sort (:.std.resid augmented-ds))})
+            (tc/add-column :y-diff
+                           (fn [ds]
+                             (map
+                              (fn [x y]
+                                (abs (- y (line-fn x))))
+                              (:x ds)
+                              (:y ds)))))
+        ]
+
+
 
     (->
-     (tc/dataset  {:y (sort (:.std.resid augmented-ds))
-                   :x (sort normal-quantiles)})
+     qq-dataset
      (pj/lay-point :x :y)
      (pj/lay-line {:data [{:x start-x
                            :y start-y}
