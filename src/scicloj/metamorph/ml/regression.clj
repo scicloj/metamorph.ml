@@ -93,6 +93,7 @@
                          :.std.resid (-> model :model-data :analysis :residuals :standardized)
                          :.fitted (:fitted (:model-data model))
                          :.cooksd (-> model :model-data :analysis :influence :cooks-distance)
+                         :.hat (-> model :model-data :analysis :laverage :hat)
                          }))))
 
 
@@ -372,10 +373,41 @@
 (defn- diagnostic-plots-ols-fm [model dataset options]
   (let [augmented-ds (-> (ml/augment model dataset)
                          (tc/add-column :row-number (map str (range (tc/row-count dataset)))))]
+    (def augmented-ds augmented-ds)
     {:residual-vs-fitted (residual-vs-fitted-pose augmented-ds options)
      :residual-q-q (residual-qq-pose augmented-ds)
      :scale-location (scale-location-pose augmented-ds options)
-     :cooks-distance (cooks-distance-pose augmented-ds)}))
+     :cooks-distance (cooks-distance-pose augmented-ds)
+
+     :residual-vs-leverage
+     (-> augmented-ds
+         (pj/lay-point  :.hat  :.std.resid)
+
+
+         (pj/options {:title "Residual vs Leverage"
+                      :x-label "Leverage"
+                      :y-label "Standardised residuals"}))
+
+     :cooks-d-vs-leverage*
+     (-> augmented-ds
+         (tc/add-column :leverage* (fn [ds]
+                                     (map
+                                      (fn [hat]
+                                        (/ hat (- 1 hat)))
+                                      (:.hat ds))))
+
+         (pj/lay-point  :leverage* :.cooksd)
+         (pj/options {:title "Residual vs Leverage h_ii / (1 - h_ii)"
+                      :x-label "Leverage h_ii / (1 - h_ii)"
+                      :y-label "Cook's distance"}))}))
+  
+
+   
+  
+    
+      
+
+  
 
 
 
