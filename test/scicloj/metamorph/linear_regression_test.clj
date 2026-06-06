@@ -631,7 +631,7 @@
 
  
 (comment
-  ;; arrange all diagnostic plots
+  ;; reproduces plots in https://github.com/scicloj/plotje/issues/16
   (let [dataset
         (->
          (rdatasets/datasets-mtcars)
