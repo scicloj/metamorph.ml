@@ -640,7 +640,9 @@
          (ds-mod/set-inference-target :mpg))
 
         model (ml/train dataset {:model-type :fastmath/ols})
-        poses (ml/plot model dataset)]
+        poses (ml/plot model dataset {:pretty-cooks-d-levels-plot-6 [0.0 0.5 1.0 1.5 2.0]})   ;if we want "the same" plot then R: plot(lm(mtcars))
+        ;poses (ml/plot model dataset)    ;; plot 6 produces different cook's d lines, as "pretty" function is not available for clojure
+        ]
 
     (pj/arrange (map val poses)
                 {:cols 1

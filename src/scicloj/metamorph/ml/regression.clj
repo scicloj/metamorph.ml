@@ -64,7 +64,8 @@
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.tensor :as dtt]
    [tech.v3.datatype :as dt]
-   [fastmath.stats :as stats])
+   [fastmath.stats :as stats]
+   [wadogo.scale :as s])
   (:import [fastmath.java Array]
            [org.apache.commons.math3.stat.regression OLSMultipleLinearRegression]))
 
@@ -370,47 +371,154 @@
                 :x-label "Fitted values"
                 :y-label "(sqrt (abs standardised-residuals))"})))
 
+(defn- linspace [start end n-steps]
+  (take n-steps
+        (range start end (/ (- end start) n-steps))))
+
+(def FACTOR-RESID 1)
+(def FACTOR-HAT 1)
+
+(defn lay-cooks-d [pose cooks-d params-count pos-neg min-std-resid max-std-resid]
+  (let  [x_ (linspace
+             (* FACTOR-HAT (tcc/reduce-min (:.hat (:data pose))))
+             (* FACTOR-HAT (tcc/reduce-max (:.hat (:data pose))))
+             100)
+         y_
+         (tcc/* pos-neg
+                (tcc/sqrt
+                 (tcc//
+                  (tcc/*
+                   cooks-d
+                   params-count
+                   (tcc/- 1 x_))
+                  x_)))
+
+         cooks-d
+         (->
+          (tc/dataset {:.hat x_
+                       :.std.resid y_})
+          (tc/select-rows (fn [row]
+                            (and
+                             (< (:.std.resid row) max-std-resid)
+                             (> (:.std.resid row) min-std-resid))))
+          )]
+
+    (pj/lay-point pose {:color "grey"
+                       :size 1
+                       :data cooks-d})))
+
+(defn residual-vs-leverage-pose [augmented-ds model]
+  (let [params-count (-> (ml/glance model) :df first)
+        min-std-resid   (* FACTOR-RESID (tcc/reduce-min (:.std.resid augmented-ds)))
+        max-std-resid   (* FACTOR-RESID (tcc/reduce-max (:.std.resid augmented-ds)))
+        cook-levels [0.5 1]
+        base-pose (pj/lay-point augmented-ds :.hat  :.std.resid)
+        all-poses
+        (reduce (fn [pose cooks-d]
+                  (-> pose
+                      (lay-cooks-d cooks-d params-count 1 min-std-resid max-std-resid)
+                      (lay-cooks-d cooks-d params-count -1 min-std-resid max-std-resid)))
+                base-pose
+                cook-levels)]
+
+    (-> all-poses
+
+        (pj/options {:title "Residual vs Leverage"
+                     :x-label "Leverage"
+                     :y-label "Standardised residuals"}))))
+
+(defn draw-line [pose x-1 x-2 intercept slope]
+  ; y = intercept + slope * x
+  (let [y-1 (+ intercept (* x-1 slope))
+        y-2 (+ intercept (* x-2 slope))]
+    (pj/lay-line pose {:size 1
+                       :color "grey"
+                       :data {:leverage* [x-1 x-2]
+                              :.cooksd [y-1 y-2]}})))
+
+(defn pretty [s proposed-ticks]
+  (let [min (tcc/reduce-min s)
+        max (tcc/reduce-max s)
+        scale (s/scale :linear {:domain [min max]})]
+    (s/ticks scale proposed-ticks)))
+
+(defn cooks-d-vs-leverage*-pose [augmented-ds model options]
+  (let  [plot-ds
+         (-> augmented-ds
+             (tc/add-column :leverage* (fn [ds]
+                                         (map
+                                          (fn [hat]
+                                            (/ hat (- 1 hat)))
+                                          (:.hat ds)))))
+         leverage*-min (-> plot-ds :leverage* tcc/reduce-min)
+         leverage*-max (-> plot-ds :leverage* tcc/reduce-max)
+
+         hat-min (-> plot-ds :.hat tcc/reduce-min)
+         hat-max (-> plot-ds :.hat tcc/reduce-max)
+
+         cooksd-min (-> plot-ds :.cooksd tcc/reduce-min)
+         cooksd-max (-> plot-ds :.cooksd tcc/reduce-max)
+         scale-hat (s/scale :linear {:domain [hat-min hat-max]})
+         labels-hat (s/ticks scale-hat 5)
+         breaks-hat (tcc// labels-hat
+                           (tcc/- 1 labels-hat))
+         rank (-> model :model-data :df :model inc)
+
+
+
+         ;; still matches R
+         bval (tcc/sqrt
+               (tcc/* rank
+                      (tcc//
+                       (:.cooksd plot-ds)
+                       (:leverage* plot-ds))))
+         _ (println (pretty bval 5))
+         ;; TODO: (pretty bval 5) not the same as R `(pretty ... 5)`
+         ;R 'pretty' produces 0.00 0.25 1.00 2.25 4.00 on plot(lm(mtcars))
+         ;while we produce  (0.5 1.0 1.5) using scicloj/wadogo :linear scale
+
+         cooks-d--levels
+         (tcc/sq (or (:pretty-cooks-d-levels-plot-6 options) (pretty bval 5)))
+
+         base-pose
+         (pj/lay-point plot-ds :leverage* :.cooksd)
+
+         pose-with-lines
+         (reduce (fn [pose cooks-d-level]
+                   (draw-line pose -0.1 leverage*-max 0 cooks-d-level))
+                 base-pose
+                 cooks-d--levels)]
+    
+
+    (-> pose-with-lines
+
+
+        (pj/lay-point  :leverage* :.cooksd)
+        (pj/lay-smooth {:color "red"})
+
+        (pj/scale :x {:breaks breaks-hat
+                      :labels labels-hat})
+        (pj/scale :y {:domain
+                      [cooksd-min cooksd-max]})
+
+
+
+        (pj/options {:title "Residual vs Leverage h_ii / (1 - h_ii)"
+                     :x-label "Leverage h_ii / (1 - h_ii)"
+                     :y-label "Cook's distance"}))))
+
 (defn- diagnostic-plots-ols-fm [model dataset options]
+
   (let [augmented-ds (-> (ml/augment model dataset)
                          (tc/add-column :row-number (map str (range (tc/row-count dataset)))))]
-    (def augmented-ds augmented-ds)
     {:residual-vs-fitted (residual-vs-fitted-pose augmented-ds options)
      :residual-q-q (residual-qq-pose augmented-ds)
      :scale-location (scale-location-pose augmented-ds options)
      :cooks-distance (cooks-distance-pose augmented-ds)
+     :residual-vs-leverage (residual-vs-leverage-pose augmented-ds model)
 
-     :residual-vs-leverage
-     (-> augmented-ds
-         (pj/lay-point  :.hat  :.std.resid)
-
-
-         (pj/options {:title "Residual vs Leverage"
-                      :x-label "Leverage"
-                      :y-label "Standardised residuals"}))
-
-     :cooks-d-vs-leverage*
-     (-> augmented-ds
-         (tc/add-column :leverage* (fn [ds]
-                                     (map
-                                      (fn [hat]
-                                        (/ hat (- 1 hat)))
-                                      (:.hat ds))))
-
-         (pj/lay-point  :leverage* :.cooksd)
-         (pj/options {:title "Residual vs Leverage h_ii / (1 - h_ii)"
-                      :x-label "Leverage h_ii / (1 - h_ii)"
-                      :y-label "Cook's distance"}))}))
+     :cooks-d-vs-leverage* (cooks-d-vs-leverage*-pose augmented-ds model options)}))
   
-
-   
-  
-    
-      
-
-  
-
-
-
 
 
 (ml/define-model! :metamorph.ml/ols
