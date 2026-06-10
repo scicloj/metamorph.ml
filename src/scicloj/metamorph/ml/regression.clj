@@ -375,13 +375,31 @@
   (take n-steps
         (range start end (/ (- end start) n-steps))))
 
-(def FACTOR-RESID 1)
-(def FACTOR-HAT 1)
+(defn inclusive-range
+  "Return a sequence of nums from START to END, both inclusive, by STEP."
+  ([start end]
+   (inclusive-range start end 1))
+  ([start end step]
+   (let [test-for-done (if (< start end)
+                         >
+                         <)]
+     (if (test-for-done start (+ start step))
+       []
+       (conj 
+        (loop [nums []
+               cur start]
+          (if (test-for-done cur end)
+            nums
+            (recur (conj nums cur)
+                   (+ cur step))))
+        end
+        )))))
+
 
 (defn lay-cooks-d [pose cooks-d params-count pos-neg min-std-resid max-std-resid]
   (let  [x_ (linspace
-             (* FACTOR-HAT (tcc/reduce-min (:.hat (:data pose))))
-             (* FACTOR-HAT (tcc/reduce-max (:.hat (:data pose))))
+             (tcc/reduce-min (:.hat (:data pose)))
+             (tcc/reduce-max (:.hat (:data pose)))
              100)
          y_
          (tcc/* pos-neg
@@ -409,8 +427,8 @@
 
 (defn residual-vs-leverage-pose [augmented-ds model]
   (let [params-count (-> (ml/glance model) :df first)
-        min-std-resid   (* FACTOR-RESID (tcc/reduce-min (:.std.resid augmented-ds)))
-        max-std-resid   (* FACTOR-RESID (tcc/reduce-max (:.std.resid augmented-ds)))
+        min-std-resid (tcc/reduce-min (:.std.resid augmented-ds))
+        max-std-resid (tcc/reduce-max (:.std.resid augmented-ds))
         cook-levels [0.5 1]
         base-pose (pj/lay-point augmented-ds :.hat  :.std.resid)
         all-poses
@@ -428,47 +446,42 @@
                      :y-label "Standardised residuals"}))))
 
 (defn draw-ab-line [pose x-1 x-2 intercept cooksd-level cooksd-min cooksd-max]
-  ; y = intercept + slope * x
-  
-  (let [
+  (let [cooksd-level-squared (tcc/sq cooksd-level)
         xy
         (map
          #(hash-map :leverage* %
-                    :.cooksd (+ intercept (* % cooksd-level)))
-         (range x-1 x-2 0.01))
-        
+                    :.cooksd (+ intercept (* % cooksd-level-squared)))
+         (inclusive-range x-1 x-2 (/ (- x-2 x-1) 100)))
+
 
         clipped-xy
-        (remove 
+        (remove
          (fn [a-xy]
-           (or 
+           (or
             (> (:.cooksd a-xy) cooksd-max)
-            (< (:.cooksd a-xy) cooksd-min))
-           )
-         xy
-         )
-        
-        ;y-1 (+ intercept (* x-1 cooksd-level))
-        ;y-2 (+ intercept (* x-2 cooksd-level))
+            (< (:.cooksd a-xy) cooksd-min)))
+         xy)
+
+        ;y-1 (+ intercept (* x-1 cooksd-level-squared))
+        ;y-2 (+ intercept (* x-2 cooksd-level-squared))
         ]
     (-> pose
         (pj/lay-line {:size 1
-                      :color "grey"
-                      :data {:leverage* (map :leverage* clipped-xy)
-                             :.cooksd (map :.cooksd clipped-xy)}})
-        ;;  (pj/lay-line {:size 2
-        ;;                :color "red"
+                       :color "grey"
+                       :data {:leverage* (map :leverage* clipped-xy)
+                              :.cooksd (map :.cooksd clipped-xy)}})
+
+        ;; (pj/lay-line {:size 2
+        ;;               :color "red"
         ;;                :data {:leverage* [x-1 x-2]
         ;;                       :.cooksd [y-1 y-2]}})
-        
-         (pj/lay-label {:size 5
-                        :color "blue"
-                        :text :text
-                        :data {:text [cooksd-level]
-                               :leverage* (tcc/reduce-max (map :leverage* clipped-xy))
-                               :.cooksd (tcc/reduce-max (map :.cooksd clipped-xy))}})
-        
-        )))
+
+        (pj/lay-label {
+                       :color "blue"
+                       :text :text
+                       :data {:text [cooksd-level]
+                              :leverage* (tcc/reduce-max (map :leverage* clipped-xy))
+                              :.cooksd (tcc/reduce-max (map :.cooksd clipped-xy))}}))))
 
 (defn pretty [s proposed-ticks]
   (let [min (tcc/reduce-min s)
@@ -484,13 +497,13 @@
                                           (fn [hat]
                                             (/ hat (- 1 hat)))
                                           (:.hat ds)))))
-         leverage*-min -0.05;(-> plot-ds :leverage* tcc/reduce-min)
+         leverage*-min 0;(-> plot-ds :leverage* tcc/reduce-min)
          leverage*-max (-> plot-ds :leverage* tcc/reduce-max)
 
          hat-min 0;(-> plot-ds :.hat tcc/reduce-min)
          hat-max (-> plot-ds :.hat tcc/reduce-max)
 
-         cooksd-min -0.05;-> plot-ds :.cooksd tcc/reduce-min)
+         cooksd-min 0;-> plot-ds :.cooksd tcc/reduce-min)
          cooksd-max (-> plot-ds :.cooksd tcc/reduce-max)
          scale-hat (s/scale :linear {:domain [hat-min hat-max]})
          labels-hat (s/ticks scale-hat 5)
@@ -510,9 +523,9 @@
          ;; TODO: (pretty bval 5) not the same as R `(pretty ... 5)`
          ;R 'pretty' produces 0.00 0.25 1.00 2.25 4.00 on plot(lm(mtcars))
          ;while we produce  (0.5 1.0 1.5) using scicloj/wadogo :linear scale
-
+         
          cooks-d--levels
-         (tcc/sq (or (:pretty-cooks-d-levels-plot-6 options) (pretty bval 5)))
+         (or (:pretty-cooks-d-levels-plot-6 options) (pretty bval 5))
 
          base-pose
          (pj/lay-point plot-ds :leverage* :.cooksd)
@@ -541,8 +554,11 @@
                      :x-label "Leverage h_ii / (1 - h_ii)"
                      :y-label "Cook's distance"}))))
 
-(defn- diagnostic-plots-ols-fm [model dataset options]
+(defn- diagnostic-plots-ols-fm [model dataset & {:as options}]
 
+  (def model model)
+  (def dataset dataset)
+  (def options options)
   (let [augmented-ds (-> (ml/augment model dataset)
                          (tc/add-column :row-number (map str (range (tc/row-count dataset)))))]
     {:residual-vs-fitted (residual-vs-fitted-pose augmented-ds options)

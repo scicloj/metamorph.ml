@@ -8,6 +8,7 @@
    [scicloj.metamorph.ml :as ml]
    [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [scicloj.metamorph.ml.regression]
+   [scicloj.metamorph.ml.r-model-matrix :as r-mm]
    [scicloj.metamorph.ml.toydata :as data]
    [tablecloth.api :as tc]
    [taoensso.nippy :as nippy]
@@ -15,7 +16,8 @@
    [tech.v3.dataset.modelling :as ds-mod]
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset :as dataset]
-   [scicloj.plotje.api :as pj]))
+   [scicloj.plotje.api :as pj]
+   [scicloj.metamorph.ml.r-model-matrix :as model-matrix]))
 
 
 (defn approx? [x0 x1]
@@ -623,39 +625,58 @@
     (is (=  [:layers :data :mapping :opts]
             (-> (ml/plot model dataset)
                 :residual-q-q
-                keys)))
-    (def model model)
-    (def dataset dataset)
-    
-    ))
+                keys)))))
 
- 
-(comment
-  ;; reproduces plots in https://github.com/scicloj/plotje/issues/16
-  (let [dataset
+
+(defn- diagnostic-plots [dataset formula inference-target & {:as opts}]
+  (let [model-matrix
         (->
-         (rdatasets/datasets-mtcars)
-         (ds/categorical->number cf/categorical)
+         dataset
          (tc/drop-columns [:rownames])
-         (ds-mod/set-inference-target :mpg))
+         (r-mm/r-model-matrix formula :ocpu)
+         :model-matrix-dataset)
 
-        model (ml/train dataset {:model-type :fastmath/ols})
-        poses (ml/plot model dataset {:pretty-cooks-d-levels-plot-6 [0.0 0.5 1.0 1.5 2.0]})   ;if we want "the same" plot then R: plot(lm(mtcars))
-        ;poses (ml/plot model dataset)    ;; plot 6 produces different cook's d lines, as "pretty" function is not available for clojure
+        modelled-dataset
+        (->
+         model-matrix
+         (tc/drop-columns ["(Intercept)"])
+         (tc/add-column inference-target (get dataset inference-target))
+         (ds-mod/set-inference-target inference-target))
+
+
+        model (ml/train modelled-dataset {:model-type :fastmath/ols})
+        ;poses (ml/plot model dataset {:pretty-cooks-d-levels-plot-6 [0.0 0.5 1.0 1.5 2.0]})   ;if we want "the same" plot then R: plot(lm(mtcars))
+        poses (ml/plot model modelled-dataset opts)    ;; plot 6 produces different cook's d lines, as "pretty" function is not available for clojure
         ]
-    (def poses poses)
 
     (pj/arrange (map val poses)
                 {:cols 1
-                 :height (* 400 (count poses))})
+                 :height (* 400 (count poses))})))
 
-    ;;   (:cooks-d-vs-leverage* poses)  
-    ))
+(comment
+  ;; reproduces plots in https://github.com/scicloj/plotje/issues/16
+  ;; the plots have now identical xy points then R: plot(lm(mtcars))
+  (diagnostic-plots
+   (rdatasets/datasets-mtcars)
+   "mpg ~ ."
+   :mpg))
 
+(comment
+  ;; the plots have now identical xy points then R plot(lm(iris))
+  (diagnostic-plots
+   (rdatasets/datasets-iris)
+   "`sepal-length` ~ ."
+   :sepal-length))
 
+(diagnostic-plots
+ (rdatasets/datasets-rock)
+ "`area` ~ ."
+ :area
+ {:pretty-cooks-d-levels-plot-6 [0 1 2 3 4]})
 
-; abline 0 0
-;abline 0 0.25 
-;abline 1 0.25 
-;abline 1 2.25 
- 
+(diagnostic-plots
+ (tc/dataset "https://raw.githubusercontent.com/prasertcbs/basic-dataset/refs/heads/master/marketing.csv")
+ "sales ~ youtube",
+ "sales"
+ {:pretty-cooks-d-levels-plot-6 [0 1 2 3]}
+ )
