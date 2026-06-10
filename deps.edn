@@ -72,7 +72,9 @@
                 org.scicloj/sklearn-clj {:mvn/version "0.6.1"}
                 org.scicloj/scicloj.ml.tribuo {:mvn/version "0.3.1"}
                 org.tribuo/tribuo-classification-tree      {:mvn/version "4.3.2"}
-                clojang/codox-theme {:mvn/version "0.2.0-SNAPSHOT"}}}
+                clojang/codox-theme {:mvn/version "0.2.0-SNAPSHOT"}
+                org.clj-commons/hickory {:mvn/version "0.7.7"}
+                }}
 
   :test
   {:jvm-opts ["-Djdk.attach.allowAttachSelf","-Xmx14G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
