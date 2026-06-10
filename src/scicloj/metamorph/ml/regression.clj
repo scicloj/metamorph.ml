@@ -427,14 +427,48 @@
                      :x-label "Leverage"
                      :y-label "Standardised residuals"}))))
 
-(defn draw-line [pose x-1 x-2 intercept slope]
+(defn draw-ab-line [pose x-1 x-2 intercept cooksd-level cooksd-min cooksd-max]
   ; y = intercept + slope * x
-  (let [y-1 (+ intercept (* x-1 slope))
-        y-2 (+ intercept (* x-2 slope))]
-    (pj/lay-line pose {:size 1
-                       :color "grey"
-                       :data {:leverage* [x-1 x-2]
-                              :.cooksd [y-1 y-2]}})))
+  
+  (let [
+        xy
+        (map
+         #(hash-map :leverage* %
+                    :.cooksd (+ intercept (* % cooksd-level)))
+         (range x-1 x-2 0.01))
+        
+
+        clipped-xy
+        (remove 
+         (fn [a-xy]
+           (or 
+            (> (:.cooksd a-xy) cooksd-max)
+            (< (:.cooksd a-xy) cooksd-min))
+           )
+         xy
+         )
+        
+        ;y-1 (+ intercept (* x-1 cooksd-level))
+        ;y-2 (+ intercept (* x-2 cooksd-level))
+        ]
+    (-> pose
+        (pj/lay-line {:size 1
+                      :color "grey"
+                      :data {:leverage* (map :leverage* clipped-xy)
+                             :.cooksd (map :.cooksd clipped-xy)}})
+        ;;  (pj/lay-line {:size 2
+        ;;                :color "red"
+        ;;                :data {:leverage* [x-1 x-2]
+        ;;                       :.cooksd [y-1 y-2]}})
+        
+         (pj/lay-label {:size 5
+                        :color "blue"
+                        :text :text
+                        :data {:text [cooksd-level]
+                               :leverage* (tcc/reduce-max (map :leverage* clipped-xy))
+                               :.cooksd (tcc/reduce-max (map :.cooksd clipped-xy))}})
+        
+        )))
 
 (defn pretty [s proposed-ticks]
   (let [min (tcc/reduce-min s)
@@ -450,13 +484,13 @@
                                           (fn [hat]
                                             (/ hat (- 1 hat)))
                                           (:.hat ds)))))
-         leverage*-min (-> plot-ds :leverage* tcc/reduce-min)
+         leverage*-min -0.05;(-> plot-ds :leverage* tcc/reduce-min)
          leverage*-max (-> plot-ds :leverage* tcc/reduce-max)
 
-         hat-min (-> plot-ds :.hat tcc/reduce-min)
+         hat-min 0;(-> plot-ds :.hat tcc/reduce-min)
          hat-max (-> plot-ds :.hat tcc/reduce-max)
 
-         cooksd-min (-> plot-ds :.cooksd tcc/reduce-min)
+         cooksd-min -0.05;-> plot-ds :.cooksd tcc/reduce-min)
          cooksd-max (-> plot-ds :.cooksd tcc/reduce-max)
          scale-hat (s/scale :linear {:domain [hat-min hat-max]})
          labels-hat (s/ticks scale-hat 5)
@@ -472,7 +506,7 @@
                       (tcc//
                        (:.cooksd plot-ds)
                        (:leverage* plot-ds))))
-         _ (println (pretty bval 5))
+         ;_ (println (pretty bval 5))
          ;; TODO: (pretty bval 5) not the same as R `(pretty ... 5)`
          ;R 'pretty' produces 0.00 0.25 1.00 2.25 4.00 on plot(lm(mtcars))
          ;while we produce  (0.5 1.0 1.5) using scicloj/wadogo :linear scale
@@ -485,7 +519,7 @@
 
          pose-with-lines
          (reduce (fn [pose cooks-d-level]
-                   (draw-line pose -0.1 leverage*-max 0 cooks-d-level))
+                   (draw-ab-line pose leverage*-min leverage*-max 0 cooks-d-level cooksd-min cooksd-max))
                  base-pose
                  cooks-d--levels)]
     
