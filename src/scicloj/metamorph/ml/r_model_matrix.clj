@@ -121,7 +121,6 @@
                        :data df-object})
          :result)
 
-        
         model-matrix-object
         (-> model-matrix-result
             first
