@@ -286,9 +286,6 @@
   
    (pj/lay-point  :.fitted :.resid)
    (pj/lay-smooth (merge {:color "red"} options))
-   (pj/options {:title "Fitted vs Residuals"
-                :x-label "Fitted values"
-                :y-label "Residuals"})
    (pj/lay-rule-h {:y-intercept 0 :color "grey" :alpha 0.2})
    (pj/lay-text :.fitted :.resid
                 {:text :row-number
@@ -296,7 +293,14 @@
                  :data (-> augmented-ds
                            (tc/add-column :.abs-resid #(tcc/abs (:.resid %)))
                            (tc/order-by :.abs-resid :desc)
-                           (tc/head 3))}))
+                           (tc/head 3))})
+      (pj/options {:title "Residuals vs Fitted "
+                   :x-label "Fitted values"
+                   :y-label "Residuals"
+                   :width 600
+                   :height 600})
+
+   )
   )
 
 (defn- residual-qq-pose [augmented-ds]
@@ -350,7 +354,9 @@
 
      (pj/options {:title "Q-Q Residuals"
                   :x-label "Theoretical Quantiles"
-                  :y-label "Standardised residuals"}))))
+                  :y-label "Standardised residuals"
+                  :width 600
+                  :height 600}))))
 
 (defn- cooks-distance-pose [augmented-ds]
   (-> augmented-ds
@@ -358,7 +364,9 @@
       (pj/options {:title "Cooks distance"
 
                    :x-label "Obs. number"
-                   :y-label "Cook's distance"})))
+                   :y-label "Cook's distance"
+                   :width 600
+                   :height 600})))
 
 
 (defn- scale-location-pose [augmented-ds options]
@@ -369,7 +377,9 @@
    (pj/lay-smooth (merge {:color "red"} options))
    (pj/options {:title "Scale Location"
                 :x-label "Fitted values"
-                :y-label "(sqrt (abs standardised-residuals))"})))
+                :y-label "(sqrt (abs standardised-residuals))"
+                :width 600
+                :height 600})))
 
 (defn- linspace [start end n-steps]
   (take n-steps
@@ -397,10 +407,14 @@
 
 
 (defn lay-cooks-d [pose cooks-d params-count pos-neg min-std-resid max-std-resid]
-  (let  [x_ (linspace
-             (tcc/reduce-min (:.hat (:data pose)))
+  (let  [
+         
+         x_ (linspace
+             0.001
+             ;(tcc/reduce-min (:.hat (:data pose)))
              (tcc/reduce-max (:.hat (:data pose)))
              100)
+         
          y_
          (tcc/* pos-neg
                 (tcc/sqrt
@@ -426,10 +440,13 @@
                        :data cooks-d})))
 
 (defn residual-vs-leverage-pose [augmented-ds model]
-  (let [params-count (-> (ml/glance model) :df first)
+  (let [params-count  (-> (ml/glance model) :df first)
         min-std-resid (tcc/reduce-min (:.std.resid augmented-ds))
         max-std-resid (tcc/reduce-max (:.std.resid augmented-ds))
-        cook-levels [0.5 1]
+        min-hat (tcc/reduce-min (:.hat augmented-ds))
+        max-hat (tcc/reduce-max (:.hat augmented-ds))
+        
+        cook-levels [0.5 1] ;TODO 
         base-pose (pj/lay-point augmented-ds :.hat  :.std.resid)
         all-poses
         (reduce (fn [pose cooks-d]
@@ -441,11 +458,14 @@
 
     (-> all-poses
 
+        (pj/scale :x {:domain [min-hat max-hat]})
         (pj/options {:title "Residual vs Leverage"
                      :x-label "Leverage"
-                     :y-label "Standardised residuals"}))))
+                     :y-label "Standardised residuals"
+                     :width 600
+                     :height 600}))))
 
-(defn draw-ab-line [pose x-1 x-2 intercept cooksd-level cooksd-min cooksd-max]
+(defn- draw-ab-line [pose x-1 x-2 intercept cooksd-level cooksd-min cooksd-max]
   (let [cooksd-level-squared (tcc/sq cooksd-level)
         xy
         (map
@@ -552,13 +572,12 @@
 
         (pj/options {:title "Residual vs Leverage h_ii / (1 - h_ii)"
                      :x-label "Leverage h_ii / (1 - h_ii)"
-                     :y-label "Cook's distance"}))))
+                     :y-label "Cook's distance"
+                     :width 600
+                     :height 600}))))
 
 (defn- diagnostic-plots-ols-fm [model dataset & {:as options}]
 
-  (def model model)
-  (def dataset dataset)
-  (def options options)
   (let [augmented-ds (-> (ml/augment model dataset)
                          (tc/add-column :row-number (map str (range (tc/row-count dataset)))))]
     {:residual-vs-fitted (residual-vs-fitted-pose augmented-ds options)
