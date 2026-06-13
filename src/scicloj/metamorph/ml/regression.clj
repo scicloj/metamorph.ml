@@ -65,9 +65,12 @@
    [tech.v3.dataset.tensor :as dtt]
    [tech.v3.datatype :as dt]
    [fastmath.stats :as stats]
-   [wadogo.scale :as s])
+   [wadogo.scale :as s]
+   [tech.v3.datatype.argops]
+   )
   (:import [fastmath.java Array]
            [org.apache.commons.math3.stat.regression OLSMultipleLinearRegression]))
+
 
 
 (defn- tidy-fm-ols [model]
@@ -304,7 +307,7 @@
 (defn- residual-qq-pose [augmented-ds]
   (let [num-rows (tc/row-count augmented-ds)
 
-        
+
         probs [0.25 0.75]
         normal-quantiles
         (map
@@ -323,32 +326,41 @@
 
         line-fn (make-line-eq-fn xs ys)
 
-        start-x (tcc/reduce-min normal-quantiles)
-        start-y (line-fn start-x)
-        end-x (tcc/reduce-max normal-quantiles)
-        end-y (line-fn end-x)
-        
-        qq-dataset 
-        (-> (tc/dataset  {:x (sort normal-quantiles)
-                          :y (sort (:.std.resid augmented-ds))})
-            (tc/add-column :y-diff
-                           (fn [ds]
-                             (map
-                              (fn [x y]
-                                (abs (- y (line-fn x))))
-                              (:x ds)
-                              (:y ds)))))
-        ]
+        start-qq (tcc/reduce-min normal-quantiles)
+        start-std-resid (line-fn start-qq)
+        end-qq (tcc/reduce-max normal-quantiles)
+        end-std-resid (line-fn end-qq)
 
+
+        sort-order (tech.v3.datatype.argops/argsort (:.std.resid augmented-ds))
+
+        qq-dataset
+        (-> augmented-ds
+            (tc/dataset)
+            (tc/add-column :qq (sort normal-quantiles))
+            (tc/add-column :.std.resid (map
+                               #(get (:.std.resid augmented-ds) %)
+                               sort-order))
+            (tc/add-column :row-label (map
+                                       #(get (:row-label augmented-ds) %)
+                                       sort-order)))]
 
 
     (->
      qq-dataset
-     (pj/lay-point :x :y)
-     (pj/lay-line {:data [{:x start-x
-                           :y start-y}
-                          {:x end-x
-                           :y end-y}]})
+     (pj/lay-point :qq :.std.resid)
+     (pj/lay-text :qq :.std.resid
+                  {:text :row-label
+                   :color "grey"
+                   :data (-> qq-dataset
+                             (tc/add-column :abs-std.resid #(tcc/abs (:.std.resid %)))
+                             (tc/order-by :abs-std.resid :desc)
+                             (tc/head 3))})
+
+     (pj/lay-line {:data [{:qq start-qq
+                           :.std.resid start-std-resid}
+                          {:qq end-qq
+                           :.std.resid end-std-resid}]})
 
      (pj/options {:title "Q-Q Residuals"
                   :x-label "Theoretical Quantiles"
