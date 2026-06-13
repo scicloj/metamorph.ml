@@ -288,8 +288,8 @@
    (pj/lay-smooth (merge {:color "red"} options))
    (pj/lay-rule-h {:y-intercept 0 :color "grey" :alpha 0.2})
    (pj/lay-text :.fitted :.resid
-                {:text :row-number
-                 :color "red"                                 ;:nudge-x 1
+                {:text :row-label
+                 :color "grey"                                
                  :data (-> augmented-ds
                            (tc/add-column :.abs-resid #(tcc/abs (:.resid %)))
                            (tc/order-by :.abs-resid :desc)
@@ -578,7 +578,15 @@
 (defn- diagnostic-plots-ols-fm [model dataset & {:as options}]
 
   (let [augmented-ds (-> (ml/augment model dataset)
-                         (tc/add-column :row-number (map str (range (tc/row-count dataset)))))]
+                         (tc/add-column :rownames (:rownames options))
+                         (tc/add-column :row-number (map str (range (tc/row-count dataset))))
+                         (tc/add-column :row-label #(map
+                                                     (fn [row-name row-number]
+                                                       (or row-name row-number))
+
+                                                     (% :rownames)
+                                                     (% :row-number)))
+                         )]
     {:residual-vs-fitted (residual-vs-fitted-pose augmented-ds options)
      :residual-q-q (residual-qq-pose augmented-ds)
      :scale-location (scale-location-pose augmented-ds options)
@@ -586,8 +594,6 @@
      :residual-vs-leverage (residual-vs-leverage-pose augmented-ds model)
 
      :cooks-d-vs-leverage* (cooks-d-vs-leverage*-pose augmented-ds model options)}))
-  
-
 
 (ml/define-model! :metamorph.ml/ols
   train-ols

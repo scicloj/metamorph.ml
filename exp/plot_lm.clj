@@ -22,7 +22,9 @@
 
 ^:kindly/hide-code
 (defn- diagnostic-plots [dataset formula & {:as opts}]
-  (let [model-matrix
+  (let [row-names (:rownames dataset)
+        
+        model-matrix
         (->
          dataset
          (tc/drop-columns [:rownames])
@@ -36,11 +38,13 @@
          (tc/drop-columns ["(Intercept)"])
          (tc/add-column inference-target (get dataset inference-target))
          (ds-mod/set-inference-target inference-target))
+        
+        plot-opts (assoc opts :rownames row-names)
 
 
         model (ml/train modelled-dataset {:model-type :fastmath/ols})
         ;poses (ml/plot model dataset {:pretty-cooks-d-levels-plot-6 [0.0 0.5 1.0 1.5 2.0]})   ;if we want "the same" plot then R: plot(lm(mtcars))
-        poses (ml/plot model modelled-dataset opts)    ;; plot 6 produces different cook's d lines, as "pretty" function is not available for clojure
+        poses (ml/plot model modelled-dataset plot-opts)    ;; plot 6 produces different cook's d lines, as "pretty" function is not available for clojure
         ]
     poses
 
