@@ -256,7 +256,7 @@
                                     predicted-values
                                     {:column-type :prediction})])))
 
-(defn ppoints
+(defn- ppoints
   "Mimics R's function `ppoints`.
    Used for making the  :residual-q-q plot
    "
@@ -270,7 +270,7 @@
      (range m-range))))
 
 ;((y2-y1)/(x2-x1)) * (x - x1) + y1
-(defn make-line-eq-fn [xs ys]
+(defn- make-line-eq-fn [xs ys]
   (fn [x]
     (+
      (*
@@ -296,9 +296,7 @@
                            (tc/head 3))})
       (pj/options {:title "Residuals vs Fitted "
                    :x-label "Fitted values"
-                   :y-label "Residuals"
-                   :width 600
-                   :height 600})
+                   :y-label "Residuals"})
 
    )
   )
@@ -354,19 +352,16 @@
 
      (pj/options {:title "Q-Q Residuals"
                   :x-label "Theoretical Quantiles"
-                  :y-label "Standardised residuals"
-                  :width 600
-                  :height 600}))))
+                  :y-label "Standardised residuals"}))))
 
 (defn- cooks-distance-pose [augmented-ds]
   (-> augmented-ds
       (pj/lay-lollipop :row-number :.cooksd)
+      (pj/scale :x {:n-ticks 4})
       (pj/options {:title "Cooks distance"
 
                    :x-label "Obs. number"
-                   :y-label "Cook's distance"
-                   :width 600
-                   :height 600})))
+                   :y-label "Cook's distance"})))
 
 
 (defn- scale-location-pose [augmented-ds options]
@@ -377,9 +372,7 @@
    (pj/lay-smooth (merge {:color "red"} options))
    (pj/options {:title "Scale Location"
                 :x-label "Fitted values"
-                :y-label "(sqrt (abs standardised-residuals))"
-                :width 600
-                :height 600})))
+                :y-label "(sqrt (abs standardised-residuals))"})))
 
 (defn- linspace [start end n-steps]
   (take n-steps
@@ -458,12 +451,10 @@
 
     (-> all-poses
 
-        (pj/scale :x {:domain [min-hat max-hat]})
+        (pj/scale :x {:domain [0 max-hat]})
         (pj/options {:title "Residual vs Leverage"
                      :x-label "Leverage"
-                     :y-label "Standardised residuals"
-                     :width 600
-                     :height 600}))))
+                     :y-label "Standardised residuals"}))))
 
 (defn- draw-ab-line [pose x-1 x-2 intercept cooksd-level cooksd-min cooksd-max]
   (let [cooksd-level-squared (tcc/sq cooksd-level)
@@ -519,16 +510,28 @@
                                           (:.hat ds)))))
          leverage*-min 0;(-> plot-ds :leverage* tcc/reduce-min)
          leverage*-max (-> plot-ds :leverage* tcc/reduce-max)
-
          hat-min 0;(-> plot-ds :.hat tcc/reduce-min)
          hat-max (-> plot-ds :.hat tcc/reduce-max)
 
          cooksd-min 0;-> plot-ds :.cooksd tcc/reduce-min)
          cooksd-max (-> plot-ds :.cooksd tcc/reduce-max)
-         scale-hat (s/scale :linear {:domain [hat-min hat-max]})
-         labels-hat (s/ticks scale-hat 5)
-         breaks-hat (tcc// labels-hat
-                           (tcc/- 1 labels-hat))
+
+
+         scale-hat (s/scale :linear {:range [hat-min hat-max]
+                                     :domain [hat-min hat-max]})
+         athat (s/ticks scale-hat 5)
+
+         at (tcc// athat (tcc/- 1 athat))
+
+
+
+         scale-leverage* (s/scale :linear {:domain [leverage*-min leverage*-max]})
+         breaks-leverage* (s/ticks scale-leverage* 5)
+
+
+         labels-leverage* (map str breaks-leverage*)
+
+
          rank (-> model :model-data :df :model inc)
 
 
@@ -543,9 +546,9 @@
          ;; TODO: (pretty bval 5) not the same as R `(pretty ... 5)`
          ;R 'pretty' produces 0.00 0.25 1.00 2.25 4.00 on plot(lm(mtcars))
          ;while we produce  (0.5 1.0 1.5) using scicloj/wadogo :linear scale
-         
+
          cooks-d--levels
-         (or (:pretty-cooks-d-levels-plot-6 options) (pretty bval 5))
+         (or (:pretty-cooks-d-levels-plot-6 options) (pretty bval 6))
 
          base-pose
          (pj/lay-point plot-ds :leverage* :.cooksd)
@@ -555,7 +558,7 @@
                    (draw-ab-line pose leverage*-min leverage*-max 0 cooks-d-level cooksd-min cooksd-max))
                  base-pose
                  cooks-d--levels)]
-    
+
 
     (-> pose-with-lines
 
@@ -563,18 +566,14 @@
         (pj/lay-point  :leverage* :.cooksd)
         (pj/lay-smooth {:color "red"})
 
-        (pj/scale :x {:breaks breaks-hat
-                      :labels labels-hat})
+        (pj/scale :x {:breaks at
+                      :labels (reverse (map str athat))})
         (pj/scale :y {:domain
                       [cooksd-min cooksd-max]})
 
-
-
-        (pj/options {:title "Residual vs Leverage h_ii / (1 - h_ii)"
-                     :x-label "Leverage h_ii / (1 - h_ii)"
-                     :y-label "Cook's distance"
-                     :width 600
-                     :height 600}))))
+        (pj/options {:title "Cook0s dist vs Leverage h_ii / (1 - h_ii)"
+                     :x-label "Leverage h_ii"
+                     :y-label "Cook's distance"}))))
 
 (defn- diagnostic-plots-ols-fm [model dataset & {:as options}]
 
@@ -633,6 +632,5 @@
         )
     )
   {})
-
 
  

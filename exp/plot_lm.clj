@@ -9,7 +9,17 @@
             [scicloj.clay.v2.api :as clay]
             [scicloj.kindly.v4.kind :as kind]
             [scicloj.metamorph.ml.regression]
-            [hickory.core :as hick]))
+            [wadogo.scale :as ws]
+            [hickory.core :as hick]
+            [scicloj.plotje.impl.scale]
+            ))
+
+(defmethod scicloj.plotje.impl.scale/make-scale :categorical [domain pixel-range scale-spec]
+   (ws/scale :bands {:domain domain
+                     :range pixel-range
+                     :ticks (:n-ticks scale-spec)}))
+
+
 ^:kindly/hide-code
 (defn- diagnostic-plots [dataset formula & {:as opts}]
   (let [model-matrix
@@ -94,6 +104,10 @@
                    (metamorph-plots :cooks-d-vs-leverage*)]]})))
 
 
+(pj/set-config! 
+ {:width 600
+  :height 600})
+
 ; # mtcars
 ^:kindly/hide-code
 (compare-table "mtcars" "mpg ~ .")
@@ -106,6 +120,9 @@
 ^:kindly/hide-code
 (compare-table "rock" "area ~ .")
 
+; # ToothGrowth
+^:kindly/hide-code
+(compare-table "ToothGrowth" "len ~ .")
 
  
 ;; ; # marketing
