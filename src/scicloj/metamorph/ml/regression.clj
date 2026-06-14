@@ -283,20 +283,24 @@
      (first ys)))) 
 
 
+(defn- label-extremes [pose x y augmented-ds options]
+  (pj/lay-text pose
+   x y
+   {:text :row-label
+    :color "grey"
+    :data (-> augmented-ds
+              (tc/add-column :abs-y #(tcc/abs (get % y)))
+              (tc/order-by :abs-y :desc)
+              (tc/head (:n-labeled-points options)))}))
+
 (defn- residual-vs-fitted-pose [augmented-ds options]
   (->
    augmented-ds
   
    (pj/lay-point  :.fitted :.resid)
-   (pj/lay-smooth (merge {:color "red"} options))
+   (pj/lay-smooth {:color "red"})
    (pj/lay-rule-h {:y-intercept 0 :color "grey" :alpha 0.2})
-   (pj/lay-text :.fitted :.resid
-                {:text :row-label
-                 :color "grey"                                
-                 :data (-> augmented-ds
-                           (tc/add-column :.abs-resid #(tcc/abs (:.resid %)))
-                           (tc/order-by :.abs-resid :desc)
-                           (tc/head 3))})
+   (label-extremes :.fitted :.resid augmented-ds options)
       (pj/options {:title "Residuals vs Fitted "
                    :x-label "Fitted values"
                    :y-label "Residuals"})
@@ -304,7 +308,7 @@
    )
   )
 
-(defn- residual-qq-pose [augmented-ds]
+(defn- residual-qq-pose [augmented-ds options]
   (let [num-rows (tc/row-count augmented-ds)
 
 
@@ -349,13 +353,7 @@
     (->
      qq-dataset
      (pj/lay-point :qq :.std.resid)
-     (pj/lay-text :qq :.std.resid
-                  {:text :row-label
-                   :color "grey"
-                   :data (-> qq-dataset
-                             (tc/add-column :abs-std.resid #(tcc/abs (:.std.resid %)))
-                             (tc/order-by :abs-std.resid :desc)
-                             (tc/head 3))})
+     (label-extremes :qq :.std.resid qq-dataset options)
 
      (pj/lay-line {:data [{:qq start-qq
                            :.std.resid start-std-resid}
@@ -366,9 +364,10 @@
                   :x-label "Theoretical Quantiles"
                   :y-label "Standardised residuals"}))))
 
-(defn- cooks-distance-pose [augmented-ds]
+(defn- cooks-distance-pose [augmented-ds options]
   (-> augmented-ds
       (pj/lay-lollipop :row-number :.cooksd)
+      (label-extremes :row-number :.cooksd augmented-ds options)
       (pj/scale :x {:n-ticks 4})
       (pj/options {:title "Cooks distance"
 
@@ -377,14 +376,19 @@
 
 
 (defn- scale-location-pose [augmented-ds options]
-  (->
-   augmented-ds
-   (tc/add-column :.sqrt-abs-resid (tcc/sqrt (tcc/abs (:.std.resid augmented-ds))))
-   (pj/lay-point :.fitted :.sqrt-abs-resid)
-   (pj/lay-smooth (merge {:color "red"} options))
-   (pj/options {:title "Scale Location"
-                :x-label "Fitted values"
-                :y-label "(sqrt (abs standardised-residuals))"})))
+  (let [augmented-ds
+        (->
+         augmented-ds
+         (tc/add-column :.sqrt-abs-resid (tcc/sqrt (tcc/abs (:.std.resid augmented-ds)))))]
+    (->
+     augmented-ds
+     (pj/lay-point :.fitted :.sqrt-abs-resid)
+     (pj/lay-smooth {:color "red"})
+     (label-extremes :.fitted :.sqrt-abs-resid augmented-ds options)
+
+     (pj/options {:title "Scale Location"
+                  :x-label "Fitted values"
+                  :y-label "(sqrt (abs standardised-residuals))"}))))
 
 (defn- linspace [start end n-steps]
   (take n-steps
@@ -444,12 +448,18 @@
                        :size 1
                        :data cooks-d})))
 
-(defn residual-vs-leverage-pose [augmented-ds model]
+(defn residual-vs-leverage-pose [augmented-ds model options]
   (let [params-count  (-> (ml/glance model) :df first)
         min-std-resid (tcc/reduce-min (:.std.resid augmented-ds))
         max-std-resid (tcc/reduce-max (:.std.resid augmented-ds))
         min-hat (tcc/reduce-min (:.hat augmented-ds))
         max-hat (tcc/reduce-max (:.hat augmented-ds))
+
+        extreme-cooksd
+        (-> augmented-ds
+            (tc/order-by :.cooksd :desc)
+            (tc/head (:n-labeled-points options)))
+         
         
         cook-levels [0.5 1] ;TODO 
         base-pose (pj/lay-point augmented-ds :.hat  :.std.resid)
@@ -462,6 +472,19 @@
                 cook-levels)]
 
     (-> all-poses
+        (pj/lay-text :.hat  :.std.resid
+             {:text :row-label
+              :color "grey"
+              :data extreme-cooksd})
+        
+        (pj/lay-text :.hat  :.std.resid
+                     {:text :row-label
+                      :color "grey"
+                      :data {:.hat [0.05]
+                             :.std.resid [min-std-resid]
+                             :row-label ["   \u00b7\u00b7\u00b7 Cook's distance"]
+                             }})
+        
 
         (pj/scale :x {:domain [0 max-hat]})
         (pj/options {:title "Residual vs Leverage"
@@ -506,13 +529,13 @@
                               :leverage* (tcc/reduce-max (map :leverage* clipped-xy))
                               :.cooksd (tcc/reduce-max (map :.cooksd clipped-xy))}}))))
 
-(defn pretty [s proposed-ticks]
+(defn- pretty [s proposed-ticks]
   (let [min (tcc/reduce-min s)
         max (tcc/reduce-max s)
         scale (s/scale :linear {:domain [min max]})]
     (s/ticks scale proposed-ticks)))
 
-(defn cooks-d-vs-leverage*-pose [augmented-ds model options]
+(defn- cooks-d-vs-leverage*-pose [augmented-ds model options]
   (let  [plot-ds
          (-> augmented-ds
              (tc/add-column :leverage* (fn [ds]
@@ -527,6 +550,12 @@
 
          cooksd-min 0;-> plot-ds :.cooksd tcc/reduce-min)
          cooksd-max (-> plot-ds :.cooksd tcc/reduce-max)
+
+         extreme-cooksd
+         (-> plot-ds
+             (tc/order-by :.cooksd :desc)
+             (tc/head (:n-labeled-points options)))
+         
 
 
          scale-hat (s/scale :linear {:range [hat-min hat-max]
@@ -558,9 +587,11 @@
          ;; TODO: (pretty bval 5) not the same as R `(pretty ... 5)`
          ;R 'pretty' produces 0.00 0.25 1.00 2.25 4.00 on plot(lm(mtcars))
          ;while we produce  (0.5 1.0 1.5) using scicloj/wadogo :linear scale
-
+         
+         _ (def bval bval)
          cooks-d--levels
-         (or (:pretty-cooks-d-levels-plot-6 options) (pretty bval 6))
+         (or (:pretty-cooks-d-levels-plot-6 options) 
+             (cons 0  (pretty bval 6)))
 
          base-pose
          (pj/lay-point plot-ds :leverage* :.cooksd)
@@ -578,18 +609,27 @@
         (pj/lay-point  :leverage* :.cooksd)
         (pj/lay-smooth {:color "red"})
 
+        (pj/lay-text :leverage* :.cooksd
+                     {:text :row-label
+                      :color "grey"
+                      :data extreme-cooksd})
+
         (pj/scale :x {:breaks at
                       :labels (reverse (map str athat))})
         (pj/scale :y {:domain
                       [cooksd-min cooksd-max]})
 
-        (pj/options {:title "Cook0s dist vs Leverage h_ii / (1 - h_ii)"
-                     :x-label "Leverage h_ii"
+        (pj/options {:title "Cook's dist vs Leverage* h\u1d62\u1d62 / (1 - h\u1d62\u1d62)"
+                     :x-label "Leverage h\u1d62\u1d62"
                      :y-label "Cook's distance"}))))
 
 (defn- diagnostic-plots-ols-fm [model dataset & {:as options}]
 
-  (let [augmented-ds (-> (ml/augment model dataset)
+  (let [options (merge
+                 {:n-labeled-points 3 ;; # of points to be labeled
+                  }
+                 options)
+        augmented-ds (-> (ml/augment model dataset)
                          (tc/add-column :rownames (:rownames options))
                          (tc/add-column :row-number (map str (range (tc/row-count dataset))))
                          (tc/add-column :row-label #(map
@@ -597,13 +637,12 @@
                                                        (or row-name row-number))
 
                                                      (% :rownames)
-                                                     (% :row-number)))
-                         )]
+                                                     (% :row-number))))]
     {:residual-vs-fitted (residual-vs-fitted-pose augmented-ds options)
-     :residual-q-q (residual-qq-pose augmented-ds)
+     :residual-q-q (residual-qq-pose augmented-ds options)
      :scale-location (scale-location-pose augmented-ds options)
-     :cooks-distance (cooks-distance-pose augmented-ds)
-     :residual-vs-leverage (residual-vs-leverage-pose augmented-ds model)
+     :cooks-distance (cooks-distance-pose augmented-ds options)
+     :residual-vs-leverage (residual-vs-leverage-pose augmented-ds model options)
 
      :cooks-d-vs-leverage* (cooks-d-vs-leverage*-pose augmented-ds model options)}))
 

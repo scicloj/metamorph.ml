@@ -1,3 +1,4 @@
+^:kindly/hide-code
 (ns plot-lm
   (:require [scicloj.metamorph.ml :as ml]
             [scicloj.metamorph.ml.r-model-matrix :as r-mm]
@@ -14,6 +15,7 @@
             [scicloj.plotje.impl.scale]
             ))
 
+^:kindly/hide-code
 (defmethod scicloj.plotje.impl.scale/make-scale :categorical [domain pixel-range scale-spec]
    (ws/scale :bands {:domain domain
                      :range pixel-range
@@ -22,8 +24,10 @@
 
 ^:kindly/hide-code
 (defn- diagnostic-plots [dataset formula & {:as opts}]
-  (let [row-names (:rownames dataset)
-        
+  (let [dataset (tc/drop-missing dataset)
+        row-names (:rownames dataset)
+        _ (def dataset dataset)
+
         model-matrix
         (->
          dataset
@@ -31,15 +35,20 @@
          (r-mm/r-model-matrix formula :ocpu)
          :model-matrix-dataset)
 
+        _ (def model-matrix model-matrix)
+
         inference-target (second (tc/column-names dataset))
+
+        _ (def inference-target inference-target)
         modelled-dataset
         (->
          model-matrix
          (tc/drop-columns ["(Intercept)"])
          (tc/add-column inference-target (get dataset inference-target))
          (ds-mod/set-inference-target inference-target))
-        
-        plot-opts (assoc opts :rownames row-names)
+
+        plot-opts (assoc opts
+                         :rownames row-names)
 
 
         model (ml/train modelled-dataset {:model-type :fastmath/ols})
@@ -64,10 +73,10 @@
    formula))
 
 ^:kindly/hide-code
-(defn plot-lm->pdf [r-dataset-name formula]
+(defn plot-lm->pdf! [r-dataset-name formula id-n]
   (r/r "library('svglite')")
   (r/r (format "svglite('data/plot_lm_%s_%%03d.svg',width = 7,height = 7)" r-dataset-name))
-  (r/r (format "plot(lm(%s,%s),which=c(1,2,3,4,5,6))" formula r-dataset-name))
+  (r/r (format "plot(lm(%s,%s),which=c(1,2,3,4,5,6),id.n=%s)" formula r-dataset-name id-n))
   (r/r "dev.off()"))
 
 ^:kindly/hide-code
@@ -81,11 +90,20 @@
 
 ^:kindly/hide-code
 (defn compare-table [dataset-name formula]
-  (plot-lm->pdf dataset-name "")
-  (let [metamorph-plots
+  
+  
+  (let [opts  {:n-labeled-points 5}
+        
+        _ (plot-lm->pdf! dataset-name "" (:n-labeled-points opts))
+        
+        metamorph-plots
         (diagnostic-plots
          (eval (list (symbol (format "rdatasets/datasets-%s" dataset-name))))
-         formula)]
+         formula
+         opts
+
+
+         )]
     (kind/table {:column-names [(kind/code ":x")
                                 (kind/code ":y")]
                  :row-vectors
@@ -127,6 +145,11 @@
 ; # ToothGrowth
 ^:kindly/hide-code
 (compare-table "ToothGrowth" "len ~ .")
+
+; # airquality
+^:kindly/hide-code
+(compare-table "airquality" "ozone ~ .")
+
 
  
 ;; ; # marketing

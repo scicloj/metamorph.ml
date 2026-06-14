@@ -975,7 +975,6 @@
       (explain-fn (thaw-model model model-def) model options))))
 
 (defn plot [model dataset & {:as opts}]
-  (def opts opts)
   
   (let [{:keys [plot-fn] :as model-def}
         (options->model-def (:options model))]
