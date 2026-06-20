@@ -71,7 +71,25 @@
   (:import [fastmath.java Array]
            [org.apache.commons.math3.stat.regression OLSMultipleLinearRegression]))
 
+(defn extend-intervall [[start end] extension]
 
+  (let [midpiont (/ (+ start end) 2)
+        s (- end start)
+        new-s (* s extension)
+        new-start (- midpiont (/ new-s 2))
+        new-end (+ midpiont (/ new-s 2))]
+    [new-start new-end]))
+
+
+(defn min-max-extended [s extension]
+  (extend-intervall 
+   [(tcc/reduce-min s)
+    (tcc/reduce-max s)]
+   extension 
+   
+   
+   )
+  )
 
 (defn- tidy-fm-ols [model]
 
@@ -451,27 +469,24 @@
 
 (defn residual-vs-leverage-pose [augmented-ds model options]
   (let [params-count  (-> (ml/glance model) :df first)
-        min-std-resid (* 0.9 (tcc/reduce-min (:.std.resid augmented-ds)))
-        max-std-resid (* 1.1 (tcc/reduce-max (:.std.resid augmented-ds)))
-        min-hat (* 0.9 (tcc/reduce-min (:.hat augmented-ds)))
-        max-hat (* 1.1 (tcc/reduce-max (:.hat augmented-ds)))
+        [min-std-resid max-std-resid] (min-max-extended (:.std.resid augmented-ds) 1.1)
+        [min-hat max-hat] (min-max-extended (:.hat augmented-ds) 1.1)
         cook-levels [0.5 1] ;TODO 
         rank (-> model :model-data :df :model inc)
 
         ymult (tcc/sqrt (tcc//
                          (tcc/* rank
-                                (tcc/- 1 max-hat)
-                                )
+                                (tcc/- 1 max-hat))
                          max-hat))
-        aty (tcc/* (tcc/sqrt cook-levels) ymult) 
+        aty (tcc/* (tcc/sqrt cook-levels) ymult)
 
         extreme-cooksd
         (-> augmented-ds
             (tc/order-by :.cooksd :desc)
             (tc/head (:n-labeled-points options)))
-        
-        
-        
+
+
+
         base-pose (pj/lay-point augmented-ds :.hat  :.std.resid)
         all-poses
         (reduce (fn [pose cooks-d]
@@ -504,6 +519,7 @@
         
 
         (pj/scale :x {:domain [0 max-hat]})
+        (pj/scale :y {:domain [min-std-resid max-std-resid]})
         (pj/options {:title "Residual vs Leverage"
                      :x-label "Leverage"
                      :y-label "Standardised residuals"}))))
@@ -514,7 +530,7 @@
         (map
          #(hash-map :leverage* %
                     :.cooksd (+ intercept (* % bi)))
-         (inclusive-range x-1 x-2 (/ (- x-2 x-1) 100)))
+         (inclusive-range x-1 x-2 (/ (- x-2 x-1) 1000)))
 
 
         clipped-xy
@@ -542,13 +558,12 @@
                                           (fn [hat]
                                             (/ hat (- 1 hat)))
                                           (:.hat ds)))))
-         leverage*-min 0;(-> plot-ds :leverage* tcc/reduce-min)
-         leverage*-max (-> plot-ds :leverage* tcc/reduce-max)
-         hat-min 0;(-> plot-ds :.hat tcc/reduce-min)
-         hat-max (-> plot-ds :.hat tcc/reduce-max)
 
-         cooksd-min 0;-> plot-ds :.cooksd tcc/reduce-min)
-         cooksd-max (-> plot-ds :.cooksd tcc/reduce-max)
+
+         [cooksd-min cooksd-max] (min-max-extended (:.cooksd plot-ds) 1.1)
+         [leverage*-min leverage*-max] (min-max-extended  (cons 0 (:leverage* plot-ds )) 1.1)
+         [hat-min hat-max] (min-max-extended (cons 0 (:.hat plot-ds)) 1.1)
+
 
          extreme-cooksd
          (-> plot-ds
@@ -586,7 +601,7 @@
          ;; TODO: (pretty bval 5) not the same as R `(pretty ... 5)`
          ;R 'pretty' produces 0.00 0.25 1.00 2.25 java rengine4.00 on plot(lm(mtcars))
          ;while we produce  (0.5 1.0 1.5) using scicloj/wadogo :linear scale
-
+         
 
 
 

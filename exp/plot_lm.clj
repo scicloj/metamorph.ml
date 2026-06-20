@@ -78,8 +78,8 @@
 
 
          )]
-    (kind/table {:column-names [(kind/code ":x")
-                                (kind/code ":y")]
+    (kind/table {:column-names [(kind/code "R")
+                                (kind/code "Clojure")]
                  :row-vectors
                  [[(svg->hiccup (format "plot_lm_%s_001.svg" dataset-name))
                    (metamorph-plots :residual-vs-fitted)]
@@ -109,7 +109,7 @@
 
 
 
-; # mtcarsP
+; # mtcars
 ^:kindly/hide-code
 (compare-table "mtcars" "mpg ~ ." )
 
