@@ -491,12 +491,12 @@
                      :x-label "Leverage"
                      :y-label "Standardised residuals"}))))
 
-(defn- draw-ab-line [pose x-1 x-2 intercept cooksd-level cooksd-min cooksd-max]
-  (let [cooksd-level-squared (tcc/sq cooksd-level)
+(defn- draw-ab-line [pose x-1 x-2 intercept bval cooksd-min cooksd-max]
+  (let [bi (tcc/sq bval)
         xy
         (map
          #(hash-map :leverage* %
-                    :.cooksd (+ intercept (* % cooksd-level-squared)))
+                    :.cooksd (+ intercept (* % bi)))
          (inclusive-range x-1 x-2 (/ (- x-2 x-1) 100)))
 
 
@@ -513,27 +513,9 @@
         ]
     (-> pose
         (pj/lay-line {:size 1
-                       :color "grey"
-                       :data {:leverage* (map :leverage* clipped-xy)
-                              :.cooksd (map :.cooksd clipped-xy)}})
-
-        ;; (pj/lay-line {:size 2
-        ;;               :color "red"
-        ;;                :data {:leverage* [x-1 x-2]
-        ;;                       :.cooksd [y-1 y-2]}})
-
-        (pj/lay-label {
-                       :color "blue"
-                       :text :text
-                       :data {:text [cooksd-level]
-                              :leverage* (tcc/reduce-max (map :leverage* clipped-xy))
-                              :.cooksd (tcc/reduce-max (map :.cooksd clipped-xy))}}))))
-
-(defn- pretty [s proposed-ticks]
-  (let [min (tcc/reduce-min s)
-        max (tcc/reduce-max s)
-        scale (s/scale :linear {:domain [min max]})]
-    (s/ticks scale proposed-ticks)))
+                      :color "grey"
+                      :data {:leverage* (map :leverage* clipped-xy)
+                             :.cooksd (map :.cooksd clipped-xy)}}))))
 
 (defn- cooks-d-vs-leverage*-pose [augmented-ds model options]
   (let  [plot-ds
@@ -555,7 +537,7 @@
          (-> plot-ds
              (tc/order-by :.cooksd :desc)
              (tc/head (:n-labeled-points options)))
-         
+
 
 
          scale-hat (s/scale :linear {:range [hat-min hat-max]
@@ -578,30 +560,70 @@
 
 
          ;; still matches R
-         bval (tcc/sqrt
-               (tcc/* rank
-                      (tcc//
-                       (:.cooksd plot-ds)
-                       (:leverage* plot-ds))))
+         _bval (tcc/sqrt
+                (tcc/* rank
+                       (tcc//
+                        (:.cooksd plot-ds)
+                        (:leverage* plot-ds))))
          ;_ (println (pretty bval 5))
          ;; TODO: (pretty bval 5) not the same as R `(pretty ... 5)`
-         ;R 'pretty' produces 0.00 0.25 1.00 2.25 4.00 on plot(lm(mtcars))
+         ;R 'pretty' produces 0.00 0.25 1.00 2.25 java rengine4.00 on plot(lm(mtcars))
          ;while we produce  (0.5 1.0 1.5) using scicloj/wadogo :linear scale
-         
-         _ (def bval bval)
-         cooks-d--levels
-         (or (:pretty-cooks-d-levels-plot-6 options) 
-             (cons 0  (pretty bval 6)))
+
+
+
+
+         ;bval (cons 0  (pretty _bval 5))
+         bval ((:pretty-fn options) _bval)
+
+
 
          base-pose
          (pj/lay-point plot-ds :leverage* :.cooksd)
 
          pose-with-lines
-         (reduce (fn [pose cooks-d-level]
-                   (draw-ab-line pose leverage*-min leverage*-max 0 cooks-d-level cooksd-min cooksd-max))
-                 base-pose
-                 cooks-d--levels)]
+         (reduce (fn [pose bval]
+                   (let [bi2 (tcc/sq bval)
 
+                         line-pose-fn
+                         (if (> (* rank cooksd-max) (* bi2 leverage*-max))
+                           (fn [pose]
+                             (let [xi leverage*-max
+                                   yi (* bi2 (/ xi rank))]
+                               (-> pose
+                                   (draw-ab-line leverage*-min leverage*-max 0 bval cooksd-min cooksd-max)
+                                   (pj/lay-text
+                                    :leverage*
+                                    :.cooksd
+                                    {:text :text
+                                     :color "grey"
+                                     :data {:text [bval]
+                                            :leverage* [xi]
+                                            :.cooksd [yi]}}))))
+
+                           (fn [pose]
+                             (let [yi cooksd-max
+                                   xi (* rank (/ yi bi2))]
+
+                               (-> pose
+                                   (pj/lay-line {:color "grey"
+                                                 :size 1
+                                                 :data
+                                                 {:leverage*  [0 xi]
+                                                  :.cooksd [0 yi]}})
+                                   (pj/lay-text
+                                    :leverage*
+                                    :.cooksd
+                                    {:text :text
+                                     :color "grey"
+                                     :data {:text [bval]
+                                            :leverage* [xi]
+                                            :.cooksd [yi]}})))))]
+
+                     (-> pose
+                         (line-pose-fn))))
+                 base-pose
+                 bval)]
 
     (-> pose-with-lines
 
@@ -614,10 +636,11 @@
                       :color "grey"
                       :data extreme-cooksd})
 
-        (pj/scale :x {:breaks at
+
+
+        (pj/scale :x {:type :linear
+                      :breaks at
                       :labels (reverse (map str athat))})
-        (pj/scale :y {:domain
-                      [cooksd-min cooksd-max]})
 
         (pj/options {:title "Cook's dist vs Leverage* h\u1d62\u1d62 / (1 - h\u1d62\u1d62)"
                      :x-label "Leverage h\u1d62\u1d62"

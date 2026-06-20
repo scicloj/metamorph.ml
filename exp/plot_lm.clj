@@ -1,19 +1,24 @@
 ^:kindly/hide-code
 (ns plot-lm
-  (:require [scicloj.metamorph.ml :as ml]
+  (:require [clojisr.v1.r :as r]
+            [scicloj.kindly.v4.kind :as kind]
+            [scicloj.metamorph.ml :as ml]
             [scicloj.metamorph.ml.r-model-matrix :as r-mm]
             [scicloj.metamorph.ml.rdatasets :as rdatasets]
-            [scicloj.plotje.api :as pj]
-            [tablecloth.api :as tc]
-            [tech.v3.dataset.modelling :as ds-mod]
-            [clojisr.v1.r :as r]
-            [scicloj.clay.v2.api :as clay]
-            [scicloj.kindly.v4.kind :as kind]
             [scicloj.metamorph.ml.regression]
-            [wadogo.scale :as ws]
-            [hickory.core :as hick]
+            [scicloj.plotje.api :as pj]
             [scicloj.plotje.impl.scale]
+            [tablecloth.api :as tc]
+            [tablecloth.column.api :as tcc]
+            [tech.v3.dataset.modelling :as ds-mod]
+            [wadogo.scale :as ws]
+            [wadogo.scale :as s]
+            [scicloj.metamorph.linear-regression-test :refer [diagnostic-plots]]
             ))
+
+(r/require-r '[base :refer [pretty]])
+
+
 
 ^:kindly/hide-code
 (defmethod scicloj.plotje.impl.scale/make-scale :categorical [domain pixel-range scale-spec]
@@ -23,45 +28,6 @@
 
 
 ^:kindly/hide-code
-(defn- diagnostic-plots [dataset formula & {:as opts}]
-  (let [dataset (tc/drop-missing dataset)
-        row-names (:rownames dataset)
-        _ (def dataset dataset)
-
-        model-matrix
-        (->
-         dataset
-         (tc/drop-columns [:rownames])
-         (r-mm/r-model-matrix formula :ocpu)
-         :model-matrix-dataset)
-
-        _ (def model-matrix model-matrix)
-
-        inference-target (second (tc/column-names dataset))
-
-        _ (def inference-target inference-target)
-        modelled-dataset
-        (->
-         model-matrix
-         (tc/drop-columns ["(Intercept)"])
-         (tc/add-column inference-target (get dataset inference-target))
-         (ds-mod/set-inference-target inference-target))
-
-        plot-opts (assoc opts
-                         :rownames row-names)
-
-
-        model (ml/train modelled-dataset {:model-type :fastmath/ols})
-        ;poses (ml/plot model dataset {:pretty-cooks-d-levels-plot-6 [0.0 0.5 1.0 1.5 2.0]})   ;if we want "the same" plot then R: plot(lm(mtcars))
-        poses (ml/plot model modelled-dataset plot-opts)    ;; plot 6 produces different cook's d lines, as "pretty" function is not available for clojure
-        ]
-    poses
-
-    ;; (pj/arrange (map val poses)
-    ;;             {:cols 1
-    ;;              :height (* 400 (count poses))}
-    ;;             )
-    ))
 ^:kindly/hide-code
 (comment
   ;; reproduces plots in https://github.com/scicloj/plotje/issues/16
@@ -86,13 +52,21 @@
     (slurp (format "data/%s" filename)))))
 
 
+(defn- my-pretty [s proposed-ticks]
+  (let [min (tcc/reduce-min s)
+        max (tcc/reduce-max s)
+        scale (s/scale :linear {:domain [min max]})]
+    (s/ticks scale proposed-ticks)))
+
+
 
 
 ^:kindly/hide-code
 (defn compare-table [dataset-name formula]
   
-  
-  (let [opts  {:n-labeled-points 5}
+  (let [opts   {:n-labeled-points 5
+                :pretty-fn (fn [s]
+                             (r/r->clj (pretty s)))}
         
         _ (plot-lm->pdf! dataset-name "" (:n-labeled-points opts))
         
@@ -126,37 +100,38 @@
                    (metamorph-plots :cooks-d-vs-leverage*)]]})))
 
 
+
+
 (pj/set-config! 
  {:width 600
   :height 600})
 
-; # mtcars
+
+
+
+; # mtcarsP
 ^:kindly/hide-code
-(compare-table "mtcars" "mpg ~ .")
+(compare-table "mtcars" "mpg ~ ." )
+
 
 ; # iris
 ^:kindly/hide-code
-(compare-table "iris" "`sepal-length` ~ .")
+(compare-table "iris" "`sepal-length` ~ ." )
 
 ; # rock
 ^:kindly/hide-code
-(compare-table "rock" "area ~ .")
+(compare-table "rock" "area ~ ." )
 
 ; # ToothGrowth
 ^:kindly/hide-code
-(compare-table "ToothGrowth" "len ~ .")
+(compare-table "ToothGrowth" "len ~ ." )
 
 ; # airquality
 ^:kindly/hide-code
-(compare-table "airquality" "ozone ~ .")
+(compare-table "airquality" "ozone ~ ." )
 
 
  
-;; ; # marketing
-;; (diagnostic-plots
-;;  (tc/dataset "https://raw.githubusercontent.com/prasertcbs/basic-dataset/refs/heads/master/marketing.csv")
-;;  "sales ~ youtube",
-;;  {:pretty-cooks-d-levels-plot-6 [0 1 2 3]})
 
 
 

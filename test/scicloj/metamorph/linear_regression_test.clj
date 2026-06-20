@@ -20,6 +20,42 @@
    [scicloj.metamorph.ml.r-model-matrix :as model-matrix]))
 
 
+(defn diagnostic-plots [dataset formula & {:as opts}]
+  (let [dataset (tc/drop-missing dataset)
+        row-names (:rownames dataset)
+
+        model-matrix
+        (->
+         dataset
+         (tc/drop-columns [:rownames])
+         (r-mm/r-model-matrix formula :ocpu)
+         :model-matrix-dataset)
+
+        inference-target (second (tc/column-names dataset))
+
+        modelled-dataset
+        (->
+         model-matrix
+         (tc/drop-columns ["(Intercept)"])
+         (tc/add-column inference-target (get dataset inference-target))
+         (ds-mod/set-inference-target inference-target))
+
+        plot-opts (assoc opts
+                         :rownames row-names)
+
+
+        model (ml/train modelled-dataset {:model-type :fastmath/ols})
+        poses (ml/plot model modelled-dataset plot-opts)    ;; plot 6 produces different cook's d lines, as "pretty" function is not available for clojure
+        ]
+    poses
+
+    ;; (pj/arrange (map val poses)
+    ;;             {:cols 1
+    ;;              :height (* 400 (count poses))}
+    ;;             )
+    ))
+
+
 (defn approx? [x0 x1]
   (-> x1
       (- x0)
