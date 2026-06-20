@@ -41,7 +41,7 @@
 ^:kindly/hide-code
 (defn plot-lm->pdf! [r-dataset-name formula id-n]
   (r/r "library('svglite')")
-  (r/r (format "svglite('data/plot_lm_%s_%%03d.svg',width = 7,height = 7)" r-dataset-name))
+  (r/r (format "svglite('/tmp/plot_lm_%s_%%03d.svg',width = 7,height = 7)" r-dataset-name))
   (r/r (format "plot(lm(%s,%s),which=c(1,2,3,4,5,6),id.n=%s)" formula r-dataset-name id-n))
   (r/r "dev.off()"))
 
@@ -49,7 +49,7 @@
 (defn svg->hiccup [filename]
   (kind/html
    (->
-    (slurp (format "data/%s" filename)))))
+    (slurp (format "/tmp/%s" filename)))))
 
 
 (defn- my-pretty [s proposed-ticks]
@@ -103,8 +103,8 @@
 
 
 (pj/set-config! 
- {:width 600
-  :height 600})
+ {:width 700
+  :height 700})
 
 
 

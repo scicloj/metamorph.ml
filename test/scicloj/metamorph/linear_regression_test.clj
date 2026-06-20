@@ -1,23 +1,27 @@
 (ns scicloj.metamorph.linear-regression-test
   (:require
+   [clojisr.v1.r :as r]
    [clojure.pprint :as pp]
    [clojure.set :as set]
    [clojure.test :refer [deftest is]]
    [scicloj.metamorph.common]
    [scicloj.metamorph.core :as mm]
    [scicloj.metamorph.ml :as ml]
+   [scicloj.metamorph.ml.r-model-matrix :as r-mm]
    [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [scicloj.metamorph.ml.regression]
-   [scicloj.metamorph.ml.r-model-matrix :as r-mm]
    [scicloj.metamorph.ml.toydata :as data]
+   [scicloj.plotje.api :as pj]
+   [scicloj.plotje.impl.scale :as scale]
    [tablecloth.api :as tc]
    [taoensso.nippy :as nippy]
    [tech.v3.dataset :as ds]
-   [tech.v3.dataset.modelling :as ds-mod]
+   [wadogo.scale :as ws]
    [tech.v3.dataset.column-filters :as cf]
-   [tech.v3.dataset :as dataset]
-   [scicloj.plotje.api :as pj]
-   [scicloj.metamorph.ml.r-model-matrix :as model-matrix]))
+   [tech.v3.dataset.modelling :as ds-mod]))
+
+(r/require-r '[base :refer [pretty]])
+ 
 
 
 (defn diagnostic-plots [dataset formula & {:as opts}]
@@ -177,7 +181,7 @@
                       0.43891421063143365
                       -0.24062582666609506]
                      (-> tidy :statistic)))
-    (is (= [:mpg :cyl :disp :hp :drat :wt :qsec :vs :am :gear :carb :.resid :.std.resid :.fitted]
+    (is (= [:mpg :cyl :disp :hp :drat :wt :qsec :vs :am :gear :carb :.resid :.std.resid :.fitted :.cooksd :.hat]
            (ds/column-names augment)))
     (is (all-approx?
          [-1.599505761262371
@@ -655,12 +659,97 @@
 
 
     (is (=  [:layers :data :mapping :opts]
-            (-> (ml/plot model dataset)
+            (-> (ml/plot model dataset {:pretty-fn (fn [s]
+                                                     (r/r->clj (pretty s)))})
                 :residual-vs-fitted
                 keys)))
     (is (=  [:layers :data :mapping :opts]
-            (-> (ml/plot model dataset)
+            (-> (ml/plot model dataset {:pretty-fn (fn [s]
+                                                     (r/r->clj (pretty s)))})
                 :residual-q-q
                 keys)))))
+
+
+(defn pr-edn-str [x]
+  (binding [*print-length* nil
+            *print-dup* nil
+            *print-level* nil
+            *print-readably* true]
+    (pr-str x)))
+
+
+
+(deftest all_plots_lm
+  (defmethod scale/make-scale :categorical [domain pixel-range scale-spec]
+    (ws/scale :bands {:domain domain
+                      :range pixel-range
+                      :ticks (:n-ticks scale-spec)}))
+  
+  (pj/set-config!
+   {:width 600
+    :height 600})
+
+ 
+  (let [opts   {:n-labeled-points 5
+                :pretty-fn (fn [s]
+                             (r/r->clj (pretty s)))}
+
+
+        metamorph-plots
+        (diagnostic-plots
+         (rdatasets/datasets-mtcars)
+
+         "mpg ~ ."
+         opts)]
+
+
+
+    (is
+     (= (read-string (slurp "test/data/cooks-distance.svg"))
+        (-> metamorph-plots :cooks-distance (pj/plot {:format :svg}))))
+
+    (is
+     (= (read-string (slurp "test/data/cooks-d-vs-leverage*.svg"))
+        (-> metamorph-plots :cooks-d-vs-leverage* (pj/plot {:format :svg}))))
+
+    (is
+     (= (read-string (slurp "test/data/residual-q-q.svg"))
+        (-> metamorph-plots :residual-q-q (pj/plot {:format :svg}))))
+
+    (is
+     (= (read-string (slurp "test/data/residual-vs-fitted.svg"))
+        (-> metamorph-plots :residual-vs-fitted (pj/plot {:format :svg}))))
+
+    (is
+     (= (read-string (slurp "test/data/residual-vs-leverage.svg"))
+        (-> metamorph-plots :residual-vs-leverage (pj/plot {:format :svg}))))
+
+    (is
+     (= (read-string (slurp "test/data/scale-location.svg"))
+        (-> metamorph-plots :scale-location (pj/plot {:format :svg}))))))
+
+
+
+(comment
+  (let [opts   {:n-labeled-points 5
+                :pretty-fn (fn [s]
+                             (r/r->clj (pretty s)))}
+
+
+        metamorph-plots
+        (diagnostic-plots
+         (rdatasets/datasets-mtcars)
+
+         "mpg ~ ."
+         opts)]
+
+    (run!
+     #(let [svg
+            (->
+             metamorph-plots
+             (get %)
+             (pj/plot {:format :svg}))]
+        (spit (format "/tmp/%s.svg" (name %)) svg))
+     (keys metamorph-plots))))
 
 
