@@ -415,13 +415,14 @@
         )))))
 
 
-(defn lay-cooks-d [pose cooks-d params-count pos-neg min-std-resid max-std-resid]
+(defn lay-cooks-d [pose cooks-d params-count pos-neg min-std-resid max-std-resid max-hat]
   (let  [
          
          x_ (linspace
              0.001
              ;(tcc/reduce-min (:.hat (:data pose)))
-             (tcc/reduce-max (:.hat (:data pose)))
+             ;(tcc/reduce-max (:.hat (:data pose)))
+             max-hat
              100)
          
          y_
@@ -450,32 +451,48 @@
 
 (defn residual-vs-leverage-pose [augmented-ds model options]
   (let [params-count  (-> (ml/glance model) :df first)
-        min-std-resid (tcc/reduce-min (:.std.resid augmented-ds))
-        max-std-resid (tcc/reduce-max (:.std.resid augmented-ds))
-        min-hat (tcc/reduce-min (:.hat augmented-ds))
-        max-hat (tcc/reduce-max (:.hat augmented-ds))
+        min-std-resid (* 0.9 (tcc/reduce-min (:.std.resid augmented-ds)))
+        max-std-resid (* 1.1 (tcc/reduce-max (:.std.resid augmented-ds)))
+        min-hat (* 0.9 (tcc/reduce-min (:.hat augmented-ds)))
+        max-hat (* 1.1 (tcc/reduce-max (:.hat augmented-ds)))
+        cook-levels [0.5 1] ;TODO 
+        rank (-> model :model-data :df :model inc)
+
+        ymult (tcc/sqrt (tcc//
+                         (tcc/* rank
+                                (tcc/- 1 max-hat)
+                                )
+                         max-hat))
+        aty (tcc/* (tcc/sqrt cook-levels) ymult) 
 
         extreme-cooksd
         (-> augmented-ds
             (tc/order-by :.cooksd :desc)
             (tc/head (:n-labeled-points options)))
-         
         
-        cook-levels [0.5 1] ;TODO 
+        
+        
         base-pose (pj/lay-point augmented-ds :.hat  :.std.resid)
         all-poses
         (reduce (fn [pose cooks-d]
                   (-> pose
-                      (lay-cooks-d cooks-d params-count 1 min-std-resid max-std-resid)
-                      (lay-cooks-d cooks-d params-count -1 min-std-resid max-std-resid)))
+                      (lay-cooks-d cooks-d params-count 1 min-std-resid max-std-resid max-hat)
+                      (lay-cooks-d cooks-d params-count -1 min-std-resid max-std-resid max-hat)))
                 base-pose
                 cook-levels)]
 
     (-> all-poses
         (pj/lay-text :.hat  :.std.resid
-             {:text :row-label
-              :color "grey"
-              :data extreme-cooksd})
+                     {:text :row-label
+                      :color "grey"
+                      :data extreme-cooksd})
+        (pj/lay-text :.hat  :.std.resid 
+                     {:text :text
+                      :data {:.hat (repeat (* 2 (count  cook-levels)) (* 0.95 max-hat))
+                             :.std.resid (concat  (tcc/* -1 (reverse aty)) aty)
+                             :text (concat (reverse cook-levels) cook-levels )
+                             }}
+                     )
         
         (pj/lay-text :.hat  :.std.resid
                      {:text :row-label

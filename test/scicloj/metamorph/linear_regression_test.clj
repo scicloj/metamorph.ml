@@ -1,6 +1,7 @@
 (ns scicloj.metamorph.linear-regression-test
   (:require
    [clojisr.v1.r :as r]
+   [clojure.edn :as edn]
    [clojure.pprint :as pp]
    [clojure.set :as set]
    [clojure.test :refer [deftest is]]
@@ -16,9 +17,9 @@
    [tablecloth.api :as tc]
    [taoensso.nippy :as nippy]
    [tech.v3.dataset :as ds]
-   [wadogo.scale :as ws]
    [tech.v3.dataset.column-filters :as cf]
-   [tech.v3.dataset.modelling :as ds-mod]))
+   [tech.v3.dataset.modelling :as ds-mod]
+   [wadogo.scale :as ws]))
 
 (r/require-r '[base :refer [pretty]])
  
@@ -686,8 +687,8 @@
                       :ticks (:n-ticks scale-spec)}))
   
   (pj/set-config!
-   {:width 600
-    :height 600})
+   {:width 650
+    :height 650})
 
  
   (let [opts   {:n-labeled-points 5
@@ -705,32 +706,47 @@
 
 
     (is
-     (= (read-string (slurp "test/data/cooks-distance.svg"))
+     (= (edn/read-string (slurp "test/data/cooks-distance.svg.edn"))
         (-> metamorph-plots :cooks-distance (pj/plot {:format :svg}))))
 
     (is
-     (= (read-string (slurp "test/data/cooks-d-vs-leverage*.svg"))
+     (= (read-string (slurp "test/data/cooks-d-vs-leverage*.svg.edn"))
         (-> metamorph-plots :cooks-d-vs-leverage* (pj/plot {:format :svg}))))
 
     (is
-     (= (read-string (slurp "test/data/residual-q-q.svg"))
+     (= (read-string (slurp "test/data/residual-q-q.svg.edn"))
         (-> metamorph-plots :residual-q-q (pj/plot {:format :svg}))))
 
     (is
-     (= (read-string (slurp "test/data/residual-vs-fitted.svg"))
+     (= (read-string (slurp "test/data/residual-vs-fitted.svg.edn"))
         (-> metamorph-plots :residual-vs-fitted (pj/plot {:format :svg}))))
 
     (is
-     (= (read-string (slurp "test/data/residual-vs-leverage.svg"))
+     (= (read-string (slurp "test/data/residual-vs-leverage.svg.edn"))
         (-> metamorph-plots :residual-vs-leverage (pj/plot {:format :svg}))))
 
     (is
-     (= (read-string (slurp "test/data/scale-location.svg"))
+     (= (read-string (slurp "test/data/scale-location.svg.edn"))
         (-> metamorph-plots :scale-location (pj/plot {:format :svg}))))))
 
 
 
 (comment
+  (defn pretty-spit
+    [file-name collection]
+    (spit (java.io.File. file-name)
+          (with-out-str (pp/write collection :dispatch pp/code-dispatch))))
+
+  ; write gold standrd svg to disk
+  (defmethod scale/make-scale :categorical [domain pixel-range scale-spec]
+    (ws/scale :bands {:domain domain
+                      :range pixel-range
+                      :ticks (:n-ticks scale-spec)}))
+
+  (pj/set-config!
+   {:width 650
+    :height 650})
+
   (let [opts   {:n-labeled-points 5
                 :pretty-fn (fn [s]
                              (r/r->clj (pretty s)))}
@@ -739,7 +755,6 @@
         metamorph-plots
         (diagnostic-plots
          (rdatasets/datasets-mtcars)
-
          "mpg ~ ."
          opts)]
 
@@ -749,7 +764,8 @@
              metamorph-plots
              (get %)
              (pj/plot {:format :svg}))]
-        (spit (format "/tmp/%s.svg" (name %)) svg))
-     (keys metamorph-plots))))
+        (pretty-spit (format "test/data/%s.svg.edn" (name %)) svg))
+     (keys metamorph-plots)))
+  )
 
 
