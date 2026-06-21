@@ -733,7 +733,7 @@
       [:g
        [:polyline
         {:fill "none",
-         :stroke "rgb(51,51,51)",
+         :stroke "rgb(211,211,211)",
          :stroke-opacity 1.0,
          :stroke-width 2.5,
          :points "36.45,543.59 565.55,35.41"}]]]]

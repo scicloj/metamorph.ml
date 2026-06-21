@@ -63,7 +63,7 @@
          :stroke "rgb(245,245,245)",
          :stroke-opacity 1.0,
          :stroke-width 0.6,
-         :points "10.00,10.00 10.00,569.00"}]]]]
+         :points "36.45,10.00 36.45,569.00"}]]]]
     [:g
      [:g
       [:g
@@ -72,7 +72,7 @@
          :stroke "rgb(245,245,245)",
          :stroke-opacity 1.0,
          :stroke-width 0.6,
-         :points "81.28,10.00 81.28,569.00"}]]]]
+         :points "107.73,10.00 107.73,569.00"}]]]]
     [:g
      [:g
       [:g
@@ -81,7 +81,7 @@
          :stroke "rgb(245,245,245)",
          :stroke-opacity 1.0,
          :stroke-width 0.6,
-         :points "152.56,10.00 152.56,569.00"}]]]]
+         :points "179.01,10.00 179.01,569.00"}]]]]
     [:g
      [:g
       [:g
@@ -90,7 +90,7 @@
          :stroke "rgb(245,245,245)",
          :stroke-opacity 1.0,
          :stroke-width 0.6,
-         :points "223.84,10.00 223.84,569.00"}]]]]
+         :points "250.29,10.00 250.29,569.00"}]]]]
     [:g
      [:g
       [:g
@@ -99,7 +99,7 @@
          :stroke "rgb(245,245,245)",
          :stroke-opacity 1.0,
          :stroke-width 0.6,
-         :points "295.11,10.00 295.11,569.00"}]]]]
+         :points "321.57,10.00 321.57,569.00"}]]]]
     [:g
      [:g
       [:g
@@ -108,7 +108,7 @@
          :stroke "rgb(245,245,245)",
          :stroke-opacity 1.0,
          :stroke-width 0.6,
-         :points "366.39,10.00 366.39,569.00"}]]]]
+         :points "392.85,10.00 392.85,569.00"}]]]]
     [:g
      [:g
       [:g
@@ -117,7 +117,7 @@
          :stroke "rgb(245,245,245)",
          :stroke-opacity 1.0,
          :stroke-width 0.6,
-         :points "437.67,10.00 437.67,569.00"}]]]]
+         :points "464.13,10.00 464.13,569.00"}]]]]
     [:g
      [:g
       [:g
@@ -126,7 +126,7 @@
          :stroke "rgb(245,245,245)",
          :stroke-opacity 1.0,
          :stroke-width 0.6,
-         :points "508.95,10.00 508.95,569.00"}]]]]
+         :points "535.40,10.00 535.40,569.00"}]]]]
     [:g
      [:g
       [:g
@@ -135,7 +135,7 @@
          :stroke "rgb(245,245,245)",
          :stroke-opacity 1.0,
          :stroke-width 0.6,
-         :points "580.23,10.00 580.23,569.00"}]]]]
+         :points "10.00,544.08 592.00,544.08"}]]]]
     [:g
      [:g
       [:g
@@ -144,7 +144,7 @@
          :stroke "rgb(245,245,245)",
          :stroke-opacity 1.0,
          :stroke-width 0.6,
-         :points "10.00,544.06 592.00,544.06"}]]]]
+         :points "10.00,479.31 592.00,479.31"}]]]]
     [:g
      [:g
       [:g
@@ -153,7 +153,7 @@
          :stroke "rgb(245,245,245)",
          :stroke-opacity 1.0,
          :stroke-width 0.6,
-         :points "10.00,482.04 592.00,482.04"}]]]]
+         :points "10.00,414.54 592.00,414.54"}]]]]
     [:g
      [:g
       [:g
@@ -162,7 +162,7 @@
          :stroke "rgb(245,245,245)",
          :stroke-opacity 1.0,
          :stroke-width 0.6,
-         :points "10.00,420.03 592.00,420.03"}]]]]
+         :points "10.00,349.77 592.00,349.77"}]]]]
     [:g
      [:g
       [:g
@@ -171,7 +171,7 @@
          :stroke "rgb(245,245,245)",
          :stroke-opacity 1.0,
          :stroke-width 0.6,
-         :points "10.00,358.02 592.00,358.02"}]]]]
+         :points "10.00,285.00 592.00,285.00"}]]]]
     [:g
      [:g
       [:g
@@ -180,7 +180,7 @@
          :stroke "rgb(245,245,245)",
          :stroke-opacity 1.0,
          :stroke-width 0.6,
-         :points "10.00,296.00 592.00,296.00"}]]]]
+         :points "10.00,220.24 592.00,220.24"}]]]]
     [:g
      [:g
       [:g
@@ -189,7 +189,7 @@
          :stroke "rgb(245,245,245)",
          :stroke-opacity 1.0,
          :stroke-width 0.6,
-         :points "10.00,233.99 592.00,233.99"}]]]]
+         :points "10.00,155.47 592.00,155.47"}]]]]
     [:g
      [:g
       [:g
@@ -198,7 +198,7 @@
          :stroke "rgb(245,245,245)",
          :stroke-opacity 1.0,
          :stroke-width 0.6,
-         :points "10.00,171.98 592.00,171.98"}]]]]
+         :points "10.00,90.70 592.00,90.70"}]]]]
     [:g
      [:g
       [:g
@@ -207,18 +207,9 @@
          :stroke "rgb(245,245,245)",
          :stroke-opacity 1.0,
          :stroke-width 0.6,
-         :points "10.00,109.96 592.00,109.96"}]]]]
+         :points "10.00,25.93 592.00,25.93"}]]]]
     [:g
-     [:g
-      [:g
-       [:polyline
-        {:fill "none",
-         :stroke "rgb(245,245,245)",
-         :stroke-opacity 1.0,
-         :stroke-width 0.6,
-         :points "10.00,47.95 592.00,47.95"}]]]]
-    [:g
-     {:transform "translate(222.62,382.63)", :data-row-idx 0}
+     {:transform "translate(249.08,375.62)", :data-row-idx 0}
      [:g
       [:g
        [:rect
@@ -232,7 +223,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(213.86,354.77)", :data-row-idx 1}
+     {:transform "translate(240.32,346.51)", :data-row-idx 1}
      [:g
       [:g
        [:rect
@@ -246,7 +237,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(177.23,478.10)", :data-row-idx 2}
+     {:transform "translate(203.68,475.32)", :data-row-idx 2}
      [:g
       [:g
        [:rect
@@ -260,7 +251,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(169.33,284.34)", :data-row-idx 3}
+     {:transform "translate(195.78,272.96)", :data-row-idx 3}
      [:g
       [:g
        [:rect
@@ -274,7 +265,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(149.21,240.35)", :data-row-idx 4}
+     {:transform "translate(175.66,227.02)", :data-row-idx 4}
      [:g
       [:g
        [:rect
@@ -288,7 +279,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(208.21,419.12)", :data-row-idx 5}
+     {:transform "translate(234.66,413.72)", :data-row-idx 5}
      [:g
       [:g
        [:rect
@@ -302,7 +293,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(239.31,297.92)", :data-row-idx 6}
+     {:transform "translate(265.76,287.14)", :data-row-idx 6}
      [:g
       [:g
        [:rect
@@ -316,7 +307,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(242.38,184.13)", :data-row-idx 7}
+     {:transform "translate(268.84,168.29)", :data-row-idx 7}
      [:g
       [:g
        [:rect
@@ -330,7 +321,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(536.09,442.26)", :data-row-idx 8}
+     {:transform "translate(562.55,437.89)", :data-row-idx 8}
      [:g
       [:g
        [:rect
@@ -344,7 +335,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(313.02,261.97)", :data-row-idx 9}
+     {:transform "translate(339.47,249.59)", :data-row-idx 9}
      [:g
       [:g
        [:rect
@@ -358,7 +349,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(274.19,375.38)", :data-row-idx 10}
+     {:transform "translate(300.65,368.04)", :data-row-idx 10}
      [:g
       [:g
        [:rect
@@ -372,7 +363,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(223.17,168.10)", :data-row-idx 11}
+     {:transform "translate(249.63,151.55)", :data-row-idx 11}
      [:g
       [:g
        [:rect
@@ -386,7 +377,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(143.94,204.47)", :data-row-idx 12}
+     {:transform "translate(170.39,189.54)", :data-row-idx 12}
      [:g
       [:g
        [:rect
@@ -400,7 +391,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(166.42,321.80)", :data-row-idx 13}
+     {:transform "translate(192.88,312.08)", :data-row-idx 13}
      [:g
       [:g
        [:rect
@@ -414,7 +405,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(273.92,389.69)", :data-row-idx 14}
+     {:transform "translate(300.38,382.99)", :data-row-idx 14}
      [:g
       [:g
        [:rect
@@ -428,7 +419,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(227.28,323.21)", :data-row-idx 15}
+     {:transform "translate(253.74,313.55)", :data-row-idx 15}
      [:g
       [:g
        [:rect
@@ -442,7 +433,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(225.61,56.58)", :data-row-idx 16}
+     {:transform "translate(252.06,35.08)", :data-row-idx 16}
      [:g
       [:g
        [:rect
@@ -456,7 +447,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(134.55,54.02)", :data-row-idx 17}
+     {:transform "translate(161.01,32.41)", :data-row-idx 17}
      [:g
       [:g
        [:rect
@@ -470,7 +461,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(371.90,259.29)", :data-row-idx 18}
+     {:transform "translate(398.35,246.79)", :data-row-idx 18}
      [:g
       [:g
        [:rect
@@ -484,7 +475,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(172.99,58.56)", :data-row-idx 19}
+     {:transform "translate(199.44,37.15)", :data-row-idx 19}
      [:g
       [:g
        [:rect
@@ -498,7 +489,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(315.93,426.25)", :data-row-idx 20}
+     {:transform "translate(342.39,421.17)", :data-row-idx 20}
      [:g
       [:g
        [:rect
@@ -512,7 +503,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(162.39,369.37)", :data-row-idx 21}
+     {:transform "translate(188.85,361.77)", :data-row-idx 21}
      [:g
       [:g
        [:rect
@@ -526,7 +517,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(131.34,423.43)", :data-row-idx 22}
+     {:transform "translate(157.80,418.22)", :data-row-idx 22}
      [:g
       [:g
        [:rect
@@ -540,7 +531,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(297.87,293.37)", :data-row-idx 23}
+     {:transform "translate(324.32,282.39)", :data-row-idx 23}
      [:g
       [:g
        [:rect
@@ -554,7 +545,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(153.34,161.32)", :data-row-idx 24}
+     {:transform "translate(179.79,144.48)", :data-row-idx 24}
      [:g
       [:g
        [:rect
@@ -568,7 +559,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(108.33,343.20)", :data-row-idx 25}
+     {:transform "translate(134.79,334.43)", :data-row-idx 25}
      [:g
       [:g
        [:rect
@@ -582,7 +573,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(451.23,304.67)", :data-row-idx 26}
+     {:transform "translate(477.68,294.18)", :data-row-idx 26}
      [:g
       [:g
        [:rect
@@ -596,7 +587,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(314.28,121.52)", :data-row-idx 27}
+     {:transform "translate(340.73,102.91)", :data-row-idx 27}
      [:g
       [:g
        [:rect
@@ -610,7 +601,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(479.76,540.59)", :data-row-idx 28}
+     {:transform "translate(506.21,540.59)", :data-row-idx 28}
      [:g
       [:g
        [:rect
@@ -624,7 +615,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(285.71,292.63)", :data-row-idx 29}
+     {:transform "translate(312.17,281.62)", :data-row-idx 29}
      [:g
       [:g
        [:rect
@@ -638,7 +629,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(465.15,210.09)", :data-row-idx 30}
+     {:transform "translate(491.60,195.41)", :data-row-idx 30}
      [:g
       [:g
        [:rect
@@ -652,7 +643,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(214.07,457.92)", :data-row-idx 31}
+     {:transform "translate(240.52,454.25)", :data-row-idx 31}
      [:g
       [:g
        [:rect
@@ -666,7 +657,7 @@
          :fill-opacity 0.75,
          :height 6.0}]]]]
     [:g
-     {:transform "translate(387.55,34.41)", :data-row-idx 0}
+     {:transform "translate(413.45,11.41)", :data-row-idx 0}
      [:g
       [:g
        [:rect
@@ -680,7 +671,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(393.36,38.65)", :data-row-idx 1}
+     {:transform "translate(419.00,15.64)", :data-row-idx 1}
      [:g
       [:g
        [:rect
@@ -694,7 +685,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(399.18,42.82)", :data-row-idx 2}
+     {:transform "translate(424.55,19.82)", :data-row-idx 2}
      [:g
       [:g
        [:rect
@@ -708,7 +699,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(404.99,46.95)", :data-row-idx 3}
+     {:transform "translate(430.10,23.94)", :data-row-idx 3}
      [:g
       [:g
        [:rect
@@ -722,7 +713,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(410.80,51.02)", :data-row-idx 4}
+     {:transform "translate(435.65,28.01)", :data-row-idx 4}
      [:g
       [:g
        [:rect
@@ -736,7 +727,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(416.61,55.04)", :data-row-idx 5}
+     {:transform "translate(441.20,32.03)", :data-row-idx 5}
      [:g
       [:g
        [:rect
@@ -750,7 +741,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(422.43,59.01)", :data-row-idx 6}
+     {:transform "translate(446.74,36.01)", :data-row-idx 6}
      [:g
       [:g
        [:rect
@@ -764,7 +755,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(428.24,62.94)", :data-row-idx 7}
+     {:transform "translate(452.29,39.94)", :data-row-idx 7}
      [:g
       [:g
        [:rect
@@ -778,7 +769,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(434.05,66.83)", :data-row-idx 8}
+     {:transform "translate(457.84,43.83)", :data-row-idx 8}
      [:g
       [:g
        [:rect
@@ -792,7 +783,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(439.87,70.67)", :data-row-idx 9}
+     {:transform "translate(463.39,47.69)", :data-row-idx 9}
      [:g
       [:g
        [:rect
@@ -806,7 +797,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(445.68,74.48)", :data-row-idx 10}
+     {:transform "translate(468.94,51.50)", :data-row-idx 10}
      [:g
       [:g
        [:rect
@@ -820,7 +811,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(451.49,78.25)", :data-row-idx 11}
+     {:transform "translate(474.49,55.28)", :data-row-idx 11}
      [:g
       [:g
        [:rect
@@ -834,7 +825,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(457.30,81.99)", :data-row-idx 12}
+     {:transform "translate(480.03,59.03)", :data-row-idx 12}
      [:g
       [:g
        [:rect
@@ -848,7 +839,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(463.12,85.69)", :data-row-idx 13}
+     {:transform "translate(485.58,62.74)", :data-row-idx 13}
      [:g
       [:g
        [:rect
@@ -862,7 +853,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(468.93,89.37)", :data-row-idx 14}
+     {:transform "translate(491.13,66.43)", :data-row-idx 14}
      [:g
       [:g
        [:rect
@@ -876,7 +867,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(474.74,93.02)", :data-row-idx 15}
+     {:transform "translate(496.68,70.09)", :data-row-idx 15}
      [:g
       [:g
        [:rect
@@ -890,7 +881,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(480.56,96.65)", :data-row-idx 16}
+     {:transform "translate(502.23,73.72)", :data-row-idx 16}
      [:g
       [:g
        [:rect
@@ -904,7 +895,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(486.37,100.25)", :data-row-idx 17}
+     {:transform "translate(507.78,77.33)", :data-row-idx 17}
      [:g
       [:g
        [:rect
@@ -918,7 +909,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(492.18,103.83)", :data-row-idx 18}
+     {:transform "translate(513.32,80.92)", :data-row-idx 18}
      [:g
       [:g
        [:rect
@@ -932,7 +923,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(497.99,107.39)", :data-row-idx 19}
+     {:transform "translate(518.87,84.49)", :data-row-idx 19}
      [:g
       [:g
        [:rect
@@ -946,7 +937,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(503.81,110.93)", :data-row-idx 20}
+     {:transform "translate(524.42,88.04)", :data-row-idx 20}
      [:g
       [:g
        [:rect
@@ -960,7 +951,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(509.62,114.46)", :data-row-idx 21}
+     {:transform "translate(529.97,91.57)", :data-row-idx 21}
      [:g
       [:g
        [:rect
@@ -974,7 +965,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(515.43,117.97)", :data-row-idx 22}
+     {:transform "translate(535.52,95.09)", :data-row-idx 22}
      [:g
       [:g
        [:rect
@@ -988,7 +979,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(521.25,121.48)", :data-row-idx 23}
+     {:transform "translate(541.07,98.59)", :data-row-idx 23}
      [:g
       [:g
        [:rect
@@ -1002,7 +993,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(527.06,124.97)", :data-row-idx 24}
+     {:transform "translate(546.61,102.09)", :data-row-idx 24}
      [:g
       [:g
        [:rect
@@ -1016,7 +1007,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(532.87,128.46)", :data-row-idx 25}
+     {:transform "translate(552.16,105.57)", :data-row-idx 25}
      [:g
       [:g
        [:rect
@@ -1030,7 +1021,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(538.68,131.95)", :data-row-idx 26}
+     {:transform "translate(557.71,109.05)", :data-row-idx 26}
      [:g
       [:g
        [:rect
@@ -1044,7 +1035,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(544.50,135.43)", :data-row-idx 27}
+     {:transform "translate(563.26,112.53)", :data-row-idx 27}
      [:g
       [:g
        [:rect
@@ -1058,7 +1049,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(550.31,138.91)", :data-row-idx 28}
+     {:transform "translate(568.81,116.00)", :data-row-idx 28}
      [:g
       [:g
        [:rect
@@ -1072,7 +1063,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(556.12,142.40)", :data-row-idx 29}
+     {:transform "translate(574.36,119.47)", :data-row-idx 29}
      [:g
       [:g
        [:rect
@@ -1086,7 +1077,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(561.94,145.89)", :data-row-idx 30}
+     {:transform "translate(579.90,122.95)", :data-row-idx 30}
      [:g
       [:g
        [:rect
@@ -1100,7 +1091,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(567.75,149.39)", :data-row-idx 31}
+     {:transform "translate(585.45,126.42)", :data-row-idx 31}
      [:g
       [:g
        [:rect
@@ -1114,7 +1105,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(573.56,152.90)", :data-row-idx 32}
+     {:transform "translate(402.36,565.24)", :data-row-idx 0}
      [:g
       [:g
        [:rect
@@ -1128,7 +1119,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(579.37,156.43)", :data-row-idx 33}
+     {:transform "translate(407.91,560.89)", :data-row-idx 1}
      [:g
       [:g
        [:rect
@@ -1142,7 +1133,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(585.19,159.97)", :data-row-idx 34}
+     {:transform "translate(413.45,556.60)", :data-row-idx 2}
      [:g
       [:g
        [:rect
@@ -1156,7 +1147,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(445.68,515.53)", :data-row-idx 0}
+     {:transform "translate(419.00,552.37)", :data-row-idx 3}
      [:g
       [:g
        [:rect
@@ -1170,7 +1161,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(451.49,511.76)", :data-row-idx 1}
+     {:transform "translate(424.55,548.19)", :data-row-idx 4}
      [:g
       [:g
        [:rect
@@ -1184,7 +1175,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(457.30,508.02)", :data-row-idx 2}
+     {:transform "translate(430.10,544.07)", :data-row-idx 5}
      [:g
       [:g
        [:rect
@@ -1198,7 +1189,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(463.12,504.31)", :data-row-idx 3}
+     {:transform "translate(435.65,540.00)", :data-row-idx 6}
      [:g
       [:g
        [:rect
@@ -1212,7 +1203,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(468.93,500.64)", :data-row-idx 4}
+     {:transform "translate(441.20,535.98)", :data-row-idx 7}
      [:g
       [:g
        [:rect
@@ -1226,7 +1217,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(474.74,496.99)", :data-row-idx 5}
+     {:transform "translate(446.74,532.00)", :data-row-idx 8}
      [:g
       [:g
        [:rect
@@ -1240,7 +1231,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(480.56,493.36)", :data-row-idx 6}
+     {:transform "translate(452.29,528.07)", :data-row-idx 9}
      [:g
       [:g
        [:rect
@@ -1254,7 +1245,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(486.37,489.76)", :data-row-idx 7}
+     {:transform "translate(457.84,524.18)", :data-row-idx 10}
      [:g
       [:g
        [:rect
@@ -1268,7 +1259,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(492.18,486.18)", :data-row-idx 8}
+     {:transform "translate(463.39,520.32)", :data-row-idx 11}
      [:g
       [:g
        [:rect
@@ -1282,7 +1273,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(497.99,482.62)", :data-row-idx 9}
+     {:transform "translate(468.94,516.51)", :data-row-idx 12}
      [:g
       [:g
        [:rect
@@ -1296,7 +1287,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(503.81,479.08)", :data-row-idx 10}
+     {:transform "translate(474.49,512.73)", :data-row-idx 13}
      [:g
       [:g
        [:rect
@@ -1310,7 +1301,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(509.62,475.55)", :data-row-idx 11}
+     {:transform "translate(480.03,508.98)", :data-row-idx 14}
      [:g
       [:g
        [:rect
@@ -1324,7 +1315,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(515.43,472.03)", :data-row-idx 12}
+     {:transform "translate(485.58,505.27)", :data-row-idx 15}
      [:g
       [:g
        [:rect
@@ -1338,7 +1329,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(521.25,468.53)", :data-row-idx 13}
+     {:transform "translate(491.13,501.58)", :data-row-idx 16}
      [:g
       [:g
        [:rect
@@ -1352,7 +1343,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(527.06,465.03)", :data-row-idx 14}
+     {:transform "translate(496.68,497.92)", :data-row-idx 17}
      [:g
       [:g
        [:rect
@@ -1366,7 +1357,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(532.87,461.54)", :data-row-idx 15}
+     {:transform "translate(502.23,494.29)", :data-row-idx 18}
      [:g
       [:g
        [:rect
@@ -1380,7 +1371,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(538.68,458.06)", :data-row-idx 16}
+     {:transform "translate(507.78,490.68)", :data-row-idx 19}
      [:g
       [:g
        [:rect
@@ -1394,7 +1385,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(544.50,454.58)", :data-row-idx 17}
+     {:transform "translate(513.32,487.09)", :data-row-idx 20}
      [:g
       [:g
        [:rect
@@ -1408,7 +1399,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(550.31,451.09)", :data-row-idx 18}
+     {:transform "translate(518.87,483.52)", :data-row-idx 21}
      [:g
       [:g
        [:rect
@@ -1422,7 +1413,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(556.12,447.61)", :data-row-idx 19}
+     {:transform "translate(524.42,479.97)", :data-row-idx 22}
      [:g
       [:g
        [:rect
@@ -1436,7 +1427,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(561.94,444.12)", :data-row-idx 20}
+     {:transform "translate(529.97,476.44)", :data-row-idx 23}
      [:g
       [:g
        [:rect
@@ -1450,7 +1441,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(567.75,440.62)", :data-row-idx 21}
+     {:transform "translate(535.52,472.92)", :data-row-idx 24}
      [:g
       [:g
        [:rect
@@ -1464,7 +1455,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(573.56,437.11)", :data-row-idx 22}
+     {:transform "translate(541.07,469.42)", :data-row-idx 25}
      [:g
       [:g
        [:rect
@@ -1478,7 +1469,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(579.37,433.58)", :data-row-idx 23}
+     {:transform "translate(546.61,465.92)", :data-row-idx 26}
      [:g
       [:g
        [:rect
@@ -1492,7 +1483,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(585.19,430.04)", :data-row-idx 24}
+     {:transform "translate(552.16,462.44)", :data-row-idx 27}
      [:g
       [:g
        [:rect
@@ -1506,7 +1497,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(503.81,34.69)", :data-row-idx 0}
+     {:transform "translate(557.71,458.96)", :data-row-idx 28}
      [:g
       [:g
        [:rect
@@ -1520,7 +1511,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(509.62,39.68)", :data-row-idx 1}
+     {:transform "translate(563.26,455.48)", :data-row-idx 29}
      [:g
       [:g
        [:rect
@@ -1534,7 +1525,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(515.43,44.65)", :data-row-idx 2}
+     {:transform "translate(568.81,452.01)", :data-row-idx 30}
      [:g
       [:g
        [:rect
@@ -1548,7 +1539,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(521.25,49.60)", :data-row-idx 3}
+     {:transform "translate(574.36,448.54)", :data-row-idx 31}
      [:g
       [:g
        [:rect
@@ -1562,7 +1553,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(527.06,54.55)", :data-row-idx 4}
+     {:transform "translate(579.90,445.06)", :data-row-idx 32}
      [:g
       [:g
        [:rect
@@ -1576,7 +1567,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(532.87,59.48)", :data-row-idx 5}
+     {:transform "translate(585.45,441.59)", :data-row-idx 33}
      [:g
       [:g
        [:rect
@@ -1590,7 +1581,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(538.68,64.41)", :data-row-idx 6}
+     {:transform "translate(529.97,11.86)", :data-row-idx 0}
      [:g
       [:g
        [:rect
@@ -1604,7 +1595,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(544.50,69.33)", :data-row-idx 7}
+     {:transform "translate(535.52,16.84)", :data-row-idx 1}
      [:g
       [:g
        [:rect
@@ -1618,7 +1609,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(550.31,74.26)", :data-row-idx 8}
+     {:transform "translate(541.07,21.79)", :data-row-idx 2}
      [:g
       [:g
        [:rect
@@ -1632,7 +1623,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(556.12,79.19)", :data-row-idx 9}
+     {:transform "translate(546.61,26.74)", :data-row-idx 3}
      [:g
       [:g
        [:rect
@@ -1646,7 +1637,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(561.94,84.12)", :data-row-idx 10}
+     {:transform "translate(552.16,31.67)", :data-row-idx 4}
      [:g
       [:g
        [:rect
@@ -1660,7 +1651,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(567.75,89.07)", :data-row-idx 11}
+     {:transform "translate(557.71,36.59)", :data-row-idx 5}
      [:g
       [:g
        [:rect
@@ -1674,7 +1665,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(573.56,94.04)", :data-row-idx 12}
+     {:transform "translate(563.26,41.50)", :data-row-idx 6}
      [:g
       [:g
        [:rect
@@ -1688,7 +1679,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(579.37,99.03)", :data-row-idx 13}
+     {:transform "translate(568.81,46.41)", :data-row-idx 7}
      [:g
       [:g
        [:rect
@@ -1702,7 +1693,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(585.19,104.04)", :data-row-idx 14}
+     {:transform "translate(574.36,51.32)", :data-row-idx 8}
      [:g
       [:g
        [:rect
@@ -1716,7 +1707,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(550.31,515.75)", :data-row-idx 0}
+     {:transform "translate(579.90,56.23)", :data-row-idx 9}
      [:g
       [:g
        [:rect
@@ -1730,7 +1721,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(556.12,510.82)", :data-row-idx 1}
+     {:transform "translate(585.45,61.15)", :data-row-idx 10}
      [:g
       [:g
        [:rect
@@ -1744,7 +1735,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(561.94,505.88)", :data-row-idx 2}
+     {:transform "translate(518.87,566.17)", :data-row-idx 0}
      [:g
       [:g
        [:rect
@@ -1758,7 +1749,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(567.75,500.93)", :data-row-idx 3}
+     {:transform "translate(524.42,561.15)", :data-row-idx 1}
      [:g
       [:g
        [:rect
@@ -1772,7 +1763,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(573.56,495.97)", :data-row-idx 4}
+     {:transform "translate(529.97,556.15)", :data-row-idx 2}
      [:g
       [:g
        [:rect
@@ -1786,7 +1777,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(579.37,490.98)", :data-row-idx 5}
+     {:transform "translate(535.52,551.17)", :data-row-idx 3}
      [:g
       [:g
        [:rect
@@ -1800,7 +1791,7 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(585.19,485.97)", :data-row-idx 6}
+     {:transform "translate(541.07,546.22)", :data-row-idx 4}
      [:g
       [:g
        [:rect
@@ -1814,7 +1805,119 @@
          :fill-opacity 0.75,
          :height 2}]]]]
     [:g
-     {:transform "translate(482.76,538.59)"}
+     {:transform "translate(546.61,541.27)", :data-row-idx 5}
+     [:g
+      [:g
+       [:rect
+        {:y 0,
+         :rx 1,
+         :stroke "none",
+         :fill "rgb(128,128,128)",
+         :width 2,
+         :x 0,
+         :ry 1,
+         :fill-opacity 0.75,
+         :height 2}]]]]
+    [:g
+     {:transform "translate(552.16,536.34)", :data-row-idx 6}
+     [:g
+      [:g
+       [:rect
+        {:y 0,
+         :rx 1,
+         :stroke "none",
+         :fill "rgb(128,128,128)",
+         :width 2,
+         :x 0,
+         :ry 1,
+         :fill-opacity 0.75,
+         :height 2}]]]]
+    [:g
+     {:transform "translate(557.71,531.42)", :data-row-idx 7}
+     [:g
+      [:g
+       [:rect
+        {:y 0,
+         :rx 1,
+         :stroke "none",
+         :fill "rgb(128,128,128)",
+         :width 2,
+         :x 0,
+         :ry 1,
+         :fill-opacity 0.75,
+         :height 2}]]]]
+    [:g
+     {:transform "translate(563.26,526.51)", :data-row-idx 8}
+     [:g
+      [:g
+       [:rect
+        {:y 0,
+         :rx 1,
+         :stroke "none",
+         :fill "rgb(128,128,128)",
+         :width 2,
+         :x 0,
+         :ry 1,
+         :fill-opacity 0.75,
+         :height 2}]]]]
+    [:g
+     {:transform "translate(568.81,521.60)", :data-row-idx 9}
+     [:g
+      [:g
+       [:rect
+        {:y 0,
+         :rx 1,
+         :stroke "none",
+         :fill "rgb(128,128,128)",
+         :width 2,
+         :x 0,
+         :ry 1,
+         :fill-opacity 0.75,
+         :height 2}]]]]
+    [:g
+     {:transform "translate(574.36,516.69)", :data-row-idx 10}
+     [:g
+      [:g
+       [:rect
+        {:y 0,
+         :rx 1,
+         :stroke "none",
+         :fill "rgb(128,128,128)",
+         :width 2,
+         :x 0,
+         :ry 1,
+         :fill-opacity 0.75,
+         :height 2}]]]]
+    [:g
+     {:transform "translate(579.90,511.78)", :data-row-idx 11}
+     [:g
+      [:g
+       [:rect
+        {:y 0,
+         :rx 1,
+         :stroke "none",
+         :fill "rgb(128,128,128)",
+         :width 2,
+         :x 0,
+         :ry 1,
+         :fill-opacity 0.75,
+         :height 2}]]]]
+    [:g
+     {:transform "translate(585.45,506.86)", :data-row-idx 12}
+     [:g
+      [:g
+       [:rect
+        {:y 0,
+         :rx 1,
+         :stroke "none",
+         :fill "rgb(128,128,128)",
+         :width 2,
+         :x 0,
+         :ry 1,
+         :fill-opacity 0.75,
+         :height 2}]]]]
+    [:g
+     {:transform "translate(509.21,538.59)"}
      [:g
       [:text
        {:fill "rgb(128,128,128)",
@@ -1823,7 +1926,7 @@
         :dominant-baseline "hanging"}
        "Ford Pantera L"]]]
     [:g
-     {:transform "translate(539.09,440.26)"}
+     {:transform "translate(565.55,435.89)"}
      [:g
       [:text
        {:fill "rgb(128,128,128)",
@@ -1832,7 +1935,7 @@
         :dominant-baseline "hanging"}
        "Merc 230"]]]
     [:g
-     {:transform "translate(228.61,54.58)"}
+     {:transform "translate(255.06,33.08)"}
      [:g
       [:text
        {:fill "rgb(128,128,128)",
@@ -1841,7 +1944,7 @@
         :dominant-baseline "hanging"}
        "Chrysler Imperial"]]]
     [:g
-     {:transform "translate(317.28,119.52)"}
+     {:transform "translate(343.73,100.91)"}
      [:g
       [:text
        {:fill "rgb(128,128,128)",
@@ -1850,7 +1953,7 @@
         :dominant-baseline "hanging"}
        "Lotus Europa"]]]
     [:g
-     {:transform "translate(175.99,56.56)"}
+     {:transform "translate(202.44,35.15)"}
      [:g
       [:text
        {:fill "rgb(128,128,128)",
@@ -1859,7 +1962,7 @@
         :dominant-baseline "hanging"}
        "Toyota Corolla"]]]
     [:g
-     {:transform "translate(562.90,486.00)"}
+     {:transform "translate(564.22,508.57)"}
      [:g
       [:text
        {:fill "rgb(51,51,51)",
@@ -1868,7 +1971,7 @@
         :dominant-baseline "hanging"}
        "1.0"]]]
     [:g
-     {:transform "translate(562.90,428.89)"}
+     {:transform "translate(564.22,441.62)"}
      [:g
       [:text
        {:fill "rgb(51,51,51)",
@@ -1877,7 +1980,7 @@
         :dominant-baseline "hanging"}
        "0.5"]]]
     [:g
-     {:transform "translate(562.90,153.12)"}
+     {:transform "translate(564.22,118.39)"}
      [:g
       [:text
        {:fill "rgb(51,51,51)",
@@ -1886,7 +1989,7 @@
         :dominant-baseline "hanging"}
        "0.5"]]]
     [:g
-     {:transform "translate(562.90,96.01)"}
+     {:transform "translate(564.22,51.44)"}
      [:g
       [:text
        {:fill "rgb(51,51,51)",
@@ -1895,7 +1998,7 @@
         :dominant-baseline "hanging"}
        "1.0"]]]
     [:g
-     {:transform "translate(45.64,513.83)"}
+     {:transform "translate(10.00,564.00)"}
      [:g
       [:text
        {:fill "rgb(128,128,128)",
@@ -1904,7 +2007,25 @@
         :dominant-baseline "hanging"}
        "   ··· Cook's distance"]]]
     [:g
-     {:transform "translate(10.00,581.00)"}
+     [:g
+      [:g
+       [:polyline
+        {:fill "none",
+         :stroke "rgb(211,211,211)",
+         :stroke-opacity 1.0,
+         :stroke-width 1.5,
+         :points "10.00,285.00 592.00,285.00"}]]]]
+    [:g
+     [:g
+      [:g
+       [:polyline
+        {:fill "none",
+         :stroke "rgb(211,211,211)",
+         :stroke-opacity 1.0,
+         :stroke-width 1.5,
+         :points "36.45,10.00 36.45,569.00"}]]]]
+    [:g
+     {:transform "translate(36.45,581.00)"}
      [:g
       [:text
        {:fill "rgb(102,102,102)",
@@ -1914,7 +2035,7 @@
         :text-anchor "middle"}
        "0.0"]]]
     [:g
-     {:transform "translate(81.28,581.00)"}
+     {:transform "translate(107.73,581.00)"}
      [:g
       [:text
        {:fill "rgb(102,102,102)",
@@ -1924,7 +2045,7 @@
         :text-anchor "middle"}
        "0.1"]]]
     [:g
-     {:transform "translate(152.56,581.00)"}
+     {:transform "translate(179.01,581.00)"}
      [:g
       [:text
        {:fill "rgb(102,102,102)",
@@ -1934,7 +2055,7 @@
         :text-anchor "middle"}
        "0.2"]]]
     [:g
-     {:transform "translate(223.84,581.00)"}
+     {:transform "translate(250.29,581.00)"}
      [:g
       [:text
        {:fill "rgb(102,102,102)",
@@ -1944,7 +2065,7 @@
         :text-anchor "middle"}
        "0.3"]]]
     [:g
-     {:transform "translate(295.11,581.00)"}
+     {:transform "translate(321.57,581.00)"}
      [:g
       [:text
        {:fill "rgb(102,102,102)",
@@ -1954,7 +2075,7 @@
         :text-anchor "middle"}
        "0.4"]]]
     [:g
-     {:transform "translate(366.39,581.00)"}
+     {:transform "translate(392.85,581.00)"}
      [:g
       [:text
        {:fill "rgb(102,102,102)",
@@ -1964,7 +2085,7 @@
         :text-anchor "middle"}
        "0.5"]]]
     [:g
-     {:transform "translate(437.67,581.00)"}
+     {:transform "translate(464.13,581.00)"}
      [:g
       [:text
        {:fill "rgb(102,102,102)",
@@ -1974,7 +2095,7 @@
         :text-anchor "middle"}
        "0.6"]]]
     [:g
-     {:transform "translate(508.95,581.00)"}
+     {:transform "translate(535.40,581.00)"}
      [:g
       [:text
        {:fill "rgb(102,102,102)",
@@ -1984,17 +2105,7 @@
         :text-anchor "middle"}
        "0.7"]]]
     [:g
-     {:transform "translate(580.23,581.00)"}
-     [:g
-      [:text
-       {:fill "rgb(102,102,102)",
-        :fill-opacity 1.0,
-        :font-size 11,
-        :dominant-baseline "hanging",
-        :text-anchor "middle"}
-       "0.8"]]]
-    [:g
-     {:transform "translate(7.00,538.56)"}
+     {:transform "translate(7.00,538.58)"}
      [:g
       [:text
        {:fill "rgb(102,102,102)",
@@ -2004,7 +2115,7 @@
         :text-anchor "end"}
        "-2.0"]]]
     [:g
-     {:transform "translate(7.00,476.54)"}
+     {:transform "translate(7.00,473.81)"}
      [:g
       [:text
        {:fill "rgb(102,102,102)",
@@ -2014,7 +2125,7 @@
         :text-anchor "end"}
        "-1.5"]]]
     [:g
-     {:transform "translate(7.00,414.53)"}
+     {:transform "translate(7.00,409.04)"}
      [:g
       [:text
        {:fill "rgb(102,102,102)",
@@ -2024,7 +2135,7 @@
         :text-anchor "end"}
        "-1.0"]]]
     [:g
-     {:transform "translate(7.00,352.52)"}
+     {:transform "translate(7.00,344.27)"}
      [:g
       [:text
        {:fill "rgb(102,102,102)",
@@ -2034,7 +2145,7 @@
         :text-anchor "end"}
        "-0.5"]]]
     [:g
-     {:transform "translate(7.00,290.50)"}
+     {:transform "translate(7.00,279.50)"}
      [:g
       [:text
        {:fill "rgb(102,102,102)",
@@ -2044,7 +2155,7 @@
         :text-anchor "end"}
        "0.0"]]]
     [:g
-     {:transform "translate(7.00,228.49)"}
+     {:transform "translate(7.00,214.74)"}
      [:g
       [:text
        {:fill "rgb(102,102,102)",
@@ -2054,7 +2165,7 @@
         :text-anchor "end"}
        "0.5"]]]
     [:g
-     {:transform "translate(7.00,166.48)"}
+     {:transform "translate(7.00,149.97)"}
      [:g
       [:text
        {:fill "rgb(102,102,102)",
@@ -2064,7 +2175,7 @@
         :text-anchor "end"}
        "1.0"]]]
     [:g
-     {:transform "translate(7.00,104.46)"}
+     {:transform "translate(7.00,85.20)"}
      [:g
       [:text
        {:fill "rgb(102,102,102)",
@@ -2074,7 +2185,7 @@
         :text-anchor "end"}
        "1.5"]]]
     [:g
-     {:transform "translate(7.00,42.45)"}
+     {:transform "translate(7.00,20.43)"}
      [:g
       [:text
        {:fill "rgb(102,102,102)",

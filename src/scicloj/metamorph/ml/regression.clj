@@ -373,7 +373,8 @@
      (pj/lay-point :qq :.std.resid)
      (label-extremes :qq :.std.resid qq-dataset options)
 
-     (pj/lay-line {:data [{:qq start-qq
+     (pj/lay-line {:color "lightgrey"
+                   :data [{:qq start-qq
                            :.std.resid start-std-resid}
                           {:qq end-qq
                            :.std.resid end-std-resid}]})
@@ -470,7 +471,7 @@
 (defn residual-vs-leverage-pose [augmented-ds model options]
   (let [params-count  (-> (ml/glance model) :df first)
         [min-std-resid max-std-resid] (min-max-extended (:.std.resid augmented-ds) 1.1)
-        [min-hat max-hat] (min-max-extended (:.hat augmented-ds) 1.1)
+        [min-hat max-hat] (min-max-extended (cons 0 (:.hat augmented-ds)) 1.1)
         cook-levels [0.5 1] ;TODO 
         rank (-> model :model-data :df :model inc)
 
@@ -512,13 +513,20 @@
         (pj/lay-text :.hat  :.std.resid
                      {:text :row-label
                       :color "grey"
-                      :data {:.hat [0.05]
+                      :data {:.hat [min-hat]
                              :.std.resid [min-std-resid]
                              :row-label ["   \u00b7\u00b7\u00b7 Cook's distance"]
                              }})
+        (pj/lay-rule-h {:y-intercept 0 
+                        :color "lightgrey"
+                        :alpha 0.9})
+        (pj/lay-rule-v {:x-intercept 0
+                        :color "lightgrey"
+                        :alpha 0.9
+                        })
         
 
-        (pj/scale :x {:domain [0 max-hat]})
+        (pj/scale :x {:domain [min-hat max-hat]})
         (pj/scale :y {:domain [min-std-resid max-std-resid]})
         (pj/options {:title "Residual vs Leverage"
                      :x-label "Leverage"
