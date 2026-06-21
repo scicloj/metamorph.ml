@@ -67,6 +67,7 @@
    [fastmath.stats :as stats]
    [wadogo.scale :as s]
    [tech.v3.datatype.argops]
+   [scicloj.metamorph.ml.pretty :as pretty]
    )
   (:import [fastmath.java Array]
            [org.apache.commons.math3.stat.regression OLSMultipleLinearRegression]))
@@ -614,7 +615,12 @@
 
 
          ;bval (cons 0  (pretty _bval 5))
-         bval ((:pretty-fn options) _bval)
+         pretty-fn (get options :pretty-fn
+                        (fn [s]
+                          (pretty/pretty s  {:n 5} :wadogo)
+                          )
+                        )
+         bval (pretty-fn _bval)
 
 
 

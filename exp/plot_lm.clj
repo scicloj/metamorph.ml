@@ -2,19 +2,14 @@
 (ns plot-lm
   (:require [clojisr.v1.r :as r]
             [scicloj.kindly.v4.kind :as kind]
-            [scicloj.metamorph.ml :as ml]
-            [scicloj.metamorph.ml.r-model-matrix :as r-mm]
             [scicloj.metamorph.ml.rdatasets :as rdatasets]
             [scicloj.metamorph.ml.regression]
             [scicloj.plotje.api :as pj]
             [scicloj.plotje.impl.scale]
-            [tablecloth.api :as tc]
-            [tablecloth.column.api :as tcc]
-            [tech.v3.dataset.modelling :as ds-mod]
             [wadogo.scale :as ws]
-            [wadogo.scale :as s]
             [scicloj.metamorph.linear-regression-test :refer [diagnostic-plots]]
             [scicloj.metamorph.ml.r :as ml-r]
+            [scicloj.metamorph.ml.pretty :as pretty]
             ))
 
 
@@ -54,26 +49,22 @@
 
 
 
-
+  
 
 ^:kindly/hide-code
 (defn compare-table [dataset-name formula]
   
   (let [opts   {:n-labeled-points 5
                 :pretty-fn (fn [s]
-                             (ml-r/pretty (seq s) {} :ocpu)
-                             )}
-        
+                             (pretty/pretty (seq s) {} :ocpu))}
+
         _ (plot-lm->pdf! dataset-name "" (:n-labeled-points opts))
-        
+
         metamorph-plots
         (diagnostic-plots
          (eval (list (symbol (format "rdatasets/datasets-%s" dataset-name))))
          formula
-         opts
-
-
-         )]
+         opts)]
     (kind/table {:column-names [(kind/code "R")
                                 (kind/code "Clojure")]
                  :row-vectors
@@ -97,10 +88,10 @@
 
 
 
-
+^:kindly/hide-code
 (pj/set-config! 
- {:width 700
-  :height 700})
+ {:width 650
+  :height 650 })
 
 
 
