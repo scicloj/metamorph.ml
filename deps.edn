@@ -34,7 +34,7 @@
 
         org.clj-commons/claypoole {:mvn/version "1.2.2"}
         metadoc/metadoc {:mvn/version "0.2.9"}
-        org.scicloj/plotje {:mvn/version "0.3.0"}
+        org.scicloj/plotje {:mvn/version "0.3.1"}
         }
 
  :paths ["src" "resources"]

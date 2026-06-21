@@ -20,7 +20,7 @@
 
 
 (defn explore-categorical-var [data variable {:keys [color target]}]
-  (let [group (if (some? target) target color)
+  (let [;group (if (some? target) target color)
         freqs (-> data variable frequencies)
         n-missing (-> data variable tc/select-missing tc/row-count)
         n-unique (count freqs)
@@ -34,26 +34,35 @@
                                                    (/
                                                     (tc/row-count ds)
                                                     (tc/row-count data)))))
-                          {:default-column-name-prefix :%}
-                          )
-            
-            )]
+                          {:default-column-name-prefix :%}))]
+    ;; (def plot-data plot-data)
+    ;; (def group group)
+    ;; (def variable variable)
+    ;; (def variable variable)
+    ;; (def n-missing n-missing)
+    ;; (def n-unique n-unique)
+    ;; (def color color)
     (->
      plot-data
-     (pj/pose variable :%)
-     (pj/lay-value-bar  {:color group :alpha 0.7})
-     (pj/lay-label  {:text :%})
+     (pj/lay-value-bar variable :% {
+                                    :color color
+                                    :alpha 0.7})
+      (pj/lay-text variable :% {:text :%
+                                 :color "black"
+                                 :align-y :bottom
+                                 :align-x :right
+                                 })
      (pj/options {:title (name variable)
                   :subtitle (format "na = %d, unique = %d" n-missing n-unique)
-                  :x-label ""
-                  })
+                  :x-label ""})
      (pj/coord :flip)
      )))
 
 
 
 (defn explore-continous-var [data variable {:keys [color target]}]
-  (let [group (if (some? target) target color)
+  (let [
+        ;group (if (some? target) target color)
         qq-2 (stats/quantile (get data variable) 0.02)
         qq-98 (stats/quantile (get data variable) 0.98)
         n-missing (-> data variable tc/select-missing tc/row-count)
@@ -66,7 +75,7 @@
                            (>= (get row variable) qq-2)
                            (<= (get row variable) qq-98))))
         (pj/pose variable)
-        (pj/lay-density {:color group})
+        (pj/lay-density  {:color color}  )
         (pj/lay-rule-v {:x-intercept mean :color "grey" :alpha 0.5})
         (pj/options {:title (name variable)
                      :subtitle (format "na = %d, min = %.2f, max = %.2f" n-missing (double min) (double max))
