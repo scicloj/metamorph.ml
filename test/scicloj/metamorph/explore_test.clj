@@ -55,7 +55,7 @@
          ]
      
      )
-     (pr-str )
+     (pr-str (hash-map code result))
      )
    
    ['(scicloj.metamorph.ml.explore/explore-all pinguins {:color "skyblue"})])
