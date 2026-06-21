@@ -14,9 +14,9 @@
             [wadogo.scale :as ws]
             [wadogo.scale :as s]
             [scicloj.metamorph.linear-regression-test :refer [diagnostic-plots]]
+            [scicloj.metamorph.ml.r :as ml-r]
             ))
 
-(r/require-r '[base :refer [pretty]])
 
 
 
@@ -52,11 +52,6 @@
     (slurp (format "/tmp/%s" filename)))))
 
 
-(defn- my-pretty [s proposed-ticks]
-  (let [min (tcc/reduce-min s)
-        max (tcc/reduce-max s)
-        scale (s/scale :linear {:domain [min max]})]
-    (s/ticks scale proposed-ticks)))
 
 
 
@@ -66,7 +61,8 @@
   
   (let [opts   {:n-labeled-points 5
                 :pretty-fn (fn [s]
-                             (r/r->clj (pretty s)))}
+                             (ml-r/pretty (seq s) {} :ocpu)
+                             )}
         
         _ (plot-lm->pdf! dataset-name "" (:n-labeled-points opts))
         
