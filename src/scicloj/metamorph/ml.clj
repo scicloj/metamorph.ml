@@ -288,6 +288,7 @@
                                               [:tidy-fn {:optional true} fn?]
                                               [:augment-fn {:optional true} fn?]
                                               [:glance-fn {:optional true} fn?]
+                                              [:plot-fn {:optional true} fn?]
                                               [:options {:optional true} vector?]
                                               [:documentation {:optional true} [:map
                                                                                 [:javadoc {:optional true} [:maybe string?]]
@@ -303,6 +304,7 @@
                                          tidy-fn
                                          glance-fn
                                          augment-fn
+                                         plot-fn
                                          options
                                          documentation
                                          unsupervised?]
@@ -322,6 +324,7 @@
                                              :glance-fn glance-fn
                                              :tidy-fn tidy-fn
                                              :augment-fn augment-fn
+                                             :plot-fn plot-fn
                                              :options options
                                              :unsupervised? unsupervised?
                                              :documentation documentation})
@@ -971,7 +974,14 @@
     (when explain-fn
       (explain-fn (thaw-model model model-def) model options))))
 
+(defn plot [model dataset & {:as opts}]
+  
+  (let [{:keys [plot-fn] :as model-def}
+        (options->model-def (:options model))]
+    (when plot-fn
+      (plot-fn model dataset opts))))
 
+  
 
 (defn ^{:deprecated "1.4.0"} 
   default-loss-fn

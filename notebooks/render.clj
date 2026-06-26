@@ -18,4 +18,12 @@
              :book {:title "metamorph.ml topics"}
              :clean-up-target-dir false
              :show false})
+
+(clay/make! {:format [:html]
+             :base-source-path "notebooks/"
+             :source-path ["plot_lm.clj"]
+             :base-target-path "docs/plotlm"
+             :clean-up-target-dir false
+             :show false})
+
 (System/exit 0)

@@ -1,6 +1,9 @@
 unreleased
 - docstring update
 - use codox / metadoc
+- added support for model plot fn
+- added plotting for model type ::fastmath/ols 
+  (equivalent to all 6 plots of R function 'plot.lm'  with default params)
 
 1.6.2
 - add inference targets to `r-model-matrix`

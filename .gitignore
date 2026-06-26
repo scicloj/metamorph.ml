@@ -21,5 +21,3 @@ pyproject.toml
 uv.lock
 .RData
 .Rhistory
-*.svg
-*.pdf

@@ -5,7 +5,7 @@
 
 
         metosin/malli               {:mvn/version "0.20.0"}
-        generateme/fastmath         {:mvn/version "3.0.0-alpha6"}
+        generateme/fastmath         {:mvn/version "3.0.0-alpha7"}
         it.unimi.dsi/fastutil       {:mvn/version "8.5.18"}
         aerial.hanami/aerial.hanami {:mvn/version "0.20.2"
                                      ;; we only need hanami templating
@@ -33,7 +33,9 @@
         cheshire/cheshire {:mvn/version "6.2.0"}
 
         org.clj-commons/claypoole {:mvn/version "1.2.2"}
-        metadoc/metadoc {:mvn/version "0.2.9"}}
+        metadoc/metadoc {:mvn/version "0.2.9"}
+        org.scicloj/plotje {:mvn/version "0.3.0"}
+        }
 
  :paths ["src" "resources"]
  :mvn/repos {"bedatadriven-public" {:url "https://nexus.bedatadriven.com/content/groups/public/"}}
@@ -70,7 +72,10 @@
                 org.scicloj/sklearn-clj {:mvn/version "0.6.1"}
                 org.scicloj/scicloj.ml.tribuo {:mvn/version "0.3.1"}
                 org.tribuo/tribuo-classification-tree      {:mvn/version "4.3.2"}
-                clojang/codox-theme {:mvn/version "0.2.0-SNAPSHOT"}}}
+                clojang/codox-theme {:mvn/version "0.2.0-SNAPSHOT"}
+                org.clj-commons/hickory {:mvn/version "0.7.7"}
+                scicloj/clojisr {:mvn/version "1.1.0"}
+                }}
 
   :test
   {:jvm-opts ["-Djdk.attach.allowAttachSelf","-Xmx14G" "--add-opens=java.base/java.io=ALL-UNNAMED"]
