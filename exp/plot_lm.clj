@@ -22,7 +22,7 @@
                      :ticks (:n-ticks scale-spec)}))
 
 
-^:kindly/hide-code
+
 ^:kindly/hide-code
 (comment
   ;; reproduces plots in https://github.com/scicloj/plotje/issues/16
