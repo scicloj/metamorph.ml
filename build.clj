@@ -108,6 +108,7 @@
 
 (defn render-notebooks [opts]
   (let [opts (update opts :aliases conj :dev)
+        opts (update opts :aliases conj :test)
         aliases    [:dev]  
         basis      (b/create-basis opts) ; primarily using :aliases here
         
