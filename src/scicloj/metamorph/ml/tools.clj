@@ -1,8 +1,7 @@
 (ns scicloj.metamorph.ml.tools
   {:no-doc true}
   (:require
-   [clojure.pprint :as pprint]
-   ) 
+   [clojure.pprint :as pprint])
   (:import
    [java.util Map]))
 
@@ -58,6 +57,11 @@
   [x]
   (with-out-str (pprint/pprint x)))
 
+
+(defn pretty-spit
+  [file-name collection]
+  (spit (java.io.File. file-name)
+        (with-out-str (pprint/write collection :dispatch pprint/code-dispatch))))
 
 
 (def time-format

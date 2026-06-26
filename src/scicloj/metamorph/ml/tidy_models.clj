@@ -60,7 +60,7 @@
 https://github.com/scicloj/metamorph.ml/tree/main/resources/*.edn
  and if on violation they fail."
    :added "1.0"}
- *validate-tidy-fns* true)
+ *validate-tidy-fns* false)
 
 (defn allowed-glance-columns
   "Returns the allowed column names for glance datasets.

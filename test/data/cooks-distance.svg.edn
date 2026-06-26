@@ -191,51 +191,6 @@
          :stroke-width 0.6,
          :points "10.00,46.71 592.00,46.71"}]]]]
     [:g
-     {:transform "translate(528.34,31.62)"}
-     [:g
-      [:text
-       {:fill "rgb(128,128,128)",
-        :fill-opacity 1.0,
-        :font-size 10,
-        :dominant-baseline "hanging"}
-       "Ford Pantera L"]]]
-    [:g
-     {:transform "translate(164.59,281.05)"}
-     [:g
-      [:text
-       {:fill "rgb(128,128,128)",
-        :fill-opacity 1.0,
-        :font-size 10,
-        :dominant-baseline "hanging"}
-       "Merc 230"]]]
-    [:g
-     {:transform "translate(310.09,454.97)"}
-     [:g
-      [:text
-       {:fill "rgb(128,128,128)",
-        :fill-opacity 1.0,
-        :font-size 10,
-        :dominant-baseline "hanging"}
-       "Chrysler Imperial"]]]
-    [:g
-     {:transform "translate(510.16,465.74)"}
-     [:g
-      [:text
-       {:fill "rgb(128,128,128)",
-        :fill-opacity 1.0,
-        :font-size 10,
-        :dominant-baseline "hanging"}
-       "Lotus Europa"]]]
-    [:g
-     {:transform "translate(364.66,490.43)"}
-     [:g
-      [:text
-       {:fill "rgb(128,128,128)",
-        :fill-opacity 1.0,
-        :font-size 10,
-        :dominant-baseline "hanging"}
-       "Toyota Corolla"]]]
-    [:g
      [:g
       [:g
        [:g
@@ -1003,6 +958,51 @@
           :ry 3.0,
           :fill-opacity 1.0,
           :height 6.0}]]]]]
+    [:g
+     {:transform "translate(528.34,31.62)"}
+     [:g
+      [:text
+       {:fill "rgb(128,128,128)",
+        :fill-opacity 1.0,
+        :font-size 10,
+        :dominant-baseline "hanging"}
+       "Ford Pantera L"]]]
+    [:g
+     {:transform "translate(164.59,281.05)"}
+     [:g
+      [:text
+       {:fill "rgb(128,128,128)",
+        :fill-opacity 1.0,
+        :font-size 10,
+        :dominant-baseline "hanging"}
+       "Merc 230"]]]
+    [:g
+     {:transform "translate(310.09,454.97)"}
+     [:g
+      [:text
+       {:fill "rgb(128,128,128)",
+        :fill-opacity 1.0,
+        :font-size 10,
+        :dominant-baseline "hanging"}
+       "Chrysler Imperial"]]]
+    [:g
+     {:transform "translate(510.16,465.74)"}
+     [:g
+      [:text
+       {:fill "rgb(128,128,128)",
+        :fill-opacity 1.0,
+        :font-size 10,
+        :dominant-baseline "hanging"}
+       "Lotus Europa"]]]
+    [:g
+     {:transform "translate(364.66,490.43)"}
+     [:g
+      [:text
+       {:fill "rgb(128,128,128)",
+        :fill-opacity 1.0,
+        :font-size 10,
+        :dominant-baseline "hanging"}
+       "Toyota Corolla"]]]
     [:g
      {:transform "translate(19.09,581.00)"}
      [:g
