@@ -152,12 +152,22 @@
    A trained linear model (OLS from fastmath) ready for predictions. The model
    excludes the intercept column and row names from the design matrix by default.
 
-   Example:
-   ```
-   (lm iris-data \"Sepal.Width ~ Sepal.Length + Petal.Length\" :Sepal.Width :renjin)
-   ```
+
    "
+  {:metadoc/examples
+   [(example-session "Make linear model with formula using R wit :rejin backend"
+                     
+                     (require '[scicloj.metamorph.ml.rdatasets :as rdatasets]
+                              '[scicloj.metamorph.ml.regression]
+                              )
+                     (def model 
+                       (->
+                        (rdatasets/datasets-iris)
+                        (lm "`sepal-width` ~ `sepal-length` + `petal-length` " :sepal-width :renjin)
+                        )))]}
+   
   [ds formula target-var formula-impl]
+
   (-> ds
       (r-model-matrix formula formula-impl)
       :model-matrix-dataset

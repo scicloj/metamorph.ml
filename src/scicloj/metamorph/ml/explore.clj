@@ -116,7 +116,26 @@
                      :subtitle subtitle
                      :x-label ""}))))
 
-(defn explore-all [data opts]
+(defn explore-all
+  "Create a faceted overview plot for all columns in a Tablecloth dataset.
+
+  For each non-target column:
+  - Categorical columns (meta :categorical? true) -> percentage bar charts.
+    If :target is provided, bars are grouped/colored by target and percentages
+    are computed per category; otherwise a single-color bar chart with value
+    labels, plus subtitle showing NA count and number of unique values.
+  - Continuous columns -> density plots.
+    If :target is provided, densities are colored by target; otherwise a rug
+    and a vertical rule at the mean are added, plus a subtitle with NA/min/max.
+
+  Options (merged with defaults):
+  - :target  keyword or nil (default nil) — column name used for grouping/coloring.
+  - :color   string/color when no target is given (default \"skyblue\").
+  - :height  int canvas height (default 1000).
+  - :width   int canvas width (default 800).
+
+  Returns a plotje pose with the individual plots arranged in a 2-column grid."
+  [data opts]
   (let  [defaults {:height 1000
                    :width 800
                    :color "skyblue" :target nil}

@@ -1,6 +1,5 @@
 (ns scicloj.metamorph.ml.impl.r
-  
-  
+  {:no-doc true}
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]

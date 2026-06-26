@@ -2,7 +2,8 @@
   (:require
    [scicloj.metamorph.ml.r :as r]
    [tablecloth.column.api :as tcc]
-   [wadogo.scale :as s]))
+   [wadogo.scale :as s]
+   [metadoc.examples :refer [example-session]]))
 
 (defn- pretty--wadogo [s proposed-ticks]
   (let [min (tcc/reduce-min s)
@@ -40,6 +41,14 @@
     
     "
 
+  {:metadoc/examples
+   [(example-session "Use wit rejin"
+                     (pretty (range 0 11) {:n 7} :renjin))
+    (example-session "Use wit wadogo"
+                     (pretty (range 0 1 0.1) {:n 5} :wadogo))
+    
+    ]
+   } 
   [s opts impl]
 
   (let [result

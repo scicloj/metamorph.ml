@@ -2,8 +2,7 @@
   (:require [cemerick.pomegranate :as pom]
             [cemerick.pomegranate.aether :as aether]
             [scicloj.metamorph.ml.impl.r :as impl-r]
-            )
-  )
+            [metadoc.examples :refer [example-session]]))
 
 (defn add-clojisr-dependency
   "Adds dynamically `clojisr` to classpath using pomegranate.
@@ -64,6 +63,11 @@
     
     "
 
+  {:metadoc/examples
+   [(example-session "Use wit rejin"
+                     (pretty (range 0 11) {:n 7} :renjin))
+    (example-session "Use wit opencpu"
+                     (pretty (range 0 1 0.1) {:n 5} :ocpu))]} 
   [s opts impl]
 
   (let [result
