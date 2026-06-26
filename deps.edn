@@ -74,6 +74,7 @@
                 org.tribuo/tribuo-classification-tree      {:mvn/version "4.3.2"}
                 clojang/codox-theme {:mvn/version "0.2.0-SNAPSHOT"}
                 org.clj-commons/hickory {:mvn/version "0.7.7"}
+                scicloj/clojisr {:mvn/version "1.1.0"}
                 }}
 
   :test
