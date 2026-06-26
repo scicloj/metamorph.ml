@@ -6,9 +6,6 @@
             [tech.v3.dataset.column :as ds-col]))
 
 
-
-
-
 (defn- round-to-precision
   "Round a double to the given precision (number of significant digits)"
   [precision d]
@@ -17,10 +14,6 @@
 
 
 (defn- explore-categorical-var [data variable {:keys [color target]}]
-  ;; (def data data)
-  ;; (def variable variable)
-  ;; (def color color)
-  ;; (def target target)
 
   (let [group (if (some? target) target color)
         freqs (-> data variable frequencies)
@@ -46,13 +39,6 @@
                                                     
                                                     ))))
                           {:default-column-name-prefix :%}))]
-    ;; (def plot-data plot-data)
-    ;; (def group group)
-    ;; (def variable variable)
-    ;; (def variable variable)
-    ;; (def n-missing n-missing)
-    ;; (def n-unique n-unique)
-    ;; (def color color)
     (->
      plot-data
      (pj/lay-value-bar variable :% {:color group
@@ -90,24 +76,16 @@
                  (fn [pose] pose)
                  (fn [pose] (pj/lay-rug pose)))
         ]
-    ;; (def data data)
-    ;; (def qq-2 qq-2)
-    ;; (def qq-98  qq-98)
-    ;; (def group group)
-    ;; (def variable variable)
-    ;; (def subtitle subtitle)
-    ;; (def rule-fn rule-fn)
     (-> data
         ;; not doing anything
         ;; (tc/select-rows (fn [row]
         ;;                   (and
         ;;                    (>= (get row variable) qq-2)
         ;;                    (<= (get row variable) qq-98))))
-    
-        (pj/lay-density variable  {:color group}  )
 
-        (rug-fn
-         )
+        (pj/lay-density variable  {:color group})
+
+        (rug-fn)
         (rule-fn)
         ;TODO: https://github.com/scicloj/plotje/issues/23
 
