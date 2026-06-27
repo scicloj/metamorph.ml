@@ -1,4 +1,6 @@
 (ns scicloj.metamorph.ml.viz.confusionmatrix
+  {:no-doc true
+   :deprecated "1.7.0"}
   (:require
    [aerial.hanami.templates :as ht]
    [scicloj.metamorph.ml.classification :as cl]

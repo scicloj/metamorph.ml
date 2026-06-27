@@ -1,10 +1,11 @@
-unreleased
+1.7.0
 - docstring update
 - use codox / metadoc
-- added support for model plot fn
-- added plotting for model type ::fastmath/ols 
-  (equivalent to all 6 plots of R function 'plot.lm'  with default params)
-- added `explore-all` fn to plot all variables of a dataset  
+- added support for model plotting fn via `(ml/plot model)` 
+- added plotting with `plotje` for model type :fastmath/ols 
+   (equivalent to all 6 plots of R function 'plot.lm'  with default params)
+- added `explore/explore-all` fn to plot all variables of a dataset, using `plotje`
+- deprecated ns `scicloj.metamorph.ml.viz` 
 
 1.6.2
 - add inference targets to `r-model-matrix`

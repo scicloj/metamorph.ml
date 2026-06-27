@@ -1,4 +1,6 @@
 (ns scicloj.metamorph.ml.viz.learning-curve
+  {:no-doc true
+   :deprecated "1.7.0"}
   (:require
      [tablecloth.api :as tc]
      [clojure.math :as math]

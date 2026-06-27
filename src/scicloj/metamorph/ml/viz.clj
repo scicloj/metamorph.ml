@@ -1,4 +1,6 @@
 (ns scicloj.metamorph.ml.viz
+  {:deprecated "1.7.0"}
+
   (:require
    [aerial.hanami.common :as hc]
    [scicloj.metamorph.ml.learning-curve]
@@ -9,7 +11,7 @@
   (apply hc/xform spec (into [] cat kvs)))
 
 
-(defn learning-curve
+(defn ^{:deprecated "1.7.0" } learning-curve
   "Generates a learning  curve.
 
   The functions splits the dataset in a fixed size test set
@@ -53,7 +55,7 @@
                    hanami-opts)))
 
 
-(defn confusion-matrix
+(defn ^{:deprecated "1.7.0" } confusion-matrix
   "Generates a confusin matrix plot out of `predicted-labels` and `labels`
 
    - `opts`
