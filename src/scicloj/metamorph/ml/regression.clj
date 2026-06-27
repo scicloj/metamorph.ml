@@ -68,7 +68,8 @@
    [wadogo.scale :as s]
    [tech.v3.datatype.argops]
    [scicloj.metamorph.ml.pretty :as pretty]
-   )
+   
+   [scicloj.metamorph.ml.toydata :as data])
   (:import [fastmath.java Array]
            [org.apache.commons.math3.stat.regression OLSMultipleLinearRegression]))
 
@@ -301,16 +302,22 @@
       (- x (first xs)))
      (first ys)))) 
 
+(defn draw-extreme-point [pose x-col y-col text-col data]
+  (pj/lay-text pose x-col y-col
+               {:text text-col
+                :color "grey"
+                :data data}))
+
 
 (defn- label-extremes [pose x y augmented-ds options]
-  (pj/lay-text pose
-   x y
-   {:text :row-label
-    :color "grey"
-    :data (-> augmented-ds
-              (tc/add-column :abs-y #(tcc/abs (get % y)))
-              (tc/order-by :abs-y :desc)
-              (tc/head (:n-labeled-points options)))}))
+  (draw-extreme-point
+   pose x y :row-label
+   (-> augmented-ds
+       (tc/add-column :abs-y #(tcc/abs (get % y)))
+       (tc/order-by :abs-y :desc)
+       (tc/head (:n-labeled-points options)))))
+  
+
 
 (defn- residual-vs-fitted-pose [augmented-ds options]
   (->
@@ -499,10 +506,7 @@
                 cook-levels)]
 
     (-> all-poses
-        (pj/lay-text :.hat  :.std.resid
-                     {:text :row-label
-                      :color "grey"
-                      :data extreme-cooksd})
+        (draw-extreme-point :.hat  :.std.resid :row-label extreme-cooksd)
         (pj/lay-text :.hat  :.std.resid 
                      {:text :text
                       :data {:.hat (repeat (* 2 (count  cook-levels)) (* 0.95 max-hat))
@@ -630,44 +634,38 @@
          pose-with-lines
          (reduce (fn [pose bval]
                    (let [bi2 (tcc/sq bval)
+                         [xi yi] (if (> (* rank cooksd-max) (* bi2 leverage*-max))
+                                   [leverage*-max
+                                    (* bi2 (/ leverage*-max rank))]
+                                   [(* rank (/ cooksd-max bi2))
+                                    cooksd-max
+
+                                    ]
+
+                                   
+                                   )
 
                          line-pose-fn
                          (if (> (* rank cooksd-max) (* bi2 leverage*-max))
                            (fn [pose]
-                             (let [xi leverage*-max
-                                   yi (* bi2 (/ xi rank))]
-                               (-> pose
-                                   (draw-ab-line leverage*-min leverage*-max 0 bval cooksd-min cooksd-max)
-                                   (pj/lay-text
-                                    :leverage*
-                                    :.cooksd
-                                    {:text :text
-                                     :color "grey"
-                                     :data {:text [bval]
-                                            :leverage* [xi]
-                                            :.cooksd [yi]}}))))
+                             (draw-ab-line pose leverage*-min leverage*-max 0 bval cooksd-min cooksd-max))
 
                            (fn [pose]
-                             (let [yi cooksd-max
-                                   xi (* rank (/ yi bi2))]
-
-                               (-> pose
-                                   (pj/lay-line {:color "grey"
-                                                 :size 1
-                                                 :data
-                                                 {:leverage*  [0 xi]
-                                                  :.cooksd [0 yi]}})
-                                   (pj/lay-text
-                                    :leverage*
-                                    :.cooksd
-                                    {:text :text
-                                     :color "grey"
-                                     :data {:text [bval]
-                                            :leverage* [xi]
-                                            :.cooksd [yi]}})))))]
+                             (pj/lay-line pose {:color "grey"
+                                                :size 1
+                                                :data
+                                                {:leverage*  [0 xi]
+                                                 :.cooksd [0 yi]}})))]
 
                      (-> pose
-                         (line-pose-fn))))
+                         (line-pose-fn)
+                         (draw-extreme-point :leverage*
+                                             :.cooksd
+                                             :text
+                                             {:text [bval]
+                                              :leverage* [xi]
+                                              :.cooksd [yi]})
+                         )))
                  base-pose
                  bval)]
 
@@ -676,12 +674,7 @@
 
         (pj/lay-point  :leverage* :.cooksd)
         (pj/lay-smooth {:color "red"})
-
-        (pj/lay-text :leverage* :.cooksd
-                     {:text :row-label
-                      :color "grey"
-                      :data extreme-cooksd})
-
+        (draw-extreme-point :leverage* :.cooksd :row-label extreme-cooksd)
 
 
         (pj/scale :x {:type :linear
