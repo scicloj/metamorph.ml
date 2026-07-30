@@ -41,16 +41,19 @@
                           {:default-column-name-prefix :%}))]
     (->
      plot-data
-     (pj/lay-value-bar variable :% {:color group
+     (pj/lay-bar variable :% {:color group
                                     :alpha 0.7})
      ((fn [pose]
+        
 
-        (if (some? target)
-          pose
-          (pj/lay-text pose variable :% {:text :%
-                                         :color "black"
-                                         :align-y :center
-                                         :align-x :right}))))
+         (if (some? target)
+           pose ;; TODO:  due to https://github.com/scicloj/plotje/issues/13
+           (pj/lay-text pose variable :% {:text :%
+                                          :color "black"
+                                          :align-y :center
+                                          :align-x :right}))
+        
+        ))
      (pj/options {:title (str variable)
                   :subtitle subtitle
                   :x-label ""})
@@ -71,24 +74,27 @@
                    (format "na = %d, min = %.2f, max = %.2f" n-missing (double min) (double max)))
         rule-fn (if (some? target)
                   (fn [pose] pose)
-                  (fn [pose] (pj/lay-rule-v pose {:x-intercept mean :color "grey" :alpha 0.5})))
+                  (fn [pose] (pj/lay-rule-v pose {:stroke-dash :dashed
+                                                  :x-intercept mean :color "grey" :alpha 0.5})))
         rug-fn (if (some? target)
                  (fn [pose] pose)
-                 (fn [pose] (pj/lay-rug pose)))
-        ]
+                 (fn [pose] (pj/lay-rug pose)))]
     (-> data
         ;; not doing anything
         ;; (tc/select-rows (fn [row]
         ;;                   (and
         ;;                    (>= (get row variable) qq-2)
         ;;                    (<= (get row variable) qq-98))))
-
-        (pj/lay-density variable  {:color group})
+        
+        (pj/lay-density variable  {:color group 
+                                   :stroke "black"
+                                   :stroke-width 1
+                                   })
 
         (rug-fn)
         (rule-fn)
         ;TODO: https://github.com/scicloj/plotje/issues/23
-
+        
         ;(pj/scale :x {:domain [qq-2 qq-98]})
         (pj/options {:title (str variable)
                      :subtitle subtitle
