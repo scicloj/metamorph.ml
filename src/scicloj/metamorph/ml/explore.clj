@@ -41,7 +41,7 @@
                           {:default-column-name-prefix :%}))]
     (->
      plot-data
-     (pj/lay-value-bar variable :% {:color group
+     (pj/lay-bar variable :% {:color group
                                     :alpha 0.7})
      ((fn [pose]
 
