@@ -1,3 +1,6 @@
+# unreleased
+- improved explore-all, adding percentages as text 
+
 1.7.0
 - docstring update
 - use codox / metadoc
