@@ -3,9 +3,7 @@
    [scicloj.metamorph.ml.explore :as explore]
    [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [scicloj.metamorph.ml.impl.dsutils :as dsutils]
-   [tablecloth.api :as tc]
-   [tech.v3.dataset :as ds]
-   [tech.v3.dataset.categorical :as categorical]))
+   [tablecloth.api :as tc]))
 
 
 (def pinguins
@@ -21,7 +19,6 @@
 
 (explore/explore-all pinguins
                      {:color "blue"})
-
 
 ; # Explore variables vs target  
 (explore/explore-all pinguins

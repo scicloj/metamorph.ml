@@ -46,7 +46,11 @@
      ((fn [pose]
 
         (if (some? target)
-          pose
+          (pj/lay-text pose   {:text :% 
+                               :group group 
+                               :color "black"
+                               :align-x :right 
+                               })
           (pj/lay-text pose variable :% {:text :%
                                          :color "black"
                                          :align-y :center
