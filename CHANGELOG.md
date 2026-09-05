@@ -1,5 +1,6 @@
 # unreleased
-- improved explore-all, adding percentages as text 
+- improved explore-all, adding percentages as text
+- upgraded to plotje 0.10 
 
 1.7.0
 - docstring update
