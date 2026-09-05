@@ -679,7 +679,7 @@
 
         (pj/scale :x {:type :linear
                       :breaks at
-                      :labels (reverse (map str athat))})
+                      :tick-labels (reverse (map str athat))})
 
         (pj/options {:title "Cook's dist vs Leverage* h\u1d62\u1d62 / (1 - h\u1d62\u1d62)"
                      :x-label "Leverage h\u1d62\u1d62"
