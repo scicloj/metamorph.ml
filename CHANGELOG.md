@@ -1,8 +1,10 @@
 # unreleased
+
+# 1.7.1
 - improved explore-all, adding percentages as text
 - upgraded to plotje 0.10 
 
-1.7.0
+# 1.7.0
 - docstring update
 - use codox / metadoc
 - added support for model plotting fn via `(ml/plot model)` 
@@ -11,14 +13,14 @@
 - added `explore/explore-all` fn to plot all variables of a dataset, using `plotje`
 - deprecated ns `scicloj.metamorph.ml.viz` 
 
-1.6.2
+# 1.6.2
 - add inference targets to `r-model-matrix`
 
-1.6.1
+# 1.6.1
 - fixed classloader for `r-model-matrix`
 
 
-1.6.0 
+# 1.6.0 
  - allow xjboost4j DMatrix for prediction
  - added `ml/optimize-hyperparameter`
  - deprecated `ml/evaluate-pipelines`
@@ -27,17 +29,17 @@
  - added random forrest implementation as model-type: :metamorph.ml/random-forest
 
  
-1.5.1
+# 1.5.1
  - added `r-model-matrix/lm` helper for one-line linear models
  - added ns documentation to most ns
 
-1.5.0
+# 1.5.0
  - `design-matrix` fn expands keyword to identity [#41](https://github.com/scicloj/metamorph.ml/issues/41)
  - `design-matrix` fn expands no-column name to auto-column name [#42](https://github.com/scicloj/metamorph.ml/issues/42)
 - added support in ns `r-model-matrix` for model matrix creation using "R-formula syntax" backed up by R itself,
   with 3 implementations to choose using opencpu,rejine,clojisr
  
-1.4.0
+# 1.4.0
  - validate predit-fn results
  - new ns `scicloj.metamorph.ml.column-metric` with metric-fns operating on datasets, not on seq-of-numbers
  - TMD's of rdatasets get doc-url as dataset name, ready for clicking [#36](https://github.com/scicloj/metamorph.ml/issues/36)
@@ -46,13 +48,13 @@
  - allow ml.dmlc.xgboost4j.java.DMatrix as input to train/test
  
 
-1.3.2
+# 1.3.2
  - removed clj-memory-meter from src-code 
-1.3.1
+# 1.3.1
 - improved docstring with Claude Code
 - use TMD 8.016
 
-1.3.0
+# 1.3.0
 
 - upgraded deps
 - added missing Java classes from former tmd-smile support
@@ -78,37 +80,37 @@
 - added 3 train/test cache implementatins to  scicloj.metamorph.ml.cache     
           
 
-1.2.1
+# 1.2.1
 - upgrade deps
 - fixed @37
 
 
-1.2
+# 1.2
 - removed most toy datasets and forward existing fns to rdatasets/*
     - attention: column nams of some 'toydatasets' have changed, now in kebab-keyword style
 - additional validation of consitency of predict / cat maps 
 
-1.1.1
+# 1.1.1
 * cleaned column names from "." in rdatasets
 * better initial doc string for rdatasets functions
 * new fn 'dataset-descriptions->doc-strings!' to attach dataset description as docsting to all rdadasets functions
 
-1.1
+# 1.1
 * added access fn to all datasets from https://vincentarelbundock.github.io/Rdatasets/articles/data.html
 
 
-1.0
+# 1.0
 * use malli to describe model options and validate them in ml/train
 * renamed :other-metrices -> :other-metrics
 
-0.12
+# 0.12
 * fixes #30 - dummy classifier does not predict by majority #30
 * added dummy regression model
 * improved design-matrix feature . Breaking !  columns need to be refered know by "precise name" (string, symbol, keyword)
 * made model  :fastmath/ols frezzable by nippy
  
 
-0.11.1
+# 0.11.1
 * allow parameters for :fastmath/ols (fixes #27)
 * added optional caching for train / predict
 * added new evaluation-handler: metrics-and-model-keep-fn
@@ -117,69 +119,69 @@
 * added :probability-distributin to ml/eval-pipelines result
 * breaking: move all eval handler to ns scicloj.metamorph.ml.evaluation-handler
 
-0.10.4
+# 0.10.4
 * added :target-datatypes in train result and clarified expected 'shape' of prediction
 
-0.10.3
+# 0.10.3
  * re-added data.json dependency
 
-0.10.2
+# 0.10.2
  * re-added data.csv dependency
 
-0.10.1
+# 0.10.1
  * fixed cljdoc build issue
 
-0.10.0
+# 0.10.0
 
 * exclude most hanami deps as we don't need them
 * added support for tidy-text and 
 * added read/write support for TMD<->libsvm files
  
 
-0.9.0
+# 0.9.0
 
 - added linear models from fastmath 
 - added tidy output validation
 - added support for design-matrix
 
-0.8.2
+# 0.8.2
  -fixed metric bug
  
-0.8.1
+# 0.8.1
  -fixed bug in ml/tidy
 
-0.8.0
+# 0.8.0
 - upgraded deps
 - added suport for glance,augment,tidy
 
-0.7.10
+# 0.7.10
 - added missing deps
 
-0.7.9
+# 0.7.9
 - fixed and documented confusion-map->ds
 - added confusin matrix plot
 - added generic handling of loglikelyhood
 - added mtcars data
 - added aic and bic
 
-0.7.8
+# 0.7.8
 - fixed default colors of error bands
 
-0.7.7
+# 0.7.7
 - fixed test/train color assignments
 - adde more docu
 
-0.7.6
+# 0.7.6
 - fixed metric.clj filename for ClojureDoc generation
 
-0.7.5
+# 0.7.5
 - removed WIP files
 
-0.7.4
+# 0.7.4
 - fixed Clojars links and ClojureDoc
 - refatored learnining curve
 
-0.7.3
+# 0.7.3
 
 - added dummy classifier
 - add checks for matching categorical maps between train and predict
@@ -187,58 +189,56 @@
 - added ggplot toydaya
 - added visualisation for learning curve
 
-0.7.2
+# 0.7.2
  - fixed verify ns
 
-0.7.1
+# 0.7.1
  - fixed 'verify' ns
  
-0.7
+# 0.7
  - using tablecloth 7.0
  - added uid for grouping of splits
  - added learning curve
  - added AUC metric (thanks @Prometheus77)
 
-0.6.4
+# 0.6.4
 - fix metric calculation in evaluate-pipelines 
     - use reverse mappings
 
-0.6.3
+# 0.6.3
 
 - added  :as opts to methods signature
 
-0.6.2
+# 0.6.2
  - added ensembles
 
-0.5.0
+# 0.5.0
 - unified dissoc-in options and handler-fn option
 
-
-
-0.4.1
+# 0.4.1
 - adding support for unsupervised learning
 
 
-0.4.0
+# 0.4.0
 - changed result of `evaluate-pipelines`` to be more consistent
 - added Malli schema to several functios
 - added support for experiment tracking on disk
 - added experimenta / example code of using nippy to persist evaluation results
 
-0.3.0-beta6
+# 0.3.0-beta6
 - fixed toy data
 
-0.3.0-beta4
+# 0.3.0-beta4
 - added sonar data
 
-0.3.0-beta3
+# 0.3.0-beta3
 - added std-scaler
 - added min-max scaler
 - added toy data
 
 
-0.3.0-beta2
+# 0.3.0-beta2
 
-0.3.0-beta1 - 06.04.2021
+# 0.3.0-beta1 - 06.04.2021
 - big change, tech.ml (core) was moved into here
 
