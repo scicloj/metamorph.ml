@@ -302,23 +302,24 @@
       (- x (first xs)))
      (first ys)))) 
 
-(defn draw-extreme-point [pose x-col y-col text-col data]
+(defn draw-extreme-point [pose x-col y-col text-col data pos-adj]
+  (def pos-adj pos-adj)
   (pj/lay-text pose x-col y-col
-               {:text text-col
-                :color "grey"
-                :data data
-                :offset-x 5
-                :offset-y -5
-                }))
+               (merge
+                {:text text-col
+                 :color "grey"
+                 :data data}
+                pos-adj)))
 
 
-(defn- label-extremes [pose x y augmented-ds options]
+(defn- label-extremes [pose x y augmented-ds options pos-adj]
   (draw-extreme-point
    pose x y :row-label
    (-> augmented-ds
        (tc/add-column :abs-y #(tcc/abs (get % y)))
        (tc/order-by :abs-y :desc)
-       (tc/head (:n-labeled-points options)))))
+       (tc/head (:n-labeled-points options)))
+   pos-adj))
   
 
 
@@ -329,7 +330,8 @@
    (pj/lay-point  :.fitted :.resid)
    (pj/lay-smooth {:color "red"})
    (pj/lay-rule-h {:y-intercept 0 :color "grey" :alpha 0.2 :stroke-dash :dashed})
-   (label-extremes :.fitted :.resid augmented-ds options)
+   (label-extremes :.fitted :.resid augmented-ds options  {:offset-x 5
+                                                           :offset-y -5})
    (pj/options {:title "Residuals vs Fitted "
                 :x-label "Fitted values"
                 :y-label "Residuals"})))
@@ -379,7 +381,9 @@
     (->
      qq-dataset
      (pj/pose :qq :.std.resid)
-     (label-extremes :qq :.std.resid qq-dataset options)
+     (label-extremes :qq :.std.resid qq-dataset options {:offset-x 5
+                                                         :offset-y -5
+                                                         })
 
      (pj/lay-line
       :qq :.std.resid
@@ -399,10 +403,11 @@
         breaks (map #(-> % int str) (s/ticks lin 5))]
     (-> augmented-ds
         (pj/lay-lollipop :row-number :.cooksd)
-        (label-extremes :row-number :.cooksd augmented-ds options)
-        (pj/scale :x  {
-                       :breaks breaks}
-                  )
+        (label-extremes :row-number :.cooksd augmented-ds options
+                        {:align-x :center
+                         :align-y :bottom
+                         :offset-y -5})
+        (pj/scale :x  {:breaks breaks})
         (pj/options {:title "Cooks distance"
 
                      :x-label "Obs. number"
@@ -422,7 +427,8 @@
      augmented-ds
      (pj/lay-point :.fitted :.sqrt-abs-resid)
      (pj/lay-smooth {:color "red"})
-     (label-extremes :.fitted :.sqrt-abs-resid augmented-ds options)
+     (label-extremes :.fitted :.sqrt-abs-resid augmented-ds options {:offset-x 5
+                                                                     :offset-y -5})
 
      (pj/options {:title "Scale Location"
                   :x-label "Fitted values"
@@ -517,7 +523,8 @@
                 cook-levels)]
 
     (-> all-poses
-        (draw-extreme-point :.hat  :.std.resid :row-label extreme-cooksd)
+        (draw-extreme-point :.hat  :.std.resid :row-label extreme-cooksd {:offset-x 5
+                                                                          :offset-y -5})
         
         (pj/lay-text :.hat  :.std.resid
                      {:text :text
@@ -675,7 +682,9 @@
                                              :text
                                              {:text [bval]
                                               :leverage* [xi]
-                                              :.cooksd [yi]})
+                                              :.cooksd [yi]}
+                                             {:offset-x 5
+                                              :offset-y -5})
                          )))
                  base-pose
                  bval)]
@@ -685,7 +694,8 @@
 
         (pj/lay-point  :leverage* :.cooksd)
         (pj/lay-smooth {:color "red"})
-        (draw-extreme-point :leverage* :.cooksd :row-label extreme-cooksd)
+        (draw-extreme-point :leverage* :.cooksd :row-label extreme-cooksd {:offset-x 5
+                                                                           :offset-y -5})
 
 
         (pj/scale :x {:type :linear

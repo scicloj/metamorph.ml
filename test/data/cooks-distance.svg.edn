@@ -969,10 +969,10 @@
              :fill-opacity 1.0,
              :height 6.0}]]]]]
        [:g
-        {:transform "translate(5.00,-5.00)"}
+        {:transform "translate(0.00,-5.00)"}
         [:g
          [:g
-          {:transform "translate(528.34,31.62)"}
+          {:transform "translate(486.34,26.62)"}
           [:g
            [:text
             {:fill "rgb(128,128,128)",
@@ -981,7 +981,7 @@
              :dominant-baseline "hanging"}
             "Ford Pantera L"]]]
          [:g
-          {:transform "translate(164.59,281.05)"}
+          {:transform "translate(140.59,276.05)"}
           [:g
            [:text
             {:fill "rgb(128,128,128)",
@@ -990,7 +990,7 @@
              :dominant-baseline "hanging"}
             "Merc 230"]]]
          [:g
-          {:transform "translate(310.09,454.97)"}
+          {:transform "translate(259.09,449.97)"}
           [:g
            [:text
             {:fill "rgb(128,128,128)",
@@ -999,7 +999,7 @@
              :dominant-baseline "hanging"}
             "Chrysler Imperial"]]]
          [:g
-          {:transform "translate(510.16,465.74)"}
+          {:transform "translate(474.16,460.74)"}
           [:g
            [:text
             {:fill "rgb(128,128,128)",
@@ -1008,7 +1008,7 @@
              :dominant-baseline "hanging"}
             "Lotus Europa"]]]
          [:g
-          {:transform "translate(364.66,490.43)"}
+          {:transform "translate(322.66,485.43)"}
           [:g
            [:text
             {:fill "rgb(128,128,128)",

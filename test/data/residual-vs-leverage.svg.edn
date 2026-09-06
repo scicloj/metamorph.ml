@@ -1563,7 +1563,7 @@
            :dominant-baseline "hanging"}
           "1.0"]]]
        [:g
-        {:transform "translate(10.00,564.00)"}
+        {:transform "translate(36.45,538.09)"}
         [:g
          [:text
           {:fill "rgb(128,128,128)",
