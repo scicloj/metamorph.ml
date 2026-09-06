@@ -73,7 +73,7 @@
   (:import [fastmath.java Array]
            [org.apache.commons.math3.stat.regression OLSMultipleLinearRegression]))
 
-(defn extend-intervall [[start end] extension]
+(defn- extend-intervall [[start end] extension]
 
   (let [midpiont (/ (+ start end) 2)
         s (- end start)
@@ -83,7 +83,7 @@
     [new-start new-end]))
 
 
-(defn min-max-extended [s extension]
+(defn- min-max-extended [s extension]
   (extend-intervall 
    [(tcc/reduce-min s)
     (tcc/reduce-max s)]
@@ -302,8 +302,7 @@
       (- x (first xs)))
      (first ys)))) 
 
-(defn draw-extreme-point [pose x-col y-col text-col data pos-adj]
-  (def pos-adj pos-adj)
+(defn- draw-extreme-point [pose x-col y-col text-col data pos-adj]
   (pj/lay-text pose x-col y-col
                (merge
                 {:text text-col
@@ -438,7 +437,7 @@
   (take n-steps
         (range start end (/ (- end start) n-steps))))
 
-(defn inclusive-range
+(defn- inclusive-range
   "Return a sequence of nums from START to END, both inclusive, by STEP."
   ([start end]
    (inclusive-range start end 1))
@@ -459,7 +458,7 @@
         )))))
 
 
-(defn lay-cooks-d [pose cooks-d params-count pos-neg min-std-resid max-std-resid max-hat]
+(defn- lay-cooks-d [pose cooks-d params-count pos-neg min-std-resid max-std-resid max-hat]
   (let  [
          
          x_ (linspace
@@ -493,7 +492,7 @@
                        :size 1
                        :data cooks-d})))
 
-(defn residual-vs-leverage-pose [augmented-ds model options]
+(defn- residual-vs-leverage-pose [augmented-ds model options]
   (let [params-count  (-> (ml/glance model) :df first)
         [min-std-resid max-std-resid] (min-max-extended (:.std.resid augmented-ds) 1.1)
         [min-hat max-hat] (min-max-extended (cons 0 (:.hat augmented-ds)) 1.1)
