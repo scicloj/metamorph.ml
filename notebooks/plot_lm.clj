@@ -6,20 +6,11 @@
             [scicloj.metamorph.ml.regression]
             [scicloj.plotje.api :as pj]
             [scicloj.plotje.impl.scale]
-            [wadogo.scale :as ws]
             [scicloj.metamorph.linear-regression-test :refer [diagnostic-plots]]
-            [scicloj.metamorph.ml.r :as ml-r]
             [scicloj.metamorph.ml.pretty :as pretty]
             ))
 
 
-
-
-^:kindly/hide-code
-(defmethod scicloj.plotje.impl.scale/make-scale :categorical [domain pixel-range scale-spec]
-   (ws/scale :bands {:domain domain
-                     :range pixel-range
-                     :ticks (:n-ticks scale-spec)}))
 
 
 

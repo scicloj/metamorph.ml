@@ -306,7 +306,10 @@
   (pj/lay-text pose x-col y-col
                {:text text-col
                 :color "grey"
-                :data data}))
+                :data data
+                :offset-x 5
+                :offset-y -5
+                }))
 
 
 (defn- label-extremes [pose x y augmented-ds options]
@@ -322,17 +325,14 @@
 (defn- residual-vs-fitted-pose [augmented-ds options]
   (->
    augmented-ds
-  
+
    (pj/lay-point  :.fitted :.resid)
    (pj/lay-smooth {:color "red"})
-   (pj/lay-rule-h {:y-intercept 0 :color "grey" :alpha 0.2})
+   (pj/lay-rule-h {:y-intercept 0 :color "grey" :alpha 0.2 :stroke-dash :dashed})
    (label-extremes :.fitted :.resid augmented-ds options)
-      (pj/options {:title "Residuals vs Fitted "
-                   :x-label "Fitted values"
-                   :y-label "Residuals"})
-
-   )
-  )
+   (pj/options {:title "Residuals vs Fitted "
+                :x-label "Fitted values"
+                :y-label "Residuals"})))
 
 (defn- residual-qq-pose [augmented-ds options]
   (let [num-rows (tc/row-count augmented-ds)
@@ -369,8 +369,8 @@
             (tc/dataset)
             (tc/add-column :qq (sort normal-quantiles))
             (tc/add-column :.std.resid (map
-                               #(get (:.std.resid augmented-ds) %)
-                               sort-order))
+                                        #(get (:.std.resid augmented-ds) %)
+                                        sort-order))
             (tc/add-column :row-label (map
                                        #(get (:row-label augmented-ds) %)
                                        sort-order)))]
@@ -378,28 +378,39 @@
 
     (->
      qq-dataset
-     (pj/lay-point :qq :.std.resid)
+     (pj/pose :qq :.std.resid)
      (label-extremes :qq :.std.resid qq-dataset options)
 
-     (pj/lay-line {:color "lightgrey"
-                   :data [{:qq start-qq
-                           :.std.resid start-std-resid}
-                          {:qq end-qq
-                           :.std.resid end-std-resid}]})
-
+     (pj/lay-line
+      :qq :.std.resid
+      {:color "lightgrey"
+       :stroke-dash :dashed
+       :data [{:qq start-qq
+               :.std.resid start-std-resid}
+              {:qq end-qq
+               :.std.resid end-std-resid}]})
+     (pj/lay-point :qq :.std.resid)
      (pj/options {:title "Q-Q Residuals"
                   :x-label "Theoretical Quantiles"
                   :y-label "Standardised residuals"}))))
 
 (defn- cooks-distance-pose [augmented-ds options]
-  (-> augmented-ds
-      (pj/lay-lollipop :row-number :.cooksd)
-      (label-extremes :row-number :.cooksd augmented-ds options)
-      (pj/scale :x {:n-ticks 4})
-      (pj/options {:title "Cooks distance"
+  (let [lin (s/scale :linear {:domain (map parse-long (:row-number augmented-ds))})
+        breaks (map #(-> % int str) (s/ticks lin 5))]
+    (-> augmented-ds
+        (pj/lay-lollipop :row-number :.cooksd)
+        (label-extremes :row-number :.cooksd augmented-ds options)
+        (pj/scale :x  {
+                       :breaks breaks}
+                  )
+        (pj/options {:title "Cooks distance"
 
-                   :x-label "Obs. number"
-                   :y-label "Cook's distance"})))
+                     :x-label "Obs. number"
+                     :y-label "Cook's distance"})))
+  
+  
+  
+  )
 
 
 (defn- scale-location-pose [augmented-ds options]
@@ -496,7 +507,7 @@
 
 
 
-        base-pose (pj/lay-point augmented-ds :.hat  :.std.resid)
+        base-pose (pj/pose augmented-ds :.hat  :.std.resid)
         all-poses
         (reduce (fn [pose cooks-d]
                   (-> pose
@@ -507,29 +518,31 @@
 
     (-> all-poses
         (draw-extreme-point :.hat  :.std.resid :row-label extreme-cooksd)
-        (pj/lay-text :.hat  :.std.resid 
+        
+        (pj/lay-text :.hat  :.std.resid
                      {:text :text
                       :data {:.hat (repeat (* 2 (count  cook-levels)) (* 0.95 max-hat))
                              :.std.resid (concat  (tcc/* -1 (reverse aty)) aty)
-                             :text (concat (reverse cook-levels) cook-levels )
-                             }}
-                     )
-        
+                             :text (concat (reverse cook-levels) cook-levels)}})
+
         (pj/lay-text :.hat  :.std.resid
                      {:text :row-label
                       :color "grey"
                       :data {:.hat [min-hat]
                              :.std.resid [min-std-resid]
-                             :row-label ["   \u00b7\u00b7\u00b7 Cook's distance"]
-                             }})
-        (pj/lay-rule-h {:y-intercept 0 
+                             :row-label ["   \u00b7\u00b7\u00b7 Cook's distance"]}})
+        (pj/lay-rule-h {:y-intercept 0
                         :color "lightgrey"
-                        :alpha 0.9})
+                        :stroke-dash :dashed
+                        ;:alpha 0.9
+                        })
         (pj/lay-rule-v {:x-intercept 0
                         :color "lightgrey"
-                        :alpha 0.9
+                        :stroke-dash :dashed
+                        ;:alpha 0.9
                         })
-        
+        (pj/lay-point :.hat  :.std.resid)
+
 
         (pj/scale :x {:domain [min-hat max-hat]})
         (pj/scale :y {:domain [min-std-resid max-std-resid]})
@@ -560,6 +573,7 @@
     (-> pose
         (pj/lay-line {:size 1
                       :color "grey"
+                      :stroke-dash :dashed
                       :data {:leverage* (map :leverage* clipped-xy)
                              :.cooksd (map :.cooksd clipped-xy)}}))))
 
@@ -638,12 +652,7 @@
                                    [leverage*-max
                                     (* bi2 (/ leverage*-max rank))]
                                    [(* rank (/ cooksd-max bi2))
-                                    cooksd-max
-
-                                    ]
-
-                                   
-                                   )
+                                    cooksd-max])
 
                          line-pose-fn
                          (if (> (* rank cooksd-max) (* bi2 leverage*-max))
@@ -653,6 +662,7 @@
                            (fn [pose]
                              (pj/lay-line pose {:color "grey"
                                                 :size 1
+                                                :stroke-dash :dashed
                                                 :data
                                                 {:leverage*  [0 xi]
                                                  :.cooksd [0 yi]}})))]

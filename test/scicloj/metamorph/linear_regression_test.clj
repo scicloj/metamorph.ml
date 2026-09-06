@@ -664,7 +664,7 @@
                                                      (r/r->clj (pretty s)))})
                 :residual-vs-fitted
                 keys)))
-    (is (=  [:layers :data :mapping :opts]
+    (is (=  [:mapping :layers :data  :opts]
             (-> (ml/plot model dataset {:pretty-fn (fn [s]
                                                      (r/r->clj (pretty s)))})
                 :residual-q-q
@@ -738,11 +738,6 @@
           (with-out-str (pp/write collection :dispatch pp/code-dispatch))))
 
   ; write gold standrd svg to disk
-  (defmethod scale/make-scale :categorical [domain pixel-range scale-spec]
-    (ws/scale :bands {:domain domain
-                      :range pixel-range
-                      :ticks (:n-ticks scale-spec)}))
-
   (pj/set-config!
    {:width 650
     :height 650})

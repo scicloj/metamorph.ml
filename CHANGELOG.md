@@ -1,4 +1,8 @@
 # unreleased
+- upgraded to plotje 0.11
+- small immprovements in lm plots
+- improves ticks on axes of lm plots
+
 
 # 1.7.1
 - improved explore-all, adding percentages as text
