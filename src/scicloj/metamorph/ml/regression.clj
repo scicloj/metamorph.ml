@@ -528,8 +528,9 @@
         (pj/lay-text :.hat  :.std.resid
                      {:text :row-label
                       :color "grey"
-                      :data {:.hat [min-hat]
-                             :.std.resid [min-std-resid]
+                      :data {
+                             :.hat [0]
+                             :.std.resid [(+ min-std-resid 0.2)]
                              :row-label ["   \u00b7\u00b7\u00b7 Cook's distance"]}})
         (pj/lay-rule-h {:y-intercept 0
                         :color "lightgrey"
@@ -715,7 +716,6 @@
      :scale-location (scale-location-pose augmented-ds options)
      :cooks-distance (cooks-distance-pose augmented-ds options)
      :residual-vs-leverage (residual-vs-leverage-pose augmented-ds model options)
-
      :cooks-d-vs-leverage* (cooks-d-vs-leverage*-pose augmented-ds model options)}))
 
 (ml/define-model! :metamorph.ml/ols

@@ -1,5 +1,5 @@
 # unreleased
-- upgraded to plotje 0.11
+- upgraded to plotje 0.11.1
 - small immprovements in lm plots
 - improves ticks on axes of lm plots
 
