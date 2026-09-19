@@ -732,6 +732,7 @@
 
 
 (comment
+  ;;code to generate the gold standrd svgs
   (defn pretty-spit
     [file-name collection]
     (spit (java.io.File. file-name)

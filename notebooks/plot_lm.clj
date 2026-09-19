@@ -82,8 +82,8 @@
 ^:kindly/hide-code
 (kind/hidden 
  (pj/set-config! 
-  {:width 650
-   :height 650 }))
+  {:width 600
+   :height 600 }))
 
 
 

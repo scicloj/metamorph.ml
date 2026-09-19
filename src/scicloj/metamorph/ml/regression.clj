@@ -320,13 +320,17 @@
        (tc/head (:n-labeled-points options)))
    pos-adj))
   
-
+(defn- lay-point
+  ([pose x y & options]
+   (pj/lay-point pose x y (merge  {:shape :circle-open :size 4} options)))
+  ([pose options]
+   (pj/lay-point pose (merge  {:shape :circle-open :size 4} options))))
 
 (defn- residual-vs-fitted-pose [augmented-ds options]
   (->
    augmented-ds
 
-   (pj/lay-point  :.fitted :.resid)
+   (lay-point  :.fitted :.resid)
    (pj/lay-smooth {:color "red"})
    (pj/lay-rule-h {:y-intercept 0 :color "grey" :alpha 0.2 :stroke-dash :dashed})
    (label-extremes :.fitted :.resid augmented-ds options  {:offset-x 5
@@ -380,10 +384,6 @@
     (->
      qq-dataset
      (pj/pose :qq :.std.resid)
-     (label-extremes :qq :.std.resid qq-dataset options {:offset-x 5
-                                                         :offset-y -5
-                                                         })
-
      (pj/lay-line
       :qq :.std.resid
       {:color "lightgrey"
@@ -392,7 +392,11 @@
                :.std.resid start-std-resid}
               {:qq end-qq
                :.std.resid end-std-resid}]})
-     (pj/lay-point :qq :.std.resid)
+     (lay-point :qq :.std.resid)
+     (label-extremes :qq :.std.resid qq-dataset options {:offset-x 5
+                                                         :offset-y -5})
+
+
      (pj/options {:title "Q-Q Residuals"
                   :x-label "Theoretical Quantiles"
                   :y-label "Standardised residuals"}))))
@@ -424,7 +428,7 @@
          (tc/add-column :.sqrt-abs-resid (tcc/sqrt (tcc/abs (:.std.resid augmented-ds)))))]
     (->
      augmented-ds
-     (pj/lay-point :.fitted :.sqrt-abs-resid)
+     (lay-point :.fitted :.sqrt-abs-resid)
      (pj/lay-smooth {:color "red"})
      (label-extremes :.fitted :.sqrt-abs-resid augmented-ds options {:offset-x 5
                                                                      :offset-y -5})
@@ -488,7 +492,7 @@
                              (> (:.std.resid row) min-std-resid))))
           )]
 
-    (pj/lay-point pose {:color "grey"
+    (lay-point pose {:color "grey"
                        :size 1
                        :data cooks-d})))
 
@@ -548,7 +552,7 @@
                         :stroke-dash :dashed
                         ;:alpha 0.9
                         })
-        (pj/lay-point :.hat  :.std.resid)
+        (lay-point :.hat  :.std.resid)
 
 
         (pj/scale :x {:domain [min-hat max-hat]})
@@ -650,7 +654,7 @@
 
 
          base-pose
-         (pj/lay-point plot-ds :leverage* :.cooksd)
+         (lay-point plot-ds :leverage* :.cooksd)
 
          pose-with-lines
          (reduce (fn [pose bval]
@@ -691,7 +695,7 @@
     (-> pose-with-lines
 
 
-        (pj/lay-point  :leverage* :.cooksd)
+        (lay-point  :leverage* :.cooksd)
         (pj/lay-smooth {:color "red"})
         (draw-extreme-point :leverage* :.cooksd :row-label extreme-cooksd {:offset-x 5
                                                                            :offset-y -5})
