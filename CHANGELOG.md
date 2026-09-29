@@ -1,5 +1,5 @@
 # unreleased
-- upgraded to plotje 0.12.0
+- upgraded to plotje 0.15.0
 
 # 1.7.2
 - upgraded to plotje 0.11.1

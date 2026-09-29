@@ -21,3 +21,4 @@ pyproject.toml
 uv.lock
 .RData
 .Rhistory
+.devcontainer/devcontainer-lock.json
