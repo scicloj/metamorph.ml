@@ -140,3 +140,59 @@
 
 
 
+(defn pair-plot [dataset & {:keys [size-per-col]
+                            :or {size-per-col 100}}]
+  (let [col-names (tc/column-names dataset)
+        num-cols (count col-names)]
+    (-> dataset
+        (pj/pose
+         (pj/cross col-names col-names))
+        (pj/options {:width (* size-per-col num-cols)
+                     :height (* size-per-col num-cols)}))))
+
+
+(defn correlation-plot [dataset & {:keys [measure-fn
+                                          width-per-col 
+                                          height-per-col 
+                                          x-tick-angle
+                                          ]
+                                   :or {width-per-col 80
+                                        height-per-col 40
+                                        x-tick-angle 0
+                                        measure-fn stats/pearson-correlation
+                                        }}]
+
+  (let [num-cols (tc/column-count dataset)
+        col-names (tc/column-names dataset)]
+    (-> dataset (tc/columns :as-seqs)
+        (stats/coefficient-matrix measure-fn)
+        tc/dataset
+        (tc/add-column :x (range num-cols))
+    ;(tc/rename-columns rename-map)
+
+        (tc/pivot->longer (range num-cols)
+                          {:target-columns [:y]
+                           :value-column-name :corr})
+
+        (tc/add-column :corr-str (fn [ds] (map
+                                           #(Double/parseDouble (format "%.2f" %))
+                                           (:corr ds))))
+
+
+        (pj/lay-tile :x :y {:fill :corr})
+        (pj/lay-label :x :y {:text :corr-str
+                             :align-x :center})
+        (pj/scale :color {:range :orange-magenta-blue :label "Corr"
+                          :domain [-1 1]
+                          :midpoint 0})
+
+        (pj/scale :x {:tick-labels col-names
+                      :breaks (range num-cols)})
+        (pj/scale :y {:tick-labels col-names
+                      :breaks (range num-cols)})
+
+
+        (pj/options {:width (+ 100 (* width-per-col num-cols))
+                     :height (* height-per-col num-cols)
+                     :x-tick-angle x-tick-angle
+                     :color-label "Correlation"}))))
