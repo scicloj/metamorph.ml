@@ -65,21 +65,8 @@ cruise-ships
  (cf/numeric)
  explore/correlation-plot)
 
-(def columns
-  (-> 
-   (rdatasets/datasets-iris)
-   
-   ))
-
-(-> columns first meta)
 
 
-(defn my-stat [categories measurements]
-  (let [{:keys [SSt SSe]} (stats/one-way-anova-test
-                           [measurements
-                            categories
-                            ])]
-    (/ SSt (+ SSt SSe))))
 
 (defn correlation-ratio [categories measurements]
   (->>
@@ -146,71 +133,7 @@ cruise-ships
   )
 
 
-(def assocs
-  (->>  ds
-        
-        associations
-        (map #(hash-map :assoc-str (->> % :assoc :value (format "%.2f"))
-                        :assoc (->> % :assoc :value )
-                        :x (-> % :c-1-name)
-                        :y (-> % :c-2-name)))
-        tc/dataset
-        )  
-  
-  )
 
-(def columns
-  (-> ds tc/column-names reverse))
-
-(def column-indexes (range (count columns)))
-(def index-col-name-map (zipmap column-indexes columns))
-(def num-cols (count column-indexes))
-
-(def x
-  (map vector
-       (map index-col-name-map (range num-cols))
-       (range num-cols)))
-(def sorted
-  (sort-by (fn [[id _]]
-             (.indexOf (tc/column-names ds) id))
-           x))
-
-(def tick-labels (map first sorted))
-(def breaks (map second sorted))
-
-(->  assocs
-     (tc/add-columns {:x-indexed (map
-                                  (clojure.set/map-invert index-col-name-map)
-                                  (:x assocs))
-                      :y-indexed (map
-                                  (clojure.set/map-invert index-col-name-map)
-                                  (:y assocs))})
-     
-     (pj/lay-tile :x-indexed :y-indexed {;:text :assoc-str 
-                                         :fill :assoc
-                                         
-                                         })
-     (pj/lay-text :x-indexed :y-indexed {:text :assoc-str
-                                         :align-x :center
-                                         :align-y :center
-                                        :color "white" 
-                                         })
-     (pj/scale :x {
-                   :tick-labels tick-labels
-                   :breaks breaks
-                   :domain [num-cols -1]
-                   })
-     (pj/scale :y {:breaks breaks
-                   :tick-labels tick-labels
-                   
-                   })
-     (pj/scale :fill {:range :grDevices/Berlin
-                      :domain [-1 1]})
-     (pj/options {
-                  :x-tick-angle 45
-                  })
-
-     )
 
 
 
@@ -226,9 +149,72 @@ cruise-ships
 
 
 
+(defn assocations-plot [ds]
+
+  (let [
+        
+        columns
+        (-> ds tc/column-names reverse)
+
+        column-indexes (range (count columns))
+        index-col-name-map (zipmap column-indexes columns)
+        num-cols (count column-indexes)
+
+        column-index-map
+        (map vector
+             (map index-col-name-map (range num-cols))
+             (range num-cols))
+
+        sorted
+        (sort-by (fn [[id _]]
+                   (.indexOf (tc/column-names ds) id))
+                 column-index-map)
+
+        tick-labels (map first sorted)
+        breaks (map second sorted)
+
+        assocs
+        (->>  ds
+
+              associations
+              (map #(hash-map :assoc-str (->> % :assoc :value (format "%.2f"))
+                              :assoc (->> % :assoc :value)
+                              :x (-> % :c-1-name)
+                              :y (-> % :c-2-name)))
+              tc/dataset)]
+    (->  assocs
+         (tc/add-columns {:x-indexed (map
+                                      (clojure.set/map-invert index-col-name-map)
+                                      (:x assocs))
+                          :y-indexed (map
+                                      (clojure.set/map-invert index-col-name-map)
+                                      (:y assocs))})
+
+         (pj/lay-tile :x-indexed :y-indexed {;:text :assoc-str 
+                                             :fill :assoc})
+         ;;  (pj/lay-text :x-indexed :y-indexed {:text :assoc-str
+         ;;                                      :align-x :center
+         ;;                                      :align-y :center
+         ;;                                      :color "white"})
+         (pj/scale :x {:tick-labels tick-labels
+                       :breaks breaks
+                       :domain [num-cols -1]})
+         (pj/scale :y {:breaks breaks
+                       :tick-labels tick-labels})
+         (pj/scale :fill {:range :grDevices/Blue-Red
+                          :domain [-1 1]})
+         (pj/options {:x-tick-angle 45
+                      :x-label ""
+                      :y-label ""
+                      ;; :width 1024
+                      ;; :height 1024
+                      }))))
+
 
 
 (-> (rdatasets/datasets-iris)
-    (pj/lay-tile :sepal-length :sepal-width)
-    (pj/scale :x {:domain [4.5 8]})
-    )
+    (assocations-plot))
+
+(-> cruise-ships
+    (assocations-plot))
+
