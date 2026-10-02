@@ -117,7 +117,7 @@
                          :.std.resid (-> model :model-data :analysis :residuals :standardized)
                          :.fitted (:fitted (:model-data model))
                          :.cooksd (-> model :model-data :analysis :influence :cooks-distance)
-                         :.hat (-> model :model-data :analysis :laverage :hat)
+                         :.hat (-> model :model-data :analysis :leverage :hat)
                          }))))
 
 
