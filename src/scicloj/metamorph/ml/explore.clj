@@ -142,8 +142,16 @@
 
 
 
-(defn pair-plot [dataset & {:keys [size-per-col]
-                            :or {size-per-col 100}}]
+(defn pair-plot
+  "Create a pair plot with one panel for each pair of dataset columns.
+
+  Options:
+  - `:size-per-col` — panel size in pixels, used for both plot width and
+    height (default 100).
+
+  Returns a Plotje pose."
+  [dataset & {:keys [size-per-col]
+              :or {size-per-col 100}}]
   (let [col-names (tc/column-names dataset)
         num-cols (count col-names)]
     (-> dataset
@@ -153,51 +161,6 @@
                      :height (* size-per-col num-cols)}))))
 
 
-(defn correlation-plot [dataset & {:keys [measure-fn
-                                          width-per-col 
-                                          height-per-col 
-                                          x-tick-angle
-                                          ]
-                                   :or {width-per-col 80
-                                        height-per-col 40
-                                        x-tick-angle 0
-                                        measure-fn stats/pearson-correlation
-                                        }}]
-
-  (let [num-cols (tc/column-count dataset)
-        col-names (tc/column-names dataset)]
-    (-> dataset (tc/columns :as-seqs)
-        (stats/coefficient-matrix measure-fn)
-        tc/dataset
-        (tc/add-column :x (range num-cols))
-    ;(tc/rename-columns rename-map)
-
-        (tc/pivot->longer (range num-cols)
-                          {:target-columns [:y]
-                           :value-column-name :corr})
-
-        (tc/add-column :corr-str (fn [ds] (map
-                                           #(Double/parseDouble (format "%.2f" %))
-                                           (:corr ds))))
-
-
-        (pj/lay-tile :x :y {:fill :corr})
-        (pj/lay-label :x :y {:text :corr-str
-                             :align-x :center})
-        (pj/scale :color {:range :orange-magenta-blue :label "Corr"
-                          :domain [-1 1]
-                          :midpoint 0})
-
-        (pj/scale :x {:tick-labels col-names
-                      :breaks (range num-cols)})
-        (pj/scale :y {:tick-labels col-names
-                      :breaks (range num-cols)})
-
-
-        (pj/options {:width (+ 100 (* width-per-col num-cols))
-                     :height (* height-per-col num-cols)
-                     :x-tick-angle x-tick-angle
-                     :color-label "Correlation"}))))
 
 (defn- correlation-ratio [categories measurements]
   (->>
@@ -251,7 +214,44 @@
    (remove #(nil? (:assoc %)))))
 
 
-(defn assocations-plot [ds]
+(defn assocation-plot
+  "Create a heatmap of pairwise associations between dataset columns.
+
+  Numeric-numeric pairs use Pearson correlation, textual-textual pairs use
+  Cramer's V, and numeric-textual pairs use the correlation ratio. The
+  association value is shown in each tile when `:association-visible?` is
+  true.
+   
+   Expects a tech.ml dataset without missing values.
+
+  Options:
+  - `:width-per-col` — tile width in pixels (default 60).
+  - `:height-per-col` — tile height in pixels (default 60).
+  - `:x-tick-angle` — angle for x-axis tick labels (default 0).
+  - `:association-text-font-size` — value-label font size (default 11).
+  - `:label-font-size` — axis-label font size (default 11).
+  - `:association-visible?` — whether to show values in tiles (default true).
+  - `:association-text-color` — value-label color (default \"black\").
+  - `:gradient` — fill color scale (default `:grDevices/Blue-Red`).
+
+  Returns a Plotje pose."
+  [ds & {:keys [width-per-col
+                                     height-per-col
+                                     x-tick-angle
+                                     association-text-font-size
+                                     label-font-size
+                                     association-visible?
+                                     association-text-color
+                                     gradient
+                                     ]
+                              :or {width-per-col 60
+                                   height-per-col 60
+                                   x-tick-angle 0
+                                   association-text-font-size 11
+                                   label-font-size 11
+                                   association-visible? true
+                                   gradient :grDevices/Blue-Red
+                                   association-text-color "black"}}]
 
   (let [columns
         (-> ds tc/column-names reverse)
@@ -282,31 +282,48 @@
                               :assoc (->> % :assoc :value)
                               :x (-> % :c-1-name)
                               :y (-> % :c-2-name)))
-              tc/dataset)]
+              
+              tc/dataset)
+        
+        association-lay-fn (if association-visible?
+                             (fn [pose]
+                               (pj/lay-text pose
+                                            :x-indexed :y-indexed
+                                            {:text :assoc-str
+                                             :align-x :center
+                                             :align-y :center
+                                             :color association-text-color
+                                             :font-size association-text-font-size}))
+                             (fn [pose] pose))
+        ]
+    
     (->  assocs
          (tc/add-columns {:x-indexed (map
                                       (c-set/map-invert index-col-name-map)
-                                      (:x assocs))
+                                      (:x assocs)) 
                           :y-indexed (map
                                       (c-set/map-invert index-col-name-map)
                                       (:y assocs))})
 
          (pj/lay-tile :x-indexed :y-indexed {;:text :assoc-str 
                                              :fill :assoc})
-         (pj/lay-text :x-indexed :y-indexed {:text :assoc-str
-                                             :align-x :center
-                                             :align-y :center
-                                             :color "black"})
-         (pj/scale :x {:tick-labels tick-labels
-                       :breaks breaks
-                       :domain [num-cols -1]})
+         association-lay-fn
+         
+         (pj/scale :x {:tick-labels (reverse tick-labels)
+                       :breaks (reverse breaks)
+                       :domain  [num-cols -1]})
          (pj/scale :y {:breaks breaks
-                       :tick-labels tick-labels})
-         (pj/scale :fill {:range :grDevices/Blue-Red
+                       :tick-labels tick-labels
+                       :domain [num-cols -1]
+                       })
+         (pj/scale :fill {:range gradient
                           :domain [-1 1]})
-         (pj/options {:x-tick-angle 45
+         (pj/options {:width (+ 200 (* width-per-col num-cols))
+                      :height (* height-per-col num-cols)
                       :x-label ""
                       :y-label ""
-                      ;; :width 1024
-                      ;; :height 1024
-                      }))))
+                      :theme {:font-size label-font-size}
+                      
+
+                      :x-tick-angle x-tick-angle
+                      :color-label "Association"}))))
