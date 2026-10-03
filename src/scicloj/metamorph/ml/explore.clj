@@ -1,7 +1,9 @@
 (ns scicloj.metamorph.ml.explore
-  (:require [fastmath.stats :as stats]
+  (:require [clojure.set :as c-set]
+            [fastmath.stats :as stats]
             [scicloj.plotje.api :as pj]
             [tablecloth.api :as tc]
+            [tablecloth.api.utils :as tc-utils]
             [tablecloth.column.api :as tcc]
             [tech.v3.dataset.column :as ds-col]))
 
@@ -196,3 +198,115 @@
                      :height (* height-per-col num-cols)
                      :x-tick-angle x-tick-angle
                      :color-label "Correlation"}))))
+
+(defn- correlation-ratio [categories measurements]
+  (->>
+   (mapv vector
+         measurements
+         categories)
+   (group-by second)
+   (mapv
+    (fn [[k v]]
+      [k (mapv first v)]))
+   (mapv
+    second)
+   stats/anova-eta-sq
+   tcc/sqrt))
+
+
+(defn- calc-associations [ds]
+
+  (->>
+   (let [columns (tc/columns ds)]
+     (for [c-1 columns c-2 columns]
+       (let [meta-c-1 (meta c-1)
+             meta-c-2 (meta c-2)
+             assoc (cond
+                     (and
+                      (contains? (tc-utils/->general-types (tcc/typeof c-1)) :numerical)
+                      (contains? (tc-utils/->general-types (tcc/typeof c-2)) :numerical))
+                     {:value (stats/pearson-correlation c-1 c-2)
+                      :method :pearson-correlation}
+
+                     (and
+                      (contains? (tc-utils/->general-types (tcc/typeof c-1)) :textual)
+                      (contains? (tc-utils/->general-types (tcc/typeof c-2)) :textual))
+                     {:value (stats/cramers-v c-1 c-2)
+                      :method :cramers-v}
+
+                     (and
+                      (contains? (tc-utils/->general-types (tcc/typeof c-1)) :textual)
+                      (contains? (tc-utils/->general-types (tcc/typeof c-2)) :numerical))
+                     {:value (correlation-ratio c-1 c-2)
+                      :method :coorelation-ratio}
+
+                     (and
+                      (contains? (tc-utils/->general-types (tcc/typeof c-1)) :numerical)
+                      (contains? (tc-utils/->general-types (tcc/typeof c-2)) :textual))
+                     {:value (correlation-ratio c-2 c-1)
+                      :method :coorelation-ratio})]
+         {:c-1-name (:name meta-c-1)
+          :c-2-name (:name meta-c-2)
+          :assoc assoc})))
+   (remove #(nil? (:assoc %)))))
+
+
+(defn assocations-plot [ds]
+
+  (let [columns
+        (-> ds tc/column-names reverse)
+
+        column-indexes (range (count columns))
+        index-col-name-map (zipmap column-indexes columns)
+        num-cols (count column-indexes)
+
+        column-index-map
+        (map vector
+             (map index-col-name-map (range num-cols))
+             (range num-cols))
+
+        sorted
+        (sort-by (fn [[id _]]
+                   (.indexOf (tc/column-names ds) id))
+                 column-index-map)
+
+        tick-labels (map first sorted)
+        breaks (map second sorted)
+
+
+        assocs
+        (->>  ds
+
+              calc-associations
+              (map #(hash-map :assoc-str (->> % :assoc :value (format "%.2f"))
+                              :assoc (->> % :assoc :value)
+                              :x (-> % :c-1-name)
+                              :y (-> % :c-2-name)))
+              tc/dataset)]
+    (->  assocs
+         (tc/add-columns {:x-indexed (map
+                                      (c-set/map-invert index-col-name-map)
+                                      (:x assocs))
+                          :y-indexed (map
+                                      (c-set/map-invert index-col-name-map)
+                                      (:y assocs))})
+
+         (pj/lay-tile :x-indexed :y-indexed {;:text :assoc-str 
+                                             :fill :assoc})
+         (pj/lay-text :x-indexed :y-indexed {:text :assoc-str
+                                             :align-x :center
+                                             :align-y :center
+                                             :color "black"})
+         (pj/scale :x {:tick-labels tick-labels
+                       :breaks breaks
+                       :domain [num-cols -1]})
+         (pj/scale :y {:breaks breaks
+                       :tick-labels tick-labels})
+         (pj/scale :fill {:range :grDevices/Blue-Red
+                          :domain [-1 1]})
+         (pj/options {:x-tick-angle 45
+                      :x-label ""
+                      :y-label ""
+                      ;; :width 1024
+                      ;; :height 1024
+                      }))))
