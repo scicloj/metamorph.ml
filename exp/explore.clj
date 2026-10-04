@@ -4,7 +4,8 @@
    [scicloj.metamorph.ml.rdatasets :as rdatasets]
    [scicloj.metamorph.ml.impl.dsutils :as dsutils]
    [tablecloth.api :as tc]
-   [tech.v3.dataset.column-filters :as cf]))
+   [tech.v3.dataset.column-filters :as cf]
+   [scicloj.plotje.api :as pj]))
 
 
 (def pinguins
@@ -122,4 +123,16 @@
       :association-visble? true
       }))
 
+(-> pinguins
+    (tc/drop-columns [:rownames])
+    (tc/drop-missing)
+    (explore/assocation-plot
+
+     {:width-per-col 20
+      :height-per-col 30
+      :x-tick-angle 45
+      :association-text-font-size 5
+      :association-text-color "green"
+      :label-font-size 10
+      :association-visble? true}))
 

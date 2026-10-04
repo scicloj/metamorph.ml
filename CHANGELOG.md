@@ -1,5 +1,7 @@
 # unreleased
-- upgraded to plotje 0.15.0
+- upgraded to plotje 0.16.1
+- added association plot for dataset
+- added pair plot for dataset
 
 # 1.7.2
 - upgraded to plotje 0.11.1
